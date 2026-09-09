@@ -308,3 +308,4 @@ bash scripts/verify-build.sh
 ```
 
 This checks JavaScript syntax, required deployment files, and confirms the packaged Workspace contains no embedded Payment Tracker client dataset.
+# juan-project-suite
