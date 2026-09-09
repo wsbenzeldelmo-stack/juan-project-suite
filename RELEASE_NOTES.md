@@ -1,3 +1,16 @@
+# JUAN PROJECT Platform V1.3
+
+
+- Draft Orders replace Load Template.
+- Payment history supports edit/delete with audit logging.
+- Google Drive time-lock controls moved into Project → Deliverables.
+- Online Portal reduced to Client Access, Portal Activity, Payment Reviews, and Portal Configuration.
+- Workspace mobile layout prioritizes Home, Projects, Payments, Clients, and More.
+- Gemini removed from all payment flows; payment submission is manual + admin-reviewed.
+- Login endpoints are rate limited server-side.
+- Invoice hierarchy remains Subtotal → Additional Fees → Total → Amount Paid → Balance Due.
+
+
 # JUAN PROJECT Platform V1.2 — Release Notes
 
 ## Workspace UX

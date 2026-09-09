@@ -1,4 +1,4 @@
-# JUAN PROJECT Platform V1.2
+# JUAN PROJECT Platform V1.3
 
 JUAN PROJECT Platform is one connected business system with two interfaces backed by the same Supabase project:
 
@@ -6,9 +6,9 @@ JUAN PROJECT Platform is one connected business system with two interfaces backe
 - `online/` — **JUAN PROJECT Online**, mobile-first client portal
 - `supabase/` — shared data, security, and additive migrations
 
-V1.2 is a coordinated UX update. It does **not** create a second database or duplicate client/project/payment/catalog records.
+V1.3 is a coordinated UX update. It does **not** create a second database or duplicate client/project/payment/catalog records.
 
-## V1.2 focus
+## V1.3 focus
 
 ### JUAN PROJECT Workspace
 
@@ -25,7 +25,7 @@ V1.2 is a coordinated UX update. It does **not** create a second database or dup
 
 ### JUAN PROJECT Online
 
-V1.2 reframes Online as a standard mobile-first client portal with five consistent destinations:
+V1.3 reframes Online as a standard mobile-first client portal with five consistent destinations:
 
 ```text
 Home
@@ -68,7 +68,7 @@ Key changes:
 - only approved payments affect Amount Paid / Balance Due / revenue
 - UnionBank QR asset remains unchanged
 
-## V1.2 migration
+## V1.3 migration
 
 After backing up Supabase, run:
 
@@ -122,3 +122,14 @@ Both → same Supabase project
 ```
 
 Run `scripts/verify-build.sh` before pushing.
+
+
+## V1.3 highlights
+- Draft Orders replace Load Template.
+- Payment history supports edit/delete with audit logging.
+- Google Drive time-lock controls moved into Project → Deliverables.
+- Online Portal reduced to Client Access, Portal Activity, Payment Reviews, and Portal Configuration.
+- Workspace mobile layout prioritizes Home, Projects, Payments, Clients, and More.
+- Gemini removed from all payment flows; payment submission is manual + admin-reviewed.
+- Login endpoints are rate limited server-side.
+- Invoice hierarchy remains Subtotal → Additional Fees → Total → Amount Paid → Balance Due.

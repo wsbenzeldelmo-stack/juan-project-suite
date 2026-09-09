@@ -16,8 +16,12 @@ for required in \
   "$ROOT/supabase/migrations/005_suite_v1_1.sql" \
   "$ROOT/supabase/migrations/006_suite_v1_1_1.sql" \
   "$ROOT/supabase/migrations/007_platform_v1_2.sql" \
+  "$ROOT/supabase/migrations/008_platform_v1_3.sql" \
+  "$ROOT/workspace/css/v1-3-ux.css" \
+  "$ROOT/workspace/js/v1-3-ux.js" \
   "$ROOT/docs/LEGACY_CLIENT_SEQUENCE_V1_1.csv" \
-  "$ROOT/docs/V1_2_UX_STANDARD.md"; do
+  "$ROOT/docs/V1_2_UX_STANDARD.md" \
+  "$ROOT/docs/V1_3_UPDATE_NOTES.md"; do
   test -f "$required" || { echo "Missing: $required"; exit 1; }
 done
 
@@ -31,8 +35,8 @@ p.write_text('\n'.join(blocks))
 subprocess.run(['node','--check',str(p)],check=True)
 if '<title>JUAN PROJECT Workspace</title>' not in src:
     raise SystemExit('Workspace browser title is not standardized')
-if '/css/v1-2-ux.css' not in src or '/js/v1-2-ux.js' not in src:
-    raise SystemExit('Workspace V1.2 UX layer is not loaded')
+if '/css/v1-2-ux.css' not in src or '/js/v1-2-ux.js' not in src or '/css/v1-3-ux.css' not in src or '/js/v1-3-ux.js' not in src:
+    raise SystemExit('Workspace V1.3 UX layer is not loaded')
 if 'drive_unlock_at' not in src or 'drive_expires_at' not in src:
     raise SystemExit('Workspace project-folder time controls are missing')
 PY
@@ -48,12 +52,12 @@ app=Path(sys.argv[1]).read_text()
 for forbidden in ('Create Account','Sign Up','First Access'):
     if forbidden in app: raise SystemExit(f'Public registration language remains: {forbidden}')
 checks={
-  'v1.2':'Online version label missing',
+  'v1.3':'Online version label missing',
   'Everything about your project, in one place.':'Three-step onboarding missing',
   'Order Confirmed':'Order Tracker stages missing',
   'Ready for Delivery':'Order Tracker delivery stage missing',
   'drive_unlock_at':'Time-locked folder logic missing',
-  'Checking your payment':'Payment processing UX missing',
+  'Processing your payment':'Payment processing UX missing',
   'Payment Submitted':'Payment success UX missing',
   'Price: Low to High':'Shop price sort missing',
   'Email or password is incorrect.':'Login validation copy missing'
@@ -73,4 +77,6 @@ EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d5
 ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg" | awk '{print $1}')"
 [[ "$ACTUAL_QR_SHA" == "$EXPECTED_QR_SHA" ]] || { echo "UnionBank QR asset was altered"; exit 1; }
 
-echo "JUAN PROJECT Platform V1.2 verification passed."
+if grep -Rqi "Gemini" "$ROOT/online/js" "$ROOT/online/api/payment-submission.js"; then echo "Gemini payment language remains"; exit 1; fi
+if ! grep -q "order_drafts" "$ROOT/supabase/migrations/008_platform_v1_3.sql"; then echo "V1.3 drafts migration missing"; exit 1; fi
+echo "JUAN PROJECT Platform V1.3 verification passed."

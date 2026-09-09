@@ -1116,10 +1116,9 @@
             <div class="greeting-subtitle">Workflow</div>
             <h1 class="page-title">New Order Entry</h1>
           </div>
-          <div style="display: flex; gap: 12px; align-items: center;">
-            <select class="form-control" id="templateSelectDropdown" style="max-width: 220px;" onchange="app.loadProjectTemplate(this.value)">
-              <option value="">-- Load Template --</option>
-            </select>
+          <div class="order-header-actions">
+            <button type="button" class="btn btn-secondary" id="openDraftsBtn">Drafts</button>
+            <button type="button" class="btn btn-secondary" id="saveDraftBtn">Save Draft</button>
           </div>
         </header>
 
@@ -1385,6 +1384,15 @@
             </div>
             <div class="progress-bar-track deliverables-overall-progress"><div class="progress-bar-fill" id="projDetailProgressBar" style="width:0%"></div></div>
             <div class="deliverables-list" id="projectDeliverablesList"></div>
+            <div id="projectFilesAccessCard" class="project-files-admin-card">
+              <div class="project-files-admin-head"><div><div class="section-kicker">CLIENT DELIVERY</div><h3 class="card-title">Project Files</h3><p>One Google Drive folder per project. The same access state appears in JUAN PROJECT Online.</p></div><span id="projectFilesAccessState" class="portal-drive-state locked">Locked</span></div>
+              <div class="project-files-admin-grid">
+                <div class="form-group project-files-url"><label class="form-label">Google Drive URL</label><input id="projectFilesDriveUrl" class="form-control" placeholder="https://drive.google.com/…"></div>
+                <div class="form-group"><label class="form-label">Unlock Date & Time</label><input id="projectFilesUnlockAt" type="datetime-local" class="form-control"></div>
+                <div class="form-group"><label class="form-label">Expiry Date & Time</label><input id="projectFilesExpiresAt" type="datetime-local" class="form-control"></div>
+              </div>
+              <div class="project-files-admin-actions"><a id="projectFilesOpenDrive" class="btn btn-secondary hidden" target="_blank" rel="noopener">Open Drive</a><button id="projectFilesSaveBtn" type="button" class="btn btn-primary" onclick="app.saveProjectFilesAccess()">Save Project Files</button></div>
+            </div>
           </div>
         </div>
 
@@ -1500,14 +1508,14 @@
           <button class="btn btn-secondary" id="onlinePortalRefreshBtn">Refresh</button>
         </header>
         <div class="online-portal-intro card">
-          <div><strong>JUAN PROJECT Online</strong><p>Manage client access, payment reviews, one Google Drive link per project with optional time-lock availability, and client payment setup from the main Workspace.</p></div>
-          <span class="status-badge status-green">V1.2</span>
+          <div><strong>JUAN PROJECT Online</strong><p>Manage client access, client-facing activity, payment reviews, and portal configuration. Project delivery links now live inside each Project → Deliverables tab.</p></div>
+          <span class="status-badge status-green">V1.3</span>
         </div>
         <div class="portal-tabs" id="onlinePortalTabs">
-          <button type="button" data-portal-tab="accounts" class="active">Client Accounts</button>
+          <button type="button" data-portal-tab="accounts" class="active">Client Access</button>
+          <button type="button" data-portal-tab="activity">Portal Activity</button>
           <button type="button" data-portal-tab="payments">Payment Reviews</button>
-          <button type="button" data-portal-tab="delivery">Delivery Links</button>
-          <button type="button" data-portal-tab="settings">Payment Setup</button>
+          <button type="button" data-portal-tab="settings">Portal Configuration</button>
         </div>
         <div id="onlinePortalLoading" class="card portal-loading hidden">Loading Online Portal data…</div>
         <div id="onlinePortalError" class="card portal-error hidden"></div>
@@ -1522,9 +1530,9 @@
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
           <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client</th><th>Project</th><th>Amount</th><th>Reference</th><th>Method</th><th>Date</th><th>Receipt</th><th>Status</th><th>Actions</th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
         </div>
-        <div id="onlinePortalDeliveryPanel" class="portal-panel hidden">
-          <div class="card portal-note"><strong>One Drive folder per project.</strong><span>Repeat clients can have different Google Drive folders for each JP-###.</span></div>
-          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Client</th><th>Project</th><th>Google Drive Link</th><th>Unlocks</th><th>Expires</th><th>Access</th><th>Action</th></tr></thead><tbody id="onlinePortalDeliveryRows"></tbody></table></div></div>
+        <div id="onlinePortalActivityPanel" class="portal-panel hidden">
+          <div class="card portal-note"><strong>Client-facing activity only.</strong><span>Use Projects and Clients for business records; this panel shows portal access and submission activity.</span></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Activity</th><th>Client</th><th>Related Record</th><th>Status</th><th>Date</th></tr></thead><tbody id="onlinePortalActivityRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalSettingsPanel" class="portal-panel hidden">
           <div class="card portal-payment-settings"><div class="form-grid"><div><div class="form-group"><label class="form-label">Payment Method</label><input id="portalMethodLabel" class="form-control" placeholder="UnionBank InstaPay"></div><div class="form-group"><label class="form-label">Account Name</label><input id="portalAccountName" class="form-control"></div><div class="form-group"><label class="form-label">Account Number</label><input id="portalAccountNumber" class="form-control"></div></div><div><div class="form-group"><label class="form-label">QR Image URL</label><input id="portalQrImageUrl" class="form-control" placeholder="Optional URL; blank uses bundled UnionBank QR"></div><div class="form-group"><label class="form-label">Instructions</label><textarea id="portalInstructions" class="form-control" rows="5"></textarea></div></div></div><button id="portalSavePaymentSettings" class="btn btn-primary">Save Payment Setup</button><p class="text-sm text-muted mt-2">Leaving QR Image URL blank uses the supplied UnionBank QR asset without altering it.</p></div>
@@ -3039,8 +3047,7 @@ ${description}`))actionCallback();return;}
         }
         if (btn) { btn.disabled = true; btn.textContent = "Signing in…"; }
         try {
-          const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-          if (error) throw error;
+          const loginRes=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const loginJson=await loginRes.json().catch(()=>({}));if(!loginRes.ok)throw new Error(loginJson.error||'Email or password is incorrect.');const setRes=await supabaseClient.auth.setSession({access_token:loginJson.access_token,refresh_token:loginJson.refresh_token});if(setRes.error)throw setRes.error;
           const allowed = await verifyWorkspaceAdmin();
           if (!allowed) {
             await supabaseClient.auth.signOut();
@@ -3054,7 +3061,7 @@ ${description}`))actionCallback();return;}
         } catch (e) {
           showWorkspaceAuthGate(e?.message || "Could not sign in.");
         } finally {
-          if (btn) { btn.disabled = false; btn.textContent = "Sign In"; }
+          if (btn) { btn.disabled = false; btn.textContent = "Log In"; }
         }
       }
 
@@ -4956,10 +4963,15 @@ ${description}`))actionCallback();return;}
         const ds=Array.isArray(proj.deliverables)?proj.deliverables:[];ds.forEach((d,i)=>{d.id=d.id||`del_${proj.id}_${i}`;d.item_name=d.item_name||d.name||'Deliverable';d.completed=!!d.completed||String(d.status||'').toLowerCase()==='completed';d.progress=d.completed?100:Number(d.progress||0);d.status=d.completed?'Completed':'Pending';});
         ds.filter(d=>d.is_group).forEach(parent=>{const children=ds.filter(c=>String(c.parent_id||'')===String(parent.id));if(children.length){parent.completed=children.every(c=>c.completed);parent.progress=Math.round(children.reduce((s,c)=>s+(c.completed?100:Number(c.progress||0)),0)/children.length);parent.status=parent.completed?'Completed':'Pending';}});
         const countable=ds.filter(d=>!d.is_group),completed=countable.filter(d=>d.completed).length,percent=countable.length?Math.round(completed/countable.length*100):0;const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v};setText('projDetailProgressCount',`${completed} / ${countable.length} completed`);setText('projDetailProgressPercent',`${percent}%`);const bar=document.getElementById('projDetailProgressBar');if(bar)bar.style.width=`${percent}%`;const overallBar=document.getElementById('projectOverallProgressBar'),overallPct=document.getElementById('projectOverallProgressPercent'),overallCount=document.getElementById('projectOverallProgressCount');if(overallBar)overallBar.style.width=`${percent}%`;if(overallPct)overallPct.textContent=`${percent}%`;if(overallCount)overallCount.textContent=`${completed} / ${countable.length}`;
-        if(!ds.length){container.innerHTML=`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;return;}
+        if(!ds.length){container.innerHTML=`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;renderProjectFilesAccess(proj);return;}
         const roots=ds.filter(d=>!d.parent_id);const row=(d,child=false)=>{const menuId=`deliverableMenu_${String(d.id).replace(/[^a-zA-Z0-9_-]/g,'')}`,progress=d.is_group?Number(d.progress||0):(d.completed?100:Number(d.progress||0));return `<div class="deliverable-checklist-row ${child?'deliverable-child-row':''} ${d.completed?'is-complete':''}"><button type="button" class="deliverable-check ${d.completed?'checked':''}" aria-pressed="${d.completed?'true':'false'}" onclick="app.toggleDeliverable('${proj.id}','${String(d.id).replace(/'/g,"\'")}')"><svg class="icon-svg sm" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button><div class="deliverable-checklist-copy"><strong>${escapeHtml(d.item_name)}</strong>${d.is_group?`<span>${ds.filter(c=>String(c.parent_id||'')===String(d.id)).filter(c=>c.completed).length}/${ds.filter(c=>String(c.parent_id||'')===String(d.id)).length} included items</span>`:''}</div><div class="deliverable-item-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${Math.round(progress)}%</span></div><div class="popover-wrap" id="${menuId}"><button class="icon-more-button" onclick="event.stopPropagation();app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action text-danger" onclick="event.stopPropagation();app.deleteProjectDeliverable('${String(d.id).replace(/'/g,"\'")}')">Remove Deliverable</button></div></div></div>`};
-        container.innerHTML=`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;
+        container.innerHTML=`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;renderProjectFilesAccess(proj);
       }
+      function toLocalDateTimeInput(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);}
+      function projectFilesState(proj){const now=Date.now(),unlock=proj.drive_unlock_at?new Date(proj.drive_unlock_at).getTime():null,expires=proj.drive_expires_at?new Date(proj.drive_expires_at).getTime():null;if(expires&&now>expires)return['Expired','expired'];if(!proj.drive_url||(unlock&&now<unlock))return['Locked','locked'];return['Available','available'];}
+      function renderProjectFilesAccess(proj){const card=document.getElementById('projectFilesAccessCard');if(!card||!proj)return;const url=document.getElementById('projectFilesDriveUrl'),unlock=document.getElementById('projectFilesUnlockAt'),expires=document.getElementById('projectFilesExpiresAt'),badge=document.getElementById('projectFilesAccessState'),open=document.getElementById('projectFilesOpenDrive');if(document.activeElement!==url)url.value=proj.drive_url||'';if(document.activeElement!==unlock)unlock.value=toLocalDateTimeInput(proj.drive_unlock_at);if(document.activeElement!==expires)expires.value=toLocalDateTimeInput(proj.drive_expires_at);const [label,cls]=projectFilesState(proj);badge.textContent=label;badge.className='portal-drive-state '+cls;if(proj.drive_url){open.href=proj.drive_url;open.classList.remove('hidden')}else open.classList.add('hidden');}
+      async function saveProjectFilesAccess(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const url=document.getElementById('projectFilesDriveUrl')?.value.trim()||'',unlock=document.getElementById('projectFilesUnlockAt')?.value||null,expires=document.getElementById('projectFilesExpiresAt')?.value||null;if(url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(url)){showToast('Enter a valid Google Drive URL.');return}showActionStatus('Saving Project Files','Updating client delivery access…',false);try{await onlinePortalRequest('POST',{action:'save-project-drive-link',projectId:proj.id,url,unlockAt:unlock,expiresAt:expires});proj.drive_url=url||null;proj.drive_unlock_at=unlock?new Date(unlock).toISOString():null;proj.drive_expires_at=expires?new Date(expires).toISOString():null;persistProjectsState();renderProjectFilesAccess(proj);showActionStatus('Project Files Saved','The same folder access is now connected to JUAN PROJECT Online.',true);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not save project files.')}setTimeout(()=>closeModal('actionStatusModal'),1050);}
+
       function recalculateProjectFromOrderItems(proj) {
         const items = Array.isArray(proj.project_items) ? proj.project_items : [];
         const subtotal = items.reduce((sum,item) => sum + Math.max(0,Number(item.price||0)) * Math.max(1,Number(item.qty||1)), 0);
@@ -5153,11 +5165,22 @@ ${description}`))actionCallback();return;}
         closeModal('recordPaymentModal');showConfirmationDialog(draft.editingId?'Confirm Payment Changes':'Confirm Payment',`${formatCurrency(draft.amount)} · ${formatProjectDate(draft.payment_date)} · ${draft.payment_method}`,'Confirm',()=>finalizePaymentRecord(proj,draft));
       }
       async function finalizePaymentRecord(proj,draft){
-        showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,550));let record;if(draft.editingId){record=(proj.payments||[]).find(p=>String(p.id)===String(draft.editingId));if(record)Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()});}
+        showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,550));let record;if(draft.editingId){record=(proj.payments||[]).find(p=>String(p.id)===String(draft.editingId));if(record){const before={...record};if(supabaseClient&&state.isConnected){try{await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(draft.editingId),project_id:proj.id,action:'EDIT',before_value:before,after_value:{amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}}]);}catch(e){console.warn('Payment audit sync unavailable:',e.message);}}Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()});}}
         if(!record){record={id:'pay_'+Date.now(),project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,created_at:new Date().toISOString()};if(!proj.payments)proj.payments=[];proj.payments.push(record);}
         proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();
         if(supabaseClient&&state.isConnected){try{if(draft.editingId)await supabaseClient.from('payments').update({amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}).eq('id',draft.editingId);else await supabaseClient.from('payments').insert([{project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}]);}catch(e){console.warn('Payment sync unavailable:',e.message);}}
         renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Successful',draft.editingId?'Payment changes were saved.':'Payment was recorded successfully.',true);state.editingPaymentId=null;setTimeout(()=>closeModal('actionStatusModal'),950);
+      }
+
+      function deletePaymentRecord(paymentId) {
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        const payment=(proj.payments||[]).find(p=>String(p.id)===String(paymentId));if(!payment)return;
+        showConfirmationDialog('Delete Payment',`This will remove ${formatCurrency(Number(payment.amount_paid||payment.amount||0))} from payment history and recalculate the project balance.`,'Delete Payment',async()=>{
+          const before={...payment};proj.payments=(proj.payments||[]).filter(p=>String(p.id)!==String(paymentId));
+          proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);proj.updated_at=new Date().toISOString();persistProjectsState();
+          if(supabaseClient&&state.isConnected){try{await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(paymentId),project_id:proj.id,action:'DELETE',before_value:before}]);await supabaseClient.from('payments').delete().eq('id',paymentId);}catch(e){console.warn('Payment delete sync unavailable:',e.message);}}
+          renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Deleted','The payment was removed and the project balance was recalculated.',true);setTimeout(()=>closeModal('actionStatusModal'),950);
+        });
       }
 
       function renderPaymentTracker(proj) {
@@ -5188,7 +5211,7 @@ ${description}`))actionCallback();return;}
         if(listEl){
           if(!payments.length){listEl.innerHTML='<div class="payment-history-empty"><strong>No payments recorded</strong><span>Recorded payments will appear here.</span></div>';return;}
           payments.sort((a,b)=>new Date(b.payment_date||b.created_at||0)-new Date(a.payment_date||a.created_at||0));
-          listEl.innerHTML=`<div class="table-responsive"><table class="data-table unified-table payment-history-table"><thead><tr><th>Method</th><th>Reference</th><th>Amount</th><th>Note</th><th>Date Paid</th><th class="table-actions-col"></th></tr></thead><tbody>${payments.map(p=>{const amount=Number(p.amount_paid||p.amount||0),date=parseDateSafe(p.payment_date||p.created_at),method=p.payment_method||p.method||'Payment',ref=p.reference_no||p.reference_number||'—',notes=p.notes||'—',menuId=`paymentMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr><td><strong>${escapeHtml(method)}</strong></td><td>${escapeHtml(ref)}</td><td><strong>${formatCurrency(amount)}</strong></td><td class="text-secondary">${escapeHtml(notes)}</td><td>${date?date.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'—'}</td><td class="table-row-actions"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openRecordPaymentModal('${p.id}')">Edit Payment</button></div></div></td></tr>`}).join('')}</tbody></table></div>`;
+          listEl.innerHTML=`<div class="table-responsive"><table class="data-table unified-table payment-history-table"><thead><tr><th>Method</th><th>Reference</th><th>Amount</th><th>Note</th><th>Date Paid</th><th class="table-actions-col"></th></tr></thead><tbody>${payments.map(p=>{const amount=Number(p.amount_paid||p.amount||0),date=parseDateSafe(p.payment_date||p.created_at),method=p.payment_method||p.method||'Payment',ref=p.reference_no||p.reference_number||'—',notes=p.notes||'—',menuId=`paymentMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr><td><strong>${escapeHtml(method)}</strong></td><td>${escapeHtml(ref)}</td><td><strong>${formatCurrency(amount)}</strong></td><td class="text-secondary">${escapeHtml(notes)}</td><td>${date?date.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'—'}</td><td class="table-row-actions"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openRecordPaymentModal('${p.id}')">Edit Payment</button><button class="popover-action text-danger" onclick="app.deletePaymentRecord('${p.id}')">Delete Payment</button></div></div></td></tr>`}).join('')}</tbody></table></div>`;
         }
         animateNumbersIn(overviewEl);
       }
@@ -5817,9 +5840,9 @@ ${description}`))actionCallback();return;}
       }
 
       function setOnlinePortalTab(tab){
-        state.onlinePortalTab=["accounts","payments","delivery","settings"].includes(tab)?tab:"accounts";
+        state.onlinePortalTab=["accounts","activity","payments","settings"].includes(tab)?tab:"accounts";
         document.querySelectorAll("[data-portal-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.portalTab===state.onlinePortalTab));
-        [["accounts","onlinePortalAccountsPanel"],["payments","onlinePortalPaymentsPanel"],["delivery","onlinePortalDeliveryPanel"],["settings","onlinePortalSettingsPanel"]].forEach(([key,id])=>document.getElementById(id)?.classList.toggle("hidden",key!==state.onlinePortalTab));
+        [["accounts","onlinePortalAccountsPanel"],["activity","onlinePortalActivityPanel"],["payments","onlinePortalPaymentsPanel"],["settings","onlinePortalSettingsPanel"]].forEach(([key,id])=>document.getElementById(id)?.classList.toggle("hidden",key!==state.onlinePortalTab));
       }
 
       function renderOnlinePortal(){
@@ -5879,6 +5902,15 @@ ${description}`))actionCallback();return;}
           const c=clientMap.get(String(x.client_id)),p=projectMap.get(String(x.project_id));
           return `<tr><td>${escapeHtml(c?.name||c?.email||"—")}</td><td><strong>${escapeHtml(p?.project_code||p?.title||"—")}</strong><div class="text-sm text-muted">${escapeHtml(p?.title||"")}</div></td><td><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td>${escapeHtml(x.reference_number||x.extracted_reference||"—")}</td><td>${escapeHtml(x.payment_method||"—")}</td><td>${escapeHtml(x.payment_date||"—")}</td><td>${x.receipt_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(x.receipt_url)}" target="_blank" rel="noopener">Open</a>`:"—"}</td><td><span class="portal-status ${x.status==="pending"?"portal-warn":"portal-ok"}">${escapeHtml(x.status||"—")}</span></td><td>${x.status==="pending"?`<div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="approved">Approve</button><button class="btn btn-secondary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="rejected">Reject</button></div>`:"—"}</td></tr>`;
         }).join("")||`<tr><td colspan="9" class="text-center text-muted">No payment submissions.</td></tr>`;
+
+        const activityRows=document.getElementById("onlinePortalActivityRows");
+        if(activityRows){
+          const events=[];
+          accounts.filter(x=>x.last_sign_in_at).forEach(x=>events.push({kind:'Log In',client:x.name||x.email||'—',record:x.client_code||'Client account',status:'Successful',date:x.last_sign_in_at}));
+          (data.submissions||[]).forEach(x=>{const c=clientMap.get(String(x.client_id)),p=projectMap.get(String(x.project_id));events.push({kind:'Payment Submission',client:c?.name||c?.email||'—',record:p?.project_code||p?.title||'Project',status:x.status||'Pending',date:x.submitted_at||x.created_at||x.payment_date});});
+          events.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+          activityRows.innerHTML=events.slice(0,100).map(x=>`<tr><td><strong>${escapeHtml(x.kind)}</strong></td><td>${escapeHtml(x.client)}</td><td>${escapeHtml(x.record)}</td><td><span class="portal-status ${String(x.status).toLowerCase().includes('pending')?'portal-warn':'portal-ok'}">${escapeHtml(x.status)}</span></td><td>${escapeHtml(portalDate(x.date))}</td></tr>`).join('')||`<tr><td colspan="5" class="text-center text-muted">No client portal activity yet.</td></tr>`;
+        }
 
         const toLocalInput=value=>{if(!value)return"";const d=new Date(value);if(Number.isNaN(d.getTime()))return"";const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16)};
         const driveState=p=>{const now=Date.now(),unlock=p.drive_unlock_at?new Date(p.drive_unlock_at).getTime():null,expires=p.drive_expires_at?new Date(p.drive_expires_at).getTime():null;if(expires&&now>expires)return["Expired","expired"];if(!p.drive_url||unlock&&now<unlock)return["Locked","locked"];return["Available","available"]};
@@ -5962,6 +5994,8 @@ ${description}`))actionCallback();return;}
         openRecordPaymentModal,
         submitPaymentRecord,
         finalizePaymentRecord,
+        deletePaymentRecord,
+        saveProjectFilesAccess,
         sendDeadlineReminderEmail,
         sendBalanceReminderEmail,
         saveCurrentProjectAsTemplate,
@@ -6252,13 +6286,13 @@ ${description}`))actionCallback();return;}
 <div id="workspaceAuthGate" class="workspace-auth-gate" role="dialog" aria-modal="true" aria-labelledby="workspaceAuthTitle">
   <div class="workspace-auth-card">
     <div class="workspace-auth-brand">JUAN PROJECT WORKSPACE</div>
-    <h2 id="workspaceAuthTitle">Admin Sign In</h2>
+    <h2 id="workspaceAuthTitle">Admin Log In</h2>
     <p id="workspaceAuthMessage">Sign in with the admin account configured in Supabase.</p>
     <label for="workspaceAuthEmail">Email</label>
     <input id="workspaceAuthEmail" type="email" autocomplete="username" placeholder="admin@example.com">
     <label for="workspaceAuthPassword">Password</label>
-    <input id="workspaceAuthPassword" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')app.adminSignIn()">
-    <button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Sign In</button>
+    <div class="workspace-password-wrap"><input id="workspaceAuthPassword" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')app.adminSignIn()"><button type="button" class="workspace-pass-toggle" aria-label="Show password" onclick="const p=document.getElementById('workspaceAuthPassword');p.type=p.type==='password'?'text':'password'">Show</button></div>
+    <button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Log In</button>
     <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth and database policies. The existing local workspace data remains available only on this browser.</p>
   </div>
 </div>
@@ -6282,7 +6316,7 @@ ${description}`))actionCallback();return;}
 @media(max-width:980px){.portal-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-drive-input{min-width:240px}}
 @media(max-width:650px){.portal-summary-grid{grid-template-columns:1fr 1fr}.online-portal-intro{align-items:flex-start}.portal-tabs{display:grid;grid-template-columns:1fr 1fr}.portal-drive-input{min-width:210px}}
 </style>
-</body>
+<link rel="stylesheet" href="/css/v1-3-ux.css"><script src="/js/v1-3-ux.js" defer></script></body>
 </html>
 <style id="v111-maintenance-patch">
 .snapshot-v111{padding:18px}.snapshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.snapshot-stat{border:1px solid var(--border-subtle);border-radius:12px;padding:13px;background:var(--bg-card)}.snapshot-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);font-weight:750}.snapshot-stat strong{display:block;font-size:18px;margin-top:5px}.snapshot-stat small{display:block;margin-top:5px;color:var(--text-tertiary);font-size:10px;line-height:1.35}.snapshot-meter{height:5px;background:var(--bg-subtle);border-radius:999px;margin-top:9px;overflow:hidden}.snapshot-meter i{display:block;height:100%;background:var(--primary-mint-dark);border-radius:inherit}.catalog-service-id{font-size:11px;letter-spacing:.04em;color:var(--primary-mint-dark)}
