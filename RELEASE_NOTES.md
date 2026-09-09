@@ -1,14 +1,29 @@
-# JUAN PROJECT Suite V1.1.1
+# JUAN PROJECT Platform V1.2 — Release Notes
 
-- Workspace title simplified to **JUAN PROJECT Workspace**.
-- Projects and Clients use standardized Default (ID), Date, and Payment sorting.
-- Projects, Clients, and Invoices & Payments use All / Pending / Completed filters.
-- Shop removes All/Services/Packages pills and adds price sorting; catalog IDs are visible for services and packages.
-- Business Snapshot redesigned for a clearer operational health view.
-- System maintenance fee: ₱21 when a project contains a package, ₱20 for single/non-package projects, applied from JP-052 onward.
-- Workload surcharge field + high-workload recommendation added; no arbitrary surcharge amount is auto-charged.
-- JUAN PROJECT Online invoice mirrors Workspace document structure and can be saved/printed from mobile.
-- Gemini-verified payment fields are locked; visible transfer fees are deducted before submission. Manual entry is enabled only when Gemini returns a usage/configuration limit.
-- Login validation improved, “Log In” wording standardized, password visibility toggles added.
-- Payment processing + success confirmation screens added.
-- Project tracking route/timeline and time-locked folder icon added.
+## Workspace UX
+- Reorganized primary navigation hierarchy.
+- Standardized navigation icons, page headers, descriptions, controls, and interaction spacing.
+- Added stronger new-order inline validation and consistent email validation.
+- Added processing feedback for major actions.
+- Improved empty-state guidance and Business Snapshot presentation.
+- Added optional project Drive unlock/expiry controls inside Online Portal → Delivery Links.
+
+## Online UX
+- Redesigned Online as a mobile-first client portal.
+- Added three-step onboarding.
+- Improved Log In validation, show/hide password, loading, and password-change completion states.
+- Added focused Home dashboard with Active Project, Next Action, and Recent Activity.
+- Rebuilt project details around a vertical Order Tracker and deliverables checklist.
+- Added real Locked / Available / Expired project-folder states.
+- Improved Payment summary, Gemini verification messaging, manual fallback, processing, and confirmation.
+- Redesigned Shop into a compact service storefront with shared catalog data.
+- Standardized Account and Invoice mobile experience.
+
+## Database
+- Added migration `007_platform_v1_2.sql` for optional `drive_unlock_at` and `drive_expires_at` project fields.
+- No destructive migrations.
+
+## Compatibility
+- Existing Workspace and Online deployments stay separate.
+- Existing Supabase project remains the single source of truth.
+- Existing UnionBank QR asset is unchanged.

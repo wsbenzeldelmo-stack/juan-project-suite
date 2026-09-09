@@ -1,203 +1,95 @@
-# JUAN PROJECT Suite V1.1
+# JUAN PROJECT Platform V1.2
 
-JUAN PROJECT Suite has two frontends backed by **one shared Supabase project**:
+JUAN PROJECT Platform is one connected business system with two interfaces backed by the same Supabase project:
 
-- `workspace/` — JUAN PROJECT Workspace, seller/admin side
-- `online/` — JUAN PROJECT Online, client side
-- `supabase/` — additive migrations, verification SQL, and seeds
+- `workspace/` — **JUAN PROJECT Workspace**, seller/admin operations
+- `online/` — **JUAN PROJECT Online**, mobile-first client portal
+- `supabase/` — shared data, security, and additive migrations
 
-V1.1 is a full-suite patch. It preserves the existing business database and updates account provisioning, Online Portal administration, project delivery links, and the JUAN PROJECT Online UI/UX.
+V1.2 is a coordinated UX update. It does **not** create a second database or duplicate client/project/payment/catalog records.
 
-## V1.1 highlights
+## V1.2 focus
 
-### Workspace
+### JUAN PROJECT Workspace
 
-- Online Portal controls are integrated into the main Workspace navigation.
-- The old `/online-control.html` now redirects to `/#online-portal`.
-- Integrated Online Portal tabs:
-  - Client Accounts
-  - Payment Reviews
-  - Delivery Links
-  - Payment Setup
-- Admin-only **Create Missing Accounts** batch action.
-- New clients are provisioned for Online automatically when possible.
-- New-order flow reuses an existing client when the entered email already belongs to a saved client.
-- Client removal is changed to archive behavior so lifetime Client IDs are not reused.
-- Google Drive delivery is managed **one link per project**.
-
-### Client IDs
-
-`CL-###` tracks **unique clients**, independently from `JP-###` projects.
-
-- Client IDs are gapless after the V1.1 migration.
-- IDs are ordered by the client's first recorded project.
-- Repeat projects do not generate new Client IDs.
-- New unique clients receive the next Client ID.
-- Valid archived clients keep their Client ID so the lifetime client count is preserved.
-- Obvious spreadsheet placeholder rows such as a literal `Name` row are archived and excluded from the client counter.
-
-The legacy reference derived from the supplied current tracker is stored at:
-
-```text
-docs/LEGACY_CLIENT_SEQUENCE_V1_1.csv
-```
-
-### Client account model
-
-There is **no public Sign Up / Create Account / First Access** flow.
-
-For a newly provisioned client:
-
-```text
-Login email        = client's registered email
-Temporary password = Client ID, e.g. CL-017
-```
-
-The temporary password exists only in Supabase Auth. It is never stored in the public `clients` table.
-
-First login flow:
-
-```text
-Email + temporary CL-### password
-        ↓
-Change Your Password
-        ↓
-portal_accounts.password_set = true
-        ↓
-normal Online access
-```
-
-Batch provisioning is idempotent and does not reset activated client passwords. Accounts still in temporary-password state may be synchronized to their current Client ID after the V1.1 Client ID resequence.
+- clearer navigation hierarchy grouped into Work, Finance, Operations, and System
+- **New Order** is visually treated as a primary action instead of another equal-priority destination
+- one consistent line-icon language across main navigation
+- standardized page header, description, toolbar, filter, form, table, and modal treatment
+- more consistent inline validation for critical new-order fields and email inputs
+- visible processing states for important save/create/payment/export actions
+- improved empty states and clearer operational copy
+- decision-focused Business Snapshot styling
+- Online Portal remains integrated into Workspace
+- Delivery Links now support optional **Unlock** and **Expiry** timestamps for one Google Drive folder per project
 
 ### JUAN PROJECT Online
 
-The approved UI storyboard is included at:
+V1.2 reframes Online as a standard mobile-first client portal with five consistent destinations:
 
 ```text
-docs/reference/JUAN_PROJECT_ONLINE_UI_REFERENCE.png
+Home
+Orders
+Payment
+Shop
+Account
 ```
 
-It is the strict visual reference for the Online app.
+Key changes:
 
-Online V1.1 includes:
+- three-screen value-led onboarding
+- **Log In** terminology; no public Sign Up/Create Account/First Access
+- inline email/password validation and generic wrong-credential feedback
+- show/hide password controls
+- clearer first-login password-change flow and success state
+- Home emphasizes Active Project, Next Action, and Recent Activity
+- Order Tracker uses a vertical parcel-style project journey
+- deliverables checklist lives under the tracker
+- project folder always appears at the bottom of Order Tracker with Locked / Available / Expired states
+- one Google Drive URL remains attached to one project
+- payment page has project total, amount paid, balance due, secure receipt verification, processing, and confirmation states
+- Gemini-read payment fields remain locked unless Gemini is unavailable/rate-limited
+- Shop is a compact mobile storefront with search, service IDs, and price sorting
+- Account page uses grouped client-portal settings
+- invoice remains a JUAN PROJECT document and supports Save / Print from mobile
+- lightweight activity/notification sheet
 
-- Welcome
-- two-step onboarding
-- Sign In
-- forced first-login password change
-- client Dashboard
-- My Projects
-- Project Details
-- Payment
-- Invoice
-- Settings
-- guest-accessible Shop
-- standardized Sign In Required modal for protected pages
+## Shared business rules preserved
 
-Guests may browse Home and Shop. Projects, payments, invoices, settings, and private project files require authentication.
+- one Supabase project
+- one clients table
+- one projects table
+- one payment source of truth
+- one catalog managed from Workspace
+- one invoice/calculation source of truth
+- Client IDs remain unique-client counters
+- project files are one Drive link per project
+- payment submissions remain Pending until admin approval
+- only approved payments affect Amount Paid / Balance Due / revenue
+- UnionBank QR asset remains unchanged
 
-### Shop
+## V1.2 migration
 
-Online Shop uses the **same shared catalog managed by Workspace**.
-
-The V1.1 Online Shop is intentionally simple:
-
-- no product thumbnails
-- compact text-only rows
-- search
-- All / Services / Packages / Tutorials filters
-- title, category, short description, price, View action
-
-There is no second Online catalog database.
-
-### Project Google Drive links
-
-V1.1 changes delivery-link ownership to:
+After backing up Supabase, run:
 
 ```text
-Client
-├── JP-001 → Drive folder A
-├── JP-004 → Drive folder B
-└── JP-009 → Drive folder C
+supabase/migrations/007_platform_v1_2.sql
 ```
 
-One URL belongs to one project. Repeat clients may therefore have different Drive folders for different projects.
-
-### Payment
-
-Payment remains approval-based:
+This adds only:
 
 ```text
-Client uploads receipt
-        ↓
-Pending
-        ↓
-Workspace → Online Portal → Payment Reviews
-        ↓
-Approved / Rejected
+projects.drive_unlock_at
+projects.drive_expires_at
 ```
 
-Only approved payments affect Amount Paid, Balance Due, revenue, and canonical payment history.
-
-The bundled UnionBank asset is:
-
-```text
-online/assets/unionbank-bankqr-placeholder.jpg
-```
-
-It is packaged byte-for-byte from the supplied bank QR image. Leave the Payment Setup QR URL blank to use this bundled file.
-
-## Required migration for V1.1
-
-Back up Supabase first. Then run the existing migrations if they are not already installed:
-
-```text
-001_shared_database_foundation.sql
-002_updated_at_triggers.sql
-003_shared_sync_security.sql
-004_catalog_workspace_sync.sql
-```
-
-For this update, run:
-
-```text
-supabase/migrations/005_suite_v1_1.sql
-```
-
-Then run:
-
-```text
-supabase/verify_v1_1.sql
-```
-
-Migration 005:
-
-- adds `projects.drive_url`
-- adds `clients.archived_at`
-- adds `portal_accounts.portal_enabled`
-- backfills project Drive URLs where an older project had exactly one visible deliverable Drive URL
-- resequences valid Client IDs gaplessly by first project
-- updates future Client-ID allocation
-
-## After migration
-
-Deploy/push the updated suite, sign in to Workspace, and open:
-
-```text
-Online Portal → Client Accounts
-```
-
-Click:
-
-```text
-Create Missing Accounts
-```
-
-Review the result summary. Records with missing/invalid emails or duplicate emails are not silently provisioned.
+These fields are optional. Existing Drive links continue to work. If no unlock timestamp is set, a valid Drive link is immediately available. If no expiry timestamp is set, it does not automatically expire.
 
 ## Environment variables
 
-### Workspace
+No new environment variables are required.
+
+Workspace:
 
 ```text
 SUPABASE_URL
@@ -205,58 +97,28 @@ SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SECRET_KEY
 ```
 
-### Online
+Online:
 
 ```text
 SUPABASE_URL
 SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SECRET_KEY
 ONLINE_PUBLIC_URL
-GEMINI_API_KEY    # optional, receipt reading only
+GEMINI_API_KEY
 ```
 
-Never expose the Supabase secret/service key or Gemini API key in browser JavaScript.
+Keep Supabase secret/service credentials and Gemini keys server-side only.
 
 ## Deployment
 
-The architecture remains unchanged:
+The deployment architecture remains unchanged:
 
 ```text
-GitHub: juan-project-suite
-        │
-        ├── workspace/ → Vercel Workspace project
-        └── online/    → Vercel Online project
-                         │
-                         └── SAME Supabase project
+GitHub repository
+├── workspace/ → JUAN PROJECT Workspace Vercel project
+└── online/    → JUAN PROJECT Online Vercel project
+
+Both → same Supabase project
 ```
 
-## Local/build verification
-
-From the suite root:
-
-```bash
-bash scripts/verify-build.sh
-```
-
-Expected output:
-
-```text
-JUAN PROJECT Suite V1.1 verification passed.
-```
-
-## Recommended deployment order
-
-1. Export/backup the current Supabase database.
-2. Run `005_suite_v1_1.sql`.
-3. Run `verify_v1_1.sql`.
-4. Apply this code patch locally.
-5. Run `bash scripts/verify-build.sh`.
-6. Commit and push to GitHub.
-7. Wait for Workspace and Online Vercel deployments to become Ready.
-8. Workspace → Online Portal → Client Accounts → Create Missing Accounts.
-9. Test one past client with their email + current `CL-###` temporary password.
-10. Confirm first login forces Change Password.
-11. Verify Client A cannot access Client B's data.
-12. Verify project Drive URLs and payment approval.
-
-See `docs/QA_CHECKLIST.md`, `docs/PRODUCTION_SECURITY.md`, and `docs/ARCHITECTURE.md` for more detail.
+Run `scripts/verify-build.sh` before pushing.

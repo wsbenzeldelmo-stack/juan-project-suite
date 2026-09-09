@@ -947,6 +947,7 @@
       .catalog-manager-simple .table-card{width:100%;margin-bottom:16px;}
       @media(max-width:900px){#view-pricelist .catalog-toolbar{align-items:stretch}.catalog-toolbar .toolbar-actions{flex-wrap:wrap}.catalog-toolbar #catalogManagerSearch{min-width:100%}}
 </style>
+  <link rel="stylesheet" href="/css/v1-2-ux.css">
 </head>
 <body>
 
@@ -1499,8 +1500,8 @@
           <button class="btn btn-secondary" id="onlinePortalRefreshBtn">Refresh</button>
         </header>
         <div class="online-portal-intro card">
-          <div><strong>JUAN PROJECT Online</strong><p>Manage client access, payment reviews, one Google Drive link per project, and client payment setup from the main Workspace.</p></div>
-          <span class="status-badge status-green">V1.1</span>
+          <div><strong>JUAN PROJECT Online</strong><p>Manage client access, payment reviews, one Google Drive link per project with optional time-lock availability, and client payment setup from the main Workspace.</p></div>
+          <span class="status-badge status-green">V1.2</span>
         </div>
         <div class="portal-tabs" id="onlinePortalTabs">
           <button type="button" data-portal-tab="accounts" class="active">Client Accounts</button>
@@ -1523,7 +1524,7 @@
         </div>
         <div id="onlinePortalDeliveryPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>One Drive folder per project.</strong><span>Repeat clients can have different Google Drive folders for each JP-###.</span></div>
-          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Client</th><th>Project</th><th>Google Drive Link</th><th>Action</th></tr></thead><tbody id="onlinePortalDeliveryRows"></tbody></table></div></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Client</th><th>Project</th><th>Google Drive Link</th><th>Unlocks</th><th>Expires</th><th>Access</th><th>Action</th></tr></thead><tbody id="onlinePortalDeliveryRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalSettingsPanel" class="portal-panel hidden">
           <div class="card portal-payment-settings"><div class="form-grid"><div><div class="form-group"><label class="form-label">Payment Method</label><input id="portalMethodLabel" class="form-control" placeholder="UnionBank InstaPay"></div><div class="form-group"><label class="form-label">Account Name</label><input id="portalAccountName" class="form-control"></div><div class="form-group"><label class="form-label">Account Number</label><input id="portalAccountNumber" class="form-control"></div></div><div><div class="form-group"><label class="form-label">QR Image URL</label><input id="portalQrImageUrl" class="form-control" placeholder="Optional URL; blank uses bundled UnionBank QR"></div><div class="form-group"><label class="form-label">Instructions</label><textarea id="portalInstructions" class="form-control" rows="5"></textarea></div></div></div><button id="portalSavePaymentSettings" class="btn btn-primary">Save Payment Setup</button><p class="text-sm text-muted mt-2">Leaving QR Image URL blank uses the supplied UnionBank QR asset without altering it.</p></div>
@@ -5879,11 +5880,13 @@ ${description}`))actionCallback();return;}
           return `<tr><td>${escapeHtml(c?.name||c?.email||"—")}</td><td><strong>${escapeHtml(p?.project_code||p?.title||"—")}</strong><div class="text-sm text-muted">${escapeHtml(p?.title||"")}</div></td><td><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td>${escapeHtml(x.reference_number||x.extracted_reference||"—")}</td><td>${escapeHtml(x.payment_method||"—")}</td><td>${escapeHtml(x.payment_date||"—")}</td><td>${x.receipt_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(x.receipt_url)}" target="_blank" rel="noopener">Open</a>`:"—"}</td><td><span class="portal-status ${x.status==="pending"?"portal-warn":"portal-ok"}">${escapeHtml(x.status||"—")}</span></td><td>${x.status==="pending"?`<div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="approved">Approve</button><button class="btn btn-secondary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="rejected">Reject</button></div>`:"—"}</td></tr>`;
         }).join("")||`<tr><td colspan="9" class="text-center text-muted">No payment submissions.</td></tr>`;
 
+        const toLocalInput=value=>{if(!value)return"";const d=new Date(value);if(Number.isNaN(d.getTime()))return"";const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16)};
+        const driveState=p=>{const now=Date.now(),unlock=p.drive_unlock_at?new Date(p.drive_unlock_at).getTime():null,expires=p.drive_expires_at?new Date(p.drive_expires_at).getTime():null;if(expires&&now>expires)return["Expired","expired"];if(!p.drive_url||unlock&&now<unlock)return["Locked","locked"];return["Available","available"]};
         const deliveryRows=document.getElementById("onlinePortalDeliveryRows");
         if(deliveryRows)deliveryRows.innerHTML=(data.projects||[]).map(p=>{
-          const c=clientMap.get(String(p.client_id));
-          return `<tr><td><strong>${escapeHtml(p.project_code||p.id)}</strong></td><td>${escapeHtml(c?.name||c?.email||"—")}</td><td>${escapeHtml(p.title||"—")}</td><td><input class="form-control portal-drive-input" data-project="${escapeHtml(p.id)}" value="${escapeHtml(p.drive_url||"")}" placeholder="https://drive.google.com/…"></td><td><div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-drive-save" data-project="${escapeHtml(p.id)}">Save</button>${p.drive_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(p.drive_url)}" target="_blank" rel="noopener">Open</a>`:""}</div></td></tr>`;
-        }).join("")||`<tr><td colspan="5" class="text-center text-muted">No projects found.</td></tr>`;
+          const c=clientMap.get(String(p.client_id)),[accessLabel,accessClass]=driveState(p);
+          return `<tr><td><strong>${escapeHtml(p.project_code||p.id)}</strong></td><td>${escapeHtml(c?.name||c?.email||"—")}</td><td>${escapeHtml(p.title||"—")}</td><td><input class="form-control portal-drive-input" data-project="${escapeHtml(p.id)}" value="${escapeHtml(p.drive_url||"")}" placeholder="https://drive.google.com/…"></td><td><input type="datetime-local" class="form-control portal-datetime-input portal-drive-unlock" data-project="${escapeHtml(p.id)}" value="${escapeHtml(toLocalInput(p.drive_unlock_at))}"></td><td><input type="datetime-local" class="form-control portal-datetime-input portal-drive-expires" data-project="${escapeHtml(p.id)}" value="${escapeHtml(toLocalInput(p.drive_expires_at))}"></td><td><span class="portal-drive-state ${accessClass}">${accessLabel}</span></td><td><div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-drive-save" data-project="${escapeHtml(p.id)}">Save</button>${p.drive_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(p.drive_url)}" target="_blank" rel="noopener">Open</a>`:""}</div></td></tr>`;
+        }).join("")||`<tr><td colspan="8" class="text-center text-muted">No projects found.</td></tr>`;
 
         const settings=data.settings||{};
         const setValue=(id,value)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=value||"";};
@@ -5900,8 +5903,8 @@ ${description}`))actionCallback();return;}
         });
         document.querySelectorAll(".portal-payment-review").forEach(btn=>btn.onclick=()=>runOnlinePortalAction({action:"review-payment",id:btn.dataset.id,decision:btn.dataset.decision},`Payment ${btn.dataset.decision}.`,true));
         document.querySelectorAll(".portal-drive-save").forEach(btn=>btn.onclick=()=>{
-          const input=document.querySelector(`.portal-drive-input[data-project="${CSS.escape(btn.dataset.project)}"]`);
-          runOnlinePortalAction({action:"save-project-drive-link",projectId:btn.dataset.project,url:input?.value||""},"Project Google Drive link saved.",true);
+          const project=CSS.escape(btn.dataset.project),input=document.querySelector(`.portal-drive-input[data-project="${project}"]`),unlock=document.querySelector(`.portal-drive-unlock[data-project="${project}"]`),expires=document.querySelector(`.portal-drive-expires[data-project="${project}"]`);
+          runOnlinePortalAction({action:"save-project-drive-link",projectId:btn.dataset.project,url:input?.value||"",unlockAt:unlock?.value||null,expiresAt:expires?.value||null},"Project Drive access saved.",true);
         });
       }
 
@@ -6094,6 +6097,7 @@ ${description}`))actionCallback();return;}
       });
     });
   </script>
+  <script src="/js/v1-2-ux.js"></script>
 
 <style>
 @media (max-width: 720px) {

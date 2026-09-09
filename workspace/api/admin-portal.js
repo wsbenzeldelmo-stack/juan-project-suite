@@ -127,7 +127,7 @@ export default async function handler(req,res){
       const [submissions,settings,projects,deliverables,accountSnapshot]=await Promise.all([
         svc.from('payment_submissions').select('*').order('submitted_at',{ascending:false}).limit(100),
         svc.from('payment_settings').select('*').eq('id',1).maybeSingle(),
-        svc.from('projects').select('id,title,client_id,project_code,status,drive_url').order('project_code',{ascending:true,nullsFirst:false}),
+        svc.from('projects').select('id,title,client_id,project_code,status,deadline_date,drive_url,drive_unlock_at,drive_expires_at').order('project_code',{ascending:true,nullsFirst:false}),
         svc.from('deliverables').select('id,project_id,item_name,client_visible,due_date,completed').order('project_id'),
         getClientAccountSnapshot(svc)
       ]);
@@ -231,7 +231,16 @@ export default async function handler(req,res){
       if(!id)return res.status(400).json({error:'Project is required.'});
       const drive=String(body.url||'').trim();
       if(!validDrive(drive))return res.status(400).json({error:'Enter a valid Google Drive link.'});
-      const upd=await svc.from('projects').update({drive_url:drive||null}).eq('id',id);
+      const unlockAt=body.unlockAt?new Date(body.unlockAt):null;
+      const expiresAt=body.expiresAt?new Date(body.expiresAt):null;
+      if(unlockAt&&Number.isNaN(unlockAt.getTime()))return res.status(400).json({error:'Enter a valid folder unlock date and time.'});
+      if(expiresAt&&Number.isNaN(expiresAt.getTime()))return res.status(400).json({error:'Enter a valid folder expiry date and time.'});
+      if(unlockAt&&expiresAt&&expiresAt<=unlockAt)return res.status(400).json({error:'Folder expiry must be later than the unlock time.'});
+      const upd=await svc.from('projects').update({
+        drive_url:drive||null,
+        drive_unlock_at:unlockAt?unlockAt.toISOString():null,
+        drive_expires_at:expiresAt?expiresAt.toISOString():null
+      }).eq('id',id);
       if(upd.error)throw upd.error;
       return res.status(200).json({ok:true});
     }

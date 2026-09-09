@@ -11,7 +11,7 @@ export default async function handler(req,res){
     const clientRes=await svc.from('clients').select('id,name,email,phone,address,client_code').eq('id',account.client_id).single();
     if(clientRes.error)throw clientRes.error;
 
-    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,total_amount,subtotal_amount,discount_amount,rush_fee,system_maintenance_fee,workload_surcharge,start_date,deadline_date,drive_url,invoice_number,invoice_issue_date,invoice_due_date').eq('client_id',account.client_id).order('id',{ascending:false});
+    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,total_amount,subtotal_amount,discount_amount,rush_fee,system_maintenance_fee,workload_surcharge,start_date,deadline_date,drive_url,drive_unlock_at,drive_expires_at,invoice_number,invoice_issue_date,invoice_due_date').eq('client_id',account.client_id).order('id',{ascending:false});
     if(projectsRes.error)throw projectsRes.error;
     const projects=projectsRes.data||[];
     const ids=projects.map(p=>p.id);
@@ -33,7 +33,7 @@ export default async function handler(req,res){
       let ds=deliverables.filter(d=>d.project_id===p.id&&d.client_visible!==false).map(d=>({
         id:d.id,project_id:d.project_id,item_name:d.item_name||d.name||'Deliverable',completed:Boolean(d.completed),
         status:d.status||(d.completed?'Completed':'Pending'),progress:Number(d.progress||0),due_date:d.due_date||p.deadline_date,
-        client_visible:d.client_visible!==false
+        client_visible:d.client_visible!==false,completed_at:d.completed_at||null
       }));
       const its=items.filter(i=>i.project_id===p.id).map(i=>({id:i.id,project_id:i.project_id,name:i.name,price:Number(i.price||0),qty:Number(i.qty||1),type:i.type||'Item'}));
       if(!ds.length)ds=its.map((i,idx)=>({id:`derived-${p.id}-${idx}`,project_id:p.id,item_name:i.name,completed:false,status:'Pending',progress:0,due_date:p.deadline_date,client_visible:true}));
