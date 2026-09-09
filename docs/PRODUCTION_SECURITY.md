@@ -1,117 +1,59 @@
-# Production Security — JUAN PROJECT Suite V1
+# JUAN PROJECT Suite V1.1 — Production Security
 
-## Security boundary
+## Account provisioning
 
-JUAN PROJECT Workspace is the seller/admin authority. JUAN PROJECT Online is a client-facing application with access limited to the authenticated client's own data.
-
-The UI is not the security boundary. Supabase Auth, server-side session verification, Row Level Security, private Storage, and server-only service credentials are the security boundary.
+- No public Sign Up / Create Account / First Access flow.
+- Admin creates/provisions client Auth accounts server-side.
+- Temporary password is the current `CL-###` for newly provisioned accounts.
+- The temporary password is never stored in `clients` or exposed through public APIs.
+- `password_set=false` forces a password change before protected Online use.
+- Activated passwords are preserved during batch provisioning.
 
 ## Secrets
 
-Server-only:
-- `SUPABASE_SECRET_KEY` / service-role equivalent
+Never expose:
+
+- `SUPABASE_SECRET_KEY` / service-role key
 - `GEMINI_API_KEY`
 
-Browser-safe:
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY` / anon key
+Only publishable/anon Supabase credentials may be returned to browser code.
 
-Never commit `.env` files. Never copy the service-role key or Gemini key into HTML/JS served to the browser.
+## Authorization
 
-## Authentication
+Client ownership must be checked server-side for:
 
-### Workspace
-- Requires Supabase email/password authentication.
-- The signed-in Auth user must also have `user_roles.role = 'admin'`.
-- The Workspace's old local UI gate is not treated as authorization.
+- projects
+- deliverables
+- invoices
+- payments
+- payment submissions
+- project Drive URLs
 
-### Online
-- Existing clients use First Access, where a secure email link verifies ownership before a password is created.
-- Future clients can sign up with email/password.
-- Passwords are owned by Supabase Auth; no password column is added to `clients`.
-- Minimum password length enforced by the UI is 10 characters. Configure equal or stronger password policy in Supabase Auth.
+Do not trust a client-supplied project/client ID without verifying it belongs to the authenticated portal account.
 
-## Account enumeration
+## Payment receipts
 
-`/api/start-access` deliberately returns a generic success response whether or not the email exists as a JUAN PROJECT client. Do not change this to messages such as "client not found" on the public First Access route.
+- Storage bucket remains private.
+- Client uploads are scoped to the authenticated user.
+- Admin receives short-lived signed receipt URLs.
+- Accepted files: JPG/JPEG/PNG/PDF, max 5 MB.
+- Gemini extraction is server-side and advisory only.
+- Payment remains Pending until admin approval.
 
-## Rate limiting
+## Client provisioning safety
 
-Migration 003 adds a server-only persistent rate-limit table and function. The included APIs use it for:
-- First Access requests
-- Gemini receipt extraction
-- Payment submission
+Batch creation:
 
-For login/sign-up abuse, also configure Supabase Auth rate limits and CAPTCHA/anti-bot controls when moving from limited client rollout to a public storefront.
+- skips invalid email addresses
+- reports duplicate emails
+- never converts admin accounts to client accounts
+- never resets already activated portal passwords
+- is safe to run again
 
-## Client isolation
+## Client IDs
 
-Before launch, use two real test Auth accounts linked to two different client rows.
+V1.1 archives clients instead of hard-deleting them through Workspace. This preserves the lifetime Client-ID sequence and prevents IDs from being reused.
 
-Client A must fail to access:
-- Client B profile
-- Client B projects
-- Client B project items
-- Client B deliverables
-- Client B payment submissions
-- Client B private receipts
-- Client B Drive links
+## Google Drive
 
-The Online APIs resolve ownership from the authenticated user -> `portal_accounts.client_id`; do not trust a client-supplied `client_id`.
-
-## Payments
-
-A receipt upload is not an approved payment.
-
-Flow:
-1. Client uploads private proof.
-2. Gemini may extract fields.
-3. Client reviews and submits.
-4. `payment_submissions.status = 'pending'`.
-5. Admin approves/rejects.
-6. Only approval inserts into canonical `payments`.
-
-Migration 003 provides `review_juan_payment_submission`, which locks the submission and checks the live project balance before crediting it.
-
-Never auto-approve based on Gemini output.
-
-## Receipt Storage
-
-Bucket: `payment-receipts`
-
-Expected controls:
-- private bucket
-- max 5 MB
-- `image/jpeg`, `image/png`, `application/pdf`
-- client path starts with their Auth user ID
-- admin receives only short-lived signed URLs for review
-
-## Google Drive links
-
-Drive URLs are treated as delivery references, not as authorization by themselves.
-
-The API only returns a link when:
-- the deliverable belongs to a project owned by the authenticated client; and
-- `client_visible` is not false.
-
-The Google Drive file/folder itself should also have appropriate sharing permissions. Avoid publishing confidential project folders to "Anyone on the internet" unless intentionally required.
-
-## Admin catalog
-
-Catalog write policies are admin-only. Online clients/anonymous users may only read active catalog rows when Shop is enabled later.
-
-## Public Workspace bundle
-
-Production `workspace/index.html` intentionally does not embed the historical Payment Tracker client dataset. Client/project data must come from protected Supabase or existing browser localStorage behind the auth gate during migration.
-
-## Recommended prelaunch settings
-
-- Enable email verification for new future-client sign-ups.
-- Configure Supabase SMTP/custom email sender when ready.
-- Configure Auth password policy >= 10 characters.
-- Configure CAPTCHA/Turnstile before opening self-service sign-up broadly.
-- Enable Supabase database backups/PITR according to plan availability.
-- Use separate Vercel Production and Preview environment variables.
-- Keep preview URLs out of search indexing.
-- Test account recovery before launch.
-- Periodically rotate service/API credentials.
+V1.1 exposes only the authenticated client's own `projects.drive_url` values. Sharing permissions in Google Drive must still be configured correctly by the admin.

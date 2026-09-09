@@ -1,48 +1,30 @@
-# JUAN PROJECT Suite V1 — Release Notes
+# JUAN PROJECT Suite V1.1 — Release Notes
 
-## Naming
-- **JUAN PROJECT Workspace** — admin/seller application
-- **JUAN PROJECT Online** — client and future-client application
+## Added
+- Integrated Online Portal management inside the main Workspace.
+- Client Accounts administration and batch account provisioning.
+- Portal enable/disable and forced password-change controls.
+- Project-level Google Drive URL management.
+- V1.1 Supabase migration and verification SQL.
+- Strict JUAN PROJECT Online UI reference packaged under `docs/reference/`.
+- Legacy unique-client sequence reference from the latest tracker.
+- Online Shop search and compact category filters.
 
-Both applications use the same Supabase project and the same business records.
+## Changed
+- Client IDs are resequenced as gapless unique-client IDs, independent from project IDs.
+- New client creation reuses an existing client when the email already exists.
+- Client removal is now archive behavior so Client IDs are not reused.
+- Public Sign Up / Create Account / First Access is disabled.
+- Client login is email + temporary Client ID password for newly provisioned accounts.
+- First login requires a password change.
+- Online project files now use one Google Drive link per project.
+- Online Shop uses the shared Workspace catalog and the approved no-image mobile layout.
+- Legacy `/online-control.html` redirects to the integrated Workspace module.
 
-## Included in this release
-
-### Workspace
-- Existing seller Workspace retained and production-gated with Supabase Auth.
-- Standardized project/client display IDs.
-- Approved simplified Shop table layout with no Shop checkboxes.
-- Shared catalog synchronization to Supabase.
-- Deliverable/project synchronization for Online tracking.
-- Online Portal Control for payment review, Drive links, and payment setup.
-- Local-only legacy migration bridge after secure admin login.
-- Public HTML no longer embeds historical Payment Tracker client records.
-
-### Online
-- Sign in / secure First Access / future-client sign-up.
-- Orders and deliverable tracking.
-- Due countdowns.
-- Admin-shared Google Drive links.
-- Payments and private receipt upload.
-- Optional Gemini receipt field extraction.
-- Pending approval workflow.
-- Invoice view.
-- Password change.
-- Shop placeholder for V1.
-
-### Backend
-- Additive Supabase migrations.
-- Auth roles and portal-account mapping.
-- RLS foundation.
-- Private receipt Storage policies.
-- Rate limiting.
-- Atomic payment approval.
-- Stable future `CL-###`, `JP-###`, `SRV-###`, and `PKG-###` support.
-
-## Not yet enabled
-- Online Shop/cart/checkout.
-- Messaging.
-- Automated payment gateway.
-- Auto-approved AI payments.
-
-The database structure is already designed so these can be added without creating another database.
+## Preserved
+- One Supabase database for Workspace and Online.
+- Canonical Workspace invoice/payment calculations.
+- Pending client payments do not affect financial totals until approved.
+- Private receipt storage and signed receipt review links.
+- Existing activated client passwords are not reset by batch provisioning.
+- UnionBank QR asset is preserved byte-for-byte.

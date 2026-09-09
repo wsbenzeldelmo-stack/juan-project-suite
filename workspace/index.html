@@ -978,7 +978,7 @@
         <div class="nav-section-label">CATALOG</div>
         <a href="#" class="nav-item" data-view="pricelist"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Shop</a>
         <div class="nav-divider"></div>
-        <a href="/online-control.html" class="nav-item"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg></span>Online Portal</a>
+        <a href="#" class="nav-item" data-view="online-portal"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h5"/><circle cx="17" cy="15" r="2"/><path d="M17 17v2"/></svg></span>Online Portal</a>
         <a href="#" class="nav-item" data-view="settings"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33A1.65 1.65 0 0 0 14 21v.09a2 2 0 0 1-4 0V21a1.65 1.65 0 0 0-1.51-1.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.23 15H4a2 2 0 0 1 0-4h.23a1.65 1.65 0 0 0 1.51-1.6 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 4.23V4a2 2 0 0 1 4 0v.23a1.65 1.65 0 0 0 1.51 1.51l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.77 11H20a2 2 0 0 1 0 4h-.23a1.65 1.65 0 0 0-1.51 0z"/></svg></span>Settings</a>
       </nav>
 
@@ -1489,6 +1489,44 @@
         <div class="catalog-manager-main catalog-manager-simple">
           <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Name</th><th>Category</th><th>Description</th><th>Price</th><th>Actions</th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
           <div class="card table-card" id="catalogPackagesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title">Packages</h2></div><button class="btn btn-secondary btn-sm" onclick="app.openCatalogPackageModal()">+ New Package</button></div><div class="table-responsive"><table class="data-table unified-table catalog-packages-table"><thead><tr><th>Package Name</th><th>Package Inclusions</th><th>Original Price</th><th>New Price</th><th>Actions</th></tr></thead><tbody id="catalogPackagesBody"></tbody></table></div></div>
+        </div>
+      </section>
+
+      <!-- VIEW: ONLINE PORTAL — integrated V1.1 admin control layer -->
+      <section id="view-online-portal" class="view">
+        <header class="page-header">
+          <div><div class="greeting-subtitle">Client Experience</div><h1 class="page-title">Online Portal</h1></div>
+          <button class="btn btn-secondary" id="onlinePortalRefreshBtn">Refresh</button>
+        </header>
+        <div class="online-portal-intro card">
+          <div><strong>JUAN PROJECT Online</strong><p>Manage client access, payment reviews, one Google Drive link per project, and client payment setup from the main Workspace.</p></div>
+          <span class="status-badge status-green">V1.1</span>
+        </div>
+        <div class="portal-tabs" id="onlinePortalTabs">
+          <button type="button" data-portal-tab="accounts" class="active">Client Accounts</button>
+          <button type="button" data-portal-tab="payments">Payment Reviews</button>
+          <button type="button" data-portal-tab="delivery">Delivery Links</button>
+          <button type="button" data-portal-tab="settings">Payment Setup</button>
+        </div>
+        <div id="onlinePortalLoading" class="card portal-loading hidden">Loading Online Portal data…</div>
+        <div id="onlinePortalError" class="card portal-error hidden"></div>
+        <div id="onlinePortalAccountsPanel" class="portal-panel">
+          <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
+          <div class="view-toolbar unified-toolbar portal-toolbar">
+            <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
+            <div class="toolbar-actions"><button id="onlinePortalProvisionAll" class="btn btn-primary">Create Missing Accounts</button></div>
+          </div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
+        </div>
+        <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client</th><th>Project</th><th>Amount</th><th>Reference</th><th>Method</th><th>Date</th><th>Receipt</th><th>Status</th><th>Actions</th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
+        </div>
+        <div id="onlinePortalDeliveryPanel" class="portal-panel hidden">
+          <div class="card portal-note"><strong>One Drive folder per project.</strong><span>Repeat clients can have different Google Drive folders for each JP-###.</span></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Client</th><th>Project</th><th>Google Drive Link</th><th>Action</th></tr></thead><tbody id="onlinePortalDeliveryRows"></tbody></table></div></div>
+        </div>
+        <div id="onlinePortalSettingsPanel" class="portal-panel hidden">
+          <div class="card portal-payment-settings"><div class="form-grid"><div><div class="form-group"><label class="form-label">Payment Method</label><input id="portalMethodLabel" class="form-control" placeholder="UnionBank InstaPay"></div><div class="form-group"><label class="form-label">Account Name</label><input id="portalAccountName" class="form-control"></div><div class="form-group"><label class="form-label">Account Number</label><input id="portalAccountNumber" class="form-control"></div></div><div><div class="form-group"><label class="form-label">QR Image URL</label><input id="portalQrImageUrl" class="form-control" placeholder="Optional URL; blank uses bundled UnionBank QR"></div><div class="form-group"><label class="form-label">Instructions</label><textarea id="portalInstructions" class="form-control" rows="5"></textarea></div></div></div><button id="portalSavePaymentSettings" class="btn btn-primary">Save Payment Setup</button><p class="text-sm text-muted mt-2">Leaving QR Image URL blank uses the supplied UnionBank QR asset without altering it.</p></div>
         </div>
       </section>
 
@@ -2134,7 +2172,10 @@
           overviewDeadlines: "date"
         },
         packageBuilderSelectedNames: [],
-        calendarDate: new Date()
+        calendarDate: new Date(),
+        onlinePortalTab: "accounts",
+        onlinePortalData: null,
+        onlinePortalLoading: false
       };
 
       // Profile Cropping State Variables
@@ -3113,7 +3154,7 @@ ${description}`))actionCallback();return;}
           const remoteProjectIds = new Set((projectsRes.data || []).map(row => String(row.id)));
 
           if (clientsRes.data && clientsRes.data.length > 0) {
-            state.clients = clientsRes.data;
+            state.clients = clientsRes.data.filter(c => !c.archived_at);
           }
           const localClients = localStorage.getItem("JUAN_CLIENTS_LOCAL");
           if (localClients) {
@@ -3226,6 +3267,7 @@ ${description}`))actionCallback();return;}
         if (state.activeView === "clients") renderClients();
         if (state.activeView === "client-profile") renderClientProfile();
         if (state.activeView === "pricelist") renderPricelist();
+        if (state.activeView === "online-portal") renderOnlinePortal();
       }
 
 
@@ -4556,16 +4598,58 @@ ${description}`))actionCallback();return;}
         }
       }
 
+      async function provisionOnlineAccountForClient(clientId) {
+        if (!supabaseClient || !state.isConnected || !clientId) return null;
+        try {
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (!session?.access_token) return null;
+          const response = await fetch('/api/admin-portal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ action: 'provision-client-account', clientId })
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(payload.error || 'Client portal account could not be created.');
+          return payload.result || null;
+        } catch (e) {
+          console.warn('Online client account provisioning needs attention:', e?.message || e);
+          return null;
+        }
+      }
+
       async function syncNewClientToDatabase(client) {
         if (!supabaseClient || !state.isConnected || !client) return;
         try {
-          const { error } = await supabaseClient.from('clients').insert([{
+          const email = String(client.email || "").trim();
+          if (email) {
+            const existing = await supabaseClient.from('clients').select('id,name,email,phone,address,client_code').ilike('email', email).limit(1).maybeSingle();
+            if (existing.error) throw existing.error;
+            if (existing.data) {
+              const oldId = client.id;
+              client.id = existing.data.id;
+              client.client_code = existing.data.client_code;
+              client.name = existing.data.name || client.name;
+              client.email = existing.data.email || client.email;
+              state.projects.forEach(p => { if (p.client_id === oldId) p.client_id = existing.data.id; });
+              state.clients = state.clients.filter(c => c === client || c.id !== existing.data.id);
+              persistClientsState();
+              persistProjectsState();
+              await provisionOnlineAccountForClient(existing.data.id);
+              showToast(`Existing client ${existing.data.client_code || ''} reused. No duplicate Client ID was created.`);
+              return;
+            }
+          }
+          const { data, error } = await supabaseClient.from('clients').insert([{
             name: client.name,
             email: client.email,
             phone: client.phone,
             address: client.address
-          }]);
+          }]).select('id,name,email,phone,address,client_code').single();
           if (error) throw error;
+          if (data?.id) client.id = data.id;
+          if (data?.client_code) client.client_code = data.client_code;
+          persistClientsState();
+          if (data?.id) await provisionOnlineAccountForClient(data.id);
           showToast("Client synchronized successfully.");
         } catch (e) {
           console.error("New client sync retry failed:", e);
@@ -4617,23 +4701,40 @@ ${description}`))actionCallback();return;}
           clientEmail = document.getElementById("newClientEmail").value.trim();
           const phone = document.getElementById("newClientPhone").value.trim();
           const address = document.getElementById("newClientAddress").value.trim();
+          const normalizedEmail = clientEmail.toLowerCase();
+          const matchedClient = normalizedEmail ? state.clients.find(c => String(c.email || "").trim().toLowerCase() === normalizedEmail) : null;
 
-          const newClient = { id: 'client_' + Date.now(), name: clientName, email: clientEmail, phone, address };
-          state.clients.push(newClient);
-          clientId = newClient.id;
-          persistClientsState();
+          if (matchedClient) {
+            clientId = matchedClient.id;
+            clientName = matchedClient.name || clientName;
+            clientEmail = matchedClient.email || clientEmail;
+            state.cart.selectedClientId = matchedClient.id;
+            showToast(`Existing client ${formatClientId(matchedClient)} matched by email. Reusing the same Client ID.`);
+          } else {
+            const newClient = { id: 'client_' + Date.now(), name: clientName, email: clientEmail, phone, address };
+            state.clients.push(newClient);
+            clientId = newClient.id;
+            persistClientsState();
 
-          if (supabaseClient && state.isConnected) {
-            try {
-              const { error } = await supabaseClient.from('clients').upsert([{ id: clientId, name: clientName, email: clientEmail, phone, address }]);
-              if (error) throw error;
-            } catch (e) {
-              console.error("Database operation failed while creating client:", e);
-              showToast("Warning: Client was saved locally, but could not sync to the database.", "Retry", () => syncNewClientToDatabase(newClient));
+            if (supabaseClient && state.isConnected) {
+              try {
+                const { data, error } = await supabaseClient.from('clients').upsert([{ id: clientId, name: clientName, email: clientEmail, phone, address }]).select('id,name,email,phone,address,client_code').single();
+                if (error) throw error;
+                if (data?.client_code) newClient.client_code = data.client_code;
+                persistClientsState();
+                if (data?.id) {
+                  const portalResult = await provisionOnlineAccountForClient(data.id);
+                  if (portalResult?.initial_password) showToast(`Client Online account created. Temporary password: ${portalResult.initial_password}`);
+                }
+              } catch (e) {
+                console.error("Database operation failed while creating client:", e);
+                showToast("Warning: Client was saved locally, but could not sync to the database.", "Retry", () => syncNewClientToDatabase(newClient));
+              }
             }
           }
         } else {
           const existing = state.clients.find(c => c.id === clientId);
+          if (!existing) throw new Error("Select an existing client before creating the order.");
           clientName = existing.name;
           clientEmail = existing.email;
         }
@@ -5348,12 +5449,12 @@ ${description}`))actionCallback();return;}
          ========================================================================== */
       function renderClients() {
         const grid=document.getElementById("clientsListGrid");if(!grid)return;const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'az';let clients=state.clients.slice().filter(c=>`${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));clients.sort(pref==='za'?(a,b)=>String(b.name||'').localeCompare(String(a.name||'')):(a,b)=>String(a.name||'').localeCompare(String(b.name||'')));const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;if(!clients.length){grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients registered yet.'}</div>`;return}
-        const rows=clients.map((c,idx)=>{const count=state.projects.filter(p=>!p.deleted&&(p.client_id===c.id||p.client_name===c.name)).length;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(formatClientId(c))}</strong></td><td><strong>${escapeHtml(c.name||'—')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(c.phone||'—')}</td><td>${count}</td><td class="text-right" onclick="event.stopPropagation()"><div class="popover-wrap" id="clientMenu${idx}"><button class="icon-more-button" title="Client options" aria-label="Options for ${escapeHtml(c.name||'client')}" onclick="app.togglePopover('clientMenu${idx}',event)">•••</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Remove client</button></div></div></td></tr>`}).join('');grid.innerHTML=`<div class="card table-card clients-directory-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Full Name</th><th>Email</th><th>Number</th><th>Projects</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        const rows=clients.map((c,idx)=>{const count=state.projects.filter(p=>!p.deleted&&(p.client_id===c.id||p.client_name===c.name)).length;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(formatClientId(c))}</strong></td><td><strong>${escapeHtml(c.name||'—')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(c.phone||'—')}</td><td>${count}</td><td class="text-right" onclick="event.stopPropagation()"><div class="popover-wrap" id="clientMenu${idx}"><button class="icon-more-button" title="Client options" aria-label="Options for ${escapeHtml(c.name||'client')}" onclick="app.togglePopover('clientMenu${idx}',event)">•••</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Archive client</button></div></div></td></tr>`}).join('');grid.innerHTML=`<div class="card table-card clients-directory-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Full Name</th><th>Email</th><th>Number</th><th>Projects</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
       }
 
       function removeClient(clientId){
         const client=state.clients.find(c=>c.id===clientId);if(!client)return;const projectCount=state.projects.filter(p=>!p.deleted&&(p.client_id===clientId||p.client_name===client.name)).length;
-        requestDestructivePin('Remove Client',`Remove "${client.name}" from the directory? ${projectCount?`${projectCount} saved project record${projectCount===1?'':'s'} will keep their client snapshot.`:'No project records will be removed.'}`,async()=>{state.clients=state.clients.filter(c=>c.id!==clientId);if(state.cart.selectedClientId===clientId){state.cart.selectedClientId='';persistCartState();}persistClientsState();if(supabaseClient&&state.isConnected){try{await supabaseClient.from('clients').delete().eq('id',clientId)}catch(e){console.warn('Client removal database sync failed:',e)}}renderClients();showToast('Client removed from directory.');});
+        requestDestructivePin('Archive Client',`Archive "${client.name}" from the active directory? ${projectCount?`${projectCount} saved project record${projectCount===1?'':'s'} will remain linked to this client.`:'No project records will be removed.'} Client IDs are never reused.`,async()=>{const archivedAt=new Date().toISOString();client.archived_at=archivedAt;state.clients=state.clients.filter(c=>c.id!==clientId);if(state.cart.selectedClientId===clientId){state.cart.selectedClientId='';persistCartState();}persistClientsState();if(supabaseClient&&state.isConnected){try{const {error}=await supabaseClient.from('clients').update({archived_at:archivedAt}).eq('id',clientId);if(error)throw error;}catch(e){console.warn('Client archive database sync failed:',e);showToast('Client archived locally, but cloud sync needs attention.');}}renderClients();showToast('Client archived. Client ID preserved.');});
       }
 
       function openEditClientModal(clientId) {
@@ -5644,6 +5745,157 @@ ${description}`))actionCallback();return;}
         showToast(`Custom service "${name}" added to cart.`);
       }
 
+
+      /* ======================================================================
+         JUAN PROJECT Online Portal — integrated Workspace control (V1.1)
+         ====================================================================== */
+      function portalStatusMeta(status){
+        const map={
+          active:["Active","portal-ok"],
+          temporary_password:["Needs Password Change","portal-warn"],
+          needs_account:["Missing Account","portal-warn"],
+          auth_unlinked:["Auth Not Linked","portal-warn"],
+          missing_email:["No Email","portal-bad"],
+          duplicate_email:["Duplicate Email","portal-bad"],
+          missing_client_id:["Missing Client ID","portal-bad"],
+          disabled:["Disabled","portal-muted"],
+          archived:["Archived","portal-muted"]
+        };
+        return map[status]||[String(status||"Unknown"),"portal-muted"];
+      }
+
+      function portalMoney(value){return new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP",maximumFractionDigits:2}).format(Number(value||0));}
+      function portalDate(value){if(!value)return "—";const d=new Date(value);return Number.isNaN(d.getTime())?"—":d.toLocaleString("en-PH",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});}
+
+      async function onlinePortalRequest(method="GET",body=null){
+        if(!supabaseClient||!state.isConnected)throw new Error("Workspace must be connected to Supabase.");
+        const {data:{session}}=await supabaseClient.auth.getSession();
+        if(!session?.access_token)throw new Error("Sign in to Workspace before using Online Portal controls.");
+        const response=await fetch("/api/admin-portal",{
+          method,
+          headers:{Accept:"application/json",Authorization:`Bearer ${session.access_token}`,...(body?{"Content-Type":"application/json"}:{})},
+          body:body?JSON.stringify(body):undefined,
+          cache:"no-store"
+        });
+        const payload=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(payload.error||`Online Portal request failed (${response.status}).`);
+        return payload;
+      }
+
+      function setOnlinePortalTab(tab){
+        state.onlinePortalTab=["accounts","payments","delivery","settings"].includes(tab)?tab:"accounts";
+        document.querySelectorAll("[data-portal-tab]").forEach(btn=>btn.classList.toggle("active",btn.dataset.portalTab===state.onlinePortalTab));
+        [["accounts","onlinePortalAccountsPanel"],["payments","onlinePortalPaymentsPanel"],["delivery","onlinePortalDeliveryPanel"],["settings","onlinePortalSettingsPanel"]].forEach(([key,id])=>document.getElementById(id)?.classList.toggle("hidden",key!==state.onlinePortalTab));
+      }
+
+      function renderOnlinePortal(){
+        setOnlinePortalTab(state.onlinePortalTab||"accounts");
+        const refresh=document.getElementById("onlinePortalRefreshBtn");
+        if(refresh)refresh.onclick=()=>loadOnlinePortalData(true);
+        document.querySelectorAll("[data-portal-tab]").forEach(btn=>btn.onclick=()=>setOnlinePortalTab(btn.dataset.portalTab));
+        const search=document.getElementById("onlinePortalAccountSearch");
+        if(search)search.oninput=()=>renderOnlinePortalData();
+        const provision=document.getElementById("onlinePortalProvisionAll");
+        if(provision)provision.onclick=()=>runOnlinePortalAction({action:"provision-all-clients"},"Missing client accounts processed.",true);
+        const save=document.getElementById("portalSavePaymentSettings");
+        if(save)save.onclick=saveOnlinePortalPaymentSettings;
+        loadOnlinePortalData(false);
+      }
+
+      async function loadOnlinePortalData(force=false){
+        if(state.onlinePortalLoading)return;
+        if(state.onlinePortalData&&!force){renderOnlinePortalData();return;}
+        const loading=document.getElementById("onlinePortalLoading"),error=document.getElementById("onlinePortalError");
+        state.onlinePortalLoading=true;
+        loading?.classList.remove("hidden");error?.classList.add("hidden");
+        try{
+          state.onlinePortalData=await onlinePortalRequest("GET");
+          renderOnlinePortalData();
+        }catch(e){
+          if(error){error.textContent=e.message||"Could not load Online Portal.";error.classList.remove("hidden");}
+        }finally{state.onlinePortalLoading=false;loading?.classList.add("hidden");}
+      }
+
+      function renderOnlinePortalData(){
+        const data=state.onlinePortalData||{clientAccounts:[],clients:[],projects:[],submissions:[],settings:null};
+        const accounts=data.clientAccounts||[];
+        const query=String(document.getElementById("onlinePortalAccountSearch")?.value||"").trim().toLowerCase();
+        const filtered=accounts.filter(x=>!query||[x.client_code,x.name,x.email].some(v=>String(v||"").toLowerCase().includes(query)));
+        const active=accounts.filter(x=>x.status==="active").length;
+        const temp=accounts.filter(x=>x.status==="temporary_password").length;
+        const needs=accounts.filter(x=>["needs_account","auth_unlinked","missing_email","duplicate_email","missing_client_id"].includes(x.status)).length;
+        const summary=document.getElementById("onlinePortalAccountSummary");
+        if(summary)summary.innerHTML=`<div class="portal-summary-card"><span>Total Clients</span><b>${accounts.length}</b></div><div class="portal-summary-card"><span>Active</span><b>${active}</b></div><div class="portal-summary-card"><span>Password Change</span><b>${temp}</b></div><div class="portal-summary-card"><span>Needs Attention</span><b>${needs}</b></div>`;
+
+        const accountRows=document.getElementById("onlinePortalAccountRows");
+        if(accountRows)accountRows.innerHTML=filtered.map(x=>{
+          const [label,cls]=portalStatusMeta(x.status);
+          const actions=[];
+          if(["needs_account","auth_unlinked"].includes(x.status))actions.push(`<button class="btn btn-secondary btn-sm portal-account-action" data-action="provision-client-account" data-client="${escapeHtml(x.id)}">Create / Link</button>`);
+          if(["temporary_password","active"].includes(x.status))actions.push(`<button class="btn btn-secondary btn-sm portal-account-action" data-action="force-password-change" data-client="${escapeHtml(x.id)}">Force Change</button>`);
+          if(["temporary_password","active","disabled"].includes(x.status))actions.push(`<button class="btn btn-secondary btn-sm portal-account-action" data-action="reset-client-temporary-password" data-client="${escapeHtml(x.id)}">Reset Temp</button>`);
+          if(x.auth_user_id&&x.status!=="archived")actions.push(`<button class="btn btn-text btn-sm portal-account-action" data-action="set-client-access" data-enabled="${x.status==="disabled"?"true":"false"}" data-client="${escapeHtml(x.id)}">${x.status==="disabled"?"Enable":"Disable"}</button>`);
+          return `<tr><td><strong>${escapeHtml(x.client_code||"—")}</strong></td><td><strong>${escapeHtml(x.name||"—")}</strong></td><td>${escapeHtml(x.email||"—")}</td><td><span class="portal-status ${cls}">${escapeHtml(label)}</span></td><td>${x.password_set?"Changed":"Temporary"}</td><td>${escapeHtml(portalDate(x.last_sign_in_at))}</td><td><div class="portal-row-actions">${actions.join("")||"—"}</div></td></tr>`;
+        }).join("")||`<tr><td colspan="7" class="text-center text-muted">No matching clients.</td></tr>`;
+
+        const clientMap=new Map((data.clients||[]).map(x=>[String(x.id),x]));
+        const projectMap=new Map((data.projects||[]).map(x=>[String(x.id),x]));
+        const paymentRows=document.getElementById("onlinePortalPaymentRows");
+        if(paymentRows)paymentRows.innerHTML=(data.submissions||[]).map(x=>{
+          const c=clientMap.get(String(x.client_id)),p=projectMap.get(String(x.project_id));
+          return `<tr><td>${escapeHtml(c?.name||c?.email||"—")}</td><td><strong>${escapeHtml(p?.project_code||p?.title||"—")}</strong><div class="text-sm text-muted">${escapeHtml(p?.title||"")}</div></td><td><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td>${escapeHtml(x.reference_number||x.extracted_reference||"—")}</td><td>${escapeHtml(x.payment_method||"—")}</td><td>${escapeHtml(x.payment_date||"—")}</td><td>${x.receipt_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(x.receipt_url)}" target="_blank" rel="noopener">Open</a>`:"—"}</td><td><span class="portal-status ${x.status==="pending"?"portal-warn":"portal-ok"}">${escapeHtml(x.status||"—")}</span></td><td>${x.status==="pending"?`<div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="approved">Approve</button><button class="btn btn-secondary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="rejected">Reject</button></div>`:"—"}</td></tr>`;
+        }).join("")||`<tr><td colspan="9" class="text-center text-muted">No payment submissions.</td></tr>`;
+
+        const deliveryRows=document.getElementById("onlinePortalDeliveryRows");
+        if(deliveryRows)deliveryRows.innerHTML=(data.projects||[]).map(p=>{
+          const c=clientMap.get(String(p.client_id));
+          return `<tr><td><strong>${escapeHtml(p.project_code||p.id)}</strong></td><td>${escapeHtml(c?.name||c?.email||"—")}</td><td>${escapeHtml(p.title||"—")}</td><td><input class="form-control portal-drive-input" data-project="${escapeHtml(p.id)}" value="${escapeHtml(p.drive_url||"")}" placeholder="https://drive.google.com/…"></td><td><div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-drive-save" data-project="${escapeHtml(p.id)}">Save</button>${p.drive_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(p.drive_url)}" target="_blank" rel="noopener">Open</a>`:""}</div></td></tr>`;
+        }).join("")||`<tr><td colspan="5" class="text-center text-muted">No projects found.</td></tr>`;
+
+        const settings=data.settings||{};
+        const setValue=(id,value)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el)el.value=value||"";};
+        setValue("portalMethodLabel",settings.method_label||"UnionBank InstaPay");setValue("portalAccountName",settings.account_name||"");setValue("portalAccountNumber",settings.account_number||"");setValue("portalQrImageUrl",settings.qr_image_url||"");setValue("portalInstructions",settings.instructions||"");
+        bindOnlinePortalRows();
+      }
+
+      function bindOnlinePortalRows(){
+        document.querySelectorAll(".portal-account-action").forEach(btn=>btn.onclick=()=>{
+          const body={action:btn.dataset.action,clientId:btn.dataset.client};
+          if(btn.dataset.action==="set-client-access")body.enabled=btn.dataset.enabled==="true";
+          const msg=btn.dataset.action==="reset-client-temporary-password"?"Temporary password reset to the current Client ID.":btn.dataset.action==="set-client-access"?"Client portal access updated.":"Client portal account updated.";
+          runOnlinePortalAction(body,msg,true);
+        });
+        document.querySelectorAll(".portal-payment-review").forEach(btn=>btn.onclick=()=>runOnlinePortalAction({action:"review-payment",id:btn.dataset.id,decision:btn.dataset.decision},`Payment ${btn.dataset.decision}.`,true));
+        document.querySelectorAll(".portal-drive-save").forEach(btn=>btn.onclick=()=>{
+          const input=document.querySelector(`.portal-drive-input[data-project="${CSS.escape(btn.dataset.project)}"]`);
+          runOnlinePortalAction({action:"save-project-drive-link",projectId:btn.dataset.project,url:input?.value||""},"Project Google Drive link saved.",true);
+        });
+      }
+
+      async function runOnlinePortalAction(body,successMessage,refresh=true){
+        try{
+          const result=await onlinePortalRequest("POST",body);
+          if(body.action==="provision-all-clients"&&result.summary){
+            const s=result.summary;
+            showToast(`Accounts: ${s.created||0} created · ${s.active||0} active · ${s.temporary_password||0} temporary · ${s.skipped||0} skipped · ${s.error||0} failed`);
+          }else showToast(successMessage||"Online Portal updated.");
+          if(refresh){state.onlinePortalData=null;await loadOnlinePortalData(true);}
+          return result;
+        }catch(e){showToast(e.message||"Online Portal action failed.");throw e;}
+      }
+
+      async function saveOnlinePortalPaymentSettings(){
+        const body={
+          action:"save-payment-settings",
+          methodLabel:document.getElementById("portalMethodLabel")?.value||"UnionBank InstaPay",
+          accountName:document.getElementById("portalAccountName")?.value||"",
+          accountNumber:document.getElementById("portalAccountNumber")?.value||"",
+          qrImageUrl:document.getElementById("portalQrImageUrl")?.value||"",
+          instructions:document.getElementById("portalInstructions")?.value||""
+        };
+        await runOnlinePortalAction(body,"Payment setup saved.",true);
+      }
+
       return {
         initWorkspace,
         navigateTo,
@@ -5693,6 +5945,9 @@ ${description}`))actionCallback();return;}
         openCustomProductModal,
         addCustomProductToCart,
         renderPricelist,
+        renderOnlinePortal,
+        setOnlinePortalTab,
+        loadOnlinePortalData,
         switchPricelistTab,
         filterPricelistTable,
         setCatalogManagerFilter,
@@ -5788,7 +6043,7 @@ ${description}`))actionCallback();return;}
 
     document.addEventListener("DOMContentLoaded", () => {
       app.initWorkspace();
-      setTimeout(()=>refreshSearchableSelects(document),60);
+      setTimeout(()=>{refreshSearchableSelects(document);if(location.hash==="#online-portal")app.navigateTo("online-portal");},60);
       
       document.addEventListener("click", (e) => {
         if (!e.target.closest("#orderClientTypeahead")) app.hideClientSuggestions();
@@ -5981,6 +6236,13 @@ ${description}`))actionCallback();return;}
 .project-data-card .section-kicker{display:none}.project-data-card .card-header{margin-bottom:14px}
 @media(max-width:800px){.payment-modular-grid{grid-template-columns:1fr 1fr}.payment-status-card{align-items:flex-start!important}.payment-history-table{min-width:720px}}
 @media(max-width:520px){.payment-modular-grid{grid-template-columns:1fr}.payment-status-card{flex-direction:column}.payment-status-balance{text-align:left}}
+</style>
+
+<style>
+/* JUAN PROJECT Workspace V1.1 — integrated Online Portal */
+.online-portal-intro{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 18px;margin-bottom:14px}.online-portal-intro strong{font-size:14px}.online-portal-intro p{font-size:12px;color:var(--text-tertiary);margin:4px 0 0}.portal-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}.portal-tabs button{border:1px solid var(--border-subtle);background:var(--bg-card);color:var(--text-secondary);border-radius:10px;min-height:38px;padding:0 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}.portal-tabs button.active{background:var(--mint-light-bg);border-color:var(--mint-subtle-border);color:var(--primary-mint-dark)}.portal-panel.hidden,.portal-loading.hidden,.portal-error.hidden{display:none!important}.portal-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.portal-summary-card{border:1px solid var(--border-subtle);background:var(--bg-card);border-radius:13px;padding:14px 15px;display:flex;flex-direction:column;gap:5px}.portal-summary-card span{font-size:10px;text-transform:uppercase;letter-spacing:.045em;font-weight:750;color:var(--text-tertiary)}.portal-summary-card b{font-size:21px;letter-spacing:-.025em}.portal-status{display:inline-flex;align-items:center;white-space:nowrap;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:750}.portal-ok{background:rgba(25,186,117,.10);color:var(--primary-mint-dark)}.portal-warn{background:rgba(255,191,0,.12);color:#946600}.portal-bad{background:rgba(255,59,48,.09);color:#bd332d}.portal-muted{background:var(--bg-subtle);color:var(--text-tertiary)}.portal-row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.portal-toolbar{margin-bottom:12px}.portal-note{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:13px 15px}.portal-note strong{font-size:12px}.portal-note span{font-size:11px;color:var(--text-tertiary)}.portal-drive-input{min-width:320px}.portal-payment-settings{padding:18px}.portal-loading,.portal-error{padding:16px;margin-bottom:12px}.portal-error{border-color:rgba(255,59,48,.2);background:rgba(255,59,48,.05);color:#b42318}.status-badge.status-green{background:var(--mint-light-bg);color:var(--primary-mint-dark);padding:6px 9px;border-radius:999px;font-size:10px;font-weight:800}
+@media(max-width:980px){.portal-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-drive-input{min-width:240px}}
+@media(max-width:650px){.portal-summary-grid{grid-template-columns:1fr 1fr}.online-portal-intro{align-items:flex-start}.portal-tabs{display:grid;grid-template-columns:1fr 1fr}.portal-drive-input{min-width:210px}}
 </style>
 </body>
 </html>

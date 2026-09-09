@@ -1,86 +1,58 @@
-# QA Checklist — JUAN PROJECT Suite V1
+# JUAN PROJECT Suite V1.1 — QA Checklist
 
-## Database
-- [ ] Production backup created before migrations.
-- [ ] Migrations 001-004 run without errors.
-- [ ] `verify_installation.sql` reviewed.
-- [ ] Existing `clients`, `projects`, `project_items`, `deliverables`, `payments` records remain intact.
-- [ ] Existing primary IDs are unchanged.
-- [ ] `client_code` values are unique.
-- [ ] `project_code` values are unique.
+## Migration
+- [ ] Database backup completed.
+- [ ] `005_suite_v1_1.sql` succeeds.
+- [ ] `verify_v1_1.sql` returns valid Client IDs and portal fields.
+- [ ] Placeholder `Name` rows are not counted as Client IDs.
+- [ ] Legitimate clients without an email remain in the client count but are flagged for account setup.
 
 ## Workspace
-- [ ] Unauthenticated visitor sees Admin Sign In gate.
-- [ ] Non-admin Supabase user cannot enter Workspace.
-- [ ] Admin can sign in and sign out.
-- [ ] Clients page displays `CL-###`.
-- [ ] Projects display `JP-###`.
-- [ ] Project Data is two columns on desktop.
-- [ ] Current Project cards show deliverable progress.
-- [ ] Payment Monitoring uses modular cards.
-- [ ] Payment History order is Method / Reference / Amount / Note / Date Paid / Actions.
-- [ ] Shop has no thumbnails.
-- [ ] Shop has no top stats.
-- [ ] Shop has no Last Updated column.
-- [ ] Shop has no row checkbox/select-all/bulk actions.
-- [ ] Service table columns are Name / Category / Description / Price / Actions.
-- [ ] Package table columns are Package Name / Package Inclusions / Original Price / New Price / Actions.
-- [ ] Catalog changes persist after page reload and are present in shared catalog tables.
-- [ ] Existing local-only project migration is tested on a backup copy/browser profile first.
+- [ ] Admin login works.
+- [ ] Online Portal appears inside the main Workspace navigation.
+- [ ] `/online-control.html` redirects to the integrated Online Portal.
+- [ ] Client Accounts loads.
+- [ ] Payment Reviews loads.
+- [ ] Delivery Links shows one row per project.
+- [ ] Payment Setup loads and saves.
+- [ ] Creating a new project for an existing email reuses the existing Client ID.
+- [ ] Archiving a client preserves the Client ID.
 
-## Online authentication
-- [ ] Existing client receives First Access email.
-- [ ] Public First Access response does not reveal whether an email exists.
-- [ ] Magic link signs existing client in.
-- [ ] Existing client is prompted to create password when `password_set=false`.
-- [ ] New password works on next login.
-- [ ] Future client can create an account.
-- [ ] Unauthenticated user cannot load `/api/portal-data`.
+## Client accounts
+- [ ] Create Missing Accounts creates only missing valid client Auth accounts.
+- [ ] New account login email equals the saved client email.
+- [ ] New account temporary password equals the current Client ID.
+- [ ] First login forces Change Your Password.
+- [ ] Existing activated account password is not reset by batch provisioning.
+- [ ] Duplicate emails are reported.
+- [ ] Missing emails are reported.
+- [ ] Disabled Online access is rejected by protected API routes.
 
-## Client isolation
-- [ ] Client A sees only Client A projects.
-- [ ] Client B sees only Client B projects.
-- [ ] Modifying request project IDs cannot expose another client's data.
-- [ ] Private receipts cannot be read by another client.
-
-## Orders / deliverables
-- [ ] Online Orders lists linked projects.
-- [ ] Progress is based on completed deliverables, not payment percentage.
-- [ ] Countdown is derived from due date.
-- [ ] Drive icon only appears when a shared URL exists.
-- [ ] Hidden deliverable/link does not appear for client.
+## Online UI
+- [ ] Welcome matches the approved reference structure.
+- [ ] Onboarding is two simple slides and can be skipped.
+- [ ] No Create Account / Sign Up / First Access UI exists.
+- [ ] Guest can browse Home and Shop.
+- [ ] Protected bottom-nav items show Sign In Required when logged out.
+- [ ] Dashboard uses real client data.
+- [ ] My Projects uses real project data.
+- [ ] Project Details uses a vertical deliverable timeline.
+- [ ] One project Drive button opens that project's Drive URL.
+- [ ] Shop has no product thumbnails.
+- [ ] Shop search and filters work.
+- [ ] Mobile layout has no horizontal overflow or bottom-nav overlap.
 
 ## Payments
-- [ ] QR/payment instructions load from Workspace settings.
-- [ ] JPG upload succeeds under 5 MB.
-- [ ] PNG upload succeeds under 5 MB.
-- [ ] PDF upload succeeds under 5 MB.
-- [ ] Oversize upload is rejected.
-- [ ] Unsupported MIME type is rejected.
-- [ ] Gemini extraction is optional.
-- [ ] Extracted fields remain editable before submission.
-- [ ] Submitted payment status is Pending.
-- [ ] Pending payment does not change Amount Paid.
-- [ ] Approval adds one canonical payment.
-- [ ] Second approval attempt is rejected.
-- [ ] Rejection leaves canonical payment totals unchanged.
-- [ ] Payment amount above live balance is rejected.
+- [ ] Supplied UnionBank QR renders without distortion.
+- [ ] Receipt upload enforces supported file types/size.
+- [ ] Submitted payment is Pending.
+- [ ] Pending payment does not change Amount Paid or Balance Due.
+- [ ] Admin can approve/reject from integrated Online Portal.
+- [ ] Approved payment updates canonical payments exactly once.
 
-## Invoice
-- [ ] Invoice total matches Workspace project total.
-- [ ] Amount Paid equals approved canonical payments only.
-- [ ] Balance Due equals Total - Amount Paid.
-
-## Responsive
-- [ ] Online tested at 320px, 375px, 430px widths.
-- [ ] Workspace tested at desktop, tablet, and narrow mobile widths.
-- [ ] Wide tables scroll rather than compressing into unreadable text.
-
-## Deployment
-- [ ] Workspace Vercel project Root Directory = `workspace`.
-- [ ] Online Vercel project Root Directory = `online`.
-- [ ] Both use the same `SUPABASE_URL`.
-- [ ] Both use the same Supabase project.
-- [ ] Server secrets are configured only as server environment variables.
-- [ ] Auth redirect URLs include production domains.
-- [ ] `bash scripts/verify-build.sh` passes before ZIP/release.
+## Security
+- [ ] Client A cannot load Client B projects by changing IDs.
+- [ ] Client A cannot load Client B Drive URL.
+- [ ] Client cannot call admin-portal endpoints successfully.
+- [ ] Supabase secret key is absent from browser responses/source.
+- [ ] Gemini key is absent from browser responses/source.

@@ -42,31 +42,31 @@ function makeLegacyClientId(userId) {
 export async function ensurePortalAccount(user, svc) {
   let { data: account, error } = await svc.from('portal_accounts').select('*').eq('auth_user_id', user.id).maybeSingle();
   if (error) throw error;
-  if (account) return account;
-
-  const email = String(user.email || '').trim().toLowerCase();
-  if (!email) throw new Error('Authenticated account has no email address.');
-
-  let { data: client, error: clientError } = await svc.from('clients').select('id,name,email,phone,address,client_code').ilike('email', email).limit(1).maybeSingle();
-  if (clientError) throw clientError;
-
-  if (!client) {
-    const fullName = String(user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0]).trim();
-    const newClient = { id: makeLegacyClientId(user.id), name: fullName, email, phone: '', address: '' };
-    const inserted = await svc.from('clients').insert(newClient).select('id,name,email,phone,address,client_code').single();
-    if (inserted.error) throw inserted.error;
-    client = inserted.data;
+  if (account) {
+    if (account.portal_enabled === false) throw Object.assign(new Error('Your JUAN PROJECT Online access is currently disabled. Please contact JUAN PROJECT.'), { status: 403 });
+    return account;
   }
 
-  const createdWithPassword = user.user_metadata?.created_with_password === true;
+  const email = String(user.email || '').trim().toLowerCase();
+  if (!email) throw Object.assign(new Error('Authenticated account has no email address.'), { status: 403 });
+
+  const { data: client, error: clientError } = await svc.from('clients').select('id,name,email,phone,address,client_code').ilike('email', email).limit(1).maybeSingle();
+  if (clientError) throw clientError;
+  if (!client) throw Object.assign(new Error('No JUAN PROJECT client profile is linked to this account. Please contact JUAN PROJECT.'), { status: 403 });
+
   const insertedAccount = await svc.from('portal_accounts').insert({
     auth_user_id: user.id,
     client_id: client.id,
-    password_set: createdWithPassword
+    password_set: false,
+    portal_enabled: true
   }).select('*').single();
   if (insertedAccount.error) throw insertedAccount.error;
+
+  const { data: roleRow } = await svc.from('user_roles').select('role').eq('auth_user_id', user.id).maybeSingle();
+  if (!roleRow) await svc.from('user_roles').insert({ auth_user_id: user.id, role: 'client' });
   return insertedAccount.data;
 }
+
 
 export function sendError(res, error) {
   console.error(error);

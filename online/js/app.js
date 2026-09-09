@@ -1,228 +1,188 @@
-import {getSupabase,session,signIn,setPassword,signOut} from './auth.js';
+import {getSupabase,session,signIn,setPassword,changePasswordWithCurrent,sendPasswordReset,signOut} from './auth.js';
 import {getPortal,getCatalog,markPasswordSet} from './data.js';
 import {uploadReceipt,extractReceipt,submitPayment as submitPaymentApi} from './payments.js';
 import {peso,esc,fmtDate,remaining,toast} from './utils.js';
 
 const root=document.getElementById('root');
 const QR_FALLBACK='/assets/unionbank-bankqr-placeholder.jpg';
-const ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V2';
-const CART_KEY='JUAN_ONLINE_CART_V1';
-
-function readCart(){try{return JSON.parse(localStorage.getItem(CART_KEY)||'[]')}catch{return []}}
-function saveCart(){localStorage.setItem(CART_KEY,JSON.stringify(state.cart))}
+const ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V3';
 
 let state={
-  route:'home',
-  portal:null,
-  selected:null,
-  receiptPath:null,
-  extractedReceipt:null,
-  catalog:{categories:[],services:[],packages:[],packageItems:[]},
-  catalogLoaded:false,
-  shopFilter:'all',
-  shopQuery:'',
-  cart:readCart(),
-  cartOpen:false,
-  gateOpen:false,
-  onboardingStep:0
+  route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
+  catalog:{categories:[],services:[],packages:[],packageItems:[]},catalogLoaded:false,
+  gateOpen:false,onboardingStep:0,orderFilter:'active',shopItem:null,paymentProjectId:null,shopQuery:'',shopFilter:'all'
 };
 
 const isLoggedIn=()=>Boolean(state.portal?.profile);
 const initials=()=>esc((state.portal?.profile?.name||state.portal?.profile?.email||'JP').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase());
-const brand=()=>`<div class="brand">JUAN <span class="plus">+</span><br>PROJECT<small>CLIENT PORTAL</small></div>`;
+const brand=(compact=false)=>`<div class="brand ${compact?'compact':''}"><div><span>JUAN</span> <i>+</i><br><span>PROJECT</span> <em>Online</em></div></div>`;
+
+const icons={
+  home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/>',
+  orders:'<rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 4.5h6"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+  payment:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/>',
+  shop:'<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M8 8a4 4 0 0 1 8 0"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2H10V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
+  lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
+  back:'<path d="m15 18-6-6 6-6"/>',
+  more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v5h16v-5"/>',
+  drive:'<path d="M12 3 4 17h5l3-5 3 5h5L12 3Z"/><path d="M9 17h6"/>',
+  chevron:'<path d="m9 18 6-6-6-6"/>'
+};
+const icon=(name,size=20)=>`<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||''}</svg>`;
 
 const nav=()=>`<nav class="nav">
-  <button data-r="home" class="${state.route==='home'?'active':''}"><span class="nav-icon">⌂</span><span>Home</span></button>
-  <button data-r="orders" class="${state.route==='orders'||state.route==='project'||state.route==='invoice'?'active':''}"><span class="nav-icon">▣</span><span>Orders</span></button>
-  <button data-r="payment" class="${state.route==='payment'?'active':''}"><span class="nav-icon">▤</span><span>Payment</span></button>
-  <button data-r="shop" class="${state.route==='shop'?'active':''}"><span class="nav-icon">⌁</span><span>Shop</span></button>
-  <button data-r="account" class="${state.route==='account'?'active':''}"><span class="nav-icon">⚙</span><span>Settings</span></button>
+  <button data-r="home" class="${state.route==='home'?'active':''}">${icon('home')}<span>Home</span></button>
+  <button data-r="orders" class="${['orders','project','invoice'].includes(state.route)?'active':''}">${icon('orders')}<span>Orders</span></button>
+  <button data-r="payment" class="${state.route==='payment'?'active':''}">${icon('payment')}<span>Payment</span></button>
+  <button data-r="shop" class="${state.route==='shop'?'active':''}">${icon('shop')}<span>Shop</span></button>
+  <button data-r="account" class="${state.route==='account'?'active':''}">${icon('settings')}<span>Settings</span></button>
 </nav>`;
 
-const top=(title,sub='')=>`<div class="topbar"><div>${brand()}</div><button id="topAccount" class="avatar ${isLoggedIn()?'':'guest'}" aria-label="${isLoggedIn()?'Open settings':'Sign in'}">${isLoggedIn()?initials():'↗'}</button></div>${sub?`<div class="eyebrow">${esc(sub)}</div>`:''}<h1 class="title">${esc(title)}</h1>`;
-
 function welcomeScreen(){
-  root.innerHTML=`<div class="welcome-shell"><div class="welcome-card"><div class="welcome-top"><button id="welcomeSignIn" class="skip">Sign In</button></div><div class="welcome-hero">${brand()}<h1>Your projects.<br>In one place.</h1><p>Track projects, payments, deliverables, files, and invoices — all made simple.</p></div><div class="welcome-actions"><button id="getStarted" class="btn dark full">Get Started</button><button id="browseGuest" class="btn full">Browse as Guest</button></div><div class="version">JUAN PROJECT Online · Client Portal</div></div></div>`;
+  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card"><div class="welcome-hero">${brand()}<h1>Your projects.<br><strong>In one place.</strong></h1><p>Track. Pay. Receive.<br>All made simple.</p></div><div class="welcome-actions"><button id="getStarted" class="btn dark full">Get Started</button><button id="welcomeSignIn2" class="btn full">Sign In</button></div><div class="version">v1.1.0</div></div></div>`;
   document.getElementById('getStarted').onclick=()=>{state.onboardingStep=0;onboardingScreen()};
-  document.getElementById('browseGuest').onclick=()=>enterGuest();
-  document.getElementById('welcomeSignIn').onclick=()=>authScreen();
+  document.getElementById('welcomeSignIn2').onclick=()=>authScreen();
 }
 
 const onboardingSlides=[
-  {icon:'▤',title:'Track your projects',body:'See project progress, deadlines, deliverables, and updates from JUAN PROJECT.'},
-  {icon:'▰',title:'Payments made simple',body:'View balances, scan the payment QR, and submit receipts for approval.'},
-  {icon:'▱',title:'Access files and invoices',body:'Open shared project files and review your project invoice whenever you need them.'}
+  {icon:'orders',title:'Track your projects',body:'See real-time progress, upcoming deliverables, and all your projects in one place.'},
+  {icon:'payment',title:'Pay with ease',body:'View balances, submit payment receipts, and keep your transactions in one place.'}
 ];
 function onboardingScreen(){
-  const s=onboardingSlides[state.onboardingStep];
-  root.innerHTML=`<div class="onboard-shell"><div class="onboard-card"><div class="onboard-top"><button id="skipOnboard" class="skip">Skip</button></div><div class="onboard-main"><div class="onboard-icon">${s.icon}</div><h2>${esc(s.title)}</h2><p>${esc(s.body)}</p><div class="dots">${onboardingSlides.map((_,i)=>`<span class="${i===state.onboardingStep?'active':''}"></span>`).join('')}</div></div><div class="onboard-actions"><button id="onboardBack" class="btn" ${state.onboardingStep===0?'disabled':''}>Back</button><button id="onboardNext" class="btn dark">${state.onboardingStep===onboardingSlides.length-1?'Explore JUAN PROJECT':'Next'}</button></div></div></div>`;
+  const slide=onboardingSlides[state.onboardingStep];
+  root.innerHTML=`<div class="onboard-shell"><div class="phone-page onboard-card"><button id="skipOnboard" class="text-button top-right">Skip</button><div class="onboard-main"><div class="onboard-icon">${icon(slide.icon,38)}</div><h2>${esc(slide.title)}</h2><p>${esc(slide.body)}</p><div class="dots">${onboardingSlides.map((_,i)=>`<span class="${i===state.onboardingStep?'active':''}"></span>`).join('')}</div></div><div class="onboard-actions single"><button id="onboardNext" class="btn primary full">${state.onboardingStep===onboardingSlides.length-1?'Get Started':'Next'}</button></div></div></div>`;
   document.getElementById('skipOnboard').onclick=()=>enterGuest();
-  document.getElementById('onboardBack').onclick=()=>{if(state.onboardingStep>0){state.onboardingStep--;onboardingScreen()}};
   document.getElementById('onboardNext').onclick=()=>{if(state.onboardingStep<onboardingSlides.length-1){state.onboardingStep++;onboardingScreen()}else enterGuest()};
 }
-
 function enterGuest(){localStorage.setItem(ONBOARDING_KEY,'1');state.route='home';state.gateOpen=false;render()}
 
 function authScreen(message=''){
-  root.innerHTML=`<div class="auth-shell"><div class="auth-card"><div class="auth-hero">${brand()}<h1>Welcome Back</h1><p class="subtitle">Sign in using the email and temporary or personal password provided for your JUAN PROJECT client account.</p></div><div class="field"><label>Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"></div><div class="field"><label>Password</label><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Password"></div><div class="auth-actions"><button id="ab" class="btn dark full">Sign In</button><button id="authGuest" class="btn full">Browse as Guest</button></div><p class="helper" style="margin-top:12px">There is no public account registration. Client accounts are created by JUAN PROJECT.</p>${message?`<p class="helper">${esc(message)}</p>`:''}</div></div>`;
+  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><h1>Welcome Back</h1><p>Sign in to your JUAN PROJECT Online account.</p></div><div class="field"><label>Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="Email Address"></div><div class="field password-field"><label>Password</label><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Password"></div><div class="auth-options"><label class="remember"><input type="checkbox" checked> <span>Remember me</span></label><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Sign In</button><div class="info-box">${icon('lock',18)}<span>Use the temporary password provided by JUAN PROJECT. You will be asked to change it on your first login.</span></div>${message?`<p class="form-message">${esc(message)}</p>`:''}</div></div>`;
   const email=document.getElementById('ae'),pass=document.getElementById('ap'),btn=document.getElementById('ab');
-  btn.onclick=async()=>{try{btn.disabled=true;btn.textContent='Signing in…';await signIn(email.value.trim(),pass.value);await loadPortal()}catch(e){toast(e.message)}finally{btn.disabled=false;btn.textContent='Sign In'}};
+  document.getElementById('authBack').onclick=()=>{localStorage.getItem(ONBOARDING_KEY)==='1'?render():welcomeScreen()};
+  btn.onclick=async()=>{try{if(!email.value.trim()||!pass.value)throw Error('Enter your email and password.');btn.disabled=true;btn.textContent='Signing in…';await signIn(email.value.trim(),pass.value);await loadPortal()}catch(e){toast(e.message||'Invalid login credentials.')}finally{btn.disabled=false;btn.textContent='Sign In'}};
   pass.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click()});
-  document.getElementById('authGuest').onclick=()=>enterGuest();
+  document.getElementById('forgotPassword').onclick=async()=>{try{if(!email.value.trim())throw Error('Enter your email address first.');await sendPasswordReset(email.value.trim());toast('If the account can receive email, a password reset link has been sent.')}catch(e){toast(e.message)}};
 }
 
 async function loadPortal(){
-  try{
-    state.portal=await getPortal();
-    localStorage.setItem(ONBOARDING_KEY,'1');
-    if(!state.portal.passwordSet)return renderSetPassword();
-    state.route='home';render();
-  }catch(e){state.portal=null;authScreen(e.message)}
+  try{state.portal=await getPortal();localStorage.setItem(ONBOARDING_KEY,'1');if(!state.portal.passwordSet)return renderSetPassword();state.route='home';render()}
+  catch(e){state.portal=null;authScreen(e.message)}
 }
-
 function renderSetPassword(){
-  root.innerHTML=`<div class="auth-shell"><div class="auth-card">${brand()}<div class="onboard-icon" style="margin:34px auto 22px">▣</div><h1 class="title" style="text-align:center">Change Your Password</h1><p class="subtitle" style="text-align:center">You are using your initial client password. Create a new password before continuing to the portal.</p><div class="field"><label>New Password</label><input id="p1" class="input" type="password" minlength="10"></div><div class="field"><label>Confirm New Password</label><input id="p2" class="input" type="password" minlength="10"></div><button id="savep" class="btn dark full">Update Password</button><p class="helper" style="text-align:center">Use at least 10 characters.</p></div></div>`;
-  document.getElementById('savep').onclick=async()=>{const p1=document.getElementById('p1'),p2=document.getElementById('p2');try{if(p1.value.length<10)throw Error('Use at least 10 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');await setPassword(p1.value);await markPasswordSet();toast('Password updated.');state.portal.passwordSet=true;state.route='home';render()}catch(e){toast(e.message)}};
+  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="passwordBack" class="icon-button auth-back" aria-label="Sign out">${icon('back')}</button><div class="password-icon">${icon('lock',34)}</div><div class="auth-copy centered"><h1>Change Your Password</h1><p>For your security, please change your temporary password.</p></div><div class="field"><label>Current Password</label><input id="currentPass" class="input" type="password" autocomplete="current-password" placeholder="Current Password"></div><div class="field"><label>New Password</label><input id="p1" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="New Password"></div><div class="field"><label>Confirm New Password</label><input id="p2" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="Confirm New Password"></div><div class="password-rule">${icon('lock',18)}<span>Your new password must be at least 8 characters and include a mix of letters, numbers, and symbols.</span></div><button id="savep" class="btn primary full">Continue</button></div></div>`;
+  document.getElementById('passwordBack').onclick=async()=>{await signOut();state.portal=null;authScreen()};
+  document.getElementById('savep').onclick=async()=>{const cur=document.getElementById('currentPass'),p1=document.getElementById('p1'),p2=document.getElementById('p2'),btn=document.getElementById('savep');try{if(!cur.value)throw Error('Enter your temporary password.');if(p1.value.length<8)throw Error('Use at least 8 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');btn.disabled=true;await changePasswordWithCurrent(state.portal.profile.email,cur.value,p1.value);await markPasswordSet();state.portal.passwordSet=true;toast('Password updated.');state.route='home';render()}catch(e){toast(e.message)}finally{btn.disabled=false}};
 }
 
 function gate(){state.gateOpen=true;render()}
-function closeGate(){state.gateOpen=false;render()}
-function gateOverlay(){return state.gateOpen?`<div class="overlay" id="gateOverlay"><div class="sheet center"><div class="sheet-icon">▣</div><h2>Sign in required</h2><p>This area is available to JUAN PROJECT clients only. You can continue browsing the Shop without an account.</p><div class="sheet-actions"><button id="gateSignIn" class="btn dark full">Sign In</button><button id="gateShop" class="btn full">Browse Shop</button><button id="gateClose" class="btn ghost full">Not now</button></div></div></div>`:''}
-
-function cartOverlay(){
-  if(!state.cartOpen)return '';
-  const total=state.cart.reduce((s,x)=>s+Number(x.price||0)*Number(x.qty||1),0);
-  return `<div class="overlay" id="cartOverlay"><div class="sheet"><div class="row"><div><div class="eyebrow">SHOP SELECTION</div><h2 style="text-align:left;margin:4px 0">Your Cart</h2></div><button id="closeCart" class="btn small">Done</button></div><div>${state.cart.map(x=>`<div class="cart-item"><div><b>${esc(x.name)}</b><div class="helper">${esc(x.kind)} · ${peso(x.price)} each</div></div><div class="qty"><button data-dec="${esc(x.key)}">−</button><b>${Number(x.qty||1)}</b><button data-inc="${esc(x.key)}">+</button></div></div>`).join('')||'<div class="empty">Your cart is empty.</div>'}</div><div class="row" style="padding-top:15px"><span>Subtotal</span><b>${peso(total)}</b></div>${state.cart.length?`<button id="cartContinue" class="btn dark full" style="margin-top:14px">${isLoggedIn()?'Keep Selection':'Sign in to continue'}</button>`:''}</div></div>`;
+function gateOverlay(){return state.gateOpen?`<div class="overlay" id="gateOverlay"><div class="sheet center"><button id="gateX" class="icon-button sheet-x">×</button><div class="sheet-icon">${icon('lock',26)}</div><h2>Sign in required</h2><p>This feature is available to JUAN PROJECT clients only.</p><div class="sheet-actions"><button id="gateSignIn" class="btn primary full">Sign In</button><button id="gateShop" class="btn full">Browse Shop</button></div></div></div>`:''}
+function shopOverlay(){
+  const x=state.shopItem;if(!x)return '';
+  const price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0;
+  return `<div class="overlay" id="shopOverlay"><div class="sheet"><button id="shopX" class="icon-button sheet-x">×</button><div class="shop-kind">${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</div><h2 class="sheet-title">${esc(x.name)}</h2><div class="detail-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div><p class="detail-copy">${esc(x.description||'JUAN PROJECT creative service.')}</p>${!isLoggedIn()?'<div class="info-box compact-info"><span>Sign in when you are ready to access client-only ordering and project tools.</span></div><button id="detailSignIn" class="btn primary full">Sign In</button>':''}<button id="detailClose" class="btn full">Close</button></div></div>`;
 }
 
-function routePage(){
-  if(state.route==='home')return home();
-  if(state.route==='shop')return shop();
-  if(state.route==='orders')return orders();
-  if(state.route==='project')return project();
-  if(state.route==='payment')return payment();
-  if(state.route==='invoice')return invoice();
-  if(state.route==='account')return account();
-  return home();
-}
-
-function render(){
-  root.innerHTML=`<div class="app"><main class="page">${routePage()}</main>${nav()}${gateOverlay()}${cartOverlay()}</div>`;
-  document.body.classList.toggle('modal-open',state.gateOpen||state.cartOpen);
-  bindGlobal();bind();
-}
-
+function routePage(){if(state.route==='home')return home();if(state.route==='shop')return shop();if(state.route==='orders')return orders();if(state.route==='project')return project();if(state.route==='payment')return payment();if(state.route==='invoice')return invoice();if(state.route==='account')return account();return home()}
+function render(){root.innerHTML=`<div class="app"><main class="page">${routePage()}</main>${nav()}${gateOverlay()}${shopOverlay()}</div>`;document.body.classList.toggle('modal-open',state.gateOpen||state.shopItem);bindGlobal();bind()}
 function bindGlobal(){
-  document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
-    const route=b.dataset.r;
-    if(!isLoggedIn()&&['orders','payment','account'].includes(route))return gate();
-    state.route=route;state.selected=null;render();
-  });
-  const ta=document.getElementById('topAccount');if(ta)ta.onclick=()=>{if(isLoggedIn()){state.route='account';render()}else authScreen()};
-  const gs=document.getElementById('gateSignIn');if(gs)gs.onclick=()=>authScreen();
-  const gshop=document.getElementById('gateShop');if(gshop)gshop.onclick=()=>{state.gateOpen=false;state.route='shop';render()};
-  const gc=document.getElementById('gateClose');if(gc)gc.onclick=()=>closeGate();
-  const go=document.getElementById('gateOverlay');if(go)go.onclick=e=>{if(e.target===go)closeGate()};
-  const cc=document.getElementById('closeCart');if(cc)cc.onclick=()=>{state.cartOpen=false;render()};
-  document.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>changeCartQty(b.dataset.inc,1));
-  document.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>changeCartQty(b.dataset.dec,-1));
-  const cont=document.getElementById('cartContinue');if(cont)cont.onclick=()=>{if(!isLoggedIn()){state.cartOpen=false;authScreen()}else{state.cartOpen=false;toast('Selection saved. JUAN PROJECT online checkout can be connected in a future update.');render()}};
-  const co=document.getElementById('cartOverlay');if(co)co.onclick=e=>{if(e.target===co){state.cartOpen=false;render()}};
+  document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const r=b.dataset.r;if(['orders','payment','account'].includes(r)&&!isLoggedIn())return gate();state.route=r;render()});
+  const ga=document.getElementById('gateSignIn');if(ga)ga.onclick=()=>{state.gateOpen=false;authScreen()};
+  const gs=document.getElementById('gateShop');if(gs)gs.onclick=()=>{state.gateOpen=false;state.route='shop';render()};
+  const gx=document.getElementById('gateX');if(gx)gx.onclick=()=>{state.gateOpen=false;render()};
+  const overlay=document.getElementById('gateOverlay');if(overlay)overlay.onclick=e=>{if(e.target===overlay){state.gateOpen=false;render()}};
+  const sx=document.getElementById('shopX'),dc=document.getElementById('detailClose');if(sx)sx.onclick=()=>{state.shopItem=null;render()};if(dc)dc.onclick=()=>{state.shopItem=null;render()};
+  const dsi=document.getElementById('detailSignIn');if(dsi)dsi.onclick=()=>{state.shopItem=null;authScreen()};
+  const so=document.getElementById('shopOverlay');if(so)so.onclick=e=>{if(e.target===so){state.shopItem=null;render()}};
 }
 
 function projectStats(p){const ds=p.deliverables||[];const done=ds.filter(x=>x.completed||String(x.status||'').toLowerCase()==='completed').length;return {done,total:ds.length,pct:ds.length?Math.round(done/ds.length*100):0}}
 function activeProject(){const ps=state.portal?.projects||[];return ps.find(p=>!['completed','cancelled'].includes(String(p.status||'').toLowerCase()))||ps[0]||null}
 function nextDeliverable(p){return (p?.deliverables||[]).find(d=>!d.completed&&String(d.status||'').toLowerCase()!=='completed')||null}
+function pageHead(title,{back=false,more=true}={}){return `<div class="screen-head">${back?`<button class="icon-button" id="screenBack">${icon('back')}</button>`:'<span></span>'}<h1>${esc(title)}</h1>${more?`<button class="icon-button">${icon('more')}</button>`:'<span></span>'}</div>`}
 
 function home(){
-  if(!isLoggedIn()){
-    const featured=(state.catalog.services||[]).slice(0,3);
-    return `${top('Creative solutions made simple.','JUAN PROJECT ONLINE')}<div class="public-hero"><p>Browse JUAN PROJECT services and packages without an account. Sign in only when you need to track a project, pay, or access your files.</p><div class="hero-actions"><button id="homeShop" class="btn dark">Explore Services</button><button id="homeSignIn" class="btn">Client Sign In</button></div></div><div class="mini-stats"><div class="mini-stat"><b>Simple</b><span>clean client portal</span></div><div class="mini-stat"><b>Secure</b><span>account-only projects</span></div><div class="mini-stat"><b>Shared</b><span>one Workspace database</span></div></div><div class="section-head"><h2>Featured Services</h2><button id="viewAllShop">View all</button></div>${featured.map(x=>shopRow({...x,kind:'Service'})).join('')||'<div class="card empty">Shop catalog will appear here once services are enabled in Workspace.</div>'}`;
-  }
-  const p=activeProject();const s=p?projectStats(p):null;const next=p?nextDeliverable(p):null;
-  const recent=[];
-  (state.portal.paymentSubmissions||[]).slice(0,2).forEach(x=>recent.push({title:'Payment submitted',sub:`${peso(x.submitted_amount)} · ${fmtDate(x.payment_date||x.submitted_at)}`,status:x.status||'Pending'}));
-  if(p)recent.push({title:p.title,sub:`${s.done} of ${s.total} deliverables`,status:p.status||'Active'});
-  return `${top(`Good day, ${state.portal.profile.name||'Client'}`,'CLIENT DASHBOARD')}${p?`<div class="card hero-card project-card" data-open="${esc(p.id)}"><div class="project-head"><div><div class="eyebrow">ACTIVE PROJECT</div><div class="project-code" style="margin-top:5px">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title)}</div></div><span class="badge">${esc(p.status||'Active')}</span></div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done} of ${s.total} deliverables</span><b>${s.pct}%</b></div>${next?`<div style="margin-top:16px"><div class="eyebrow">NEXT DELIVERABLE</div><b>${esc(next.item_name||'Deliverable')}</b><div class="helper">${esc(remaining(next.due_date||p.deadline_date))}</div></div>`:''}</div>`:'<div class="card empty">No active project right now.</div>'}<div class="section-head"><h2>Recent Activity</h2><button id="homeOrders">View orders</button></div><div class="card flat">${recent.map(x=>`<div class="list-row"><div class="row"><div><b>${esc(x.title)}</b><div class="helper">${esc(x.sub)}</div></div><span class="badge ${String(x.status).toLowerCase()==='pending'?'pending':''}">${esc(x.status)}</span></div></div>`).join('')||'<div class="list-row helper">No recent activity.</div>'}</div>`;
+  if(!isLoggedIn())return `<div class="guest-home"><div class="guest-brand">${brand(true)}</div><div class="guest-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Creative services.<br>Simple client access.</h1><p>Browse the Shop without an account. Sign in only when you need your projects, payments, invoices, and files.</p></div><div class="card guest-access"><div><b>Already a JUAN PROJECT client?</b><p>Use the email and temporary password provided by the admin.</p></div><button id="homeSignIn" class="btn primary full">Sign In</button></div><button id="homeShop" class="btn full">Browse Shop</button></div>`;
+  const p=activeProject(),s=p?projectStats(p):null,next=p?nextDeliverable(p):null,recent=[];
+  (state.portal.paymentSubmissions||[]).slice(0,2).forEach(x=>recent.push({title:'Payment submitted',sub:fmtDate(x.payment_date||x.submitted_at),status:x.status||'Pending'}));
+  if(p&&p.deliverables?.find(d=>d.completed))recent.push({title:'Deliverable completed',sub:fmtDate(p.deliverables.find(d=>d.completed)?.due_date||p.deadline_date),status:'Completed'});
+  return `<div class="dashboard-head"><div><span>Good day,</span><h1>${esc(state.portal.profile.name||'Client')}</h1></div><div class="dashboard-actions"><button class="icon-button">${icon('bell')}</button><button id="topAccount" class="avatar">${initials()}</button></div></div>${p?`<div class="card active-project" data-open="${esc(p.id)}"><div class="eyebrow">Active Project</div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title)}</div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done} of ${s.total} deliverables</span><b>${s.pct}%</b></div>${next?`<div class="next-deliverable"><span>Next Deliverable</span><b>${esc(next.item_name||'Deliverable')}</b><small>${esc(fmtDate(next.due_date||p.deadline_date))} · ${esc(remaining(next.due_date||p.deadline_date))}</small></div>`:''}</div>`:'<div class="card empty">No active project right now.</div>'}<div class="section-head"><h2>Recent Activity</h2><button id="homeOrders">View All</button></div><div class="card activity-card">${recent.map(x=>`<div class="activity-row"><span class="activity-icon">${icon(x.title.includes('Payment')?'payment':'orders',17)}</span><div><b>${esc(x.title)}</b><small>${esc(x.sub)}</small></div><span class="badge ${String(x.status).toLowerCase()==='pending'?'pending':''}">${esc(x.status)}</span></div>`).join('')||'<div class="empty compact-empty">No recent activity.</div>'}</div>`;
 }
 
 function orders(){
-  const ps=state.portal?.projects||[];
-  return `${top('My Projects','ORDERS')}<div class="tabs"><button class="active">Active</button><button>Completed</button><button>All</button></div>${ps.map(p=>{const s=projectStats(p);return `<div class="card project-card" data-open="${esc(p.id)}"><div class="project-head"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Untitled Project')}</div><div class="helper">Due ${esc(fmtDate(p.deadline_date))}</div></div><span class="badge">${esc(p.status||'Active')}</span></div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done}/${s.total} deliverables</span><b>${s.pct}%</b></div></div>`}).join('')||'<div class="card empty">No projects yet.</div>'}`;
+  const all=state.portal?.projects||[],filter=state.orderFilter;
+  const ps=all.filter(p=>filter==='all'||(filter==='completed'?String(p.status||'').toLowerCase()==='completed':!['completed','cancelled'].includes(String(p.status||'').toLowerCase())));
+  return `${pageHead('My Projects',{back:false,more:false})}<div class="tabs order-tabs"><button data-order-filter="active" class="${filter==='active'?'active':''}">Active</button><button data-order-filter="completed" class="${filter==='completed'?'active':''}">Completed</button><button data-order-filter="all" class="${filter==='all'?'active':''}">All</button></div><div class="project-list">${ps.map(p=>{const s=projectStats(p);return `<div class="card project-list-card" data-open="${esc(p.id)}"><div class="project-list-top"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Untitled Project')}</div></div>${icon('chevron',18)}</div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done}/${s.total} deliverables</span><b>${s.pct}%</b></div></div>`}).join('')||'<div class="card empty">No matching projects.</div>'}</div>`;
 }
 
 function project(){
-  const p=(state.portal?.projects||[]).find(x=>x.id===state.selected);if(!p){state.route='orders';return orders()}
-  const s=projectStats(p);
-  return `${top(p.title,p.project_code||p.id)}<button class="btn small" id="backOrders">← My Projects</button><div class="card" style="margin-top:12px"><div class="row"><span class="badge">${esc(p.status||'Active')}</span><b>${s.pct}%</b></div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done} of ${s.total} deliverables</span><span>${esc(remaining(p.deadline_date))}</span></div><div class="tabs" style="margin-top:16px"><button class="active">Deliverables</button><button id="projectDetailsBtn">Details</button><button id="projectInvoiceBtn">Invoice</button></div>${(p.deliverables||[]).map(d=>`<div class="deliverable"><span class="dot ${d.completed?'done':''}">${d.completed?'✓':''}</span><div><div class="d-name">${esc(d.item_name||d.name||'Deliverable')}</div><div class="d-sub">${esc(d.status|| (d.completed?'Completed':'Pending'))} · ${esc(fmtDate(d.due_date||p.deadline_date))}</div></div>${d.shared_drive_url?`<button class="drive" data-drive="${esc(d.shared_drive_url)}" aria-label="Open shared Google Drive file">↗</button>`:''}</div>`).join('')||'<div class="helper" style="padding-top:14px">No deliverables yet.</div>'}</div><div class="card"><div class="row"><div><b>Balance Due</b><div class="helper">Approved payments only</div></div><div style="text-align:right"><div class="money" style="font-size:19px">${peso(p.balance)}</div><button class="btn small primary" id="payProject">Make a Payment</button></div></div></div>`;
+  const p=(state.portal?.projects||[]).find(x=>x.id===state.selected);if(!p){state.route='orders';return orders()}const s=projectStats(p);
+  return `${pageHead('',{back:true,more:true})}<div class="project-detail-head"><div class="project-code">${esc(p.project_code||p.id)} <span class="badge">${esc(p.status||'Active')}</span></div><h1>${esc(p.title)}</h1><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done} of ${s.total} deliverables</span><b>${s.pct}%</b></div></div><div class="tabs detail-tabs"><button class="active">Deliverables</button><button id="projectDetailsBtn">Details</button><button id="projectInvoiceBtn">Invoice</button></div><div class="timeline card">${(p.deliverables||[]).map(d=>`<div class="deliverable"><span class="dot ${d.completed?'done':String(d.status||'').toLowerCase()==='in progress'?'progressing':''}">${d.completed?'✓':''}</span><div><div class="d-name">${esc(d.item_name||d.name||'Deliverable')}</div><div class="d-sub"><span class="status-text ${String(d.status||'').toLowerCase().replace(/\s+/g,'-')}">${esc(d.status||(d.completed?'Completed':'Pending'))}</span> <span>${esc(fmtDate(d.due_date||p.deadline_date))}</span></div></div><span></span></div>`).join('')||'<div class="empty compact-empty">No deliverables yet.</div>'}</div>${p.drive_url?`<div class="card project-drive-card"><div class="drive-copy"><b>Project Files</b><small>Open the shared Google Drive folder for this project.</small></div><button class="btn small" data-drive="${esc(p.drive_url)}">Open in Drive</button></div>`:''}<div class="card balance-row"><div><span>Balance Due</span><b>${peso(p.balance)}</b></div><button class="btn primary" id="payProject">Make a Payment</button></div>`;
 }
 
 function payment(){
-  const settings=state.portal?.paymentSettings||{};const ps=(state.portal?.projects||[]).filter(p=>Number(p.balance||0)>0);const qr=settings.qr_image_url||QR_FALLBACK;
-  return `${top('Payment','MAKE A PAYMENT')}<div class="tabs"><button class="active">Make a Payment</button><button id="paymentHistoryTab">History</button></div><div class="card"><b>Scan to Pay</b><p class="helper">${esc(settings.instructions||'Scan the bank QR, complete your payment, then upload the receipt below for approval.')}</p><div class="qr-wrap"><img class="qr" src="${esc(qr)}" alt="UnionBank InstaPay QR"><div class="qr-caption">${esc(settings.method_label||'UnionBank · InstaPay')}</div></div><div class="row" style="margin-top:12px"><span>${esc(settings.account_name||'JUAN PROJECT')}</span><b>${esc(settings.account_number||'•••• 1710')}</b></div></div><div class="card"><b>Upload Payment Receipt</b><div class="field" style="margin-top:14px"><label>Project</label><select id="payProjectSel" class="input">${ps.map(p=>`<option value="${esc(p.id)}">${esc(p.project_code||p.id)} · ${esc(p.title)} · ${peso(p.balance)}</option>`).join('')}</select></div><div class="field"><label>Amount</label><input id="payAmount" class="input" type="number" min="1" step="0.01"></div><div class="field"><label>Method</label><input id="payMethod" class="input" value="${esc(settings.method_label||'UnionBank InstaPay')}"></div><div class="field"><label>Reference Number</label><input id="payRef" class="input" placeholder="Can be read from receipt"></div><div class="field"><label>Date Paid</label><input id="payDate" class="input" type="date" value="${new Date().toISOString().slice(0,10)}"></div><label class="upload" for="receipt"><input id="receipt" type="file" accept="image/jpeg,image/png,application/pdf" hidden><b id="receiptLabel">Tap to upload receipt</b><div class="helper">JPG, PNG, or PDF · max 5 MB</div></label><button id="readReceipt" class="btn full" style="margin-top:10px" disabled>Read Receipt with AI</button><button id="submitPayment" class="btn dark full" style="margin-top:10px" ${ps.length?'':'disabled'}>Submit Payment</button></div>${paymentHistory()}`;
+  const settings=state.portal?.paymentSettings||{},ps=(state.portal?.projects||[]).filter(p=>Number(p.balance||0)>0),qr=settings.qr_image_url||QR_FALLBACK;
+  const selected=ps.find(p=>p.id===state.paymentProjectId)||ps[0]||null;if(selected&&!state.paymentProjectId)state.paymentProjectId=selected.id;
+  return `${pageHead('Payment',{back:false,more:true})}<div class="tabs payment-tabs"><button class="active">Make a Payment</button><button id="paymentHistoryTab">History</button></div><div class="card payment-card"><b>Scan to Pay</b><p>Send your payment via ${esc(settings.method_label||'UnionBank InstaPay')}.</p><div class="qr-wrap"><img class="qr" src="${esc(qr)}" alt="UnionBank bank QR code"></div><div class="bank-meta"><div><span>Account Name</span><b>${esc(settings.account_name||'JUAN PROJECT')}</b></div><div><span>Account Number</span><b>${esc(settings.account_number||'•••• •••• 1710')}</b></div></div></div><div class="card payment-card"><b>Upload Payment Receipt</b><p>Image (JPG, PNG, or PDF) Max 5MB</p>${ps.length>1?`<div class="field"><label>Project</label><select id="payProjectSel" class="input">${ps.map(p=>`<option value="${esc(p.id)}" ${p.id===state.paymentProjectId?'selected':''}>${esc(p.project_code||p.id)} · ${esc(p.title)}</option>`).join('')}</select></div>`:`<input id="payProjectSel" type="hidden" value="${esc(selected?.id||'')}">`}<div class="field"><label>Amount Paid</label><input id="payAmount" class="input" type="number" min="1" step="0.01" value="${selected?Number(selected.balance||0).toFixed(2):''}" placeholder="0.00"></div><label class="upload" for="receipt"><input id="receipt" type="file" accept="image/jpeg,image/png,application/pdf" hidden>${icon('upload',26)}<b id="receiptLabel">Tap to upload receipt</b><span>Our AI can read the reference number and fill the details automatically.</span></label><div class="receipt-extra"><input id="payMethod" type="hidden" value="${esc(settings.method_label||'UnionBank InstaPay')}"><input id="payRef" type="hidden"><input id="payDate" type="hidden" value="${new Date().toISOString().slice(0,10)}"></div><button id="readReceipt" class="btn full" style="margin-top:10px" disabled>Read Receipt with AI</button><button id="submitPayment" class="btn primary full" style="margin-top:10px" ${ps.length?'':'disabled'}>Submit Payment</button></div>${paymentHistory()}`;
 }
-function paymentHistory(){const rows=state.portal?.paymentSubmissions||[];return `<div class="card flat"><div style="padding:16px"><b>Payment History</b></div><div class="table-list">${rows.map(x=>`<div class="list-row"><div class="row"><div><b>${peso(x.submitted_amount)}</b><div class="helper">${esc(x.reference_number||x.extracted_reference||'No reference')} · ${fmtDate(x.payment_date||x.submitted_at)}</div></div><span class="badge ${x.status==='pending'?'pending':''}">${esc(x.status)}</span></div></div>`).join('')||'<div class="list-row helper">No client-submitted payments yet.</div>'}</div></div>`}
+function paymentHistory(){const rows=state.portal?.paymentSubmissions||[];return `<div class="card payment-history"><div class="section-head inner"><h2>Payment History</h2></div>${rows.map(x=>`<div class="activity-row"><span class="activity-icon">${icon('payment',17)}</span><div><b>${peso(x.submitted_amount)}</b><small>${esc(x.reference_number||x.extracted_reference||'No reference')} · ${fmtDate(x.payment_date||x.submitted_at)}</small></div><span class="badge ${x.status==='pending'?'pending':''}">${esc(x.status)}</span></div>`).join('')||'<div class="empty compact-empty">No client-submitted payments yet.</div>'}</div>`}
 
 function invoice(){
   const p=(state.portal?.projects||[]).find(x=>x.id===state.selected);if(!p){state.route='orders';return orders()}
-  return `${top('Invoice',p.project_code||p.id)}<button class="btn small" id="backProject">← Project</button><div class="invoice" style="margin-top:12px"><div class="invoice-h"><div>${brand()}</div><div style="text-align:right"><div class="eyebrow">INVOICE</div><b>${esc('INV-'+String(p.project_code||p.id).replace('JP-',''))}</b><div style="margin-top:6px"><span class="badge">${esc(p.payment_status||'UNPAID')}</span></div></div></div><div class="invoice-grid"><div><div class="eyebrow">BILL TO</div><b>${esc(state.portal.profile.name||state.portal.profile.email)}</b><div class="helper">${esc(state.portal.profile.email||'')}</div></div><div><div class="eyebrow">PROJECT</div><b>${esc(p.title)}</b><div class="helper">Due ${esc(fmtDate(p.deadline_date))}</div></div></div><table><thead><tr><th>ORDER ITEM</th><th>QTY</th><th>AMOUNT</th></tr></thead><tbody>${(p.items||[]).map(i=>`<tr><td>${esc(i.name||'Item')}</td><td>${Number(i.qty||1)}</td><td>${peso(Number(i.price||0)*Number(i.qty||1))}</td></tr>`).join('')||`<tr><td>${esc(p.title)}</td><td>1</td><td>${peso(p.total_amount)}</td></tr>`}</tbody></table><div class="invoice-total"><div class="row"><span>Total</span><b>${peso(p.total_amount)}</b></div><div class="row"><span>Amount Paid</span><b>${peso(p.amount_paid)}</b></div><div class="card balance" style="margin-top:8px"><div class="eyebrow">BALANCE DUE</div><div class="money">${peso(p.balance)}</div></div></div></div>`;
+  return `${pageHead('Invoice',{back:true,more:true})}<div class="invoice"><div class="invoice-h"><div>${brand(true)}</div><div class="invoice-id"><span>INVOICE</span><b>${esc('#'+(p.project_code||p.id)+'-2026')}</b><i class="badge">${esc(p.payment_status||'UNPAID')}</i></div></div><div class="invoice-grid"><div><span>BILL TO</span><b>${esc(state.portal.profile.name||state.portal.profile.email)}</b><small>${esc(state.portal.profile.email||'')}</small></div><div><span>PROJECT</span><b>${esc(p.title)}</b></div></div><table><thead><tr><th>ITEM</th><th>QTY</th><th>AMOUNT</th></tr></thead><tbody>${(p.items||[]).map(i=>`<tr><td>${esc(i.name||'Order Item')}</td><td>${Number(i.qty||1)}</td><td>${peso(Number(i.price||0)*Number(i.qty||1))}</td></tr>`).join('')||`<tr><td>${esc(p.title)}</td><td>1</td><td>${peso(p.total_amount)}</td></tr>`}</tbody></table><div class="invoice-total"><div><span>Total</span><b>${peso(p.total_amount)}</b></div><div><span>Amount Paid</span><b>${peso(p.amount_paid)}</b></div><div class="invoice-balance"><span>Balance Due</span><b>${peso(p.balance)}</b></div></div></div>`;
 }
 
 function account(){
   const p=state.portal.profile;
-  return `${top('Settings','ACCOUNT')}<div class="card"><div class="row"><div class="avatar">${initials()}</div><div style="flex:1"><b>${esc(p.name||'Client')}</b><div class="helper">${esc(p.email||'')}</div><div class="helper">${esc(p.client_code||'')}</div></div><span>›</span></div></div><div class="card settings-list"><div class="settings-row"><div><b>Edit Profile</b><div class="helper">Client information is managed by JUAN PROJECT.</div></div><span>›</span></div><div class="settings-row"><div style="width:100%"><b>Change Password</b><div class="field" style="margin-top:12px"><input id="newPass" class="input" type="password" minlength="10" placeholder="New password"></div><div class="field"><input id="newPass2" class="input" type="password" minlength="10" placeholder="Confirm password"></div><button id="changePass" class="btn full">Update Password</button></div></div><div class="settings-row"><b>Notifications</b><span>›</span></div></div><div class="card settings-list"><div class="settings-row"><b>Help & Support</b><span>›</span></div><div class="settings-row"><b>Terms & Privacy</b><span>›</span></div></div><button id="logout" class="btn full" style="color:#c62828">Sign Out</button>`;
+  return `${pageHead('Settings',{back:false,more:false})}<div class="card profile-card"><div class="avatar large">${initials()}</div><div><b>${esc(p.name||'Client')}</b><small>${esc(p.email||'')}</small><small>${esc(p.client_code||'')}</small></div>${icon('chevron',18)}</div><div class="settings-group"><div class="settings-label">Account</div><div class="card settings-list"><div class="settings-row"><div><b>Edit Profile</b><small>Managed by JUAN PROJECT</small></div>${icon('chevron',17)}</div><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button id="changePass" class="btn full">Update Password</button></div></div><div class="settings-row"><b>Notifications</b>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">Support</div><div class="card settings-list"><div class="settings-row"><b>Help & Support</b>${icon('chevron',17)}</div><div class="settings-row"><b>Terms & Privacy</b>${icon('chevron',17)}</div><div class="settings-row danger" id="logout"><b>Sign Out</b>${icon('chevron',17)}</div></div></div>`;
 }
 
 function categoryName(id){return state.catalog.categories.find(c=>c.id===id)?.name||'Service'}
 function shopRow(x){
-  const price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0);const old=x.kind==='Package'?Number(x.original_price||0):0;const key=`${x.kind}:${x.id}`;
-  return `<div class="shop-row"><div><div class="shop-kind">${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</div><div class="shop-title">${esc(x.name)}</div><p class="shop-desc">${esc(x.description||'JUAN PROJECT creative service.')}</p></div><div class="shop-side"><div class="shop-price">${old>price?`<span class="old-price">${peso(old)}</span>`:''}${peso(price)}</div><button class="btn small" data-add-shop="${esc(key)}">Add</button></div></div>`;
+  const price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0,key=`${x.kind}:${x.id}`;
+  return `<div class="shop-row"><div><div class="shop-title">${esc(x.name)}</div><div class="shop-kind">${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</div><p>${esc(x.description||'JUAN PROJECT creative service.')}</p></div><div class="shop-side"><div class="shop-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div><button class="btn small" data-view-shop="${esc(key)}">View</button></div></div>`
 }
 function shop(){
-  const q=state.shopQuery.trim().toLowerCase();const filter=state.shopFilter;
-  let items=[...(state.catalog.services||[]).map(x=>({...x,kind:'Service'})),...(state.catalog.packages||[]).map(x=>({...x,kind:'Package'}))];
-  items=items.filter(x=>{const category=categoryName(x.category_id);const text=`${x.name||''} ${x.description||''} ${category}`.toLowerCase();const qok=!q||text.includes(q);const fok=filter==='all'||String(x.category_id||'uncategorized')===filter;return qok&&fok});
-  const total=state.cart.reduce((s,x)=>s+Number(x.price||0)*Number(x.qty||1),0),count=state.cart.reduce((s,x)=>s+Number(x.qty||1),0);
-  return `${top('Shop','BROWSE WITHOUT AN ACCOUNT')}<p class="subtitle">Simple, text-only catalog. Services and packages are pulled from the same catalog used by JUAN PROJECT Workspace.</p><div class="shop-toolbar"><input id="shopSearch" class="input shop-search" placeholder="Search services..." value="${esc(state.shopQuery)}"></div><div class="chips"><button class="chip ${filter==='all'?'active':''}" data-filter="all">All</button>${state.catalog.categories.map(c=>`<button class="chip ${filter===c.id?'active':''}" data-filter="${esc(c.id)}">${esc(c.name)}</button>`).join('')}</div><div class="shop-list">${items.map(shopRow).join('')||'<div class="card empty">No matching services.</div>'}</div>${count?`<div class="cart-strip"><div><div class="cart-count">${count} item${count===1?'':'s'} selected</div><div class="cart-sub">Subtotal ${peso(total)}</div></div><button id="reviewCart" class="btn small">Review</button></div>`:''}`;
+  const all=[...(state.catalog.services||[]).map(x=>({...x,kind:'Service'})),...(state.catalog.packages||[]).map(x=>({...x,kind:'Package'}))];
+  const q=String(state.shopQuery||'').trim().toLowerCase(),filter=state.shopFilter||'all';
+  const items=all.filter(x=>{
+    if(filter==='services'&&x.kind!=='Service')return false;
+    if(filter==='packages'&&x.kind!=='Package')return false;
+    if(filter==='tutorials'&&!(String(categoryName(x.category_id)).toLowerCase().includes('tutorial')||String(x.name||'').toLowerCase().includes('tutorial')||String(x.description||'').toLowerCase().includes('tutorial')))return false;
+    if(!q)return true;
+    return [x.name,x.description,x.kind,categoryName(x.category_id)].some(v=>String(v||'').toLowerCase().includes(q));
+  });
+  return `${pageHead('Shop',{back:false,more:false})}<p class="screen-subtitle">Explore our services and packages.${isLoggedIn()?'':' Sign in to place an order.'}</p><div class="shop-tools"><div class="shop-search"><span>⌕</span><input id="shopSearch" value="${esc(state.shopQuery)}" placeholder="Search services"></div><div class="shop-filters"><button data-shop-filter="all" class="${filter==='all'?'active':''}">All</button><button data-shop-filter="services" class="${filter==='services'?'active':''}">Services</button><button data-shop-filter="packages" class="${filter==='packages'?'active':''}">Packages</button><button data-shop-filter="tutorials" class="${filter==='tutorials'?'active':''}">Tutorials</button></div></div><div class="shop-list">${items.map(shopRow).join('')||'<div class="card empty">No matching services.</div>'}</div>`
 }
-
 function findShopItem(key){const [kind,id]=String(key).split(':');if(kind==='Package')return {...state.catalog.packages.find(x=>x.id===id),kind};return {...state.catalog.services.find(x=>x.id===id),kind:'Service'}}
-function addToCart(key){const item=findShopItem(key);if(!item?.id)return;const price=item.kind==='Package'?Number(item.new_price||0):Number(item.price||0);const existing=state.cart.find(x=>x.key===key);if(existing)existing.qty=Number(existing.qty||1)+1;else state.cart.push({key,name:item.name,kind:item.kind,price,qty:1});saveCart();toast(`${item.name} added.`);render()}
-function changeCartQty(key,delta){const x=state.cart.find(i=>i.key===key);if(!x)return;x.qty=Number(x.qty||1)+delta;if(x.qty<=0)state.cart=state.cart.filter(i=>i.key!==key);saveCart();render()}
 
 function bind(){
   document.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>{if(!isLoggedIn())return gate();state.selected=x.dataset.open;state.route='project';render()});
   document.querySelectorAll('[data-drive]').forEach(x=>x.onclick=()=>window.open(x.dataset.drive,'_blank','noopener'));
+  const topAccount=document.getElementById('topAccount');if(topAccount)topAccount.onclick=()=>{state.route='account';render()};
   const homeShop=document.getElementById('homeShop');if(homeShop)homeShop.onclick=()=>{state.route='shop';render()};
   const homeSignIn=document.getElementById('homeSignIn');if(homeSignIn)homeSignIn.onclick=()=>authScreen();
-  const viewAll=document.getElementById('viewAllShop');if(viewAll)viewAll.onclick=()=>{state.route='shop';render()};
   const homeOrders=document.getElementById('homeOrders');if(homeOrders)homeOrders.onclick=()=>{state.route='orders';render()};
-  const backOrders=document.getElementById('backOrders');if(backOrders)backOrders.onclick=()=>{state.route='orders';render()};
-  const payProject=document.getElementById('payProject');if(payProject)payProject.onclick=()=>{state.route='payment';render()};
+  const back=document.getElementById('screenBack');if(back)back.onclick=()=>{if(state.route==='invoice'){state.route='project'}else if(state.route==='project'){state.route='orders'}else{state.route='home'}render()};
+  document.querySelectorAll('[data-order-filter]').forEach(b=>b.onclick=()=>{state.orderFilter=b.dataset.orderFilter;render()});
+  const payProject=document.getElementById('payProject');if(payProject)payProject.onclick=()=>{state.paymentProjectId=state.selected;state.route='payment';render()};
   const invoiceBtn=document.getElementById('projectInvoiceBtn');if(invoiceBtn)invoiceBtn.onclick=()=>{state.route='invoice';render()};
-  const backProject=document.getElementById('backProject');if(backProject)backProject.onclick=()=>{state.route='project';render()};
-  const projectDetailsBtn=document.getElementById('projectDetailsBtn');if(projectDetailsBtn)projectDetailsBtn.onclick=()=>toast('Project details are already summarized on this page.');
-  document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{state.shopFilter=b.dataset.filter;render()});
-  const shopSearch=document.getElementById('shopSearch');if(shopSearch)shopSearch.oninput=()=>{state.shopQuery=shopSearch.value;clearTimeout(window.__shopSearchTimer);window.__shopSearchTimer=setTimeout(()=>render(),160)};
-  document.querySelectorAll('[data-add-shop]').forEach(b=>b.onclick=()=>addToCart(b.dataset.addShop));
-  const reviewCart=document.getElementById('reviewCart');if(reviewCart)reviewCart.onclick=()=>{state.cartOpen=true;render()};
-  const paymentHistoryTab=document.getElementById('paymentHistoryTab');if(paymentHistoryTab)paymentHistoryTab.onclick=()=>document.querySelector('.card.flat')?.scrollIntoView({behavior:'smooth'});
+  const detailsBtn=document.getElementById('projectDetailsBtn');if(detailsBtn)detailsBtn.onclick=()=>toast('Project details are summarized in the project header.');
+  document.querySelectorAll('[data-view-shop]').forEach(b=>b.onclick=()=>{state.shopItem=findShopItem(b.dataset.viewShop);render()});
+  document.querySelectorAll('[data-shop-filter]').forEach(b=>b.onclick=()=>{state.shopFilter=b.dataset.shopFilter||'all';render()});
+  const shopSearch=document.getElementById('shopSearch');if(shopSearch){shopSearch.oninput=()=>{state.shopQuery=shopSearch.value;const pos=shopSearch.selectionStart;render();const next=document.getElementById('shopSearch');if(next){next.focus();try{next.setSelectionRange(pos,pos)}catch{}}}};
+  const paymentHistoryTab=document.getElementById('paymentHistoryTab');if(paymentHistoryTab)paymentHistoryTab.onclick=()=>document.querySelector('.payment-history')?.scrollIntoView({behavior:'smooth'});
+  const projectSel=document.getElementById('payProjectSel');if(projectSel&&projectSel.tagName==='SELECT')projectSel.onchange=()=>{state.paymentProjectId=projectSel.value;const p=(state.portal?.projects||[]).find(x=>x.id===projectSel.value);const a=document.getElementById('payAmount');if(a&&p)a.value=Number(p.balance||0).toFixed(2)};
 
   const receipt=document.getElementById('receipt'),receiptLabel=document.getElementById('receiptLabel'),readBtn=document.getElementById('readReceipt');
   if(receipt)receipt.onchange=async()=>{const f=receipt.files?.[0];if(!f)return;try{state.extractedReceipt=null;state.receiptPath=await uploadReceipt(f);if(receiptLabel)receiptLabel.textContent='Receipt uploaded';if(readBtn)readBtn.disabled=false;toast('Receipt uploaded securely.')}catch(e){toast(e.message)}};
-  if(readBtn)readBtn.onclick=async()=>{try{readBtn.disabled=true;readBtn.textContent='Reading…';const x=await extractReceipt(state.receiptPath);state.extractedReceipt=x;const ref=document.getElementById('payRef'),amt=document.getElementById('payAmount'),date=document.getElementById('payDate'),method=document.getElementById('payMethod');if(x.referenceNumber&&ref)ref.value=x.referenceNumber;if(x.amount&&amt)amt.value=x.amount;if(x.paymentDate&&date)date.value=x.paymentDate;if(x.paymentMethod&&method)method.value=x.paymentMethod;toast('Receipt details prefilled. Please review them.')}catch(e){toast(e.message)}finally{readBtn.disabled=false;readBtn.textContent='Read Receipt with AI'}};
-  const submitBtn=document.getElementById('submitPayment');if(submitBtn)submitBtn.onclick=async()=>{try{if(!state.receiptPath)throw Error('Upload a receipt first.');const amt=document.getElementById('payAmount'),projectSel=document.getElementById('payProjectSel'),method=document.getElementById('payMethod'),ref=document.getElementById('payRef'),date=document.getElementById('payDate');const amount=Number(amt?.value||0);if(!(amount>0))throw Error('Enter the amount paid.');submitBtn.disabled=true;await submitPaymentApi({projectId:projectSel?.value,amount,paymentMethod:method?.value||'',referenceNumber:ref?.value||'',paymentDate:date?.value||'',receiptPath:state.receiptPath,extracted:state.extractedReceipt});toast('Payment submitted for approval.');state.portal=await getPortal();state.receiptPath=null;state.extractedReceipt=null;render()}catch(e){toast(e.message)}finally{if(document.body.contains(submitBtn))submitBtn.disabled=false}};
-  const changeBtn=document.getElementById('changePass');if(changeBtn)changeBtn.onclick=async()=>{try{const p1=document.getElementById('newPass'),p2=document.getElementById('newPass2');if((p1?.value||'').length<10)throw Error('Use at least 10 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');await setPassword(p1.value);await markPasswordSet();toast('Password updated.');p1.value=p2.value=''}catch(e){toast(e.message)}};
+  if(readBtn)readBtn.onclick=async()=>{try{readBtn.disabled=true;readBtn.textContent='Reading…';const x=await extractReceipt(state.receiptPath);state.extractedReceipt=x;const ref=document.getElementById('payRef'),amt=document.getElementById('payAmount'),date=document.getElementById('payDate'),method=document.getElementById('payMethod');if(x.referenceNumber&&ref)ref.value=x.referenceNumber;if(x.amount&&amt)amt.value=x.amount;if(x.paymentDate&&date)date.value=x.paymentDate;if(x.paymentMethod&&method)method.value=x.paymentMethod;toast('Receipt details were read. Please review the amount before submitting.')}catch(e){toast(e.message)}finally{readBtn.disabled=false;readBtn.textContent='Read Receipt with AI'}};
+  const submitBtn=document.getElementById('submitPayment');if(submitBtn)submitBtn.onclick=async()=>{try{if(!state.receiptPath)throw Error('Upload a receipt first.');const amt=document.getElementById('payAmount'),projectSel=document.getElementById('payProjectSel'),method=document.getElementById('payMethod'),ref=document.getElementById('payRef'),date=document.getElementById('payDate'),amount=Number(amt?.value||0);if(!(amount>0))throw Error('Enter the amount paid.');if(!projectSel?.value)throw Error('Select a project.');submitBtn.disabled=true;await submitPaymentApi({projectId:projectSel.value,amount,paymentMethod:method?.value||'',referenceNumber:ref?.value||'',paymentDate:date?.value||'',receiptPath:state.receiptPath,extracted:state.extractedReceipt});toast('Payment submitted for approval.');state.portal=await getPortal();state.receiptPath=null;state.extractedReceipt=null;render()}catch(e){toast(e.message)}finally{if(document.body.contains(submitBtn))submitBtn.disabled=false}};
+  const changeBtn=document.getElementById('changePass');if(changeBtn)changeBtn.onclick=async()=>{try{const p1=document.getElementById('newPass'),p2=document.getElementById('newPass2');if((p1?.value||'').length<8)throw Error('Use at least 8 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');await setPassword(p1.value);await markPasswordSet();toast('Password updated.');p1.value=p2.value=''}catch(e){toast(e.message)}};
   const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{await signOut();state.portal=null;state.route='home';render()};
 }
 
-(async()=>{
-  try{
-    await getSupabase();
-    try{state.catalog=await getCatalog();state.catalogLoaded=true}catch(e){console.warn('Catalog:',e.message)}
-    const s=await session();
-    if(s)return loadPortal();
-    if(localStorage.getItem(ONBOARDING_KEY)==='1')return render();
-    welcomeScreen();
-  }catch(e){console.error(e);if(localStorage.getItem(ONBOARDING_KEY)==='1')render();else welcomeScreen()}
-})();
+(async()=>{try{await getSupabase();try{state.catalog=await getCatalog();state.catalogLoaded=true}catch(e){console.warn('Catalog:',e.message)}const s=await session();if(s)return loadPortal();if(localStorage.getItem(ONBOARDING_KEY)==='1')return render();welcomeScreen()}catch(e){console.error(e);if(localStorage.getItem(ONBOARDING_KEY)==='1')render();else welcomeScreen()}})();
