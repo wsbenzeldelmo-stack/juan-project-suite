@@ -1,0 +1,9 @@
+{
+  "name": "JUAN PROJECT Online",
+  "short_name": "JUAN Online",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#ffffff",
+  "icons": []
+}
