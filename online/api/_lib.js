@@ -52,18 +52,13 @@ export async function ensurePortalAccount(user, svc) {
   if (clientError) throw clientError;
 
   if (!client) {
-    const fullName = String(user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0]).trim();
-    const newClient = { id: makeLegacyClientId(user.id), name: fullName, email, phone: '', address: '' };
-    const inserted = await svc.from('clients').insert(newClient).select('id,name,email,phone,address,client_code').single();
-    if (inserted.error) throw inserted.error;
-    client = inserted.data;
+    throw Object.assign(new Error('No JUAN PROJECT client record is linked to this email. Please contact JUAN PROJECT.'), { status: 403 });
   }
 
-  const createdWithPassword = user.user_metadata?.created_with_password === true;
   const insertedAccount = await svc.from('portal_accounts').insert({
     auth_user_id: user.id,
     client_id: client.id,
-    password_set: createdWithPassword
+    password_set: false
   }).select('*').single();
   if (insertedAccount.error) throw insertedAccount.error;
   return insertedAccount.data;
