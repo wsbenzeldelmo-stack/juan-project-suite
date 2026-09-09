@@ -11,7 +11,7 @@ export default async function handler(req,res){
     const clientRes=await svc.from('clients').select('id,name,email,phone,address,client_code').eq('id',account.client_id).single();
     if(clientRes.error)throw clientRes.error;
 
-    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,total_amount,start_date,deadline_date,drive_url').eq('client_id',account.client_id).order('id',{ascending:false});
+    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,total_amount,subtotal_amount,discount_amount,rush_fee,system_maintenance_fee,workload_surcharge,start_date,deadline_date,drive_url,invoice_number,invoice_issue_date,invoice_due_date').eq('client_id',account.client_id).order('id',{ascending:false});
     if(projectsRes.error)throw projectsRes.error;
     const projects=projectsRes.data||[];
     const ids=projects.map(p=>p.id);
@@ -47,7 +47,7 @@ export default async function handler(req,res){
     });
 
     const safeSubs=subs.map(x=>({
-      id:x.id,project_id:x.project_id,submitted_amount:Number(x.submitted_amount||0),payment_method:x.payment_method||null,
+      id:x.id,project_id:x.project_id,submitted_amount:Number(x.submitted_amount||0),transfer_fee:Number(x.extracted_transfer_fee||0),net_amount:Number(x.net_amount||x.submitted_amount||0),entry_source:x.entry_source||'gemini',payment_method:x.payment_method||null,
       reference_number:x.reference_number||null,extracted_reference:x.extracted_reference||null,payment_date:x.payment_date||null,
       status:x.status,submitted_at:x.submitted_at,rejection_reason:x.rejection_reason||null
     }));

@@ -18,6 +18,7 @@ for required in \
   "$ROOT/supabase/migrations/003_shared_sync_security.sql" \
   "$ROOT/supabase/migrations/004_catalog_workspace_sync.sql" \
   "$ROOT/supabase/migrations/005_suite_v1_1.sql" \
+  "$ROOT/supabase/migrations/006_suite_v1_1_1.sql" \
   "$ROOT/supabase/verify_v1_1.sql" \
   "$ROOT/docs/reference/JUAN_PROJECT_ONLINE_UI_REFERENCE.png" \
   "$ROOT/docs/LEGACY_CLIENT_SEQUENCE_V1_1.csv"; do
@@ -49,10 +50,10 @@ import csv,sys
 app=Path(sys.argv[1]).read_text()
 if 'Create Account' in app or 'Sign Up' in app or 'First Access' in app:
     raise SystemExit('Public registration language remains in Online UI')
-if "v1.1.0" not in app:
-    raise SystemExit('Online UI version is not V1.1')
-if 'shop-filters' not in app or 'shop-search' not in app:
-    raise SystemExit('V1.1 Shop standardization is missing')
+if "v1.1.1" not in app:
+    raise SystemExit('Online UI version is not V1.1.1')
+if 'shop-sort' not in app or 'shop-search' not in app:
+    raise SystemExit('V1.1.1 Shop sorting standardization is missing')
 rows=list(csv.DictReader(open(sys.argv[2], newline='')))
 if len(rows)!=45:
     raise SystemExit(f'Expected 45 legacy unique-client reference rows, found {len(rows)}')
@@ -73,4 +74,4 @@ EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d5
 ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg" | awk '{print $1}')"
 [[ "$ACTUAL_QR_SHA" == "$EXPECTED_QR_SHA" ]] || { echo "UnionBank QR asset was altered"; exit 1; }
 
-echo "JUAN PROJECT Suite V1.1 verification passed."
+echo "JUAN PROJECT Suite V1.1.1 verification passed."

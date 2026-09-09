@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>JUAN PROJECT Workspace — Seller & Admin</title>
+  <title>JUAN PROJECT Workspace</title>
   
   <!-- Supabase Client JS (Global UMD Bundle) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
@@ -1258,7 +1258,7 @@
         <header class="page-header"><div><div class="greeting-subtitle">Workspace</div><h1 class="page-title">Projects</h1></div><button class="btn btn-primary" onclick="app.navigateTo('new-order')">+ New Order</button></header>
         <div class="view-toolbar unified-toolbar projects-toolbar">
           <input id="projectsSearch" class="form-control" placeholder="Search Project ID, project name, client, or category..." oninput="app.queueViewRender('projects')">
-          <div class="toolbar-actions"><select id="projectsSort" class="compact-sort" onchange="app.setListSort('projects',this.value)"><option value="default">Default</option><option value="az">A to Z</option><option value="za">Z to A</option><option value="date">By Date</option></select><div class="filter-pills" id="projectFilters"></div></div>
+          <div class="toolbar-actions"><select id="projectsSort" class="compact-sort" onchange="app.setListSort('projects',this.value)"><option value="default">Default (by ID)</option><option value="date">By Date</option><option value="payment">By Payment</option></select><div class="filter-pills" id="projectFilters"></div></div>
         </div>
         <div class="card table-card">
           <div class="table-responsive">
@@ -1468,7 +1468,7 @@
       <!-- VIEW 6: CLIENTS -->
       <section id="view-clients" class="view">
         <header class="page-header"><div><div class="greeting-subtitle">Directory</div><h1 class="page-title">Clients Directory</h1></div></header>
-        <div class="view-toolbar unified-toolbar"><input type="text" class="form-control" id="clientsSearch" placeholder="Search client name, email, number, or address..." oninput="app.queueViewRender('clients')"><div class="toolbar-actions"><select id="clientsSort" class="compact-sort" onchange="app.setListSort('clients',this.value)"><option value="az">A to Z</option><option value="za">Z to A</option></select></div></div>
+        <div class="view-toolbar unified-toolbar"><input type="text" class="form-control" id="clientsSearch" placeholder="Search client name, email, number, or address..." oninput="app.queueViewRender('clients')"><div class="toolbar-actions"><select id="clientsSort" class="compact-sort" onchange="app.setListSort('clients',this.value)"><option value="default">Default (by ID)</option><option value="date">By Date</option><option value="payment">By Payment</option></select><div class="filter-pills" id="clientFilters"></div></div></div>
         <div id="clientsListGrid"></div>
       </section>
 
@@ -1481,14 +1481,14 @@
         <div class="view-toolbar unified-toolbar catalog-toolbar">
           <input type="text" class="form-control" id="catalogManagerSearch" placeholder="Search services, packages, descriptions, or inclusions..." oninput="app.queueViewRender('catalog')">
           <div class="toolbar-actions">
-            <div class="filter-pills" id="catalogManagerFilters"></div>
+            <div id="catalogManagerFilters" class="hidden"></div>
             <select id="catalogCategorySelect" class="compact-sort" onchange="app.selectCatalogCategory(this.value)"></select>
-            <select id="catalogSort" class="compact-sort" onchange="app.setListSort('catalog',this.value)"><option value="az">A to Z</option><option value="za">Z to A</option></select>
+            <select id="catalogSort" class="compact-sort" onchange="app.setListSort('catalog',this.value)"><option value="default">Default (by ID)</option><option value="price-desc">Price: Highest to Lowest</option><option value="price-asc">Price: Lowest to Highest</option></select>
           </div>
         </div>
         <div class="catalog-manager-main catalog-manager-simple">
-          <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Name</th><th>Category</th><th>Description</th><th>Price</th><th>Actions</th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
-          <div class="card table-card" id="catalogPackagesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title">Packages</h2></div><button class="btn btn-secondary btn-sm" onclick="app.openCatalogPackageModal()">+ New Package</button></div><div class="table-responsive"><table class="data-table unified-table catalog-packages-table"><thead><tr><th>Package Name</th><th>Package Inclusions</th><th>Original Price</th><th>New Price</th><th>Actions</th></tr></thead><tbody id="catalogPackagesBody"></tbody></table></div></div>
+          <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Service ID</th><th>Name</th><th>Category</th><th>Description</th><th>Price</th><th>Actions</th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
+          <div class="card table-card" id="catalogPackagesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title">Packages</h2></div><button class="btn btn-secondary btn-sm" onclick="app.openCatalogPackageModal()">+ New Package</button></div><div class="table-responsive"><table class="data-table unified-table catalog-packages-table"><thead><tr><th>Service ID</th><th>Package Name</th><th>Package Inclusions</th><th>Original Price</th><th>New Price</th><th>Actions</th></tr></thead><tbody id="catalogPackagesBody"></tbody></table></div></div>
         </div>
       </section>
 
@@ -2161,13 +2161,14 @@
         catalogCategories: [],
         catalogManagerCategory: "ALL",
         catalogManagerFilter: "All",
-        projectFilter: "Current",
+        projectFilter: "Pending",
+        clientFilter: "All",
         paymentFilter: "Pending",
         listSorts: {
           projects: "default",
           payments: "default",
-          clients: "az",
-          catalog: "az",
+          clients: "default",
+          catalog: "default",
           overviewProjects: "date",
           overviewDeadlines: "date"
         },
@@ -3589,15 +3590,9 @@ ${description}`))actionCallback();return;}
       }
       function sortProjectsFor(scope,items,filterMode=''){
         const pref=state.listSorts?.[scope]||'default', arr=items.slice();
-        if(pref==='az')return arr.sort((a,b)=>String(a.title||a.name||'').localeCompare(String(b.title||b.name||'')));
-        if(pref==='za')return arr.sort((a,b)=>String(b.title||b.name||'').localeCompare(String(a.title||a.name||'')));
-        if(pref==='date'){
-          if(scope==='payments')return arr.sort((a,b)=>{const ad=parseDateSafe(a.payment_due_date||a.deadline_date)?.getTime()??Infinity,bd=parseDateSafe(b.payment_due_date||b.deadline_date)?.getTime()??Infinity;const pd=Number(projectIsPriority(b))-Number(projectIsPriority(a));return ad-bd||pd||projectNumber(a)-projectNumber(b)});
-          return arr.sort(compareProjectPriority);
-        }
-        if(scope==='projects')return arr.sort(filterMode==='Current'?compareProjectPriority:(a,b)=>projectNumber(a)-projectNumber(b));
-        if(scope==='payments')return arr.sort(filterMode==='Pending'?(a,b)=>{const ad=parseDateSafe(a.payment_due_date||a.deadline_date)?.getTime()??Infinity,bd=parseDateSafe(b.payment_due_date||b.deadline_date)?.getTime()??Infinity;return ad-bd||Number(projectIsPriority(b))-Number(projectIsPriority(a))||projectNumber(a)-projectNumber(b)}:(a,b)=>projectNumber(a)-projectNumber(b));
-        return arr;
+        if(pref==='date')return arr.sort((a,b)=>(parseDateSafe(b.created_at||b.start_date)?.getTime()||0)-(parseDateSafe(a.created_at||a.start_date)?.getTime()||0)||projectNumber(a)-projectNumber(b));
+        if(pref==='payment')return arr.sort((a,b)=>getProjectPaid(b)-getProjectPaid(a)||projectNumber(a)-projectNumber(b));
+        return arr.sort((a,b)=>projectNumber(a)-projectNumber(b));
       }
       function renumberProjectSequence(){
         // No reserved or skipped Project IDs: JP-001, JP-002, JP-003 ... continuously.
@@ -3631,11 +3626,11 @@ ${description}`))actionCallback();return;}
 
       function renderProjects() {
         const body=document.getElementById("projectsTableBody"),filters=document.getElementById("projectFilters");if(!body||!filters)return;
-        const names=["All","Current","Completed"],current=state.projectFilter||"Current";filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setProjectFilter('${n}')">${n}</button>`).join("");
+        const names=["All","Pending","Completed"],current=state.projectFilter||"Pending";filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setProjectFilter('${n}')">${n}</button>`).join("");
         const q=(document.getElementById("projectsSearch")?.value||"").trim().toLowerCase();let rows=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.project_type||''} ${getProjectType(p)||''}`).toLowerCase().includes(q));
-        if(current==='Current')rows=rows.filter(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);else if(current==='Completed')rows=rows.filter(p=>p.status==='Completed'||p.delivery_status==='Delivered'||p.archived_at);
+        if(current==='Pending')rows=rows.filter(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);else if(current==='Completed')rows=rows.filter(p=>p.status==='Completed'||p.delivery_status==='Delivered'||p.archived_at);
         rows=sortProjectsFor('projects',rows,current);const sortEl=document.getElementById('projectsSort');if(sortEl)sortEl.value=state.listSorts?.projects||'default';
-        body.innerHTML=rows.map(p=>{const bal=getProjectBalance(p),prog=getProjectProgress(p),category=displayCategory(p.project_type||getProjectType(p)||'—'),priority=projectIsPriority(p),status=(p.status==='Completed'||p.delivery_status==='Delivered'||p.archived_at)?'COMPLETED':String(p.status||'CURRENT').toUpperCase(),menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${status==='COMPLETED'?'badge-green':'badge-neutral'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`}).join('')||`<tr><td colspan="10" class="text-center text-muted py-4">No projects found.</td></tr>`;
+        body.innerHTML=rows.map(p=>{const bal=getProjectBalance(p),prog=getProjectProgress(p),category=displayCategory(p.project_type||getProjectType(p)||'—'),priority=projectIsPriority(p),status=(p.status==='Completed'||p.delivery_status==='Delivered'||p.archived_at)?'COMPLETED':'PENDING',menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${status==='COMPLETED'?'badge-green':'badge-neutral'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`}).join('')||`<tr><td colspan="10" class="text-center text-muted py-4">No projects found.</td></tr>`;
       }
 
       function setProjectFilter(filter){ state.projectFilter=filter; renderProjects(); }
@@ -3704,7 +3699,7 @@ ${description}`))actionCallback();return;}
         const box=document.getElementById('reportsContent');if(!box)return;const projects=state.projects.filter(p=>!p.deleted),payments=getAllPayments(),totalReceivables=projects.reduce((s,p)=>s+Number(p.total_amount||0),0),collected=payments.reduce((s,p)=>s+Number(p.amount_paid||p.amount||0),0),outstanding=Math.max(0,totalReceivables-collected),active=projects.filter(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at).length,completed=projects.length-active,collectionRate=totalReceivables?Math.round(collected/totalReceivables*100):0,currentMonth=new Date().toISOString().slice(0,7),monthCollected=payments.filter(x=>String(x.payment_date||x.created_at||'').slice(0,7)===currentMonth).reduce((s,x)=>s+Number(x.amount_paid||x.amount||0),0),overdue=projects.filter(isProjectOverdue).reduce((s,p)=>s+getProjectBalance(p),0);
         const monthMap={};payments.forEach(x=>{const k=String(x.payment_date||x.created_at||'').slice(0,7);if(k)monthMap[k]=(monthMap[k]||0)+Number(x.amount_paid||x.amount||0)});const recent=Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-8),maxVal=Math.max(1,...recent.map(x=>x[1])),pts=recent.map(([k,v],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),y=132-v/maxVal*96;return `${x.toFixed(1)},${y.toFixed(1)}`}).join(' '),labels=recent.map(([k],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),d=new Date(k+'-01T12:00:00');return `<text x="${x}" y="160" text-anchor="middle" class="report-chart-label">${d.toLocaleDateString('en-PH',{month:'short'})}</text>`}).join('');
         const levels=[10000,50000,100000,300000,500000,750000,1000000],achieved=levels.filter(x=>totalReceivables>=x),next=levels.find(x=>totalReceivables<x)||null,prev=achieved.length?achieved[achieved.length-1]:0,levelProgress=next?Math.max(0,Math.min(100,(totalReceivables-prev)/(next-prev)*100)):100,levelHtml=levels.map(v=>`<div class="revenue-level ${totalReceivables>=v?'achieved':''} ${next===v?'next':''}"><span class="revenue-level-dot">${totalReceivables>=v?'✓':''}</span><strong>${v>=1000000?'₱1M':`₱${Math.round(v/1000)}K`}</strong></div>`).join('');
-        box.innerHTML=`<div class="report-kpi-grid report-kpi-grid-four"><div class="kpi-card report-emphasis"><div class="kpi-label">Total Receivables</div><div class="kpi-value number-animate">${formatCurrency(totalReceivables)}</div><div class="kpi-sub">Encoded project value</div></div><div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value number-animate">${formatCurrency(collected)}</div><div class="kpi-sub">${collectionRate}% collection rate</div></div><div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value number-animate">${formatCurrency(outstanding)}</div><div class="kpi-sub">Still to be collected</div></div><div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value number-animate">${formatCurrency(monthCollected)}</div><div class="kpi-sub">Payments received</div></div></div><div class="reports-bento-v2"><div class="card revenue-graph-card"><div class="card-header"><div><div class="section-kicker">REVENUE</div><h2 class="card-title">Revenue Trend</h2><div class="text-sm text-muted mt-1">Payments received by month</div></div></div>${recent.length?`<svg class="report-line-chart" viewBox="0 0 500 175"><line x1="24" y1="132" x2="476" y2="132" class="report-chart-grid"/><line x1="24" y1="84" x2="476" y2="84" class="report-chart-grid"/><line x1="24" y1="36" x2="476" y2="36" class="report-chart-grid"/><polyline points="${pts}" class="report-chart-line"/>${recent.map(([k,v],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),y=132-v/maxVal*96;return `<circle cx="${x}" cy="${y}" r="4" class="report-chart-dot"><title>${formatCurrency(v)}</title></circle>`}).join('')}${labels}</svg>`:`<div class="empty-compact-state"><strong>No revenue trend yet</strong><span>Recorded payments will appear here.</span></div>`}</div><div class="card report-snapshot-card"><div class="card-header"><div><div class="section-kicker">BUSINESS</div><h2 class="card-title">Snapshot</h2></div></div><div class="milestone-list"><div class="milestone-row"><span>Active projects</span><strong class="number-animate">${active}</strong></div><div class="milestone-row"><span>Completed projects</span><strong class="number-animate">${completed}</strong></div><div class="milestone-row"><span>Overdue receivables</span><strong class="${overdue?'text-danger':''} number-animate">${formatCurrency(overdue)}</strong></div><div class="milestone-row"><span>Collection rate</span><strong>${collectionRate}%</strong></div></div></div></div><div class="card revenue-milestone-card"><div class="revenue-level-head"><div><div class="section-kicker">MILESTONES</div><h2 class="card-title">Revenue Level</h2><span>${next?`${formatCurrency(Math.max(0,next-totalReceivables))} to the next level`:'Top milestone reached'}</span></div><strong>${Math.round(levelProgress)}%</strong></div><div class="revenue-level-progress"><i style="width:${levelProgress}%"></i></div><div class="revenue-levels">${levelHtml}</div></div>`;animateNumbersIn(box);
+        box.innerHTML=`<div class="report-kpi-grid report-kpi-grid-four"><div class="kpi-card report-emphasis"><div class="kpi-label">Total Receivables</div><div class="kpi-value number-animate">${formatCurrency(totalReceivables)}</div><div class="kpi-sub">Encoded project value</div></div><div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value number-animate">${formatCurrency(collected)}</div><div class="kpi-sub">${collectionRate}% collection rate</div></div><div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value number-animate">${formatCurrency(outstanding)}</div><div class="kpi-sub">Still to be collected</div></div><div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value number-animate">${formatCurrency(monthCollected)}</div><div class="kpi-sub">Payments received</div></div></div><div class="reports-bento-v2"><div class="card revenue-graph-card"><div class="card-header"><div><div class="section-kicker">REVENUE</div><h2 class="card-title">Revenue Trend</h2><div class="text-sm text-muted mt-1">Payments received by month</div></div></div>${recent.length?`<svg class="report-line-chart" viewBox="0 0 500 175"><line x1="24" y1="132" x2="476" y2="132" class="report-chart-grid"/><line x1="24" y1="84" x2="476" y2="84" class="report-chart-grid"/><line x1="24" y1="36" x2="476" y2="36" class="report-chart-grid"/><polyline points="${pts}" class="report-chart-line"/>${recent.map(([k,v],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),y=132-v/maxVal*96;return `<circle cx="${x}" cy="${y}" r="4" class="report-chart-dot"><title>${formatCurrency(v)}</title></circle>`}).join('')}${labels}</svg>`:`<div class="empty-compact-state"><strong>No revenue trend yet</strong><span>Recorded payments will appear here.</span></div>`}</div><div class="card report-snapshot-card snapshot-v111"><div class="card-header"><div><div class="section-kicker">BUSINESS SNAPSHOT</div><h2 class="card-title">Today at a Glance</h2><div class="text-sm text-muted mt-1">A compact operational health check</div></div></div><div class="snapshot-grid"><div class="snapshot-stat"><span>Active Projects</span><strong class="number-animate">${active}</strong><small>${active>=9?'High workload':'Manageable workload'}</small></div><div class="snapshot-stat"><span>Completed</span><strong class="number-animate">${completed}</strong><small>Lifetime completed projects</small></div><div class="snapshot-stat"><span>Outstanding</span><strong class="number-animate">${formatCurrency(outstanding)}</strong><small>${overdue?formatCurrency(overdue)+' overdue':'No overdue receivables'}</small></div><div class="snapshot-stat"><span>Collection Rate</span><strong>${collectionRate}%</strong><div class="snapshot-meter"><i style="width:${Math.max(0,Math.min(100,collectionRate))}%"></i></div></div></div></div></div><div class="card revenue-milestone-card"><div class="revenue-level-head"><div><div class="section-kicker">MILESTONES</div><h2 class="card-title">Revenue Level</h2><span>${next?`${formatCurrency(Math.max(0,next-totalReceivables))} to the next level`:'Top milestone reached'}</span></div><strong>${Math.round(levelProgress)}%</strong></div><div class="revenue-level-progress"><i style="width:${levelProgress}%"></i></div><div class="revenue-levels">${levelHtml}</div></div>`;animateNumbersIn(box);
       }
       function renderDeliverablesView() {
         const container = document.getElementById("allDeliverablesByProject");
@@ -4191,6 +4186,11 @@ ${description}`))actionCallback();return;}
         updateCartCalculations();
       }
 
+      function nextProjectNumber(){const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite);return used.length?Math.max(...used)+1:1;}
+      function projectHasPackageItems(items=[]){return (items||[]).some(i=>String(i.type||'').toUpperCase()==='PACKAGE'||String(i.product_code||'').toUpperCase().startsWith('PKG-'));}
+      function automaticMaintenanceFee(items=[],projectNo=null){const n=Number(projectNo||nextProjectNumber());if(n<52)return 0;return projectHasPackageItems(items)?21:20;}
+      function workloadContext(startDate,deadlineDate,excludeId=''){const start=parseDateSafe(startDate)||new Date(),due=parseDateSafe(deadlineDate),days=due?Math.max(0,Math.ceil((due-start)/86400000)):14;const active=state.projects.filter(p=>!p.deleted&&p.id!==excludeId&&p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at).length;return {active,days,high:active>=9&&days<=5};}
+      function resolvedWorkloadSurcharge(proj){return Math.max(0,Number(proj?.workload_surcharge||0));}
       function updateCartCalculations() {
         const discountVal = Number(document.getElementById("cartDiscountVal")?.value || 0);
         const discountType = document.getElementById("cartDiscountType")?.value || "fixed";
@@ -4215,7 +4215,8 @@ ${description}`))actionCallback();return;}
         discountAmount = Math.min(subtotal, Math.max(0, discountAmount));
 
         const rushFee = Number(state.cart.rushFee || 0);
-        const total = Math.max(0, subtotal - discountAmount + rushFee);
+        const maintenanceFee = automaticMaintenanceFee(state.cart.items);
+        const total = Math.max(0, subtotal - discountAmount + rushFee + maintenanceFee);
 
         document.getElementById("summarySubtotal").innerText = formatCurrency(subtotal);
         document.getElementById("summaryDiscount").innerText = `- ${formatCurrency(discountAmount)}`;
@@ -4227,6 +4228,8 @@ ${description}`))actionCallback();return;}
           rushSummary.innerText = `+ ${formatCurrency(rushFee)}`;
         }
 
+        const fileRow=document.getElementById("summaryFileDeliveryRow"),fileSummary=document.getElementById("summaryFileDelivery");
+        if(fileRow&&fileSummary){fileRow.style.display=maintenanceFee>0?'flex':'none';fileRow.querySelector('span').textContent='System Maintenance';fileSummary.innerText=`+ ${formatCurrency(maintenanceFee)}`;}
         document.getElementById("summaryTotal").innerText = formatCurrency(total);
 
         persistCartState();
@@ -4515,6 +4518,9 @@ ${description}`))actionCallback();return;}
           discount_amount: Number(project.discount_amount || 0),
           rush_fee: Number(project.rush_fee || 0),
           rush_days_early: Number(project.rush_days_early || 0),
+          system_maintenance_fee: Number(project.system_maintenance_fee || 0),
+          workload_surcharge: Number(project.workload_surcharge || 0),
+          workload_snapshot: Number(project.workload_snapshot || 0),
           project_type: project.project_type || '',
           start_date: project.start_date || null,
           deadline_date: project.deadline_date || null,
@@ -4743,7 +4749,10 @@ ${description}`))actionCallback();return;}
         state.cart.items.forEach(i => { subtotal += i.price * i.qty; });
         let discount = state.cart.discountType === 'percent' ? subtotal * (state.cart.discountVal / 100) : state.cart.discountVal;
         const rushFee = Number(state.cart.rushFee || 0);
-        const totalAmount = Math.max(0, subtotal - discount + rushFee);
+        const projectedNo=nextProjectNumber();
+        const maintenanceFee=automaticMaintenanceFee(state.cart.items,projectedNo);
+        const workload=workloadContext(state.cart.startDate,state.cart.deadlineDate);
+        const totalAmount = Math.max(0, subtotal - discount + rushFee + maintenanceFee);
 
         const projectTitle = state.cart.projectName.trim();
 
@@ -4764,6 +4773,10 @@ ${description}`))actionCallback();return;}
           discount_amount: discount,
           rush_fee: rushFee,
           rush_days_early: Number(state.cart.rushDaysEarly || 0),
+          system_maintenance_fee: maintenanceFee,
+          workload_surcharge: 0,
+          workload_snapshot: workload.active,
+          workload_surcharge_recommended: projectedNo>=52 && workload.high,
           project_type: "",
           priority: (()=>{const start=parseDateSafe(state.cart.startDate),due=parseDateSafe(state.cart.deadlineDate),days=start&&due?Math.ceil((due-start)/86400000):14;return rushFee>0||days<14;})(),
           project_items: state.cart.items.map((i,index) => ({ id:i.id||`oi_new_${Date.now()}_${index}`, name: i.name, price: i.price, qty: i.qty, type: i.type, product_code:i.product_code||i.code||null, category:i.category||"" })),
@@ -4952,7 +4965,10 @@ ${description}`))actionCallback();return;}
         proj.subtotal_amount = subtotal;
         const discount = Math.max(0, Number(proj.discount_amount || 0));
         const rush = Math.max(0, Number(proj.rush_fee || 0));
-        proj.total_amount = Math.max(0, subtotal - discount + rush);
+        const maintenance = automaticMaintenanceFee(items,projectNumber(proj));
+        const workload = resolvedWorkloadSurcharge(proj);
+        proj.system_maintenance_fee = maintenance;
+        proj.total_amount = Math.max(0, subtotal - discount + rush + maintenance + workload);
         proj.pending_amount = Math.max(0, proj.total_amount - getProjectPaid(proj));
         if(!proj.project_type){const cats=[...new Set(items.map(i=>String(i.category||'').trim()).filter(Boolean))];proj.project_type=cats.length===1?cats[0]:(cats.length>1?'Mixed Services':'');}
         proj.updated_at = new Date().toISOString();
@@ -5147,7 +5163,9 @@ ${description}`))actionCallback();return;}
         const overviewEl=document.getElementById('paymentCalculationsOverview'),listEl=document.getElementById('paymentHistoryList');
         const items=Array.isArray(proj.project_items)?proj.project_items:[];
         const itemsSubtotal=Number(proj.subtotal_amount||items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0));
-        const additionalCharges=Math.max(0,Number(proj.rush_fee||0));
+        const maintenance=Math.max(0,Number(proj.system_maintenance_fee||automaticMaintenanceFee(items,projectNumber(proj))));
+        const workloadSurcharge=resolvedWorkloadSurcharge(proj);
+        const additionalCharges=Math.max(0,Number(proj.rush_fee||0))+maintenance+workloadSurcharge;
         const discounts=Math.max(0,Number(proj.discount_amount||0));
         const total=Number(proj.total_amount||Math.max(0,itemsSubtotal+additionalCharges-discounts));
         const payments=(proj.payments||[]).slice();
@@ -5184,6 +5202,8 @@ ${description}`))actionCallback();return;}
         const subtotal=Number(proj.subtotal_amount||0);
         const discount=Number(proj.discount_amount||0);
         const rush=Number(proj.rush_fee||0);
+        const maintenance=Number(proj.system_maintenance_fee||automaticMaintenanceFee(proj.project_items||[],projectNumber(proj)));
+        const workloadSurcharge=resolvedWorkloadSurcharge(proj);
         const paid=(proj.payments||[]).reduce((s,p)=>s+Number(p.amount_paid||p.amount||0),0);
         const balance=Math.max(0,total-paid); const status=getInvoiceStatus(proj,balance);
         const issue=proj.invoice_issue_date||proj.created_at?.split('T')[0]||'';
@@ -5192,7 +5212,7 @@ ${description}`))actionCallback();return;}
         paper.innerHTML=`
           <div class="invoice-header"><div><h2 style="font-size:24px;font-weight:700">${escapeHtml(state.settings.businessName||'JUAN PROJECT')}</h2><div class="text-sm text-secondary">${escapeHtml(state.ownerEmail||'')}</div><div class="text-sm text-secondary">${escapeHtml(state.ownerPhone||'')}</div></div><div class="text-right"><div class="invoice-label">Invoice</div><div class="invoice-number">${invoiceNo}</div><span class="invoice-status ${statusClass}">${status}</span></div></div>
           <div class="invoice-meta-grid"><div><div class="invoice-label">Bill To</div><div class="font-bold">${escapeHtml(proj.client_name||'—')}</div><div class="text-sm text-secondary">${escapeHtml(proj.client_email||'')}</div></div><div><div class="invoice-label">Project</div><div class="font-bold">${escapeHtml(proj.title||'—')}</div><div class="text-sm text-secondary">${issue?'Issued '+new Date(issue+'T00:00:00').toLocaleDateString('en-PH'):''}${due?' · Due '+new Date(due+'T00:00:00').toLocaleDateString('en-PH'):''}</div></div></div>
-          <table class="invoice-table"><thead><tr><th>Description</th><th class="text-right">Amount</th></tr></thead><tbody><tr><td>${escapeHtml(proj.title||'Project')}</td><td class="text-right">${formatCurrency(subtotal||total)}</td></tr>${discount?`<tr><td>Discount</td><td class="text-right text-danger">-${formatCurrency(discount)}</td></tr>`:''}${rush?`<tr><td>Rush Fee</td><td class="text-right">${formatCurrency(rush)}</td></tr>`:''}</tbody></table>
+          <table class="invoice-table"><thead><tr><th>Description</th><th class="text-right">Amount</th></tr></thead><tbody><tr><td>${escapeHtml(proj.title||'Project')}</td><td class="text-right">${formatCurrency(subtotal||total)}</td></tr>${discount?`<tr><td>Discount</td><td class="text-right text-danger">-${formatCurrency(discount)}</td></tr>`:''}${rush?`<tr><td>Rush Fee</td><td class="text-right">${formatCurrency(rush)}</td></tr>`:''}${maintenance?`<tr><td>System Maintenance</td><td class="text-right">${formatCurrency(maintenance)}</td></tr>`:''}${workloadSurcharge?`<tr><td>Workload Surcharge</td><td class="text-right">${formatCurrency(workloadSurcharge)}</td></tr>`:''}</tbody></table>
           <div style="display:flex;justify-content:flex-end"><div style="width:300px"><div class="summary-row"><span>Total:</span><strong>${formatCurrency(total)}</strong></div><div class="summary-row"><span>Amount Paid:</span><span>${formatCurrency(paid)}</span></div><div class="invoice-balance-box"><div class="summary-row" style="margin:0"><strong>Balance Due</strong><strong style="font-size:18px;color:${balance?'var(--status-red)':'var(--status-green)'}">${formatCurrency(balance)}</strong></div></div></div></div>
           <div class="text-sm text-tertiary" style="margin-top:32px">Thank you for choosing ${escapeHtml(state.settings.businessName||'JUAN PROJECT')}.</div>`;
       }
@@ -5448,9 +5468,22 @@ ${description}`))actionCallback();return;}
          CLIENTS DIRECTORY & EDIT CLIENT WORKFLOW
          ========================================================================== */
       function renderClients() {
-        const grid=document.getElementById("clientsListGrid");if(!grid)return;const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'az';let clients=state.clients.slice().filter(c=>`${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));clients.sort(pref==='za'?(a,b)=>String(b.name||'').localeCompare(String(a.name||'')):(a,b)=>String(a.name||'').localeCompare(String(b.name||'')));const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;if(!clients.length){grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients registered yet.'}</div>`;return}
-        const rows=clients.map((c,idx)=>{const count=state.projects.filter(p=>!p.deleted&&(p.client_id===c.id||p.client_name===c.name)).length;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(formatClientId(c))}</strong></td><td><strong>${escapeHtml(c.name||'—')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(c.phone||'—')}</td><td>${count}</td><td class="text-right" onclick="event.stopPropagation()"><div class="popover-wrap" id="clientMenu${idx}"><button class="icon-more-button" title="Client options" aria-label="Options for ${escapeHtml(c.name||'client')}" onclick="app.togglePopover('clientMenu${idx}',event)">•••</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Archive client</button></div></div></td></tr>`}).join('');grid.innerHTML=`<div class="card table-card clients-directory-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Full Name</th><th>Email</th><th>Number</th><th>Projects</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        const grid=document.getElementById("clientsListGrid"),filters=document.getElementById("clientFilters");if(!grid)return;
+        const names=["All","Pending","Completed"],current=state.clientFilter||"All";if(filters)filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setClientFilter('${n}')">${n}</button>`).join('');
+        const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'default';
+        const projectsFor=c=>state.projects.filter(p=>!p.deleted&&(p.client_id===c.id||p.client_name===c.name));
+        let clients=state.clients.slice().filter(c=>`${c.client_code||''} ${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
+        clients=clients.filter(c=>{const ps=projectsFor(c),pending=ps.some(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);if(current==='Pending')return pending;if(current==='Completed')return ps.length>0&&!pending;return true;});
+        const codeNo=c=>Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||999999);
+        if(pref==='date')clients.sort((a,b)=>(parseDateSafe(b.created_at)?.getTime()||0)-(parseDateSafe(a.created_at)?.getTime()||0)||codeNo(a)-codeNo(b));
+        else if(pref==='payment')clients.sort((a,b)=>projectsFor(b).reduce((x,p)=>x+getProjectPaid(p),0)-projectsFor(a).reduce((x,p)=>x+getProjectPaid(p),0)||codeNo(a)-codeNo(b));
+        else clients.sort((a,b)=>codeNo(a)-codeNo(b));
+        const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;
+        if(!clients.length){grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients in this filter.'}</div>`;return}
+        grid.innerHTML=`<div class="card table-card"><div class="table-responsive"><table class="data-table unified-table clients-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Phone</th><th>Projects</th><th>Payments</th><th class="table-actions-col"></th></tr></thead><tbody>${clients.map(c=>{const ps=projectsFor(c),paid=ps.reduce((x,p)=>x+getProjectPaid(p),0),menuId=`clientMenu_${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(c.client_code||'—')}</strong></td><td><strong>${escapeHtml(c.name||'Client')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(c.phone||'—')}</td><td>${ps.length}</td><td><strong>${formatCurrency(paid)}</strong></td><td onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit Client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Archive Client</button></div></div></td></tr>`}).join('')}</tbody></table></div></div>`;
       }
+
+      function setClientFilter(filter){state.clientFilter=filter;renderClients();}
 
       function removeClient(clientId){
         const client=state.clients.find(c=>c.id===clientId);if(!client)return;const projectCount=state.projects.filter(p=>!p.deleted&&(p.client_id===clientId||p.client_name===client.name)).length;
@@ -5581,14 +5614,14 @@ ${description}`))actionCallback();return;}
       }
       function renderPricelist(){
         ensureCatalogCategories();const servicesBody=document.getElementById('catalogServicesBody'),packagesBody=document.getElementById('catalogPackagesBody'),filters=document.getElementById('catalogManagerFilters'),categorySelect=document.getElementById('catalogCategorySelect');if(!servicesBody||!packagesBody||!filters||!categorySelect)return;
-        const q=(document.getElementById('catalogManagerSearch')?.value||'').trim().toLowerCase(),filter=state.catalogManagerFilter||'All',pref=state.listSorts?.catalog||'az';filters.innerHTML=['All','Services','Packages'].map(n=>`<button class="filter-pill ${filter===n?'active':''}" onclick="app.setCatalogManagerFilter('${n}')">${n}</button>`).join('');const sortEl=document.getElementById('catalogSort');if(sortEl)sortEl.value=pref;
+        const q=(document.getElementById('catalogManagerSearch')?.value||'').trim().toLowerCase(),filter='All',pref=state.listSorts?.catalog||'default';filters.innerHTML='';const sortEl=document.getElementById('catalogSort');if(sortEl)sortEl.value=pref;
         const categories=['ALL',...state.catalogCategories].sort((a,b)=>a==='ALL'?-1:b==='ALL'?1:String(a).localeCompare(String(b)));categorySelect.innerHTML=categories.map(cat=>`<option value="${escapeHtml(cat)}">${escapeHtml(cat==='ALL'?'All Categories':displayCategory(cat))}</option>`).join('');categorySelect.value=state.catalogManagerCategory||'ALL';
         const selected=state.catalogManagerCategory||'ALL',title=document.getElementById('catalogSelectedCategoryTitle');if(title)title.textContent=selected==='ALL'?'Services':`${displayCategory(selected)} Services`;
         let services=state.soloServices.filter(item=>(selected==='ALL'||String(item.category||'')===selected)&&(`${item.name||''} ${item.category||''} ${item.description||''}`).toLowerCase().includes(q)),packages=state.packagesList.filter(pkg=>(selected==='ALL'||String(pkg.category||'')===selected)&&`${pkg.name||''} ${pkg.category||''} ${pkg.description||''} ${(pkg.includedServiceNames||[]).join(' ')}`.toLowerCase().includes(q));
-        const cmp=pref==='za'?(a,b)=>String(b.name||'').localeCompare(String(a.name||'')):(a,b)=>String(a.name||'').localeCompare(String(b.name||''));services.sort(cmp);packages.sort(cmp);
+        const codeNo=x=>Number(String(x.product_code||'').match(/(\d+)$/)?.[1]||999999),price=x=>Number(x.type==='PACKAGE'?x.sellingPrice:x.price||0);const cmp=pref==='price-desc'?(a,b)=>price(b)-price(a)||codeNo(a)-codeNo(b):pref==='price-asc'?(a,b)=>price(a)-price(b)||codeNo(a)-codeNo(b):(a,b)=>codeNo(a)-codeNo(b);services.sort(cmp);packages.sort(cmp);
         const packageCard=document.getElementById('catalogPackagesCard'),serviceCard=document.getElementById('catalogServicesCard');serviceCard.style.display=filter==='Packages'?'none':'';packageCard.style.display=filter==='Services'?'none':'';
-        servicesBody.innerHTML=services.map(item=>`<tr><td><strong>${escapeHtml(item.name)}</strong></td><td>${escapeHtml(displayCategory(item.category||'—'))}</td><td class="text-sm text-secondary catalog-desc-cell">${escapeHtml(item.description||'')}</td><td><strong>${formatCurrency(item.price||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Service actions" onclick="app.openEditServiceModal('${item.product_code}')">•••</button></td></tr>`).join('')||`<tr><td colspan="5" class="text-center text-muted py-4">No matching services.</td></tr>`;
-        packagesBody.innerHTML=packages.map(pkg=>{const inc=Array.isArray(pkg.includedServiceNames)?pkg.includedServiceNames:[];return `<tr><td><strong>${escapeHtml(normalizeBroadcastPackageName(pkg.name))}</strong></td><td><span class="catalog-inclusion-count">${inc.length} item${inc.length===1?'':'s'}</span><div class="text-sm text-muted catalog-inclusion-preview">${escapeHtml(inc.join(' • '))}</div></td><td>${formatCurrency(pkg.originalPrice||0)}</td><td><strong>${formatCurrency(pkg.sellingPrice||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Package actions" onclick="app.openEditPackageModal('${pkg.product_code}')">•••</button></td></tr>`}).join('')||`<tr><td colspan="5" class="text-center text-muted py-4">No matching packages.</td></tr>`;
+        servicesBody.innerHTML=services.map(item=>`<tr><td><strong class="catalog-service-id">${escapeHtml(item.product_code||'—')}</strong></td><td><strong>${escapeHtml(item.name)}</strong></td><td>${escapeHtml(displayCategory(item.category||'—'))}</td><td class="text-sm text-secondary catalog-desc-cell">${escapeHtml(item.description||'')}</td><td><strong>${formatCurrency(item.price||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Service actions" onclick="app.openEditServiceModal('${item.product_code}')">•••</button></td></tr>`).join('')||`<tr><td colspan="6" class="text-center text-muted py-4">No matching services.</td></tr>`;
+        packagesBody.innerHTML=packages.map(pkg=>{const inc=Array.isArray(pkg.includedServiceNames)?pkg.includedServiceNames:[];return `<tr><td><strong class="catalog-service-id">${escapeHtml(pkg.product_code||'—')}</strong></td><td><strong>${escapeHtml(normalizeBroadcastPackageName(pkg.name))}</strong></td><td><span class="catalog-inclusion-count">${inc.length} item${inc.length===1?'':'s'}</span><div class="text-sm text-muted catalog-inclusion-preview">${escapeHtml(inc.join(' • '))}</div></td><td>${formatCurrency(pkg.originalPrice||0)}</td><td><strong>${formatCurrency(pkg.sellingPrice||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Package actions" onclick="app.openEditPackageModal('${pkg.product_code}')">•••</button></td></tr>`}).join('')||`<tr><td colspan="6" class="text-center text-muted py-4">No matching packages.</td></tr>`;
       }
 
       function setCatalogManagerFilter(filter){state.catalogManagerFilter=filter;renderPricelist()}
@@ -5992,6 +6025,7 @@ ${description}`))actionCallback();return;}
         togglePopover,
         renderProjects,
         setProjectFilter,
+        setClientFilter,
         setPaymentFilter,
         renderTasks,
         setTaskFilter,
@@ -6246,3 +6280,6 @@ ${description}`))actionCallback();return;}
 </style>
 </body>
 </html>
+<style id="v111-maintenance-patch">
+.snapshot-v111{padding:18px}.snapshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.snapshot-stat{border:1px solid var(--border-subtle);border-radius:12px;padding:13px;background:var(--bg-card)}.snapshot-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);font-weight:750}.snapshot-stat strong{display:block;font-size:18px;margin-top:5px}.snapshot-stat small{display:block;margin-top:5px;color:var(--text-tertiary);font-size:10px;line-height:1.35}.snapshot-meter{height:5px;background:var(--bg-subtle);border-radius:999px;margin-top:9px;overflow:hidden}.snapshot-meter i{display:block;height:100%;background:var(--primary-mint-dark);border-radius:inherit}.catalog-service-id{font-size:11px;letter-spacing:.04em;color:var(--primary-mint-dark)}
+</style>
