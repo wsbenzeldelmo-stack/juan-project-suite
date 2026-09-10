@@ -1,4 +1,4 @@
-# JUAN PROJECT Platform V1.3
+# JUAN PROJECT Platform V1.3.1
 
 JUAN PROJECT Platform is one connected business system with two interfaces backed by the same Supabase project:
 

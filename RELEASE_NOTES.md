@@ -1,3 +1,15 @@
+# JUAN PROJECT Platform V1.3.1
+
+- Adds browser/PWA site icons for Workspace and Online using the supplied JUAN PROJECT branding.
+- Invoice issue date is always the current viewing date.
+- Invoice now shows Subtotal, a conditional Additional Fees section, Additional Fees Total, Discount, Total, Amount Paid, and Balance Due. Zero-value additional fees are omitted entirely.
+- Workspace and Online invoices can be saved directly as PNG images in addition to PDF/print.
+- Workspace Mobile is intentionally limited to Home, Projects, Payments & Approvals, Reports, and Settings with a floating iPhone-style capsule navigation.
+- Mobile Payments surfaces pending Online payment approvals directly above payment records.
+- JUAN PROJECT Online onboarding now uses the three supplied visual introduction screens instead of generic icon slides.
+- Settings/About identifies Version V1.3.1 and Developed by BENZEL DELMO · JUAN PROJECT Management System.
+- No database migration is required for V1.3.1.
+
 # JUAN PROJECT Platform V1.3
 
 

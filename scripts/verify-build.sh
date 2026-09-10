@@ -21,7 +21,15 @@ for required in \
   "$ROOT/workspace/js/v1-3-ux.js" \
   "$ROOT/docs/LEGACY_CLIENT_SEQUENCE_V1_1.csv" \
   "$ROOT/docs/V1_2_UX_STANDARD.md" \
-  "$ROOT/docs/V1_3_UPDATE_NOTES.md"; do
+  "$ROOT/docs/V1_3_UPDATE_NOTES.md" \
+  "$ROOT/docs/V1_3_1_UPDATE_NOTES.md" \
+  "$ROOT/online/assets/favicon.ico" \
+  "$ROOT/online/assets/icon-192.png" \
+  "$ROOT/online/assets/icon-512.png" \
+  "$ROOT/online/assets/onboarding/onboarding-1.jpg" \
+  "$ROOT/online/assets/onboarding/onboarding-2.jpg" \
+  "$ROOT/online/assets/onboarding/onboarding-3.jpg" \
+  "$ROOT/workspace/assets/favicon.ico"; do
   test -f "$required" || { echo "Missing: $required"; exit 1; }
 done
 
@@ -52,8 +60,10 @@ app=Path(sys.argv[1]).read_text()
 for forbidden in ('Create Account','Sign Up','First Access'):
     if forbidden in app: raise SystemExit(f'Public registration language remains: {forbidden}')
 checks={
-  'v1.3':'Online version label missing',
-  'Everything about your project, in one place.':'Three-step onboarding missing',
+  'V1.3.1':'Online version label missing',
+  '/assets/onboarding/onboarding-1.jpg':'Visual onboarding image 1 missing',
+  '/assets/onboarding/onboarding-2.jpg':'Visual onboarding image 2 missing',
+  '/assets/onboarding/onboarding-3.jpg':'Visual onboarding image 3 missing',
   'Order Confirmed':'Order Tracker stages missing',
   'Ready for Delivery':'Order Tracker delivery stage missing',
   'drive_unlock_at':'Time-locked folder logic missing',
@@ -79,4 +89,10 @@ ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg
 
 if grep -Rqi "Gemini" "$ROOT/online/js" "$ROOT/online/api/payment-submission.js"; then echo "Gemini payment language remains"; exit 1; fi
 if ! grep -q "order_drafts" "$ROOT/supabase/migrations/008_platform_v1_3.sql"; then echo "V1.3 drafts migration missing"; exit 1; fi
-echo "JUAN PROJECT Platform V1.3 verification passed."
+if grep -Rqi "Gemini" "$ROOT/online/js" "$ROOT/online/api"; then echo "Gemini payment language remains"; exit 1; fi
+if ! grep -q "Additional Fees Total" "$ROOT/online/js/app.js"; then echo "Online invoice additional-fee transparency missing"; exit 1; fi
+if ! grep -q "Additional Fees Total" "$ROOT/workspace/index.html"; then echo "Workspace invoice additional-fee transparency missing"; exit 1; fi
+if ! grep -q "Save as Image" "$ROOT/online/js/app.js"; then echo "Online PNG invoice export missing"; exit 1; fi
+if ! grep -q "saveInvoiceImage" "$ROOT/workspace/index.html"; then echo "Workspace PNG invoice export missing"; exit 1; fi
+if ! grep -q "mobilePaymentApprovals" "$ROOT/workspace/index.html"; then echo "Workspace mobile approvals surface missing"; exit 1; fi
+echo "JUAN PROJECT Platform V1.3.1 verification passed."

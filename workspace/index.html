@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>JUAN PROJECT Workspace</title>
+  <link rel="icon" href="/assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   
   <!-- Supabase Client JS (Global UMD Bundle) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
@@ -1277,6 +1280,7 @@
           <input id="paymentsSearch" class="form-control" placeholder="Search Project ID, project name, or client..." oninput="app.queueViewRender('payments')">
           <div class="toolbar-actions"><div class="filter-pills" id="paymentFilters"></div></div>
         </div>
+        <div id="mobilePaymentApprovals" class="mobile-payment-approvals" aria-live="polite"></div>
         <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div></div>
       </section>
 
@@ -1509,7 +1513,7 @@
         </header>
         <div class="online-portal-intro card">
           <div><strong>JUAN PROJECT Online</strong><p>Manage client access, client-facing activity, payment reviews, and portal configuration. Project delivery links now live inside each Project → Deliverables tab.</p></div>
-          <span class="status-badge status-green">V1.3</span>
+          <span class="status-badge status-green">V1.3.1</span>
         </div>
         <div class="portal-tabs" id="onlinePortalTabs">
           <button type="button" data-portal-tab="accounts" class="active">Client Access</button>
@@ -1645,11 +1649,11 @@
           </div>
 
           <!-- About Section -->
-          <div class="card">
+          <div class="card jp-version-card">
             <h2 class="card-title mb-4">About</h2>
-            <div class="font-bold">JUAN PROJECT WORKSPACE</div>
-            <div class="text-sm text-muted mt-1">Version 3.0 Offline (Build 2026)</div>
-            <div class="text-sm text-secondary mt-3">Offline-first command center for projects, clients, deliverables, invoices, payments, reports, and historical record imports.</div>
+            <div class="font-bold">JUAN PROJECT Workspace</div>
+            <div class="text-sm text-muted mt-1">Version V1.3.1</div>
+            <div class="text-sm text-secondary mt-3">Developed by <strong>BENZEL DELMO</strong><br>JUAN PROJECT Management System</div>
           </div>
         </div>
       </section>
@@ -4873,8 +4877,61 @@ ${description}`))actionCallback();return;}
         setTimeout(() => window.print(), 100);
       }
 
+      async function exportElementAsPng(element, filename) {
+        if (!element) throw new Error("Document preview is not available.");
+        const rect = element.getBoundingClientRect();
+        const width = Math.max(1, Math.ceil(Math.max(rect.width, element.scrollWidth)));
+        const height = Math.max(1, Math.ceil(Math.max(rect.height, element.scrollHeight)));
+        let css = "";
+        for (const sheet of Array.from(document.styleSheets)) {
+          try { css += Array.from(sheet.cssRules || []).map(rule => rule.cssText).join("\n") + "\n"; } catch (_) {}
+        }
+        const clone = element.cloneNode(true);
+        clone.style.margin = "0";
+        clone.style.boxShadow = "none";
+        clone.style.background = "#ffffff";
+        const serialized = new XMLSerializer().serializeToString(clone);
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml"><style>${css}</style>${serialized}</div></foreignObject></svg>`;
+        const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+        try {
+          const img = new Image();
+          await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = () => reject(new Error("Could not render the invoice image.")); img.src = svgUrl; });
+          const maxSide = 8192;
+          const scale = Math.max(1, Math.min(2, maxSide / width, maxSide / height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(width * scale);
+          canvas.height = Math.round(height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const png = await new Promise(resolve => canvas.toBlob(resolve, "image/png", 1));
+          if (!png) throw new Error("Could not create the PNG file.");
+          const finalName = filename || "JUAN-PROJECT-Invoice.png";
+          const file = new File([png], finalName, { type: "image/png" });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try { await navigator.share({ files: [file], title: finalName }); return; }
+            catch (shareError) { if (shareError?.name === "AbortError") return; }
+          }
+          const downloadUrl = URL.createObjectURL(png);
+          const a = document.createElement("a");
+          a.href = downloadUrl;
+          a.download = finalName;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        } finally { URL.revokeObjectURL(svgUrl); }
+      }
+
       async function saveInvoiceImage() {
-        showToast("Offline mode does not require external image libraries. Use Save as PDF or your device screenshot tool.");
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);
+        if(!proj){showToast("Open a project invoice first.");return;}
+        renderInvoicePaper(proj);
+        const paper=document.getElementById("invoicePaperPrintable");
+        try{
+          showToast("Creating invoice image…");
+          await exportElementAsPng(paper, `${formatProjectId(proj)}-invoice.png`);
+          showToast("Invoice image saved.");
+        }catch(e){showToast(e.message||"Could not save invoice image.");}
       }
 
 
@@ -5222,22 +5279,36 @@ ${description}`))actionCallback();return;}
       function renderInvoicePaper(proj) {
         const paper=document.getElementById('invoicePaperPrintable'); if(!paper||!proj)return;
         const invoiceNo=ensureInvoiceNumber(proj);
-        const total=Number(proj.total_amount||0);
-        const subtotal=Number(proj.subtotal_amount||0);
-        const discount=Number(proj.discount_amount||0);
-        const rush=Number(proj.rush_fee||0);
-        const maintenance=Number(proj.system_maintenance_fee||automaticMaintenanceFee(proj.project_items||[],projectNumber(proj)));
-        const workloadSurcharge=resolvedWorkloadSurcharge(proj);
-        const paid=(proj.payments||[]).reduce((s,p)=>s+Number(p.amount_paid||p.amount||0),0);
+        const items=Array.isArray(proj.project_items)?proj.project_items:[];
+        const discount=Math.max(0,Number(proj.discount_amount||0));
+        const rush=Math.max(0,Number(proj.rush_fee||0));
+        const maintenance=Math.max(0,Number(proj.system_maintenance_fee||automaticMaintenanceFee(items,projectNumber(proj))));
+        const workloadSurcharge=Math.max(0,resolvedWorkloadSurcharge(proj));
+        const extraFees=[];
+        if(rush>0)extraFees.push({label:'Rush Fee',amount:rush});
+        if(workloadSurcharge>0)extraFees.push({label:'Workload Surcharge',amount:workloadSurcharge});
+        if(maintenance>0)extraFees.push({label:'System Maintenance Fee',amount:maintenance});
+        if(Array.isArray(proj.additional_fees)){
+          proj.additional_fees.forEach(f=>{const amount=Math.max(0,Number(f?.amount||0));if(amount>0)extraFees.push({label:String(f?.label||f?.name||'Additional Fee'),amount});});
+        }
+        const additionalFeesTotal=extraFees.reduce((sum,f)=>sum+f.amount,0);
+        const itemSubtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0);
+        const storedTotal=Math.max(0,Number(proj.total_amount||0));
+        const subtotal=Math.max(0,Number(proj.subtotal_amount||itemSubtotal||(storedTotal-additionalFeesTotal+discount)));
+        const total=storedTotal||Math.max(0,subtotal+additionalFeesTotal-discount);
+        const paid=(proj.payments||[]).reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
         const balance=Math.max(0,total-paid); const status=getInvoiceStatus(proj,balance);
-        const issue=proj.invoice_issue_date||proj.created_at?.split('T')[0]||'';
+        const issue=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'});
         const due=proj.invoice_due_date||proj.payment_due_date||proj.deadline_date||'';
-        const statusClass=status==='OVERDUE'?'overdue':status==='UNPAID'?'unpaid':'';
+        const dueText=due?new Date(due+'T00:00:00').toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}):'';
+        const statusClass=status==='OVERDUE'?'overdue':status==='UNPAID'?'unpaid':status==='DOWNPAYMENT'?'partial':'';
+        const itemRows=items.length?items.map(item=>`<tr><td>${escapeHtml(item.name||'Order Item')}</td><td class="text-right">${Math.max(1,Number(item.qty||1))}</td><td class="text-right">${formatCurrency(Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)))}</td></tr>`).join(''):`<tr><td>${escapeHtml(proj.title||'Project')}</td><td class="text-right">1</td><td class="text-right">${formatCurrency(subtotal)}</td></tr>`;
+        const feeBlock=extraFees.length?`<div class="invoice-additional-fees"><div class="invoice-fee-heading">Additional Fees</div>${extraFees.map(f=>`<div class="summary-row invoice-fee-row"><span>${escapeHtml(f.label)}</span><span>+ ${formatCurrency(f.amount)}</span></div>`).join('')}<div class="summary-row invoice-fee-total"><span>Additional Fees Total</span><strong>${formatCurrency(additionalFeesTotal)}</strong></div></div>`:'';
         paper.innerHTML=`
-          <div class="invoice-header"><div><h2 style="font-size:24px;font-weight:700">${escapeHtml(state.settings.businessName||'JUAN PROJECT')}</h2><div class="text-sm text-secondary">${escapeHtml(state.ownerEmail||'')}</div><div class="text-sm text-secondary">${escapeHtml(state.ownerPhone||'')}</div></div><div class="text-right"><div class="invoice-label">Invoice</div><div class="invoice-number">${invoiceNo}</div><span class="invoice-status ${statusClass}">${status}</span></div></div>
-          <div class="invoice-meta-grid"><div><div class="invoice-label">Bill To</div><div class="font-bold">${escapeHtml(proj.client_name||'—')}</div><div class="text-sm text-secondary">${escapeHtml(proj.client_email||'')}</div></div><div><div class="invoice-label">Project</div><div class="font-bold">${escapeHtml(proj.title||'—')}</div><div class="text-sm text-secondary">${issue?'Issued '+new Date(issue+'T00:00:00').toLocaleDateString('en-PH'):''}${due?' · Due '+new Date(due+'T00:00:00').toLocaleDateString('en-PH'):''}</div></div></div>
-          <table class="invoice-table"><thead><tr><th>Description</th><th class="text-right">Amount</th></tr></thead><tbody><tr><td>${escapeHtml(proj.title||'Project')}</td><td class="text-right">${formatCurrency(subtotal||total)}</td></tr>${discount?`<tr><td>Discount</td><td class="text-right text-danger">-${formatCurrency(discount)}</td></tr>`:''}${rush?`<tr><td>Rush Fee</td><td class="text-right">${formatCurrency(rush)}</td></tr>`:''}${maintenance?`<tr><td>System Maintenance</td><td class="text-right">${formatCurrency(maintenance)}</td></tr>`:''}${workloadSurcharge?`<tr><td>Workload Surcharge</td><td class="text-right">${formatCurrency(workloadSurcharge)}</td></tr>`:''}</tbody></table>
-          <div style="display:flex;justify-content:flex-end"><div style="width:300px"><div class="summary-row"><span>Total:</span><strong>${formatCurrency(total)}</strong></div><div class="summary-row"><span>Amount Paid:</span><span>${formatCurrency(paid)}</span></div><div class="invoice-balance-box"><div class="summary-row" style="margin:0"><strong>Balance Due</strong><strong style="font-size:18px;color:${balance?'var(--status-red)':'var(--status-green)'}">${formatCurrency(balance)}</strong></div></div></div></div>
+          <div class="invoice-header"><div><h2 style="font-size:24px;font-weight:700">${escapeHtml(state.settings.businessName||'JUAN PROJECT')}</h2><div class="text-sm text-secondary">${escapeHtml(state.ownerEmail||'')}</div><div class="text-sm text-secondary">${escapeHtml(state.ownerPhone||'')}</div></div><div class="text-right"><div class="invoice-label">Invoice</div><div class="invoice-number">${invoiceNo}</div><span class="invoice-status ${statusClass}">${status==='DOWNPAYMENT'?'PARTIALLY PAID':status}</span></div></div>
+          <div class="invoice-meta-grid"><div><div class="invoice-label">Bill To</div><div class="font-bold">${escapeHtml(proj.client_name||'—')}</div><div class="text-sm text-secondary">${escapeHtml(proj.client_email||'')}</div></div><div><div class="invoice-label">Project</div><div class="font-bold">${escapeHtml(proj.title||'—')}</div><div class="text-sm text-secondary">Issued ${escapeHtml(issue)}${dueText?' · Due '+escapeHtml(dueText):''}</div></div></div>
+          <table class="invoice-table"><thead><tr><th>Order Item</th><th class="text-right">Qty</th><th class="text-right">Amount</th></tr></thead><tbody>${itemRows}</tbody></table>
+          <div class="invoice-calculation-wrap"><div class="invoice-calculation"><div class="summary-row"><span>Subtotal</span><strong>${formatCurrency(subtotal)}</strong></div>${feeBlock}${discount>0?`<div class="summary-row"><span>Discount</span><span class="text-danger">- ${formatCurrency(discount)}</span></div>`:''}<div class="summary-row invoice-total-row"><span>Total</span><strong>${formatCurrency(total)}</strong></div><div class="summary-row"><span>Amount Paid</span><span>${formatCurrency(paid)}</span></div><div class="invoice-balance-box"><div class="summary-row" style="margin:0"><strong>Balance Due</strong><strong style="font-size:18px;color:${balance?'var(--status-red)':'var(--status-green)'}">${formatCurrency(balance)}</strong></div></div></div></div>
           <div class="text-sm text-tertiary" style="margin-top:32px">Thank you for choosing ${escapeHtml(state.settings.businessName||'JUAN PROJECT')}.</div>`;
       }
 
