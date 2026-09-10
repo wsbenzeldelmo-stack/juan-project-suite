@@ -1,4 +1,4 @@
-# JUAN PROJECT Platform V1.3.1
+# JUAN PROJECT Platform V1.3.2
 
 JUAN PROJECT Platform is one connected business system with two interfaces backed by the same Supabase project:
 
@@ -7,6 +7,19 @@ JUAN PROJECT Platform is one connected business system with two interfaces backe
 - `supabase/` — shared data, security, and additive migrations
 
 V1.3 is a coordinated UX update. It does **not** create a second database or duplicate client/project/payment/catalog records.
+
+
+## V1.3.2 reliability update
+
+- Supabase is the source of truth across Workspace Desktop, Workspace Mobile, and JUAN PROJECT Online.
+- Workspace owner/business settings now sync through Supabase instead of being browser-only.
+- Workspace shows skeleton loading while cloud records are fetched.
+- JUAN PROJECT Online adds searchable sending-bank/e-wallet selection and sender-specific reference validation.
+- Reference Number + receipt are mandatory and validated client-side and server-side.
+- Payment Reviews add system checks, explicit rejection reasons, and clearer approval/rejection processing.
+- Latest three 9:16 onboarding graphics use safe phone margins.
+- Guest browsing remains available for public Shop/Help while Orders and Payments require Log In.
+- Run `supabase/migrations/009_platform_v1_3_2.sql`.
 
 ## V1.3 focus
 

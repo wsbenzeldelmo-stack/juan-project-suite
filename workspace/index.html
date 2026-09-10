@@ -997,6 +997,11 @@
 
     <!-- MAIN VIEW CONTAINER -->
     <main class="main-content">
+      <div id="workspaceLoadingSkeleton" class="workspace-loading-shell hidden" aria-live="polite" aria-busy="true">
+        <div class="workspace-loading-banner"><span class="workspace-loading-spinner"></span><div><strong>Loading workspace data…</strong><small>Preparing projects, clients, payments, and reports.</small></div></div>
+        <div class="workspace-skeleton-grid"><div class="skeleton-card hero"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div></div>
+        <div class="workspace-skeleton-table"><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div></div>
+      </div>
 
       <!-- VIEW 1: CURRENT WORKS / DASHBOARD -->
       <section id="view-my-works" class="view active">
@@ -1532,7 +1537,7 @@
           <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
-          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client</th><th>Project</th><th>Amount</th><th>Reference</th><th>Method</th><th>Date</th><th>Receipt</th><th>Status</th><th>Actions</th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client</th><th>Project</th><th>Amount</th><th>Sender / Reference</th><th>System Check</th><th>Receipt</th><th>Status</th><th>Actions</th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalActivityPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Client-facing activity only.</strong><span>Use Projects and Clients for business records; this panel shows portal access and submission activity.</span></div>
@@ -1652,7 +1657,7 @@
           <div class="card jp-version-card">
             <h2 class="card-title mb-4">About</h2>
             <div class="font-bold">JUAN PROJECT Workspace</div>
-            <div class="text-sm text-muted mt-1">Version V1.3.1</div>
+            <div class="text-sm text-muted mt-1">Version V1.3.2</div>
             <div class="text-sm text-secondary mt-3">Developed by <strong>BENZEL DELMO</strong><br>JUAN PROJECT Management System</div>
           </div>
         </div>
@@ -1661,6 +1666,18 @@
     </main>
   </div>
 
+
+  <div class="modal-backdrop" id="portalPaymentReviewModal">
+    <div class="modal-card modal-wide payment-review-modal">
+      <div class="modal-header"><div><h3 class="modal-title">Review Payment</h3><div class="text-sm text-muted" id="paymentReviewSubtitle">System verification before approval</div></div><button class="modal-close" onclick="app.closeModal('portalPaymentReviewModal')">×</button></div>
+      <div class="modal-body">
+        <div id="paymentReviewSummary" class="payment-review-summary"></div>
+        <div class="payment-review-section"><div class="modal-section-title">System Check</div><div id="paymentReviewChecks" class="payment-review-checks"></div></div>
+        <div class="payment-review-section" id="paymentRejectControls"><div class="modal-section-title">Rejection Reason</div><select id="paymentRejectReason" class="form-control"><option value="">Select a reason…</option></select><textarea id="paymentRejectNote" class="form-control mt-2" rows="3" placeholder="Optional note to the client"></textarea><div id="paymentRejectValidation" class="form-error hidden">Select a rejection reason.</div></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" onclick="app.closeModal('portalPaymentReviewModal')">Cancel</button><button id="paymentReviewRejectBtn" class="btn btn-secondary">Reject</button><button id="paymentReviewApproveBtn" class="btn btn-primary">Approve Payment</button></div>
+    </div>
+  </div>
 
   <div class="modal-backdrop" id="editProjectModal">
     <div class="modal-card modal-wide">
@@ -2544,6 +2561,7 @@
         state.themeMode = mode;
         localStorage.setItem("JUAN_THEME_MODE", mode);
         applyTheme(mode);
+        queueWorkspaceSettingsSync();
         showToast(`Theme changed to ${mode} mode.`);
       }
 
@@ -2801,6 +2819,51 @@
         }
       }
 
+
+      function applyWorkspaceSettingsRecord(row) {
+        if (!row) return;
+        state.ownerName = row.owner_name || state.ownerName || 'Your Business Name';
+        state.ownerAddress = row.owner_address || '';
+        state.ownerPhone = row.owner_phone || '';
+        state.ownerEmail = row.owner_email || '';
+        state.profilePhoto = row.profile_photo || '';
+        state.themeMode = row.theme_mode || 'light';
+        state.settings.businessName = row.business_name || 'JUAN PROJECT';
+        state.settings.ownerName = state.ownerName;
+        state.settings.address = state.ownerAddress;
+        state.settings.email = state.ownerEmail;
+        localStorage.setItem('JUAN_OWNER_NAME', state.ownerName);
+        localStorage.setItem('JUAN_OWNER_ADDRESS', state.ownerAddress);
+        localStorage.setItem('JUAN_OWNER_PHONE', state.ownerPhone);
+        localStorage.setItem('JUAN_OWNER_EMAIL', state.ownerEmail);
+        localStorage.setItem('JUAN_THEME_MODE', state.themeMode);
+        if (state.profilePhoto) localStorage.setItem('JUAN_PROFILE_PHOTO', state.profilePhoto); else localStorage.removeItem('JUAN_PROFILE_PHOTO');
+        applyTheme(state.themeMode);
+        updateProfileDisplay();
+        const address=document.getElementById('ownerAddressInput');if(address)address.value=state.ownerAddress;
+        const phone=document.getElementById('ownerPhoneInput');if(phone)phone.value=state.ownerPhone;
+        const email=document.getElementById('ownerEmailInput');if(email)email.value=state.ownerEmail;
+        const theme=document.getElementById('themeModeSelect');if(theme)theme.value=state.themeMode;
+      }
+
+      async function syncWorkspaceSettingsNow() {
+        if (!supabaseClient || !state.isConnected) return false;
+        const payload={id:1,business_name:state.settings.businessName||'JUAN PROJECT',owner_name:state.ownerName||null,owner_address:state.ownerAddress||null,owner_phone:state.ownerPhone||null,owner_email:state.ownerEmail||null,profile_photo:state.profilePhoto||null,theme_mode:state.themeMode||'light',updated_at:new Date().toISOString()};
+        const {error}=await supabaseClient.from('workspace_settings').upsert(payload,{onConflict:'id'});
+        if(error){console.warn('Workspace settings cloud sync failed:',error);return false}
+        return true;
+      }
+      function queueWorkspaceSettingsSync(){
+        clearTimeout(queueWorkspaceSettingsSync.timer);
+        queueWorkspaceSettingsSync.timer=setTimeout(()=>syncWorkspaceSettingsNow(),220);
+      }
+
+      function setWorkspaceLoading(loading) {
+        const shell=document.getElementById('workspaceLoadingSkeleton');
+        if(shell)shell.classList.toggle('hidden',!loading);
+        document.querySelectorAll('.main-content > .view').forEach(v=>{if(loading)v.classList.add('workspace-loading-hidden');else v.classList.remove('workspace-loading-hidden')});
+      }
+
       // PROFILE PICTURE CROPPING WORKFLOW
       function handleProfilePhotoUpload(e) {
         const file = e.target.files[0];
@@ -2894,12 +2957,13 @@
         const canvas = document.getElementById("cropCanvas");
         state.profilePhoto = canvas.toDataURL("image/png");
         localStorage.setItem("JUAN_PROFILE_PHOTO", state.profilePhoto);
+        queueWorkspaceSettingsSync();
         closeModal("cropModal");
         updateProfileDisplay();
         showToast("Profile photo updated.");
       }
 
-      function removeProfilePhoto() {requestDestructivePin('Remove Profile Photo','Remove the saved workspace profile photo?',()=>{localStorage.removeItem("JUAN_PROFILE_PHOTO");state.profilePhoto="";updateProfileDisplay();showToast("Profile photo removed.");});}
+      function removeProfilePhoto() {requestDestructivePin('Remove Profile Photo','Remove the saved workspace profile photo?',()=>{localStorage.removeItem("JUAN_PROFILE_PHOTO");state.profilePhoto="";updateProfileDisplay();queueWorkspaceSettingsSync();showToast("Profile photo removed.");});}
 
       function updateOwnerName(val) {
         const name = val.trim();
@@ -2911,6 +2975,7 @@
         state.settings.ownerName = name;
         localStorage.setItem("JUAN_OWNER_NAME", name);
         updateProfileDisplay();
+        queueWorkspaceSettingsSync();
         showToast("Profile updated successfully.");
       }
 
@@ -2918,6 +2983,7 @@
         state.ownerAddress = val.trim();
         state.settings.address = state.ownerAddress;
         localStorage.setItem("JUAN_OWNER_ADDRESS", state.ownerAddress);
+        queueWorkspaceSettingsSync();
         showToast("Billing address updated.");
       }
 
@@ -2929,6 +2995,7 @@
         }
         state.ownerPhone = phone;
         localStorage.setItem("JUAN_OWNER_PHONE", phone);
+        queueWorkspaceSettingsSync();
         showToast("Contact phone updated.");
       }
 
@@ -2941,6 +3008,7 @@
         state.ownerEmail = email;
         state.settings.email = email;
         localStorage.setItem("JUAN_OWNER_EMAIL", email);
+        queueWorkspaceSettingsSync();
         showToast("Email updated successfully.");
       }
 
@@ -3155,63 +3223,39 @@ ${description}`))actionCallback();return;}
       }
 
       async function loadDatabaseData() {
+        setWorkspaceLoading(true);
         try {
-          const [clientsRes, projectsRes] = await Promise.all([
-            supabaseClient ? supabaseClient.from('clients').select('*').order('name') : { data: [] },
-            supabaseClient ? supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at', { ascending: false }) : { data: [] }
+          const [clientsRes, projectsRes, settingsRes] = await Promise.all([
+            supabaseClient ? supabaseClient.from('clients').select('*').order('name') : { data: [], error:null },
+            supabaseClient ? supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at', { ascending: false }) : { data: [], error:null },
+            supabaseClient ? supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle() : { data:null, error:null }
           ]);
+          if (clientsRes.error) throw clientsRes.error;
+          if (projectsRes.error) throw projectsRes.error;
+          if (settingsRes.error && !/workspace_settings/i.test(String(settingsRes.error.message||''))) console.warn('Workspace settings load:',settingsRes.error);
 
-          if (clientsRes.error) console.error("Clients table load failed:", clientsRes.error);
-          if (projectsRes.error) console.error("Projects table load failed:", projectsRes.error);
-          const remoteClientIds = new Set((clientsRes.data || []).map(row => String(row.id)));
-          const remoteProjectIds = new Set((projectsRes.data || []).map(row => String(row.id)));
-
-          if (clientsRes.data && clientsRes.data.length > 0) {
-            state.clients = clientsRes.data.filter(c => !c.archived_at);
-          }
-          const localClients = localStorage.getItem("JUAN_CLIENTS_LOCAL");
-          if (localClients) {
-            try {
-              const parsed = JSON.parse(localClients);
-              parsed.forEach(lc => {
-                if (!state.clients.some(c => c.id === lc.id)) state.clients.push(lc);
-              });
-            } catch(e){}
-          }
-
-          let fetchedProjects = projectsRes.data || [];
-          const localProjs = localStorage.getItem("JUAN_PROJECTS_LOCAL");
-          if (localProjs) {
-            try {
-              const parsedLocal = JSON.parse(localProjs);
-              parsedLocal.forEach(lp => {
-                if (!fetchedProjects.some(fp => fp.id === lp.id)) {
-                  fetchedProjects.push(lp);
-                }
-              });
-            } catch(e){}
-          }
-          state.projects = fetchedProjects;
-          // V1.3.1: Client Directory follows actual project ownership, not stale standalone rows.
+          // V1.3.2: Supabase is the source of truth whenever the cloud connection succeeds.
+          state.clients = (clientsRes.data || []).filter(c => !c.archived_at);
+          state.projects = projectsRes.data || [];
           pruneClientDirectoryToProjects();
           persistClientsState();
+          localStorage.setItem('JUAN_PROJECTS_LOCAL',JSON.stringify(state.projects));
           loadTasksState();
-
-          await migrateLocalOnlyBusinessRecords(remoteClientIds, remoteProjectIds);
+          if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
+          else if(supabaseClient&&state.isConnected)await syncWorkspaceSettingsNow();
 
           const remoteCatalogLoaded = await loadSharedCatalogFromDatabase();
-          if (!remoteCatalogLoaded && supabaseClient && state.isConnected) {
-            await syncSharedCatalogToDatabase({ silent: true });
-          }
-
+          if (!remoteCatalogLoaded && supabaseClient && state.isConnected) await syncSharedCatalogToDatabase({ silent: true });
           renderTemplatesDropdown();
           renderCurrentView();
         } catch (err) {
-          console.error("Database error:", err);
-          showToast("Warning: Could not load all data from the database. Local data remains available.", "Retry", () => loadDatabaseData());
-          const localProjs = localStorage.getItem("JUAN_PROJECTS_LOCAL");
-          if (localProjs) { try { state.projects = JSON.parse(localProjs); } catch(e){} }
+          console.error('Database error:', err);
+          showToast('Cloud data could not be loaded. Showing the latest local cache.', 'Retry', () => loadDatabaseData());
+          try{const localClients=JSON.parse(localStorage.getItem('JUAN_CLIENTS_LOCAL')||'[]');state.clients=Array.isArray(localClients)?localClients:[]}catch(_){state.clients=[]}
+          try{const localProjects=JSON.parse(localStorage.getItem('JUAN_PROJECTS_LOCAL')||'[]');state.projects=Array.isArray(localProjects)?localProjects:[]}catch(_){state.projects=[]}
           renderCurrentView();
+        } finally {
+          setWorkspaceLoading(false);
         }
       }
 
@@ -6085,9 +6129,10 @@ ${description}`))actionCallback();return;}
         const projectMap=new Map((data.projects||[]).map(x=>[String(x.id),x]));
         const paymentRows=document.getElementById("onlinePortalPaymentRows");
         if(paymentRows)paymentRows.innerHTML=(data.submissions||[]).map(x=>{
-          const c=clientMap.get(String(x.client_id)),p=projectMap.get(String(x.project_id));
-          return `<tr><td>${escapeHtml(c?.name||c?.email||"—")}</td><td><strong>${escapeHtml(p?.project_code||p?.title||"—")}</strong><div class="text-sm text-muted">${escapeHtml(p?.title||"")}</div></td><td><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td>${escapeHtml(x.reference_number||x.extracted_reference||"—")}</td><td>${escapeHtml(x.payment_method||"—")}</td><td>${escapeHtml(x.payment_date||"—")}</td><td>${x.receipt_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(x.receipt_url)}" target="_blank" rel="noopener">Open</a>`:"—"}</td><td><span class="portal-status ${x.status==="pending"?"portal-warn":"portal-ok"}">${escapeHtml(x.status||"—")}</span></td><td>${x.status==="pending"?`<div class="portal-row-actions"><button class="btn btn-primary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="approved">Approve</button><button class="btn btn-secondary btn-sm portal-payment-review" data-id="${escapeHtml(x.id)}" data-decision="rejected">Reject</button></div>`:"—"}</td></tr>`;
-        }).join("")||`<tr><td colspan="9" class="text-center text-muted">No payment submissions.</td></tr>`;
+          const c=clientMap.get(String(x.client_id)),p=projectMap.get(String(x.project_id)),verification=x.verification||{passed:false,checks:[]};
+          const verificationLabel=verification.passed?'Verified':'Needs Attention';
+          return `<tr><td>${escapeHtml(c?.name||c?.email||"—")}</td><td><strong>${escapeHtml(p?.project_code||p?.title||"—")}</strong><div class="text-sm text-muted">${escapeHtml(p?.title||"")}</div></td><td><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td><div><strong>${escapeHtml(x.payment_method||x.sender_institution||"—")}</strong><div class="text-sm text-muted">${escapeHtml(x.reference_number||"No reference")}</div></div></td><td><span class="portal-status ${verification.passed?'portal-ok':'portal-warn'}">${verificationLabel}</span></td><td>${x.receipt_url?`<a class="btn btn-secondary btn-sm" href="${escapeHtml(x.receipt_url)}" target="_blank" rel="noopener">Open</a>`:"Missing"}</td><td><span class="portal-status ${x.status==="pending"?"portal-warn":x.status==='approved'?'portal-ok':'portal-danger'}">${escapeHtml(x.status||"—")}</span></td><td>${x.status==="pending"?`<button class="btn btn-primary btn-sm portal-payment-open" data-id="${escapeHtml(x.id)}">Review</button>`:"—"}</td></tr>`;
+        }).join("")||`<tr><td colspan="8" class="text-center text-muted">No payment submissions.</td></tr>`;
 
         const activityRows=document.getElementById("onlinePortalActivityRows");
         if(activityRows){
@@ -6112,6 +6157,34 @@ ${description}`))actionCallback();return;}
         bindOnlinePortalRows();
       }
 
+      async function openPortalPaymentReview(id){
+        if(!state.onlinePortalData){try{await loadOnlinePortalData(true)}catch(_){}}
+        const data=state.onlinePortalData||{},submission=(data.submissions||[]).find(x=>String(x.id)===String(id));if(!submission){showToast('Payment review data is still loading. Try again.');return;}
+        state.portalPaymentReviewId=id;
+        const client=(data.clients||[]).find(x=>String(x.id)===String(submission.client_id)),project=(data.projects||[]).find(x=>String(x.id)===String(submission.project_id)),verification=submission.verification||{passed:false,checks:[]};
+        const summary=document.getElementById('paymentReviewSummary');if(summary)summary.innerHTML=`<div><span>Project</span><strong>${escapeHtml(project?.project_code||project?.title||'—')}</strong><small>${escapeHtml(project?.title||'')}</small></div><div><span>Client</span><strong>${escapeHtml(client?.name||client?.email||'—')}</strong><small>${escapeHtml(submission.payment_method||submission.sender_institution||'Unknown sender')}</small></div><div><span>Amount</span><strong>${portalMoney(submission.submitted_amount)}</strong><small>Balance ${portalMoney(verification.balance||0)}</small></div><div><span>Reference</span><strong>${escapeHtml(submission.reference_number||'Missing')}</strong><small>${submission.receipt_url?'Receipt attached':'Receipt missing'}</small></div>`;
+        const checks=document.getElementById('paymentReviewChecks');if(checks)checks.innerHTML=(verification.checks||[]).map(c=>`<div class="payment-review-check ${c.ok?'pass':'fail'}"><span>${c.ok?'✓':'!'}</span><div><strong>${escapeHtml(c.label)}</strong><small>${escapeHtml(c.message||'')}</small></div></div>`).join('')||'<div class="text-sm text-muted">No verification details available.</div>';
+        const reason=document.getElementById('paymentRejectReason');if(reason){reason.innerHTML='<option value="">Select a reason…</option>'+((data.rejectionReasons||[]).map(r=>`<option value="${escapeHtml(r.code)}">${escapeHtml(r.label)}</option>`).join(''));reason.value='';}
+        const note=document.getElementById('paymentRejectNote');if(note)note.value='';document.getElementById('paymentRejectValidation')?.classList.add('hidden');
+        const approve=document.getElementById('paymentReviewApproveBtn');if(approve){approve.disabled=!verification.passed;approve.title=verification.passed?'Approve verified payment':'Resolve system check failures before approval';approve.onclick=()=>submitPortalPaymentReview('approved');}
+        const reject=document.getElementById('paymentReviewRejectBtn');if(reject)reject.onclick=()=>submitPortalPaymentReview('rejected');
+        openModal('portalPaymentReviewModal');
+      }
+
+      async function submitPortalPaymentReview(decision){
+        const id=state.portalPaymentReviewId;if(!id)return;
+        const reason=document.getElementById('paymentRejectReason'),note=document.getElementById('paymentRejectNote');
+        if(decision==='rejected'&&!reason?.value){document.getElementById('paymentRejectValidation')?.classList.remove('hidden');reason?.focus();return;}
+        showActionStatus(decision==='approved'?'Approving Payment':'Rejecting Payment',decision==='approved'?'Running final server verification and recording the payment…':'Saving the rejection reason and notifying the client record…',false);
+        try{
+          await onlinePortalRequest('POST',{action:'review-payment',id,decision,reasonCode:decision==='rejected'?reason.value:null,adminNote:decision==='rejected'?(note?.value||''):null});
+          closeModal('portalPaymentReviewModal');
+          state.onlinePortalData=null;await loadOnlinePortalData(true);
+          showActionStatus(decision==='approved'?'Payment Approved':'Payment Rejected',decision==='approved'?'The payment was recorded and the project balance was recalculated.':'The rejection reason was saved for the client.',true);
+          setTimeout(()=>closeModal('actionStatusModal'),1100);
+        }catch(e){closeModal('actionStatusModal');showToast(e.message||'Payment review failed.');}
+      }
+
       function bindOnlinePortalRows(){
         document.querySelectorAll(".portal-account-action").forEach(btn=>btn.onclick=()=>{
           const body={action:btn.dataset.action,clientId:btn.dataset.client};
@@ -6119,7 +6192,7 @@ ${description}`))actionCallback();return;}
           const msg=btn.dataset.action==="reset-client-temporary-password"?"Temporary password reset to the current Client ID.":btn.dataset.action==="set-client-access"?"Client portal access updated.":"Client portal account updated.";
           runOnlinePortalAction(body,msg,true);
         });
-        document.querySelectorAll(".portal-payment-review").forEach(btn=>btn.onclick=()=>runOnlinePortalAction({action:"review-payment",id:btn.dataset.id,decision:btn.dataset.decision},`Payment ${btn.dataset.decision}.`,true));
+        document.querySelectorAll('.portal-payment-open').forEach(btn=>btn.onclick=()=>openPortalPaymentReview(btn.dataset.id));
         document.querySelectorAll(".portal-drive-save").forEach(btn=>btn.onclick=()=>{
           const project=CSS.escape(btn.dataset.project),input=document.querySelector(`.portal-drive-input[data-project="${project}"]`),unlock=document.querySelector(`.portal-drive-unlock[data-project="${project}"]`),expires=document.querySelector(`.portal-drive-expires[data-project="${project}"]`);
           runOnlinePortalAction({action:"save-project-drive-link",projectId:btn.dataset.project,url:input?.value||"",unlockAt:unlock?.value||null,expiresAt:expires?.value||null},"Project Drive access saved.",true);
@@ -6202,6 +6275,7 @@ ${description}`))actionCallback();return;}
         addCustomProductToCart,
         renderPricelist,
         renderOnlinePortal,
+        openPortalPaymentReview,
         setOnlinePortalTab,
         loadOnlinePortalData,
         switchPricelistTab,
@@ -6481,7 +6555,7 @@ ${description}`))actionCallback();return;}
     <label for="workspaceAuthPassword">Password</label>
     <div class="workspace-password-wrap"><input id="workspaceAuthPassword" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')app.adminSignIn()"><button type="button" class="workspace-pass-toggle" aria-label="Show password" onclick="const p=document.getElementById('workspaceAuthPassword');p.type=p.type==='password'?'text':'password'">Show</button></div>
     <button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Log In</button>
-    <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth and database policies. The existing local workspace data remains available only on this browser.</p>
+    <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth and database policies. Supabase is the shared source of truth across supported browsers and devices.</p>
   </div>
 </div>
 

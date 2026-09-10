@@ -1,4 +1,5 @@
 import { requireAdmin, sendError } from './_lib.js';
+import {verifySubmissionShape,rejectionReasons,sanitizeReference} from './_payment-verification.js';
 
 async function listAllAuthUsers(svc){
   const out=[];let page=1;
@@ -198,17 +199,19 @@ export default async function handler(req,res){
     const {svc,user}=await requireAdmin(req);
 
     if(req.method==='GET'){
-      const [submissions,settings,projects,deliverables,accountSnapshot]=await Promise.all([
+      const [submissions,settings,projects,deliverables,payments,accountSnapshot]=await Promise.all([
         svc.from('payment_submissions').select('*').order('submitted_at',{ascending:false}).limit(100),
         svc.from('payment_settings').select('*').eq('id',1).maybeSingle(),
-        svc.from('projects').select('id,title,client_id,project_code,status,deadline_date,drive_url,drive_unlock_at,drive_expires_at').order('project_code',{ascending:true,nullsFirst:false}),
+        svc.from('projects').select('id,title,client_id,project_code,status,total_amount,deadline_date,drive_url,drive_unlock_at,drive_expires_at').order('project_code',{ascending:true,nullsFirst:false}),
         svc.from('deliverables').select('id,project_id,item_name,client_visible,due_date,completed').order('project_id'),
+        svc.from('payments').select('id,project_id,amount_paid,reference_no'),
         getClientAccountSnapshot(svc)
       ]);
       if(submissions.error)throw submissions.error;
       if(settings.error)throw settings.error;
       if(projects.error)throw projects.error;
       if(deliverables.error)throw deliverables.error;
+      if(payments.error)throw payments.error;
 
       const clientsForNames=accountSnapshot.rows.map(x=>({id:x.id,name:x.name,email:x.email,client_code:x.client_code}));
       const safeSubmissions=await Promise.all((submissions.data||[]).map(async submission=>{
@@ -217,7 +220,19 @@ export default async function handler(req,res){
           const signed=await svc.storage.from('payment-receipts').createSignedUrl(submission.receipt_path,300);
           if(!signed.error)receipt_url=signed.data?.signedUrl||null;
         }
-        return {...submission,receipt_url};
+        const verification=verifySubmissionShape(submission);
+        const normalized=sanitizeReference(submission.reference_number);
+        const duplicateSubmission=(submissions.data||[]).some(other=>other.id!==submission.id&&['pending','approved'].includes(other.status)&&sanitizeReference(other.reference_number).toLowerCase()===normalized.toLowerCase()&&normalized);
+        const duplicatePayment=(payments.data||[]).some(pay=>sanitizeReference(pay.reference_no).toLowerCase()===normalized.toLowerCase()&&normalized);
+        const project=(projects.data||[]).find(p=>String(p.id)===String(submission.project_id));
+        const paid=(payments.data||[]).filter(p=>String(p.project_id)===String(submission.project_id)).reduce((sum,p)=>sum+Number(p.amount_paid||0),0);
+        const balance=Math.max(0,Number(project?.total_amount||0)-paid);
+        if(duplicateSubmission||duplicatePayment)verification.checks.push({code:'duplicate',label:'Duplicate reference',ok:false,message:'This reference number is already used by another payment.'});
+        else verification.checks.push({code:'duplicate',label:'Duplicate reference',ok:true,message:'Passed'});
+        if(Number(submission.submitted_amount||0)>balance+0.01)verification.checks.push({code:'balance',label:'Current balance',ok:false,message:`Submitted amount is greater than the current balance (${balance.toFixed(2)}).`});
+        else verification.checks.push({code:'balance',label:'Current balance',ok:true,message:'Passed'});
+        verification.passed=verification.checks.every(x=>x.ok);verification.balance=balance;
+        return {...submission,receipt_url,verification};
       }));
 
       res.setHeader('Cache-Control','private, no-store');
@@ -227,7 +242,8 @@ export default async function handler(req,res){
         projects:projects.data||[],
         deliverables:deliverables.data||[],
         clients:clientsForNames,
-        clientAccounts:accountSnapshot.rows
+        clientAccounts:accountSnapshot.rows,
+        rejectionReasons:rejectionReasons()
       });
     }
 
@@ -300,8 +316,18 @@ export default async function handler(req,res){
       const id=String(body.id||'');
       const decision=body.decision==='approved'?'approved':body.decision==='rejected'?'rejected':'';
       if(!id||!decision)return res.status(400).json({error:'Invalid payment review request.'});
-      const review=await svc.rpc('review_juan_payment_submission',{p_submission_id:id,p_decision:decision,p_admin_user:user.id,p_reason:decision==='rejected'?String(body.reason||'').slice(0,500):null});
-      if(review.error){const message=String(review.error.message||'Payment review failed.');const status=/already reviewed/i.test(message)?409:/balance/i.test(message)?409:400;return res.status(status).json({error:message})}
+      const current=await svc.from('payment_submissions').select('*').eq('id',id).maybeSingle();
+      if(current.error)throw current.error;if(!current.data)return res.status(404).json({error:'Payment submission not found.'});
+      const verification=verifySubmissionShape(current.data);
+      if(decision==='approved'&&!verification.passed)return res.status(409).json({error:'This payment cannot be approved until all system checks pass.',verification});
+      const reasonCode=decision==='rejected'?String(body.reasonCode||'').slice(0,80):null;
+      const allowed=new Map(rejectionReasons().map(x=>[x.code,x.label]));
+      if(decision==='rejected'&&!allowed.has(reasonCode))return res.status(400).json({error:'Select a rejection reason.'});
+      const customNote=String(body.adminNote||'').trim().slice(0,500);
+      const reason=decision==='rejected'?[allowed.get(reasonCode),customNote].filter(Boolean).join(' — '):null;
+      const review=await svc.rpc('review_juan_payment_submission',{p_submission_id:id,p_decision:decision,p_admin_user:user.id,p_reason:reason});
+      if(review.error){const message=String(review.error.message||'Payment review failed.');const status=/already reviewed|balance|missing|invalid|duplicate/i.test(message)?409:400;return res.status(status).json({error:message})}
+      if(decision==='rejected')await svc.from('payment_submissions').update({rejection_code:reasonCode,admin_note:customNote||null}).eq('id',id);
       return res.status(200).json({ok:true,status:review.data});
     }
 

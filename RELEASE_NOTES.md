@@ -1,3 +1,17 @@
+# JUAN PROJECT Platform V1.3.2
+
+- Shared Supabase source of truth for Workspace profile/settings, projects, clients, payments, and Online Portal records.
+- Skeleton loading state for Workspace cloud data.
+- Searchable sender bank/e-wallet selector with local SVG previews.
+- Deterministic reference validation for the 10 supplied UnionBank/InstaPay sender formats.
+- Mandatory payment Reference Number and receipt, duplicate-reference protection, and server-side revalidation.
+- Payment processing/success timeline retained and expanded.
+- Workspace Payment Reviews now show system checks before approval and use rejection reasons + optional notes.
+- Legacy/incomplete submissions no longer fail with an unexplained NULL approval path; they are blocked with actionable validation.
+- Contextual guest Log In Required modals and guest Help/About.
+- Updated 9:16 onboarding graphics with safe margins for varied phone sizes.
+- Database migration: `009_platform_v1_3_2.sql`.
+
 # JUAN PROJECT Platform V1.3.1
 
 - Adds browser/PWA site icons for Workspace and Online using the supplied JUAN PROJECT branding.
