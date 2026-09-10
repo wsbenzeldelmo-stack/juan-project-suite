@@ -17,24 +17,30 @@ function validEmail(value){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value
 function validDrive(value){return !value || /^https:\/\/(drive|docs)\.google\.com\//i.test(String(value).trim())}
 
 async function getClientAccountSnapshot(svc){
-  const [clientsRes,portalRes,rolesRes,authUsers]=await Promise.all([
+  const [clientsRes,portalRes,rolesRes,projectsRes,authUsers]=await Promise.all([
     svc.from('clients').select('id,name,email,client_code,archived_at').order('client_code',{ascending:true,nullsFirst:false}),
     svc.from('portal_accounts').select('auth_user_id,client_id,password_set,portal_enabled,created_at,updated_at'),
     svc.from('user_roles').select('auth_user_id,role'),
+    svc.from('projects').select('client_id'),
     listAllAuthUsers(svc)
   ]);
   if(clientsRes.error)throw clientsRes.error;
   if(portalRes.error)throw portalRes.error;
   if(rolesRes.error)throw rolesRes.error;
+  if(projectsRes.error)throw projectsRes.error;
 
+  // Client Accounts are project-derived: only clients currently referenced by a project
+  // are exposed/provisioned in JUAN PROJECT Online.
+  const activeClientIds=new Set((projectsRes.data||[]).map(x=>String(x.client_id||'')).filter(Boolean));
+  const projectClients=(clientsRes.data||[]).filter(c=>activeClientIds.has(String(c.id)));
   const portalByClient=new Map((portalRes.data||[]).map(x=>[String(x.client_id),x]));
   const authById=new Map(authUsers.map(u=>[u.id,u]));
   const authByEmail=new Map(authUsers.filter(u=>u.email).map(u=>[normEmail(u.email),u]));
   const roleByUser=new Map((rolesRes.data||[]).map(x=>[x.auth_user_id,x.role]));
   const emailCounts=new Map();
-  for(const c of clientsRes.data||[]){const e=normEmail(c.email);if(e)emailCounts.set(e,(emailCounts.get(e)||0)+1)}
+  for(const c of projectClients){const e=normEmail(c.email);if(e)emailCounts.set(e,(emailCounts.get(e)||0)+1)}
 
-  const rows=(clientsRes.data||[]).map(c=>{
+  const rows=projectClients.map(c=>{
     const portal=portalByClient.get(String(c.id));
     const auth=portal?authById.get(portal.auth_user_id):authByEmail.get(normEmail(c.email));
     let status='needs_account';
@@ -55,6 +61,74 @@ async function getClientAccountSnapshot(svc){
     };
   });
   return {rows,authUsers,portalByClient,authByEmail,roleByUser,emailCounts,authById};
+}
+
+async function reconcileProjectClient(svc,body){
+  const projectId=String(body.projectId||'').trim();
+  if(!projectId)throw Object.assign(new Error('Project is required.'),{status:400});
+  const name=String(body.name||'').trim();
+  const emailRaw=String(body.email||'').trim();
+  const email=normEmail(emailRaw);
+  const phone=String(body.phone||'').trim();
+  const address=String(body.address||'').trim();
+  if(emailRaw&&!validEmail(emailRaw))throw Object.assign(new Error('Enter a valid client email address.'),{status:400});
+
+  const projectRes=await svc.from('projects').select('id,client_id,client_name').eq('id',projectId).maybeSingle();
+  if(projectRes.error)throw projectRes.error;
+  if(!projectRes.data)throw Object.assign(new Error('Project was not found in the shared database.'),{status:404});
+  const previousClientId=projectRes.data.client_id?String(projectRes.data.client_id):'';
+  let previous=null;
+  if(previousClientId){
+    const r=await svc.from('clients').select('id,name,email,phone,address,client_code,archived_at').eq('id',previousClientId).maybeSingle();
+    if(r.error)throw r.error;previous=r.data||null;
+  }
+
+  let matched=null;
+  if(email){
+    const r=await svc.from('clients').select('id,name,email,phone,address,client_code,archived_at').ilike('email',email).is('archived_at',null).limit(1).maybeSingle();
+    if(r.error)throw r.error;matched=r.data||null;
+  }
+
+  const previousEmail=normEmail(previous?.email);
+  let target=matched;
+  // Blank-email clients are provisional. Adding their first valid email upgrades the same Client ID.
+  if(!target&&previous&&((email&&(!previousEmail||previousEmail===email))||(!email&&!previousEmail)))target=previous;
+  // Changing a real email (including clearing it) is an identity change for this project.
+  if(!target){
+    const ins=await svc.from('clients').insert({name:name||'Client',email:email||null,phone:phone||null,address:address||null,archived_at:null}).select('id,name,email,phone,address,client_code,archived_at').single();
+    if(ins.error)throw ins.error;target=ins.data;
+  }else{
+    const upd=await svc.from('clients').update({name:name||target.name||'Client',email:email||null,phone:phone||null,address:address||null,archived_at:null}).eq('id',target.id).select('id,name,email,phone,address,client_code,archived_at').single();
+    if(upd.error)throw upd.error;target=upd.data;
+  }
+
+  const projectUpdate=await svc.from('projects').update({client_id:target.id,client_name:name||target.name||'Client',updated_at:new Date().toISOString()}).eq('id',projectId);
+  if(projectUpdate.error)throw projectUpdate.error;
+
+  let archivedPrevious=false;
+  if(previousClientId&&String(previousClientId)!==String(target.id)){
+    const countRes=await svc.from('projects').select('id',{count:'exact',head:true}).eq('client_id',previousClientId);
+    if(countRes.error)throw countRes.error;
+    if((countRes.count||0)===0){
+      const archivedAt=new Date().toISOString();
+      const arc=await svc.from('clients').update({archived_at:archivedAt}).eq('id',previousClientId);
+      if(arc.error)throw arc.error;
+      // Do not delete Auth users; simply disable the orphaned portal account.
+      const portal=await svc.from('portal_accounts').update({portal_enabled:false,updated_at:archivedAt}).eq('client_id',previousClientId);
+      if(portal.error)throw portal.error;
+      archivedPrevious=true;
+    }
+  }
+
+  let portalResult=null;
+  if(email&&validEmail(email)){
+    try{
+      const snapshot=await getClientAccountSnapshot(svc);
+      const row=snapshot.rows.find(x=>String(x.id)===String(target.id));
+      if(row)portalResult=await provisionOneClient(svc,row,snapshot,{refreshTemporary:false});
+    }catch(error){portalResult={status:'needs_setup',message:error?.message||'Portal setup needs attention.'};}
+  }
+  return {client:target,previousClientId:previousClientId||null,archivedPrevious,portalResult};
 }
 
 async function setAuthMetadata(svc,user,patch){
@@ -159,6 +233,11 @@ export default async function handler(req,res){
 
     if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
     const body=req.body||{};
+
+    if(body.action==='reconcile-project-client'){
+      const result=await reconcileProjectClient(svc,body);
+      return res.status(200).json({ok:true,...result});
+    }
 
     if(body.action==='provision-all-clients'){
       const snapshot=await getClientAccountSnapshot(svc);

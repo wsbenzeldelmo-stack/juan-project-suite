@@ -1377,7 +1377,7 @@
             </div>
             <div id="projectOrderItemsList"></div>
           </div>
-          <div class="project-data-save-row"><button class="btn btn-primary" onclick="app.saveProjectData()">Save Project Data</button></div>
+          <div class="project-data-save-row project-data-autosave-row"><span id="projectDataAutosaveStatus" class="project-data-autosave-status">All changes save automatically.</span></div>
         </div>
 
         <div id="projTab-deliverables" class="tab-content active">
@@ -3192,6 +3192,9 @@ ${description}`))actionCallback();return;}
             } catch(e){}
           }
           state.projects = fetchedProjects;
+          // V1.3.1: Client Directory follows actual project ownership, not stale standalone rows.
+          pruneClientDirectoryToProjects();
+          persistClientsState();
           loadTasksState();
 
           await migrateLocalOnlyBusinessRecords(remoteClientIds, remoteProjectIds);
@@ -3550,8 +3553,8 @@ ${description}`))actionCallback();return;}
         if(!client)return 'CL-000';
         if(client.client_code && /^CL-\d+$/i.test(String(client.client_code))) return String(client.client_code).toUpperCase();
         const ordered=state.clients.slice().sort((a,b)=>{
-          const af=state.projects.filter(p=>!p.deleted&&(p.client_id===a.id||p.client_name===a.name)).map(projectNumber).filter(Number.isFinite);
-          const bf=state.projects.filter(p=>!p.deleted&&(p.client_id===b.id||p.client_name===b.name)).map(projectNumber).filter(Number.isFinite);
+          const af=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(a.id)).map(projectNumber).filter(Number.isFinite);
+          const bf=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(b.id)).map(projectNumber).filter(Number.isFinite);
           const an=af.length?Math.min(...af):Number.MAX_SAFE_INTEGER,bn=bf.length?Math.min(...bf):Number.MAX_SAFE_INTEGER;
           return an-bn||String(a.id||a.email||a.name).localeCompare(String(b.id||b.email||b.name));
         });
@@ -3769,7 +3772,7 @@ ${description}`))actionCallback();return;}
         const id=state.activeClientId, c=state.clients.find(x=>x.id===id); if(!c)return;
         document.getElementById("clientProfileName").innerText=c.name||"Client";
         document.getElementById("clientProfileEmail").innerText=`${formatClientId(c)} · ${c.email||""}`;
-        const projects=state.projects.filter(p=>!p.deleted&&(p.client_id===id||p.client_name===c.name));
+        const projects=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(id));
         const paid=projects.reduce((s,p)=>s+getProjectPaid(p),0), total=projects.reduce((s,p)=>s+Number(p.total_amount||0),0);
         document.getElementById("clientProfileEditBtn").onclick=()=>openEditClientModal(id);
         document.getElementById("clientProfileContent").innerHTML=`<div class="client-stat-grid"><div class="mini-stat"><div class="label">Projects</div><div class="value">${projects.length}</div></div><div class="mini-stat"><div class="label">Total Project Value</div><div class="value">${formatCurrency(total)}</div></div><div class="mini-stat"><div class="label">Paid</div><div class="value">${formatCurrency(paid)}</div></div><div class="mini-stat"><div class="label">Outstanding</div><div class="value">${formatCurrency(Math.max(0,total-paid))}</div></div></div>
@@ -4986,8 +4989,87 @@ ${description}`))actionCallback();return;}
         switchProjectTab('deliverables');
       }
 
+      let projectDataAutosaveTimer=null;
+      let projectDataAutosaveBound=false;
+      let projectDataAutosaveBusy=false;
+
+      function normalizeProjectClientEmail(value){return String(value||'').trim().toLowerCase();}
+      function validProjectClientEmail(value){const v=String(value||'').trim();return !v||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
+      function nextLocalClientCode(){const max=(state.clients||[]).reduce((m,c)=>Math.max(m,Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||0)),0);return `CL-${String(max+1).padStart(3,'0')}`;}
       function getProjectClientRecord(proj){
-        return state.clients.find(c=>String(c.id)===String(proj?.client_id))||state.clients.find(c=>String(c.email||'').toLowerCase()===String(proj?.client_email||'').toLowerCase())||null;
+        return state.clients.find(c=>String(c.id)===String(proj?.client_id))||null;
+      }
+      function referencedClientIds(){return new Set((state.projects||[]).filter(p=>!p.deleted).map(p=>String(p.client_id||'')).filter(Boolean));}
+      function pruneClientDirectoryToProjects(){
+        const activeProjects=(state.projects||[]).filter(p=>!p.deleted&&p.client_id),refs=new Set(activeProjects.map(p=>String(p.client_id))),byId=new Map((state.clients||[]).map(c=>[String(c.id),c]));
+        activeProjects.slice().sort((a,b)=>new Date(a.updated_at||a.created_at||0)-new Date(b.updated_at||b.created_at||0)).forEach(p=>{
+          const id=String(p.client_id),client=byId.get(id)||{id:p.client_id,client_code:'',name:p.client_name||'Client',email:p.client_email||'',phone:p.client_phone||'',address:p.client_address||'',notes:''};
+          if(p.client_name!==undefined&&p.client_name!==null&&String(p.client_name).trim())client.name=p.client_name;
+          if(p.client_email!==undefined&&p.client_email!==null)client.email=p.client_email;
+          if(p.client_phone!==undefined&&p.client_phone!==null)client.phone=p.client_phone;
+          if(p.client_address!==undefined&&p.client_address!==null)client.address=p.client_address;
+          byId.set(id,client);
+        });
+        state.clients=[...byId.entries()].filter(([id])=>refs.has(id)).map(([,c])=>c);
+      }
+      function syncClientSnapshotToProjects(client){
+        if(!client)return;
+        (state.projects||[]).forEach(p=>{
+          if(!p.deleted&&String(p.client_id)===String(client.id)){
+            p.client_name=client.name||'';p.client_email=client.email||'';p.client_phone=client.phone||'';p.client_address=client.address||'';
+          }
+        });
+      }
+      function createLocalProjectClient(data={}){
+        const client={id:`client_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,client_code:nextLocalClientCode(),name:data.name||'Client',email:data.email||'',phone:data.phone||'',address:data.address||'',notes:''};
+        state.clients.push(client);return client;
+      }
+      function reconcileLocalProjectClient(proj,previousClientId,previousEmail){
+        const newEmail=normalizeProjectClientEmail(proj.client_email),old=state.clients.find(c=>String(c.id)===String(previousClientId)),oldEmail=normalizeProjectClientEmail(old?.email||previousEmail);
+        const matched=newEmail?(state.clients||[]).find(c=>normalizeProjectClientEmail(c.email)===newEmail&&String(c.id)!==String(previousClientId)):null;
+        let target=null;
+        if(newEmail){
+          if(matched)target=matched;
+          else if(old&&(!oldEmail||oldEmail===newEmail))target=old;
+          else target=createLocalProjectClient({name:proj.client_name,email:newEmail,phone:proj.client_phone,address:proj.client_address});
+        }else{
+          if(old&&!oldEmail)target=old;
+          else target=createLocalProjectClient({name:proj.client_name,email:'',phone:proj.client_phone,address:proj.client_address});
+        }
+        target.name=proj.client_name||target.name||'Client';target.email=newEmail;target.phone=proj.client_phone||'';target.address=proj.client_address||'';target.archived_at=null;
+        proj.client_id=target.id;syncClientSnapshotToProjects(target);
+        if(previousClientId&&String(previousClientId)!==String(target.id)){
+          const stillUsed=(state.projects||[]).some(p=>!p.deleted&&String(p.id)!==String(proj.id)&&String(p.client_id)===String(previousClientId));
+          if(!stillUsed)state.clients=state.clients.filter(c=>String(c.id)!==String(previousClientId));
+        }
+        pruneClientDirectoryToProjects();return target;
+      }
+      function applyCloudClientReconcile(proj,result,previousClientId){
+        const client=result?.client;if(!client?.id)return null;
+        const localCurrent=state.clients.find(c=>String(c.id)===String(proj.client_id));
+        const serverClient={...(localCurrent||{}),...client,email:client.email||'',phone:client.phone||'',address:client.address||''};
+        state.clients=state.clients.filter(c=>String(c.id)!==String(serverClient.id));
+        state.clients.push(serverClient);proj.client_id=serverClient.id;syncClientSnapshotToProjects(serverClient);
+        if(previousClientId&&String(previousClientId)!==String(serverClient.id)){
+          const stillUsed=(state.projects||[]).some(p=>!p.deleted&&String(p.id)!==String(proj.id)&&String(p.client_id)===String(previousClientId));
+          if(!stillUsed)state.clients=state.clients.filter(c=>String(c.id)!==String(previousClientId));
+        }
+        pruneClientDirectoryToProjects();return serverClient;
+      }
+      function setProjectDataAutosaveStatus(text,mode=''){
+        const el=document.getElementById('projectDataAutosaveStatus');if(!el)return;el.textContent=text;el.className=`project-data-autosave-status ${mode}`.trim();
+      }
+      function queueProjectDataAutosave(immediate=false){
+        const email=document.getElementById('projectDataClientEmail')?.value||'';
+        if(!validProjectClientEmail(email)){setProjectDataAutosaveStatus('Enter a valid email address before client changes can sync.','error');return;}
+        clearTimeout(projectDataAutosaveTimer);setProjectDataAutosaveStatus('Saving…','saving');
+        projectDataAutosaveTimer=setTimeout(()=>saveProjectData({silent:true}),immediate?80:650);
+      }
+      function bindProjectDataAutosave(){
+        if(projectDataAutosaveBound)return;projectDataAutosaveBound=true;
+        ['projectDataClientName','projectDataClientPhone','projectDataClientAddress','projectDataProjectName'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>queueProjectDataAutosave(false)));
+        ['projectDataStartDate','projectDataDeadline','projectDataPriority'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>queueProjectDataAutosave(true)));
+        const email=document.getElementById('projectDataClientEmail');if(email){email.addEventListener('input',()=>{if(!validProjectClientEmail(email.value))setProjectDataAutosaveStatus('Enter a valid email address.','error');else setProjectDataAutosaveStatus('Client identity will update automatically.','');});email.addEventListener('change',()=>queueProjectDataAutosave(true));email.addEventListener('blur',()=>queueProjectDataAutosave(true));}
       }
       function populateProjectData(proj){
         if(!proj)return;const client=getProjectClientRecord(proj)||{};
@@ -4995,18 +5077,35 @@ ${description}`))actionCallback();return;}
         set('projectDataClientName',proj.client_name||client.name||'');set('projectDataClientEmail',proj.client_email||client.email||'');set('projectDataClientPhone',proj.client_phone||client.phone||'');set('projectDataClientAddress',proj.client_address||client.address||'');
         set('projectDataProjectId',formatProjectId(proj));set('projectDataProjectName',proj.title||'');set('projectDataStartDate',proj.start_date||'');set('projectDataDeadline',proj.deadline_date||'');
         const priorityEl=document.getElementById('projectDataPriority');if(priorityEl)priorityEl.checked=projectIsPriority(proj);
+        bindProjectDataAutosave();setProjectDataAutosaveStatus('All changes save automatically.');
       }
       function openProjectData(projId){
         if(projId&&projId!==state.activeProjectId){openProjectDetails(projId);setTimeout(()=>switchProjectTab('project-data'),0);return;}
         switchProjectTab('project-data');
       }
-      function saveProjectData(){
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
-        const name=document.getElementById('projectDataProjectName')?.value.trim()||'';const email=document.getElementById('projectDataClientEmail')?.value.trim()||'';if(!name){showToast('Project name is required.');return}if(email&&!email.includes('@')){showToast('Enter a valid email address.');return}
-        proj.title=name;proj.client_name=document.getElementById('projectDataClientName')?.value.trim()||'';proj.client_email=email;proj.client_phone=document.getElementById('projectDataClientPhone')?.value.trim()||'';proj.client_address=document.getElementById('projectDataClientAddress')?.value.trim()||'';proj.start_date=document.getElementById('projectDataStartDate')?.value||'';proj.deadline_date=document.getElementById('projectDataDeadline')?.value||'';proj.payment_due_date=proj.deadline_date;proj.invoice_due_date=proj.deadline_date;
-        const start=parseDateSafe(proj.start_date),due=parseDateSafe(proj.deadline_date),rushCalc=calculateRushFromTimeline(proj.start_date,proj.deadline_date);if(start&&due){proj.rush_days_early=rushCalc.daysEarly;proj.rush_fee=rushCalc.fee;if(Array.isArray(proj.project_items)&&proj.project_items.length)recalculateProjectFromOrderItems(proj);}const autoPriority=Number(proj.rush_fee||0)>0||Number(proj.rush_days_early||0)>0||!!(start&&due&&Math.ceil((due-start)/86400000)<14);proj.priority=autoPriority||!!document.getElementById('projectDataPriority')?.checked;proj.updated_at=new Date().toISOString();
-        const client=getProjectClientRecord(proj);if(client){client.name=proj.client_name;client.email=proj.client_email;client.phone=proj.client_phone;client.address=proj.client_address;persistClientsState();}
-        persistProjectsState();if(client&&supabaseClient&&state.isConnected)syncClientToDatabase(client);scheduleProjectStructureSync(proj,50);document.getElementById('projDetailTitle').innerText=proj.title;document.getElementById('projDetailClient').innerText=[formatProjectId(proj),proj.client_email||'No email'].join('  |  ');renderProjects();renderOverviewDashboard();showToast('Project data saved.');
+      async function saveProjectData(options={}){
+        const silent=options?.silent===true,proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||projectDataAutosaveBusy)return;
+        const name=document.getElementById('projectDataProjectName')?.value.trim()||'',email=document.getElementById('projectDataClientEmail')?.value.trim()||'';
+        if(!name){setProjectDataAutosaveStatus('Project name is required.','error');return}if(!validProjectClientEmail(email)){setProjectDataAutosaveStatus('Enter a valid email address.','error');return}
+        projectDataAutosaveBusy=true;setProjectDataAutosaveStatus('Saving…','saving');
+        const previousClientId=proj.client_id,previousEmail=proj.client_email||'',previousStart=proj.start_date||'',previousDeadline=proj.deadline_date||'';
+        try{
+          proj.title=name;proj.client_name=document.getElementById('projectDataClientName')?.value.trim()||'';proj.client_email=email;proj.client_phone=document.getElementById('projectDataClientPhone')?.value.trim()||'';proj.client_address=document.getElementById('projectDataClientAddress')?.value.trim()||'';proj.start_date=document.getElementById('projectDataStartDate')?.value||'';proj.deadline_date=document.getElementById('projectDataDeadline')?.value||'';proj.payment_due_date=proj.deadline_date;proj.invoice_due_date=proj.deadline_date;
+          const start=parseDateSafe(proj.start_date),due=parseDateSafe(proj.deadline_date),dateChanged=previousStart!==proj.start_date||previousDeadline!==proj.deadline_date,rushCalc=calculateRushFromTimeline(proj.start_date,proj.deadline_date);if(dateChanged&&start&&due){proj.rush_days_early=rushCalc.daysEarly;proj.rush_fee=rushCalc.fee;if(Array.isArray(proj.project_items)&&proj.project_items.length)recalculateProjectFromOrderItems(proj);}const autoPriority=Number(proj.rush_fee||0)>0||Number(proj.rush_days_early||0)>0||!!(start&&due&&Math.ceil((due-start)/86400000)<14);proj.priority=autoPriority||!!document.getElementById('projectDataPriority')?.checked;proj.updated_at=new Date().toISOString();
+          let client=null,cloudSynced=false;
+          if(supabaseClient&&state.isConnected){
+            try{
+              const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:proj.id,name:proj.client_name,email:proj.client_email,phone:proj.client_phone,address:proj.client_address});
+              client=applyCloudClientReconcile(proj,response,previousClientId);cloudSynced=!!client;
+            }catch(e){console.warn('Automatic client reconciliation will retry later:',e?.message||e);client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);setProjectDataAutosaveStatus('Saved locally · client sync pending.','warning');}
+          }else client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);
+          persistClientsState();persistProjectsState();
+          if(supabaseClient&&state.isConnected){scheduleProjectStructureSync(proj,80);}
+          const titleEl=document.getElementById('projDetailTitle'),clientEl=document.getElementById('projDetailClient');if(titleEl)titleEl.innerText=proj.title;if(clientEl)clientEl.innerText=[formatProjectId(proj),proj.client_email||'No email'].join('  |  ');
+          renderProjects();renderOverviewDashboard();if(state.activeView==='clients')renderClients();
+          setProjectDataAutosaveStatus(cloudSynced||!state.isConnected?'Saved automatically.':'Saved locally · client sync pending.',cloudSynced||!state.isConnected?'saved':'warning');
+          if(!silent)showToast('Project data saved.');
+        }finally{projectDataAutosaveBusy=false;}
       }
 
       function renderProjectTasks(proj) {
@@ -5037,8 +5136,9 @@ ${description}`))actionCallback();return;}
         const rush = Math.max(0, Number(proj.rush_fee || 0));
         const maintenance = automaticMaintenanceFee(items,projectNumber(proj));
         const workload = resolvedWorkloadSurcharge(proj);
+        const otherFees = Array.isArray(proj.additional_fees) ? proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0) : 0;
         proj.system_maintenance_fee = maintenance;
-        proj.total_amount = Math.max(0, subtotal - discount + rush + maintenance + workload);
+        proj.total_amount = Math.max(0, subtotal - discount + rush + workload + maintenance + otherFees);
         proj.pending_amount = Math.max(0, proj.total_amount - getProjectPaid(proj));
         if(!proj.project_type){const cats=[...new Set(items.map(i=>String(i.category||'').trim()).filter(Boolean))];proj.project_type=cats.length===1?cats[0]:(cats.length>1?'Mixed Services':'');}
         proj.updated_at = new Date().toISOString();
@@ -5246,9 +5346,13 @@ ${description}`))actionCallback();return;}
         const itemsSubtotal=Number(proj.subtotal_amount||items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0));
         const maintenance=Math.max(0,Number(proj.system_maintenance_fee||automaticMaintenanceFee(items,projectNumber(proj))));
         const workloadSurcharge=resolvedWorkloadSurcharge(proj);
-        const additionalCharges=Math.max(0,Number(proj.rush_fee||0))+maintenance+workloadSurcharge;
+        const otherFees=Array.isArray(proj.additional_fees)?proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0):0;
         const discounts=Math.max(0,Number(proj.discount_amount||0));
-        const total=Number(proj.total_amount||Math.max(0,itemsSubtotal+additionalCharges-discounts));
+        const knownAdditional=Math.max(0,Number(proj.rush_fee||0))+workloadSurcharge+maintenance+otherFees;
+        const storedAdditional=Math.max(0,Number(proj.total_amount||0)-itemsSubtotal+discounts);
+        const additionalCharges=Math.max(knownAdditional,storedAdditional);
+        const total=Math.max(0,itemsSubtotal+additionalCharges-discounts);
+        if(total>Number(proj.total_amount||0)+0.005){proj.total_amount=total;proj.pending_amount=Math.max(0,total-getProjectPaid(proj));persistProjectsState();scheduleProjectStructureSync(proj,120);}
         const payments=(proj.payments||[]).slice();
         const totalPaid=payments.reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
         const remaining=Math.max(0,total-totalPaid);
@@ -5281,21 +5385,31 @@ ${description}`))actionCallback();return;}
         const invoiceNo=ensureInvoiceNumber(proj);
         const items=Array.isArray(proj.project_items)?proj.project_items:[];
         const discount=Math.max(0,Number(proj.discount_amount||0));
-        const rush=Math.max(0,Number(proj.rush_fee||0));
+        const baseRush=Math.max(0,Number(proj.rush_fee||0));
         const maintenance=Math.max(0,Number(proj.system_maintenance_fee||automaticMaintenanceFee(items,projectNumber(proj))));
         const workloadSurcharge=Math.max(0,resolvedWorkloadSurcharge(proj));
-        const extraFees=[];
-        if(rush>0)extraFees.push({label:'Rush Fee',amount:rush});
-        if(workloadSurcharge>0)extraFees.push({label:'Workload Surcharge',amount:workloadSurcharge});
-        if(maintenance>0)extraFees.push({label:'System Maintenance Fee',amount:maintenance});
+        const otherFees=[];
         if(Array.isArray(proj.additional_fees)){
-          proj.additional_fees.forEach(f=>{const amount=Math.max(0,Number(f?.amount||0));if(amount>0)extraFees.push({label:String(f?.label||f?.name||'Additional Fee'),amount});});
+          proj.additional_fees.forEach(f=>{const amount=Math.max(0,Number(f?.amount||0));if(amount>0)otherFees.push({label:String(f?.label||f?.name||'Additional Fee'),amount});});
         }
-        const additionalFeesTotal=extraFees.reduce((sum,f)=>sum+f.amount,0);
         const itemSubtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0);
         const storedTotal=Math.max(0,Number(proj.total_amount||0));
-        const subtotal=Math.max(0,Number(proj.subtotal_amount||itemSubtotal||(storedTotal-additionalFeesTotal+discount)));
-        const total=storedTotal||Math.max(0,subtotal+additionalFeesTotal-discount);
+        const explicitOtherTotal=otherFees.reduce((sum,f)=>sum+f.amount,0);
+        const subtotal=Math.max(0,Number(proj.subtotal_amount||itemSubtotal||(storedTotal-(baseRush+workloadSurcharge+maintenance+explicitOtherTotal)+discount)));
+        let rushDisplay=baseRush+workloadSurcharge;
+        let visibleExpected=Math.max(0,subtotal+rushDisplay+maintenance+explicitOtherTotal-discount);
+        const legacyUnlabelledDelta=storedTotal>visibleExpected+0.005?storedTotal-visibleExpected:0;
+        if(legacyUnlabelledDelta>0){
+          if(rushDisplay>0)rushDisplay+=legacyUnlabelledDelta;
+          else otherFees.push({label:'Additional Fee',amount:legacyUnlabelledDelta});
+        }
+        const extraFees=[];
+        if(rushDisplay>0)extraFees.push({label:'Rush Fee',amount:rushDisplay});
+        if(maintenance>0)extraFees.push({label:'System Maintenance Fee',amount:maintenance});
+        extraFees.push(...otherFees);
+        const additionalFeesTotal=extraFees.reduce((sum,f)=>sum+f.amount,0);
+        const total=Math.max(0,subtotal+additionalFeesTotal-discount);
+        if(Math.abs(Number(proj.total_amount||0)-total)>0.005){proj.total_amount=total;proj.pending_amount=Math.max(0,total-getProjectPaid(proj));persistProjectsState();scheduleProjectStructureSync(proj,120);}
         const paid=(proj.payments||[]).reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
         const balance=Math.max(0,total-paid); const status=getInvoiceStatus(proj,balance);
         const issue=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'});
@@ -5563,10 +5677,11 @@ ${description}`))actionCallback();return;}
          CLIENTS DIRECTORY & EDIT CLIENT WORKFLOW
          ========================================================================== */
       function renderClients() {
+        pruneClientDirectoryToProjects();
         const grid=document.getElementById("clientsListGrid"),filters=document.getElementById("clientFilters");if(!grid)return;
         const names=["All","Pending","Completed"],current=state.clientFilter||"All";if(filters)filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setClientFilter('${n}')">${n}</button>`).join('');
         const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'default';
-        const projectsFor=c=>state.projects.filter(p=>!p.deleted&&(p.client_id===c.id||p.client_name===c.name));
+        const projectsFor=c=>state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(c.id));
         let clients=state.clients.slice().filter(c=>`${c.client_code||''} ${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
         clients=clients.filter(c=>{const ps=projectsFor(c),pending=ps.some(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);if(current==='Pending')return pending;if(current==='Completed')return ps.length>0&&!pending;return true;});
         const codeNo=c=>Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||999999);
@@ -5581,7 +5696,7 @@ ${description}`))actionCallback();return;}
       function setClientFilter(filter){state.clientFilter=filter;renderClients();}
 
       function removeClient(clientId){
-        const client=state.clients.find(c=>c.id===clientId);if(!client)return;const projectCount=state.projects.filter(p=>!p.deleted&&(p.client_id===clientId||p.client_name===client.name)).length;
+        const client=state.clients.find(c=>c.id===clientId);if(!client)return;const projectCount=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(clientId)).length;
         requestDestructivePin('Archive Client',`Archive "${client.name}" from the active directory? ${projectCount?`${projectCount} saved project record${projectCount===1?'':'s'} will remain linked to this client.`:'No project records will be removed.'} Client IDs are never reused.`,async()=>{const archivedAt=new Date().toISOString();client.archived_at=archivedAt;state.clients=state.clients.filter(c=>c.id!==clientId);if(state.cart.selectedClientId===clientId){state.cart.selectedClientId='';persistCartState();}persistClientsState();if(supabaseClient&&state.isConnected){try{const {error}=await supabaseClient.from('clients').update({archived_at:archivedAt}).eq('id',clientId);if(error)throw error;}catch(e){console.warn('Client archive database sync failed:',e);showToast('Client archived locally, but cloud sync needs attention.');}}renderClients();showToast('Client archived. Client ID preserved.');});
       }
 
@@ -6182,6 +6297,8 @@ ${description}`))actionCallback();return;}
         adminSignOut
       };
     })();
+    // V1.3.1 hotfix: expose the Workspace controller for touch/mobile navigation modules.
+    window.app = app;
 
     document.addEventListener("DOMContentLoaded", () => {
       app.initWorkspace();
@@ -6387,7 +6504,12 @@ ${description}`))actionCallback();return;}
 @media(max-width:980px){.portal-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.portal-drive-input{min-width:240px}}
 @media(max-width:650px){.portal-summary-grid{grid-template-columns:1fr 1fr}.online-portal-intro{align-items:flex-start}.portal-tabs{display:grid;grid-template-columns:1fr 1fr}.portal-drive-input{min-width:210px}}
 </style>
-<link rel="stylesheet" href="/css/v1-3-ux.css"><script src="/js/v1-3-ux.js" defer></script></body>
+<link rel="stylesheet" href="/css/v1-3-ux.css"><script src="/js/v1-3-ux.js" defer></script>
+<style>
+.project-data-autosave-row{display:flex;justify-content:flex-end;padding:4px 2px 0}.project-data-autosave-status{font-size:11px;color:var(--text-tertiary);display:inline-flex;align-items:center;gap:6px;min-height:24px}.project-data-autosave-status.saving{color:var(--text-secondary)}.project-data-autosave-status.saved{color:var(--primary-mint-dark)}.project-data-autosave-status.warning{color:var(--status-orange)}.project-data-autosave-status.error{color:var(--status-red)}
+@media(max-width:720px){.project-data-autosave-row{justify-content:flex-start}.project-data-autosave-status{font-size:10px}}
+</style>
+</body>
 </html>
 <style id="v111-maintenance-patch">
 .snapshot-v111{padding:18px}.snapshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.snapshot-stat{border:1px solid var(--border-subtle);border-radius:12px;padding:13px;background:var(--bg-card)}.snapshot-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);font-weight:750}.snapshot-stat strong{display:block;font-size:18px;margin-top:5px}.snapshot-stat small{display:block;margin-top:5px;color:var(--text-tertiary);font-size:10px;line-height:1.35}.snapshot-meter{height:5px;background:var(--bg-subtle);border-radius:999px;margin-top:9px;overflow:hidden}.snapshot-meter i{display:block;height:100%;background:var(--primary-mint-dark);border-radius:inherit}.catalog-service-id{font-size:11px;letter-spacing:.04em;color:var(--primary-mint-dark)}

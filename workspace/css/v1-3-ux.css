@@ -22,3 +22,11 @@
   #view-settings .settings-grid{display:block!important}.settings-grid>.card:not(.jp-version-card):not(:first-child){display:none!important}.settings-grid>.card:first-child .form-group,.settings-grid>.card:first-child .action-buttons-group{display:none!important}.settings-grid>.card:first-child{padding:14px!important}.jp-version-card{display:block!important}
   .modal-card{width:calc(100vw - 20px)!important;max-height:88dvh!important;border-radius:20px!important}.btn,.icon-action-button,.filter-pill,.tab-btn,.compact-sort,.form-control{touch-action:manipulation}.btn{min-height:42px}.icon-action-button{min-width:44px;min-height:44px}.filter-pill{min-height:38px}.form-control{min-height:44px}
 }
+
+/* V1.3.1 touch hotfix */
+@media(max-width:720px){
+  .mobile-workspace-nav{pointer-events:auto!important;isolation:isolate}
+  .mobile-workspace-nav button{pointer-events:auto!important;cursor:pointer;position:relative;z-index:1;-webkit-user-select:none;user-select:none}
+  .mobile-workspace-nav button *{pointer-events:none}
+  #view-projects .clickable-row,#view-payments .clickable-row,.filter-pill,.tab-btn,.btn,.icon-action-button{cursor:pointer}
+}
