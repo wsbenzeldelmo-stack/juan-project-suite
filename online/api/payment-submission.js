@@ -29,7 +29,7 @@ export default async function handler(req,res){
     const paid=(existing.data||[]).reduce((s,p)=>s+Number(p.amount_paid||0),0),balance=Math.max(0,Number(pr.data.total_amount||0)-paid),netAmount=Math.max(0,amount-transferFee);
     if(amount>balance+0.01)return res.status(400).json({error:`Amount is greater than the current balance (${balance.toFixed(2)}).`});
 
-    const duplicateSubmission=await svc.from('payment_submissions').select('id').ilike('reference_number',referenceNumber).in('status',['pending','approved']).limit(1);
+    const duplicateSubmission=await svc.from('payment_submissions').select('id').ilike('reference_number',referenceNumber).in('status',['pending','accepted','approved']).limit(1);
     if(duplicateSubmission.error)throw duplicateSubmission.error;
     if((duplicateSubmission.data||[]).length)return res.status(409).json({error:'This reference number has already been submitted.'});
     const duplicatePayment=await svc.from('payments').select('id').ilike('reference_no',referenceNumber).limit(1);

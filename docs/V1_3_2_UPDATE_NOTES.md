@@ -43,3 +43,17 @@ V1.3.2 is a reliability and payment-verification release.
 
 ## Database
 Run `supabase/migrations/009_platform_v1_3_2.sql` after migrations 001–008.
+
+## V1.3.2 UI & Payment Review Hotfix
+- Replaced external website/app icons with the standalone JUAN PROJECT **J** mark.
+- Added dedicated `JUAN PROJECT Online` and `JUAN PROJECT` brand assets.
+- JPO invoices now use the same **JUAN PROJECT**-only invoice wordmark as Workspace.
+- Replaced the three onboarding slides with the supplied 9:16 onboarding graphics in the intended order: portal overview, features, login.
+- Strengthened mobile-first sizing and safe-area handling for JPO.
+- Replaced the native datalist sender selector with an actual searchable bank/e-wallet combobox with logo previews.
+- Receiving UnionBank account name and account number now use a single-column layout.
+- Added local receipt preview for JPG/PNG/PDF before payment submission.
+- Standardized payment review statuses to **Pending / Accepted / Rejected**.
+- Added a vertical three-dot action menu and protected Delete Review action. Deleting an Accepted review does not reverse the canonical payment.
+- Added migration `010_platform_v1_3_2_payment_review_ui.sql` to migrate `approved` review records to `accepted` and update the review RPC.
+- Reworked the Review Payment modal into a compact, low-height layout with table-like payment details, two-column system checks, rejection reason dropdown, optional client note, and responsive collapse on smaller screens.

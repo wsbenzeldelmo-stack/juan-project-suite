@@ -32,6 +32,12 @@ for required in \
   "$ROOT/online/assets/payment-institutions/maribank-seabank.svg" \
   "$ROOT/supabase/migrations/008_platform_v1_3.sql" \
   "$ROOT/supabase/migrations/009_platform_v1_3_2.sql" \
+  "$ROOT/supabase/migrations/010_platform_v1_3_2_payment_review_ui.sql" \
+  "$ROOT/online/assets/brand/j-mark.svg" \
+  "$ROOT/online/assets/brand/juan-project-online.svg" \
+  "$ROOT/online/assets/brand/juan-project.svg" \
+  "$ROOT/workspace/assets/brand/j-mark.svg" \
+  "$ROOT/workspace/assets/brand/juan-project.svg" \
   "$ROOT/docs/V1_3_2_UPDATE_NOTES.md"; do
   test -f "$required" || { echo "Missing: $required"; exit 1; }
 done
@@ -49,6 +55,8 @@ checks={
   'workspaceLoadingSkeleton':'Workspace skeleton loading missing',
   'workspace_settings':'Shared workspace settings sync missing',
   'openPortalPaymentReview':'Payment review modal logic missing',
+  'delete-payment-review':'Payment review delete action missing',
+  'Payment Details':'Compact payment review details missing',
   'Version V1.3.2':'Workspace version label missing',
   'Additional Fees Total':'Workspace invoice additional-fee transparency missing',
   'saveInvoiceImage':'Workspace PNG invoice export missing'
@@ -73,6 +81,9 @@ checks={
   '/assets/onboarding/onboarding-2.png':'Onboarding 2 missing',
   '/assets/onboarding/onboarding-3.png':'Onboarding 3 missing',
   'Type to search bank or e-wallet':'Searchable sender field missing',
+  'paymentInstitutionDropdown':'Custom sender dropdown missing',
+  'Preview Receipt':'Receipt preview control missing',
+  'invoiceBrand()':'Shared invoice JUAN PROJECT wordmark missing',
   'System verification passed':'Client system verification missing',
   'Processing your payment':'Payment processing UX missing',
   'Payment Submitted':'Payment success UX missing',
@@ -89,6 +100,10 @@ PY
 if ! grep -q "workspace_settings" "$ROOT/supabase/migrations/009_platform_v1_3_2.sql"; then echo "Shared settings migration missing"; exit 1; fi
 if ! grep -q "is_valid_juan_payment_reference" "$ROOT/supabase/migrations/009_platform_v1_3_2.sql"; then echo "Payment reference validation migration missing"; exit 1; fi
 if ! grep -q "sender_institution" "$ROOT/supabase/migrations/009_platform_v1_3_2.sql"; then echo "Payment sender migration missing"; exit 1; fi
+
+if ! grep -q "status='accepted'" "$ROOT/supabase/migrations/010_platform_v1_3_2_payment_review_ui.sql"; then echo "Accepted payment review status migration missing"; exit 1; fi
+if ! grep -q "payment_submissions_status_check" "$ROOT/supabase/migrations/010_platform_v1_3_2_payment_review_ui.sql"; then echo "Payment review status constraint migration missing"; exit 1; fi
+if ! grep -q "delete-payment-review" "$ROOT/workspace/api/admin-portal.js"; then echo "Payment review delete API missing"; exit 1; fi
 
 EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"
 ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg" | awk '{print $1}')"

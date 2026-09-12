@@ -222,7 +222,7 @@ export default async function handler(req,res){
         }
         const verification=verifySubmissionShape(submission);
         const normalized=sanitizeReference(submission.reference_number);
-        const duplicateSubmission=(submissions.data||[]).some(other=>other.id!==submission.id&&['pending','approved'].includes(other.status)&&sanitizeReference(other.reference_number).toLowerCase()===normalized.toLowerCase()&&normalized);
+        const duplicateSubmission=(submissions.data||[]).some(other=>other.id!==submission.id&&['pending','accepted','approved'].includes(other.status)&&sanitizeReference(other.reference_number).toLowerCase()===normalized.toLowerCase()&&normalized);
         const duplicatePayment=(payments.data||[]).some(pay=>sanitizeReference(pay.reference_no).toLowerCase()===normalized.toLowerCase()&&normalized);
         const project=(projects.data||[]).find(p=>String(p.id)===String(submission.project_id));
         const paid=(payments.data||[]).filter(p=>String(p.project_id)===String(submission.project_id)).reduce((sum,p)=>sum+Number(p.amount_paid||0),0);
@@ -314,12 +314,12 @@ export default async function handler(req,res){
 
     if(body.action==='review-payment'){
       const id=String(body.id||'');
-      const decision=body.decision==='approved'?'approved':body.decision==='rejected'?'rejected':'';
+      const decision=body.decision==='accepted'||body.decision==='approved'?'accepted':body.decision==='rejected'?'rejected':'';
       if(!id||!decision)return res.status(400).json({error:'Invalid payment review request.'});
       const current=await svc.from('payment_submissions').select('*').eq('id',id).maybeSingle();
       if(current.error)throw current.error;if(!current.data)return res.status(404).json({error:'Payment submission not found.'});
       const verification=verifySubmissionShape(current.data);
-      if(decision==='approved'&&!verification.passed)return res.status(409).json({error:'This payment cannot be approved until all system checks pass.',verification});
+      if(decision==='accepted'&&!verification.passed)return res.status(409).json({error:'This payment cannot be accepted until all system checks pass.',verification});
       const reasonCode=decision==='rejected'?String(body.reasonCode||'').slice(0,80):null;
       const allowed=new Map(rejectionReasons().map(x=>[x.code,x.label]));
       if(decision==='rejected'&&!allowed.has(reasonCode))return res.status(400).json({error:'Select a rejection reason.'});
@@ -329,6 +329,16 @@ export default async function handler(req,res){
       if(review.error){const message=String(review.error.message||'Payment review failed.');const status=/already reviewed|balance|missing|invalid|duplicate/i.test(message)?409:400;return res.status(status).json({error:message})}
       if(decision==='rejected')await svc.from('payment_submissions').update({rejection_code:reasonCode,admin_note:customNote||null}).eq('id',id);
       return res.status(200).json({ok:true,status:review.data});
+    }
+
+    if(body.action==='delete-payment-review'){
+      const id=String(body.id||'');
+      if(!id)return res.status(400).json({error:'Payment review is required.'});
+      const current=await svc.from('payment_submissions').select('id,status').eq('id',id).maybeSingle();
+      if(current.error)throw current.error;if(!current.data)return res.status(404).json({error:'Payment review not found.'});
+      const del=await svc.from('payment_submissions').delete().eq('id',id);
+      if(del.error)throw del.error;
+      return res.status(200).json({ok:true,status:current.data.status,canonical_payment_unchanged:['accepted','approved'].includes(String(current.data.status||'').toLowerCase())});
     }
 
     if(body.action==='save-project-drive-link'){

@@ -66,3 +66,6 @@
 - Existing Workspace and Online deployments stay separate.
 - Existing Supabase project remains the single source of truth.
 - Existing UnionBank QR asset is unchanged.
+
+### V1.3.2 UI & Payment Review Hotfix
+Brand/icon refresh, final onboarding assets, mobile-first JPO polish, searchable sender selector, receipt preview, compact payment-review modal, Pending/Accepted/Rejected statuses, review deletion, and rejection-reason controls.
