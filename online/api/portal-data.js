@@ -8,10 +8,10 @@ export default async function handler(req,res){
     const {user,svc}=await requireUser(req);
     const account=await ensurePortalAccount(user,svc);
 
-    const clientRes=await svc.from('clients').select('id,name,email,phone,address,client_code').eq('id',account.client_id).single();
+    const clientRes=await svc.from('clients').select('id,name,email,phone,address,client_code,profile_photo_path').eq('id',account.client_id).single();
     if(clientRes.error)throw clientRes.error;
 
-    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,total_amount,subtotal_amount,discount_amount,rush_fee,system_maintenance_fee,workload_surcharge,start_date,deadline_date,drive_url,drive_unlock_at,drive_expires_at,invoice_number,invoice_issue_date,invoice_due_date').eq('client_id',account.client_id).order('id',{ascending:false});
+    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,delivery_status,archived_at,total_amount,subtotal_amount,discount_amount,rush_fee,system_maintenance_fee,workload_surcharge,start_date,deadline_date,drive_url,drive_unlock_at,drive_expires_at,invoice_number,invoice_issue_date,invoice_due_date,updated_at').eq('client_id',account.client_id).order('id',{ascending:false});
     if(projectsRes.error)throw projectsRes.error;
     const projects=projectsRes.data||[];
     const ids=projects.map(p=>p.id);
@@ -39,8 +39,10 @@ export default async function handler(req,res){
       if(!ds.length)ds=its.map((i,idx)=>({id:`derived-${p.id}-${idx}`,project_id:p.id,item_name:i.name,completed:false,status:'Pending',progress:0,due_date:p.deadline_date,client_visible:true}));
       const pays=payments.filter(x=>x.project_id===p.id).map(x=>({id:x.id,amount_paid:Number(x.amount_paid||x.amount||0),payment_date:x.payment_date||null,payment_method:x.payment_method||null,reference_no:x.reference_no||null}));
       const amountPaid=paidSum(pays),total=Number(p.total_amount||0),balance=Math.max(0,total-amountPaid);
+      const delivered=String(p.delivery_status||'').toLowerCase()==='delivered'||['completed','delivered'].includes(String(p.status||'').toLowerCase());
       return {
-        ...p,items:its,deliverables:ds,payments:pays,amount_paid:amountPaid,balance,
+        ...p,status:delivered?'Delivered':p.status,delivery_status:delivered?'Delivered':(p.delivery_status||'Pending'),
+        items:its,deliverables:ds,payments:pays,amount_paid:amountPaid,balance,
         drive_url:p.drive_url||null,
         payment_status:balance<=0?'PAID':amountPaid>0?'PARTIALLY PAID':(p.deadline_date&&new Date(p.deadline_date)<new Date()?'OVERDUE':'UNPAID')
       };
@@ -49,11 +51,18 @@ export default async function handler(req,res){
     const safeSubs=subs.map(x=>({
       id:x.id,project_id:x.project_id,submitted_amount:Number(x.submitted_amount||0),transfer_fee:Number(x.extracted_transfer_fee||0),net_amount:Number(x.net_amount||x.submitted_amount||0),entry_source:x.entry_source||'manual',payment_method:x.payment_method||null,
       reference_number:x.reference_number||null,extracted_reference:x.extracted_reference||null,payment_date:x.payment_date||null,sender_institution:x.sender_institution||null,
-      status:x.status,submitted_at:x.submitted_at,rejection_reason:x.rejection_reason||null,rejection_code:x.rejection_code||null,admin_note:x.admin_note||null
+      status:x.status,submitted_at:x.submitted_at,reviewed_at:x.reviewed_at||null,rejection_reason:x.rejection_reason||null,rejection_code:x.rejection_code||null,admin_note:x.admin_note||null
     }));
 
+    let profilePhotoUrl=null;
+    if(clientRes.data?.profile_photo_path){
+      const signed=await svc.storage.from('juan-profile-images').createSignedUrl(clientRes.data.profile_photo_path,3600);
+      if(!signed.error)profilePhotoUrl=signed.data?.signedUrl||null;
+    }
+    const profile={...clientRes.data,profile_photo_url:profilePhotoUrl};
+
     return res.status(200).json({
-      profile:clientRes.data,
+      profile,
       passwordSet:Boolean(account.password_set),
       projects:enriched,
       paymentSettings:settings,

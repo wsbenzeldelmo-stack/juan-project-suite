@@ -3,3 +3,5 @@ export async function api(path,options={}){const s=await session();if(!s)throw E
 export async function getCatalog(){const r=await fetch('/api/catalog',{headers:{Accept:'application/json'}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'Could not load shop catalog.');return j}
 export const getPortal=()=>api('/api/portal-data');
 export const markPasswordSet=()=>api('/api/account',{method:'POST',body:JSON.stringify({action:'password-set'})});
+
+export const setProfilePhoto=path=>api('/api/account',{method:'POST',body:JSON.stringify({action:'profile-photo-set',path})});
