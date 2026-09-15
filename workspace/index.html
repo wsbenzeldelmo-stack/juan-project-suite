@@ -1518,7 +1518,7 @@
         </header>
         <div class="online-portal-intro card">
           <div><strong>JUAN PROJECT Online</strong><p>Manage client access, client-facing activity, payment reviews, and portal configuration. Project delivery links now live inside each Project → Deliverables tab.</p></div>
-          <span class="status-badge status-green">V1.3.3</span>
+          <span class="status-badge status-green">V1.3.3.1</span>
         </div>
         <div class="portal-tabs" id="onlinePortalTabs">
           <button type="button" data-portal-tab="accounts" class="active">Client Access</button>
@@ -1666,7 +1666,7 @@
           <div class="card jp-version-card">
             <h2 class="card-title mb-4">About</h2>
             <div class="font-bold">JUAN PROJECT Workspace</div>
-            <div class="text-sm text-muted mt-1">Version V1.3.3</div>
+            <div class="text-sm text-muted mt-1">Version V1.3.3.1.1</div>
             <div class="text-sm text-secondary mt-3">Developed by <strong>BENZEL DELMO</strong><br>JUAN PROJECT Management System</div>
           </div>
         </div>
@@ -3853,26 +3853,84 @@ ${description}`))actionCallback();return;}
         if(!root)return;root.querySelectorAll('.number-animate,.kpi-value').forEach(el=>{if(el.dataset.animating==='1')return;const raw=el.textContent||'',match=raw.replace(/,/g,'').match(/-?\d+(?:\.\d+)?/);if(!match)return;const target=Number(match[0]);if(!Number.isFinite(target))return;const isMoney=raw.includes('₱'),decimals=(raw.match(/\.(\d+)/)?.[1]||'').length,duration=520,start=performance.now();el.dataset.animating='1';const frame=now=>{const t=Math.min(1,(now-start)/duration),eased=1-Math.pow(1-t,3),value=target*eased;el.textContent=isMoney?new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP',minimumFractionDigits:decimals,maximumFractionDigits:decimals}).format(value):Math.round(value).toLocaleString('en-PH');if(t<1)requestAnimationFrame(frame);else{el.textContent=raw;delete el.dataset.animating;}};requestAnimationFrame(frame);});
       }
       function renderReportsView(){
-        const box=document.getElementById('reportsContent');if(!box)return;
+        const box=document.getElementById('reportsContent');
+        if(!box)return;
         try{
-          const safeNumber=value=>{const n=Number(value);return Number.isFinite(n)?n:0};
-          const projects=(Array.isArray(state.projects)?state.projects:[]).filter(p=>p&&!p.deleted).map(p=>({...p,payments:Array.isArray(p.payments)?p.payments:[],deliverables:Array.isArray(p.deliverables)?p.deliverables:[],project_items:Array.isArray(p.project_items)?p.project_items:[]}));
-          const payments=getAllPayments().filter(Boolean);
-          const totalReceivables=projects.reduce((sum,p)=>sum+safeNumber(p.total_amount),0);
-          const collected=payments.reduce((sum,p)=>sum+safeNumber(p.amount_paid??p.amount),0);
+          const safeNumber=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+          const safeDate=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d};
+          const rawProjects=Array.isArray(state.projects)?state.projects:[];
+          const projects=rawProjects.filter(p=>p&&typeof p==='object'&&!p.deleted).map(p=>({
+            ...p,
+            payments:Array.isArray(p.payments)?p.payments.filter(Boolean):[],
+            deliverables:Array.isArray(p.deliverables)?p.deliverables.filter(Boolean):[],
+            project_items:Array.isArray(p.project_items)?p.project_items.filter(Boolean):[]
+          }));
+
+          // Reports intentionally do not call getAllPayments(), isProjectOverdue(), or number
+          // animation helpers. Legacy records can have different shapes; reports must never
+          // take down the rest of Workspace because of one malformed row.
+          const payments=[];
+          projects.forEach(project=>{
+            (project.payments||[]).forEach(pay=>payments.push({...pay,project_id:pay?.project_id||project.id}));
+          });
+          if(Array.isArray(state.payments))state.payments.filter(Boolean).forEach(pay=>{
+            if(!payments.some(x=>String(x.id||'')&&String(x.id||'')===String(pay.id||'')))payments.push(pay);
+          });
+
+          const totalReceivables=projects.reduce((sum,p)=>sum+Math.max(0,safeNumber(p.total_amount)),0);
+          const collected=payments.reduce((sum,p)=>sum+Math.max(0,safeNumber(p.amount_paid??p.amount)),0);
           const outstanding=Math.max(0,totalReceivables-collected);
-          const active=projects.filter(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at).length;
-          const completed=Math.max(0,projects.length-active);
-          const collectionRate=totalReceivables?Math.max(0,Math.min(100,Math.round(collected/totalReceivables*100))):0;
-          const currentMonth=new Date().toISOString().slice(0,7);
-          const monthCollected=payments.filter(x=>String(x.payment_date||x.created_at||'').slice(0,7)===currentMonth).reduce((sum,x)=>sum+safeNumber(x.amount_paid??x.amount),0);
-          const overdue=projects.filter(p=>{try{return isProjectOverdue(p)}catch(_){return false}}).reduce((sum,p)=>sum+safeNumber(getProjectBalance(p)),0);
-        const monthMap={};payments.forEach(x=>{const k=String(x.payment_date||x.created_at||'').slice(0,7);if(k)monthMap[k]=(monthMap[k]||0)+safeNumber(x.amount_paid??x.amount)});const recent=Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0])).slice(-8),maxVal=Math.max(1,...recent.map(x=>x[1])),pts=recent.map(([k,v],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),y=132-v/maxVal*96;return `${x.toFixed(1)},${y.toFixed(1)}`}).join(' '),labels=recent.map(([k],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),d=new Date(k+'-01T12:00:00');return `<text x="${x}" y="160" text-anchor="middle" class="report-chart-label">${d.toLocaleDateString('en-PH',{month:'short'})}</text>`}).join('');
-        const levels=[10000,50000,100000,300000,500000,750000,1000000],achieved=levels.filter(x=>totalReceivables>=x),next=levels.find(x=>totalReceivables<x)||null,prev=achieved.length?achieved[achieved.length-1]:0,levelProgress=next?Math.max(0,Math.min(100,(totalReceivables-prev)/(next-prev)*100)):100,levelHtml=levels.map(v=>`<div class="revenue-level ${totalReceivables>=v?'achieved':''} ${next===v?'next':''}"><span class="revenue-level-dot">${totalReceivables>=v?'✓':''}</span><strong>${v>=1000000?'₱1M':`₱${Math.round(v/1000)}K`}</strong></div>`).join('');
-        box.innerHTML=`<div class="report-kpi-grid report-kpi-grid-four"><div class="kpi-card report-emphasis"><div class="kpi-label">Total Receivables</div><div class="kpi-value number-animate">${formatCurrency(totalReceivables)}</div><div class="kpi-sub">Encoded project value</div></div><div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value number-animate">${formatCurrency(collected)}</div><div class="kpi-sub">${collectionRate}% collection rate</div></div><div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value number-animate">${formatCurrency(outstanding)}</div><div class="kpi-sub">Still to be collected</div></div><div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value number-animate">${formatCurrency(monthCollected)}</div><div class="kpi-sub">Payments received</div></div></div><div class="reports-bento-v2"><div class="card revenue-graph-card"><div class="card-header"><div><div class="section-kicker">REVENUE</div><h2 class="card-title">Revenue Trend</h2><div class="text-sm text-muted mt-1">Payments received by month</div></div></div>${recent.length?`<svg class="report-line-chart" viewBox="0 0 500 175"><line x1="24" y1="132" x2="476" y2="132" class="report-chart-grid"/><line x1="24" y1="84" x2="476" y2="84" class="report-chart-grid"/><line x1="24" y1="36" x2="476" y2="36" class="report-chart-grid"/><polyline points="${pts}" class="report-chart-line"/>${recent.map(([k,v],i)=>{const x=recent.length===1?250:24+i*(452/Math.max(1,recent.length-1)),y=132-v/maxVal*96;return `<circle cx="${x}" cy="${y}" r="4" class="report-chart-dot"><title>${formatCurrency(v)}</title></circle>`}).join('')}${labels}</svg>`:`<div class="empty-compact-state"><strong>No revenue trend yet</strong><span>Recorded payments will appear here.</span></div>`}</div><div class="card report-snapshot-card snapshot-v111"><div class="card-header"><div><div class="section-kicker">BUSINESS SNAPSHOT</div><h2 class="card-title">Today at a Glance</h2><div class="text-sm text-muted mt-1">A compact operational health check</div></div></div><div class="snapshot-grid"><div class="snapshot-stat"><span>Active Projects</span><strong class="number-animate">${active}</strong><small>${active>=9?'High workload':'Manageable workload'}</small></div><div class="snapshot-stat"><span>Completed</span><strong class="number-animate">${completed}</strong><small>Lifetime completed projects</small></div><div class="snapshot-stat"><span>Outstanding</span><strong class="number-animate">${formatCurrency(outstanding)}</strong><small>${overdue?formatCurrency(overdue)+' overdue':'No overdue receivables'}</small></div><div class="snapshot-stat"><span>Collection Rate</span><strong>${collectionRate}%</strong><div class="snapshot-meter"><i style="width:${Math.max(0,Math.min(100,collectionRate))}%"></i></div></div></div></div></div><div class="card revenue-milestone-card"><div class="revenue-level-head"><div><div class="section-kicker">MILESTONES</div><h2 class="card-title">Revenue Level</h2><span>${next?`${formatCurrency(Math.max(0,next-totalReceivables))} to the next level`:'Top milestone reached'}</span></div><strong>${Math.round(levelProgress)}%</strong></div><div class="revenue-level-progress"><i style="width:${levelProgress}%"></i></div><div class="revenue-levels">${levelHtml}</div></div>`;animateNumbersIn(box);
+          const now=new Date();
+          const active=projects.filter(p=>{
+            const st=String(p.delivery_status||p.status||'').toLowerCase();
+            return !p.archived_at&&!['completed','delivered','cancelled','archived'].includes(st);
+          }).length;
+          const completed=projects.filter(p=>['completed','delivered'].includes(String(p.delivery_status||p.status||'').toLowerCase())).length;
+          const overdue=projects.reduce((sum,p)=>{
+            const st=String(p.delivery_status||p.status||'').toLowerCase();
+            if(['completed','delivered','cancelled'].includes(st))return sum;
+            const due=safeDate(p.payment_due_date||p.invoice_due_date||p.deadline_date);
+            if(!due||due>=now)return sum;
+            const paid=(p.payments||[]).reduce((t,x)=>t+Math.max(0,safeNumber(x.amount_paid??x.amount)),0);
+            return sum+Math.max(0,safeNumber(p.total_amount)-paid);
+          },0);
+          const currentMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+          const monthCollected=payments.reduce((sum,p)=>{
+            const d=safeDate(p.payment_date||p.created_at);
+            if(!d)return sum;
+            const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            return key===currentMonth?sum+Math.max(0,safeNumber(p.amount_paid??p.amount)):sum;
+          },0);
+          const collectionRate=totalReceivables?Math.round(Math.max(0,Math.min(100,(collected/totalReceivables)*100))):0;
+
+          const months=new Map();
+          payments.forEach(pay=>{
+            const d=safeDate(pay.payment_date||pay.created_at);if(!d)return;
+            const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            months.set(key,(months.get(key)||0)+Math.max(0,safeNumber(pay.amount_paid??pay.amount)));
+          });
+          const trend=[...months.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
+          const maxTrend=Math.max(1,...trend.map(x=>x[1]));
+          const trendHtml=trend.length?trend.map(([key,value])=>{
+            const d=safeDate(`${key}-01T12:00:00`),label=d?d.toLocaleDateString('en-PH',{month:'short',year:'2-digit'}):key;
+            const pct=Math.max(4,Math.min(100,(value/maxTrend)*100));
+            return `<div class="report-safe-row"><span>${escapeHtml(label)}</span><div class="report-safe-bar"><i style="width:${pct}%"></i></div><strong>${formatCurrency(value)}</strong></div>`;
+          }).join(''):`<div class="empty-compact-state"><strong>No revenue trend yet</strong><span>Recorded payments will appear here.</span></div>`;
+
+          box.innerHTML=`
+            <div class="report-kpi-grid report-kpi-grid-four report-safe-grid">
+              <div class="kpi-card report-emphasis"><div class="kpi-label">Total Receivables</div><div class="kpi-value">${formatCurrency(totalReceivables)}</div><div class="kpi-sub">Encoded project value</div></div>
+              <div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value">${formatCurrency(collected)}</div><div class="kpi-sub">${collectionRate}% collection rate</div></div>
+              <div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value">${formatCurrency(outstanding)}</div><div class="kpi-sub">${overdue>0?formatCurrency(overdue)+' overdue':'No overdue receivables'}</div></div>
+              <div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value">${formatCurrency(monthCollected)}</div><div class="kpi-sub">Payments received</div></div>
+            </div>
+            <div class="reports-safe-layout">
+              <div class="card report-safe-card"><div class="card-header"><div><div class="section-kicker">REVENUE</div><h2 class="card-title">Revenue Trend</h2><div class="text-sm text-muted mt-1">Last recorded payment months</div></div></div><div class="report-safe-trend">${trendHtml}</div></div>
+              <div class="card report-safe-card"><div class="card-header"><div><div class="section-kicker">BUSINESS SNAPSHOT</div><h2 class="card-title">Workspace Health</h2></div></div><div class="report-safe-snapshot"><div><span>Active Projects</span><strong>${active}</strong></div><div><span>Completed / Delivered</span><strong>${completed}</strong></div><div><span>Collection Rate</span><strong>${collectionRate}%</strong></div><div><span>Records Read</span><strong>${projects.length}</strong></div></div></div>
+            </div>`;
         }catch(error){
           console.error('Reports render error:',error);
-          box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>A project or payment record needs attention. The rest of Workspace is still available.</span><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry</button></div>`;
+          box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>One or more older records could not be summarized. Your projects and payments are still safe.</span><div style="margin-top:12px"><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry Reports</button></div></div>`;
         }
       }
       function retryReports(){ renderReportsView(); }

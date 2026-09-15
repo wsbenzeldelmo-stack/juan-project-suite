@@ -1,3 +1,7 @@
+# JUAN PROJECT Platform V1.3.3.1
+
+Stability hotfix for V1.3.3. See RELEASE_NOTES.md.
+
 # JUAN PROJECT Platform V1.3.3
 
 JUAN PROJECT Platform contains two interfaces backed by the same Supabase project:

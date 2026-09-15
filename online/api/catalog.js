@@ -1,9 +1,10 @@
-import { serviceClient, sendError } from './_lib.js';
+import { serviceClient, publicClient, sendError } from './_lib.js';
 
 export default async function handler(req,res){
   try{
     if(req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
-    const svc=serviceClient();
+    let svc;
+    try{svc=serviceClient()}catch(_){svc=publicClient()}
     const [categories,services,packages,packageItems]=await Promise.all([
       svc.from('catalog_categories').select('id,name,slug,sort_order').eq('active',true).order('sort_order').order('name'),
       svc.from('catalog_services').select('id,category_id,product_code,name,description,price').eq('active',true).order('name'),

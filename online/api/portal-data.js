@@ -8,10 +8,12 @@ export default async function handler(req,res){
     const {user,svc}=await requireUser(req);
     const account=await ensurePortalAccount(user,svc);
 
-    const clientRes=await svc.from('clients').select('id,name,email,phone,address,client_code,profile_photo_path').eq('id',account.client_id).single();
+    // Select the full row so older databases do not fail when a newer optional column
+    // (for example profile_photo_path or delivery_status) has not been migrated yet.
+    const clientRes=await svc.from('clients').select('*').eq('id',account.client_id).single();
     if(clientRes.error)throw clientRes.error;
 
-    const projectsRes=await svc.from('projects').select('id,client_id,project_code,title,status,delivery_status,archived_at,total_amount,subtotal_amount,discount_amount,rush_fee,system_maintenance_fee,workload_surcharge,start_date,deadline_date,drive_url,drive_unlock_at,drive_expires_at,invoice_number,invoice_issue_date,invoice_due_date,updated_at').eq('client_id',account.client_id).order('id',{ascending:false});
+    const projectsRes=await svc.from('projects').select('*').eq('client_id',account.client_id).order('id',{ascending:false});
     if(projectsRes.error)throw projectsRes.error;
     const projects=projectsRes.data||[];
     const ids=projects.map(p=>p.id);

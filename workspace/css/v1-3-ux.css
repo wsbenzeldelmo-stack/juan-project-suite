@@ -50,3 +50,58 @@
 body.colorful-mode .badge-red,body.colorful-mode .status-badge.overdue{box-shadow:0 0 0 3px rgba(255,59,48,.08)}body.colorful-mode .badge-orange,body.colorful-mode .status-badge.pending{box-shadow:0 0 0 3px rgba(255,149,0,.08)}body.colorful-mode .badge-green,body.colorful-mode .status-badge.completed{box-shadow:0 0 0 3px rgba(24,181,113,.08)}body.colorful-mode .attention-kpi{background:rgba(255,149,0,.055)}body.colorful-mode .danger-kpi{background:rgba(255,59,48,.05)}
 @media(max-width:760px){.portal-project-sub{max-width:180px}.portal-responsive-text{max-width:200px}.portal-client-table .table-row-actions{padding-right:10px}}
 .portal-bank-logo img{display:block;width:100%;height:100%;object-fit:contain}
+
+/* V1.3.3.1 stability hotfix: compact payment review + crash-safe reports */
+.payment-review-modal.payment-review-compact{
+  display:flex;
+  flex-direction:column;
+  width:min(880px,calc(100vw - 32px));
+  max-height:min(90dvh,760px);
+  overflow:hidden;
+}
+.payment-review-header{flex:0 0 auto}
+.payment-review-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.payment-review-footer{
+  flex:0 0 auto;
+  position:sticky;
+  bottom:0;
+  z-index:5;
+  background:var(--bg-card,#fff);
+  border-top:1px solid var(--border-subtle,#e7e9ee);
+  box-shadow:0 -8px 20px rgba(14,22,36,.035);
+}
+.payment-review-checks.compact-check-grid{grid-template-columns:1fr!important}
+.payment-review-checks.compact-check-grid .payment-review-check{
+  border-right:0!important;
+  border-bottom:1px solid var(--border-subtle)!important;
+  min-height:38px;
+}
+.payment-review-checks.compact-check-grid .payment-review-check:last-child{border-bottom:0!important}
+.payment-review-checks.compact-check-grid .payment-review-check>div{min-width:0;overflow:hidden}
+.review-check-badge{white-space:nowrap;min-width:68px;justify-content:center}
+.payment-rejection-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.payment-review-receipt-link{display:inline-flex;align-items:center;min-height:32px;padding:0 8px;border-radius:7px;background:var(--mint-light-bg,#ecfff6)}
+@media(max-width:760px){
+  .payment-review-modal.payment-review-compact{width:min(96vw,680px);max-height:94dvh}
+  .payment-rejection-grid{grid-template-columns:1fr}
+}
+@media(max-width:460px){
+  .payment-review-modal.payment-review-compact{width:100%;height:100dvh;max-height:100dvh;border-radius:0}
+}
+
+.report-safe-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.reports-safe-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.7fr);gap:16px}
+.report-safe-card{min-height:0}
+.report-safe-trend{display:grid;gap:10px;padding-top:6px}
+.report-safe-row{display:grid;grid-template-columns:62px minmax(100px,1fr) minmax(90px,auto);align-items:center;gap:10px;font-size:12px}
+.report-safe-row>span{color:var(--text-secondary)}
+.report-safe-row>strong{text-align:right;font-size:11px}
+.report-safe-bar{height:8px;border-radius:999px;background:var(--bg-subtle,#f2f4f6);overflow:hidden}
+.report-safe-bar i{display:block;height:100%;border-radius:inherit;background:var(--primary-mint-dark,#12a86b)}
+.report-safe-snapshot{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.report-safe-snapshot>div{border:1px solid var(--border-subtle);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.report-safe-snapshot span{font-size:10px;color:var(--text-secondary)}
+.report-safe-snapshot strong{font-size:20px}
+.reports-error-state{padding:22px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+@media(max-width:1023px){.report-safe-grid{grid-template-columns:1fr 1fr}.reports-safe-layout{grid-template-columns:1fr}}
+@media(max-width:600px){.report-safe-grid{grid-template-columns:1fr}.report-safe-row{grid-template-columns:52px 1fr}.report-safe-row>strong{grid-column:2;text-align:left}.report-safe-snapshot{grid-template-columns:1fr 1fr}}
