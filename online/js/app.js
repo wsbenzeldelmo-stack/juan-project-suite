@@ -6,7 +6,7 @@ import {PAYMENT_INSTITUTIONS,getPaymentInstitution,validatePaymentReference,sani
 
 const root=document.getElementById('root');
 const QR_FALLBACK='/assets/unionbank-bankqr-placeholder.jpg';
-const ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V6';
+const ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V7';
 
 let state={
   route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
@@ -55,7 +55,7 @@ const nav=()=>`<nav class="nav" aria-label="Primary navigation">
 </nav>`;
 
 function welcomeScreen(){
-  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card"><div class="welcome-hero">${brand()}<div class="welcome-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Your projects.<br><strong>In one place.</strong></h1><p>Track progress, manage payments, and receive your files with less friction.</p></div></div><div class="welcome-actions"><button id="getStarted" class="btn primary full">Get Started</button><button id="welcomeLogIn" class="btn full">Log In</button></div><div class="version">JUAN PROJECT Online · V1.3.3.1</div></div></div>`;
+  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card"><div class="welcome-hero">${brand()}<div class="welcome-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Your projects.<br><strong>In one place.</strong></h1><p>Track progress, manage payments, and receive your files with less friction.</p></div></div><div class="welcome-actions"><button id="getStarted" class="btn primary full">Get Started</button><button id="welcomeLogIn" class="btn full">Log In</button></div><div class="version">JUAN PROJECT Online · V1.3.3.2</div></div></div>`;
   document.getElementById('getStarted').onclick=()=>{state.onboardingStep=0;onboardingScreen()};
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
 }
@@ -88,7 +88,7 @@ function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||'').tr
 function authScreen(message=''){
   root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options"><label class="remember"><input id="rememberLogin" type="checkbox" checked> <span>Remember me</span></label><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Client accounts are provided by JUAN PROJECT when a project is created. If you received a temporary password, you will be asked to change it after logging in.</span></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div>`;
   const email=document.getElementById('ae'),pass=document.getElementById('ap'),btn=document.getElementById('ab');
-  document.getElementById('authBack').onclick=()=>{localStorage.getItem(ONBOARDING_KEY)==='1'?render():welcomeScreen()};
+  document.getElementById('authBack').onclick=()=>{localStorage.getItem(ONBOARDING_KEY)==='1'?render():onboardingScreen()};
   email.addEventListener('blur',()=>setFieldError('emailValidation',email.value.trim()&&!validEmail(email.value)?'Enter a valid email address.':''));
   btn.onclick=async()=>{
     setFieldError('emailValidation','');setFieldError('loginValidation','');
@@ -112,7 +112,17 @@ async function loadPortal(){
     if(!state.portal.passwordSet)return renderSetPassword();
     state.clientMessage=pickClientMessage();
     state.route='home';render();
-  }catch(e){state.portal=null;authScreen('We could not open your client portal. Please try again.')}
+  }catch(e){
+    console.error('Client portal load failed:',e);
+    state.portal=null;
+    portalLoadErrorScreen(e?.message||'We could not load your client information right now.');
+  }
+}
+function portalLoadErrorScreen(message=''){
+  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card portal-error-card"><div class="password-icon">${icon('alert',34)}</div><div class="auth-copy centered"><span class="eyebrow">CLIENT PORTAL</span><h1>We couldn't open your portal.</h1><p>Your account signed in, but your project information could not be loaded right now.</p></div><div class="info-box portal-error-detail">${icon('help',18)}<span>${esc(message)}</span></div><div class="portal-error-actions"><button id="portalRetry" class="btn primary full">Try Again</button><button id="portalGuest" class="btn full">Browse as Guest</button><button id="portalLogout" class="text-button full">Log Out</button></div></div></div>`;
+  document.getElementById('portalRetry').onclick=()=>loadPortal();
+  document.getElementById('portalGuest').onclick=async()=>{try{await signOut()}catch{}state.portal=null;state.route='home';localStorage.setItem(ONBOARDING_KEY,'1');render()};
+  document.getElementById('portalLogout').onclick=async()=>{try{await signOut()}catch{}state.portal=null;state.route='home';render()};
 }
 function renderSetPassword(){
   root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="passwordBack" class="icon-button auth-back" aria-label="Log out">${icon('back')}</button><div class="password-icon">${icon('lock',34)}</div><div class="auth-copy centered"><span class="eyebrow">SECURITY STEP</span><h1>Change your password</h1><p>You are using a temporary password. Create a new password before continuing to your portal.</p></div><div class="field"><label>Current Password</label><div class="password-input-wrap"><input id="currentPass" class="input" type="password" autocomplete="current-password" placeholder="Current password"><button type="button" class="password-eye" data-toggle-pass="currentPass">${icon('eye',18)}</button></div></div><div class="field"><label>New Password</label><div class="password-input-wrap"><input id="p1" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="p1">${icon('eye',18)}</button></div></div><div class="field"><label>Confirm New Password</label><div class="password-input-wrap"><input id="p2" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="Confirm new password"><button type="button" class="password-eye" data-toggle-pass="p2">${icon('eye',18)}</button></div><div id="passwordValidation" class="field-error"></div></div><div class="password-rule">${icon('lock',18)}<span>Use at least 8 characters. A mix of letters, numbers, and symbols is recommended.</span></div><button id="savep" class="btn primary full">Update Password & Continue</button></div></div>`;
@@ -190,6 +200,13 @@ function activityFeed(){
     for(const d of p.deliverables||[]){if(d.completed)rows.push({date:new Date(d.completed_at||d.due_date||p.deadline_date||0),title:'Deliverable completed',sub:`${p.project_code||''} · ${d.item_name||'Deliverable'}`,icon:'check'})}
   }
   return rows.filter(x=>!Number.isNaN(x.date.getTime())).sort((a,b)=>b.date-a.date).slice(0,8)
+}
+
+function home(){
+  if(!isLoggedIn())return `<div class="guest-home"><div class="guest-brand">${brand()}</div><div class="guest-copy"><span class="eyebrow">GUEST MODE</span><h1>Explore first.<br><strong>Log in when you need your project.</strong></h1><p>Browse JUAN PROJECT services, pricing, and support without an account. Client-only features will ask you to log in when needed.</p></div><div class="guest-actions"><button id="homeShop" class="btn primary full">Browse Services</button><button id="homeLogIn" class="btn full">Log In as Client</button></div><div class="guest-access"><div class="mini-icon">${icon('lock',18)}</div><div><b>Already a JUAN PROJECT client?</b><p>Use the email registered to your project. Your Client ID is your initial password unless you already changed it.</p></div></div></div>`;
+  const p=activeProject(),profile=state.portal?.profile||{},feed=activityFeed().slice(0,4),action=nextAction(p);
+  const projectCard=p?(()=>{const st=projectStats(p),next=nextDeliverable(p);return `<button class="card active-project project-button" data-open="${esc(p.id)}"><div class="card-topline"><span class="project-code">${esc(p.project_code||p.id)}</span><span class="status-dot-label">${esc(effectiveProjectStatus(p))}</span></div><div class="project-name">${esc(p.title||'Untitled Project')}</div><div class="progress"><span style="width:${st.pct}%"></span></div><div class="meta"><span>${st.done}/${st.total} deliverables</span><b>${st.pct}%</b></div>${next?`<div class="next-deliverable"><span>NEXT DELIVERABLE</span><b>${esc(next.item_name||'Deliverable')}</b><small>${esc(fmtDate(next.due_date||p.deadline_date))}</small></div>`:''}<div class="card-action-row"><span>Open project</span>${icon('chevron',16)}</div></button>`})():`<div class="card empty guided-empty"><b>No active project</b><span>Your next JUAN PROJECT order will appear here.</span><button id="homeShop" class="btn primary">Browse Services</button></div>`;
+  return `<div class="dashboard-head"><div><span>Good day,</span><h1>${esc(profile.name||'Client')}</h1></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">${icon('bell',19)}</button><button id="topAccount" class="avatar" aria-label="Account">${initials()}</button></div></div>${projectCard}<div class="section-head"><h2>Next Action</h2></div><div class="card next-action-card ${esc(action.kind)}"><div class="next-action-icon">${icon(action.kind==='payment'?'payment':action.kind==='pending'?'clock':'check',18)}</div><div><b>${esc(action.title)}</b><p>${esc(action.body)}</p></div>${action.cta?`<button id="nextActionBtn" class="btn small">${esc(action.cta)}</button>`:''}</div><div class="section-head"><h2>Recent Activity</h2></div><div class="card activity-card">${feed.map(x=>`<div class="activity-row"><div class="activity-icon">${icon(x.icon,15)}</div><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No recent activity yet.</div>'}</div>`;
 }
 
 function orders(){
@@ -273,10 +290,10 @@ function invoice(){
 }
 
 function account(){
-  if(!isLoggedIn())return `${pageHead('Help & About',{back:false,more:false})}<div class="guest-help-hero"><span class="eyebrow">GUEST MODE</span><h2>Browse freely. Log in when you need your project.</h2><p>Shop and support stay available without an account.</p></div><div class="settings-group"><div class="settings-label">HELP</div><div class="card settings-list"><div class="settings-row"><div><b>Frequently Asked Questions</b><small>Payments, timelines, revisions, and delivery</small></div>${icon('chevron',17)}</div><div class="settings-row"><div><b>Contact JUAN PROJECT</b><small>Get help before or during your project</small></div>${icon('chevron',17)}</div></div></div><div class="card guest-login-card"><div class="sheet-icon">${icon('lock',22)}</div><div><b>Unlock your client portal</b><small>Orders, payments, invoices, and files are available after Log In.</small></div><button id="guestAccountLogin" class="btn primary full">Log In</button></div><div class="jp-online-version">JUAN PROJECT Online · V1.3.3.1<br><span>Developed by BENZEL DELMO · JUAN PROJECT Management System</span></div>`;
+  if(!isLoggedIn())return `${pageHead('Help & About',{back:false,more:false})}<div class="guest-help-hero"><span class="eyebrow">GUEST MODE</span><h2>Browse freely. Log in when you need your project.</h2><p>Shop and support stay available without an account.</p></div><div class="settings-group"><div class="settings-label">HELP</div><div class="card settings-list"><div class="settings-row"><div><b>Frequently Asked Questions</b><small>Payments, timelines, revisions, and delivery</small></div>${icon('chevron',17)}</div><div class="settings-row"><div><b>Contact JUAN PROJECT</b><small>Get help before or during your project</small></div>${icon('chevron',17)}</div></div></div><div class="card guest-login-card"><div class="sheet-icon">${icon('lock',22)}</div><div><b>Unlock your client portal</b><small>Orders, payments, invoices, and files are available after Log In.</small></div><button id="guestAccountLogin" class="btn primary full">Log In</button></div><div class="jp-online-version">JUAN PROJECT Online · V1.3.3.2<br><span>Developed by BENZEL DELMO · JUAN PROJECT Management System</span></div>`;
   const p=state.portal.profile;
   const avatar=p.profile_photo_url?`<img src="${esc(p.profile_photo_url)}" alt="Profile photo">`:initials();
-  return `${pageHead('Account',{back:false,more:false})}<div class="card profile-card"><div class="avatar large profile-avatar">${avatar}</div><div class="profile-copy"><b>${esc(p.name||'Client')}</b><small>${esc(p.email||'')}</small><small>${esc(p.client_code||'')}</small><label class="profile-photo-action">Change Photo<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><span id="profilePhotoStatus" class="profile-photo-status"></span></div></div><div class="settings-group"><div class="settings-label">ACCOUNT</div><div class="card settings-list"><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><div class="password-input-wrap"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="newPass">${icon('eye',18)}</button></div><div class="password-input-wrap"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button type="button" class="password-eye" data-toggle-pass="newPass2">${icon('eye',18)}</button></div><button id="changePass" class="btn full">Update Password</button></div></div><div class="settings-row"><div><b>Notifications</b><small>Project, payment, invoice, and file updates</small></div>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">SUPPORT</div><div class="card settings-list"><div class="settings-row"><div><b>Help & Support</b><small>Contact JUAN PROJECT</small></div>${icon('chevron',17)}</div><div class="settings-row"><b>Terms & Privacy</b>${icon('chevron',17)}</div><div class="settings-row danger" id="logout"><b>Log Out</b>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">ABOUT</div><div class="card settings-list"><div class="settings-row jp-about-row"><div><b>JUAN PROJECT Online</b><small>Version V1.3.3.1.1</small><small>Developed by BENZEL DELMO</small><small>JUAN PROJECT Management System</small></div></div></div></div>`;
+  return `${pageHead('Account',{back:false,more:false})}<div class="card profile-card"><div class="avatar large profile-avatar">${avatar}</div><div class="profile-copy"><b>${esc(p.name||'Client')}</b><small>${esc(p.email||'')}</small><small>${esc(p.client_code||'')}</small><label class="profile-photo-action">Change Photo<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><span id="profilePhotoStatus" class="profile-photo-status"></span></div></div><div class="settings-group"><div class="settings-label">ACCOUNT</div><div class="card settings-list"><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><div class="password-input-wrap"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="newPass">${icon('eye',18)}</button></div><div class="password-input-wrap"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button type="button" class="password-eye" data-toggle-pass="newPass2">${icon('eye',18)}</button></div><button id="changePass" class="btn full">Update Password</button></div></div><div class="settings-row"><div><b>Notifications</b><small>Project, payment, invoice, and file updates</small></div>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">SUPPORT</div><div class="card settings-list"><div class="settings-row"><div><b>Help & Support</b><small>Contact JUAN PROJECT</small></div>${icon('chevron',17)}</div><div class="settings-row"><b>Terms & Privacy</b>${icon('chevron',17)}</div><div class="settings-row danger" id="logout"><b>Log Out</b>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">ABOUT</div><div class="card settings-list"><div class="settings-row jp-about-row"><div><b>JUAN PROJECT Online</b><small>Version V1.3.3.2</small><small>Developed by BENZEL DELMO</small><small>JUAN PROJECT Management System</small></div></div></div></div>`;
 }
 
 function categoryName(id){return state.catalog.categories.find(c=>c.id===id)?.name||'Service'}
@@ -394,16 +411,14 @@ function bind(){
 }
 
 (async()=>{
-  // Guest browsing must remain usable even when Supabase auth/config or a new
-  // database migration is temporarily unavailable. Load public catalog first.
+  // Public browsing must work even when cloud services are temporarily unavailable.
   try{state.catalog=await getCatalog();state.catalogLoaded=true}catch(e){console.warn('Catalog unavailable:',e?.message||e)}
+  const onboarded=localStorage.getItem(ONBOARDING_KEY)==='1';
+  if(!onboarded){state.onboardingStep=0;return onboardingScreen();}
   try{
     await getSupabase();
     const s=await session();
     if(s)return await loadPortal();
-  }catch(e){
-    console.warn('JUAN PROJECT Online cloud connection unavailable:',e?.message||e);
-  }
-  if(localStorage.getItem(ONBOARDING_KEY)==='1')return render();
-  welcomeScreen();
+  }catch(e){console.warn('JUAN PROJECT Online cloud connection unavailable:',e?.message||e)}
+  state.route='home';render();
 })();

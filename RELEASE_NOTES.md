@@ -1,10 +1,16 @@
-# JUAN PROJECT Platform V1.3.3.1 Stability Hotfix
+# JUAN PROJECT Platform V1.3.3.2
 
-This hotfix addresses the three live failures reported after V1.3.3:
+## Payment Reviews
+The full Review Payment modal has been removed. Pending requests are handled from the vertical action menu with Approve Request, Reject Request, and Delete Request. Approval still runs the existing server-side verification. Rejection opens a small searchable reason dialog with an optional client note.
 
-- Reports no longer depends on fragile legacy helpers or animated chart calculations. Malformed legacy records are normalized and isolated instead of crashing Workspace.
-- Review Payment modal is flex-based with a scrollable body and persistent action footer so Cancel / Reject / Approve Payment never disappear below the modal. Verification rows use a single safe column to prevent clipped Passed badges.
-- JUAN PROJECT Online now keeps guest browsing available even if Supabase auth/config is temporarily unavailable, loads catalog independently, uses a fresh service-worker cache, and the portal API tolerates databases where newer optional columns have not yet been added.
-- Catalog API falls back to the public Supabase client when a service-role key is unavailable.
+## JUAN PROJECT Online
+New users see the three onboarding slides first and continue into Guest Mode. Protected features ask for Log In only when needed. A missing `home()` renderer that could stop the Online client app at runtime has been restored. Portal-data failures now provide Try Again, Browse as Guest, and Log Out actions.
 
-Database: no new migration. Keep migrations through 011_platform_v1_3_3.sql applied. Migration 011 is still required for the NULL-safe Payment Review approval function.
+## Reports
+Reports now prioritizes data viewing: four key totals, a period filter, one revenue trend chart, payment status counts, outstanding projects, recent payments, and compact workspace health. Malformed legacy records remain isolated so one bad row cannot stop Workspace.
+
+## Invoice
+The JUAN PROJECT invoice logo SVG has a wider viewBox to prevent the last “T” from being clipped in previews and exports.
+
+## Database
+No new SQL migration in this patch.

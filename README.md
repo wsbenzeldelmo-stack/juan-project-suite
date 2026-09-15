@@ -1,39 +1,15 @@
-# JUAN PROJECT Platform V1.3.3.1
+# JUAN PROJECT Platform V1.3.3.2
 
-Stability hotfix for V1.3.3. See RELEASE_NOTES.md.
+Stability and navigation update after V1.3.3.1.
 
-# JUAN PROJECT Platform V1.3.3
+## Included
+- Payment Reviews now use direct `⋮` actions: Approve Request, Reject Request, Delete Request.
+- The large Review Payment modal was removed; rejection uses a small reason/note dialog only.
+- Payment Reviews retain Project, Amount, Bank / E-Wallet, Status, Date Submitted, and the action menu.
+- JUAN PROJECT Online now starts with the 3-slide onboarding, then Guest Mode; Log In is requested only for protected client features.
+- Added a missing Online Home renderer that previously caused the client site to fail at runtime.
+- Client portal load failures now offer Try Again, Browse as Guest, and Log Out instead of trapping the user on Login.
+- Invoice JUAN PROJECT brand SVG width was corrected so the final “T” cannot be clipped.
+- Reports were redesigned into a compact data-viewing page with a period filter, core KPIs, one revenue chart, payment status, outstanding projects, recent payments, and workspace health while preserving crash isolation.
 
-JUAN PROJECT Platform contains two interfaces backed by the same Supabase project:
-
-- **JUAN PROJECT Workspace** — seller/admin operations, including the simplified mobile Workspace.
-- **JUAN PROJECT Online** — mobile-first client portal.
-
-## V1.3.3 highlights
-
-- resilient Reports rendering instead of full-page crashes
-- Supabase-first autosave plus offline cache/sync queue
-- persistent Completed / Delivered project state
-- compact Payment Reviews with system verification and NULL-safe approval
-- revised bank/e-wallet list and uploaded institution logos
-- transparent ₱25 / ₱26 System Maintenance Fee logic
-- consistent JUAN PROJECT invoices with PDF and image export
-- status-aware Balance Due box
-- Colorful Mode
-- synchronized Online project/payment/invoice/delivery data
-- client profile photos, reminders, and completion thank-you message
-- updated three-slide mobile onboarding
-
-See `docs/V1_3_3_UPDATE_NOTES.md` for the full release scope.
-
-## Upgrade
-
-1. Back up your current project and Supabase database.
-2. Apply the V1.3.3 patch.
-3. In Supabase SQL Editor, run `supabase/migrations/011_platform_v1_3_3.sql` after migrations 001–010.
-4. Run `bash scripts/verify-build.sh`.
-5. Redeploy both Workspace and Online using the same Supabase environment values.
-
-## Security
-
-Keep `SUPABASE_SECRET_KEY` and other service credentials server-side only. Client-facing payment submissions remain pending until an admin accepts them.
+No new Supabase migration is required for V1.3.3.2. Existing migration 011 from V1.3.3 remains required.

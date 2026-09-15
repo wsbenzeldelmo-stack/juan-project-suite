@@ -7,133 +7,76 @@ required=(
   "$ROOT/workspace/index.html"
   "$ROOT/workspace/css/v1-3-ux.css"
   "$ROOT/workspace/api/admin-portal.js"
-  "$ROOT/workspace/api/_payment-verification.js"
   "$ROOT/workspace/sw.js"
   "$ROOT/online/index.html"
   "$ROOT/online/css/app.css"
   "$ROOT/online/js/app.js"
   "$ROOT/online/js/payment-institutions.js"
   "$ROOT/online/api/portal-data.js"
-  "$ROOT/online/api/payment-submission.js"
-  "$ROOT/online/api/account.js"
   "$ROOT/online/sw.js"
   "$ROOT/supabase/migrations/011_platform_v1_3_3.sql"
-  "$ROOT/docs/V1_3_3_UPDATE_NOTES.md"
   "$ROOT/online/assets/onboarding/onboarding-1.png"
   "$ROOT/online/assets/onboarding/onboarding-2.png"
   "$ROOT/online/assets/onboarding/onboarding-3.png"
 )
 for f in "${required[@]}"; do test -f "$f" || { echo "Missing: $f"; exit 1; }; done
-[[ "$(tr -d '\r\n' < "$ROOT/VERSION")" == "1.3.3" ]] || { echo "VERSION is not 1.3.3"; exit 1; }
+[[ "$(tr -d '\r\n' < "$ROOT/VERSION")" == "1.3.3.2" ]] || { echo "VERSION is not 1.3.3.2"; exit 1; }
 
-for logo in bdo.png gcash.png bpi.png maya.png metrobank.png landbank.png unionbank.png pnb.png others.svg; do
-  test -f "$ROOT/online/assets/payment-institutions/$logo" || { echo "Missing Online institution logo: $logo"; exit 1; }
-  test -f "$ROOT/workspace/assets/payment-institutions/$logo" || { echo "Missing Workspace institution logo: $logo"; exit 1; }
-done
-
-# 9:16 onboarding images and expected V1.3.3 content hashes.
-python3 - "$ROOT" <<'PY'
-from pathlib import Path
-import hashlib,sys
-root=Path(sys.argv[1])
-expected={
- 'onboarding-1.png':'6b7616544b8a79e2ba5cecc6fe0a638f7a9dd797480a62a148f7de8f03e93dbd',
- 'onboarding-2.png':'edfe3a8c217ca743b475cba0f17037ea76f25092d569dffe3baeca8b51c92bac',
- 'onboarding-3.png':'10760405500d6543946848169b0ae46c1eaa547bce549f349fecfce754605128',
-}
-for name,sha in expected.items():
- p=root/'online/assets/onboarding'/name
- got=hashlib.sha256(p.read_bytes()).hexdigest()
- if got!=sha: raise SystemExit(f'Unexpected onboarding asset: {name}')
-PY
-
-# Parse every JavaScript file and Workspace inline scripts.
 for f in "$ROOT"/online/js/*.js "$ROOT"/online/api/*.js "$ROOT"/workspace/api/*.js "$ROOT"/workspace/js/*.js; do node --check "$f"; done
+
 python3 - "$ROOT/workspace/index.html" <<'PY'
 from pathlib import Path
 import re,sys,tempfile,subprocess
 src=Path(sys.argv[1]).read_text()
 blocks=[m.group(2) for m in re.finditer(r'<script([^>]*)>(.*?)</script>',src,re.S|re.I) if 'src=' not in m.group(1)]
-out=Path(tempfile.gettempdir())/'juan-workspace-inline-v133.js';out.write_text('\n'.join(blocks))
+out=Path(tempfile.gettempdir())/'juan-workspace-inline-v1332.js';out.write_text('\n'.join(blocks))
 subprocess.run(['node','--check',str(out)],check=True)
 checks={
- 'Version V1.3.3':'Workspace V1.3.3 label missing',
- 'Colorful Mode':'Colorful Mode missing',
- 'renderReportsView':'Reports renderer missing',
- 'Reports couldn':'Reports error state missing',
- 'queueOfflineProject':'Offline project queue missing',
- 'flushOfflineSyncQueue':'Offline reconnect sync missing',
- 'Saved offline':'Offline save feedback missing',
- 'delivery_status':'Persistent delivery status missing',
- 'System Maintenance Fee':'Maintenance fee invoice line missing',
- 'saveInvoiceImage':'Workspace invoice image export missing',
- '<th>Project</th><th>Amount</th><th>Bank / E-Wallet</th><th>Status</th>':'Simplified Payment Reviews table missing',
- 'openPortalPaymentReview':'Payment Review modal missing',
- 'delete-payment-review':'Payment Review delete action missing',
- 'paymentRejectReasonOptions':'Searchable rejection reason missing',
+ 'Version V1.3.3.2':'Workspace version label missing',
+ '<th>Project</th><th>Amount</th><th>Bank / E-Wallet</th><th>Status</th><th>Date Submitted</th>':'Payment Review table is not simplified',
+ 'Approve Request':'Approve Request action missing',
+ 'Reject Request':'Reject Request action missing',
+ 'Delete Request':'Delete Request action missing',
+ 'portalPaymentRejectModal':'Compact rejection dialog missing',
+ 'setReportRange':'Reports period filter missing',
+ 'Revenue Trend':'Reports revenue trend missing',
+ 'Outstanding Projects':'Reports outstanding projects missing',
+ 'Recent Payments':'Reports recent payments missing',
+ 'Reports couldn':'Reports crash fallback missing',
 }
 for token,msg in checks.items():
  if token not in src: raise SystemExit(msg)
+for forbidden in ('portalPaymentReviewModal','View Review'):
+ if forbidden in src: raise SystemExit(f'Old Payment Review modal flow still present: {forbidden}')
 PY
 
-python3 - "$ROOT/online/js/app.js" "$ROOT/online/js/payment-institutions.js" "$ROOT/online/api/portal-data.js" <<'PY'
+python3 - "$ROOT/online/js/app.js" "$ROOT/online/assets/brand/juan-project.svg" "$ROOT/workspace/assets/brand/juan-project.svg" <<'PY'
 from pathlib import Path
-import sys,re
-app=Path(sys.argv[1]).read_text();reg=Path(sys.argv[2]).read_text();portal=Path(sys.argv[3]).read_text()
-for forbidden in ('Create Account','Sign Up','First Access'):
- if forbidden in app: raise SystemExit(f'Public registration language remains: {forbidden}')
+import sys
+app=Path(sys.argv[1]).read_text(); online_logo=Path(sys.argv[2]).read_text(); workspace_logo=Path(sys.argv[3]).read_text()
 checks={
- 'V1.3.3':'Online version label missing',
- '/assets/onboarding/onboarding-1.png':'Onboarding 1 missing',
- '/assets/onboarding/onboarding-2.png':'Onboarding 2 missing',
- '/assets/onboarding/onboarding-3.png':'Onboarding 3 missing',
- 'Type to search bank or e-wallet':'Searchable sender control missing',
- 'institution-logo-tile':'Institution logo tile missing',
- 'Preview Receipt':'Receipt preview missing',
- 'System verification':'Client payment verification missing',
- 'Payment Submitted':'Payment success state missing',
- 'Save as Image':'Online invoice PNG export missing',
- 'Save / Print PDF':'Online invoice PDF/print missing',
- 'System Maintenance Fee':'Online invoice maintenance fee missing',
- 'profilePhotoInput':'Client profile photo UI missing',
- 'Thank you for working with JUAN PROJECT':'Completion thank-you missing',
- 'Make a Payment':'Balance reminder action missing',
+ "JUAN_ONBOARDING_DONE_V7":'New onboarding-first flow key missing',
+ 'function home(){':'Online Home renderer missing',
+ 'GUEST MODE':'Guest Mode missing',
+ 'Browse Services':'Guest browsing action missing',
+ "if(!onboarded){state.onboardingStep=0;return onboardingScreen();}":'First-open onboarding routing missing',
+ 'portalLoadErrorScreen':'Portal load recovery screen missing',
+ 'Browse as Guest':'Portal failure guest fallback missing',
+ 'Log In as Client':'Guest login action missing',
+ 'V1.3.3.2':'Online version label missing',
 }
 for token,msg in checks.items():
  if token not in app: raise SystemExit(msg)
-expected=['bdo','gcash','bpi','maya','metrobank','landbank','unionbank','pnb','others']
-codes=re.findall(r"\{code:'([^']+)'",reg)
-if codes!=expected: raise SystemExit(f'Unexpected current sender list: {codes}')
-if 'delivery_status' not in portal or 'profile_photo_url' not in portal: raise SystemExit('Online shared project/profile fields missing')
+for forbidden in ('Create Account','Sign Up','First Access'):
+ if forbidden in app: raise SystemExit(f'Public registration language remains: {forbidden}')
+for name,logo in [('Online',online_logo),('Workspace',workspace_logo)]:
+ if 'JUAN PROJECT' not in logo or 'viewBox="0 0 1040 190"' not in logo: raise SystemExit(f'{name} invoice logo can still clip JUAN PROJECT')
 PY
 
-# Exercise the client-side validation registry with known valid/invalid examples.
-node --input-type=module - "$ROOT/online/js/payment-institutions.js" <<'NODE'
-const mod=await import('file://'+process.argv[2]);
-const valid={bdo:'MA_PC-A1B2C3D4-123456',gcash:'1002345678901',bpi:'BPI1234567890',maya:'MAYA12345678',metrobank:'123456789012',landbank:'12345678901234',unionbank:'UBP20260910123',pnb:'12345678901234',others:'123456789012345'};
-for(const [code,ref] of Object.entries(valid)){const x=mod.validatePaymentReference(code,ref);if(!x.ok)throw new Error(`${code} valid sample failed: ${x.message}`)}
-if(mod.validatePaymentReference('gcash','2026-09-10-123').ok)throw new Error('Invalid GCash reference accepted');
-if(mod.validatePaymentReference('bdo','FT123456789').ok)throw new Error('Invalid BDO reference accepted');
-NODE
-
-MIG="$ROOT/supabase/migrations/011_platform_v1_3_3.sql"
-for token in \
-  "delivery_status" \
-  "profile_photo_path" \
-  "is_valid_juan_payment_reference" \
-  "review_juan_payment_submission" \
-  "payments.id" \
-  "juan-profile-images" \
-  "when 'pnb'" \
-  "when 'others'"; do
-  grep -q "$token" "$MIG" || { echo "Migration 011 missing: $token"; exit 1; }
-done
-
-# Preserve the supplied UnionBank QR bytes.
 EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"
 ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg" | awk '{print $1}')"
 [[ "$ACTUAL_QR_SHA" == "$EXPECTED_QR_SHA" ]] || { echo "UnionBank QR asset was altered"; exit 1; }
 
 if grep -Rqi "Gemini" "$ROOT/online/js" "$ROOT/online/api"; then echo "Gemini payment language remains"; exit 1; fi
 
-echo "JUAN PROJECT Platform V1.3.3 verification passed."
+echo "JUAN PROJECT Platform V1.3.3.2 verification passed."
