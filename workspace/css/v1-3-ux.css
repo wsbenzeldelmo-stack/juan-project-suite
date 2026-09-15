@@ -105,3 +105,108 @@ body.colorful-mode .badge-red,body.colorful-mode .status-badge.overdue{box-shado
 .reports-error-state{padding:22px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 @media(max-width:1023px){.report-safe-grid{grid-template-columns:1fr 1fr}.reports-safe-layout{grid-template-columns:1fr}}
 @media(max-width:600px){.report-safe-grid{grid-template-columns:1fr}.report-safe-row{grid-template-columns:52px 1fr}.report-safe-row>strong{grid-column:2;text-align:left}.report-safe-snapshot{grid-template-columns:1fr 1fr}}
+
+/* Payment Review UI refinement — spacious modal + non-scrollable review table */
+.portal-payment-review-card{overflow:visible}
+.portal-payment-review-table-wrap{width:100%;overflow:visible!important}
+.portal-payment-review-table{width:100%;min-width:0!important;table-layout:fixed}
+.portal-payment-review-table th,.portal-payment-review-table td{min-width:0;vertical-align:middle}
+.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:24%}
+.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:14%}
+.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:22%}
+.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:14%}
+.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:20%}
+.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:6%}
+.portal-payment-review-table .portal-project-sub,.portal-payment-review-table .portal-bank-cell span:last-child,.portal-payment-date{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.portal-payment-review-table .portal-project-sub{max-width:100%}
+.portal-payment-review-table .portal-bank-cell{min-width:0}
+.portal-payment-review-table .table-row-actions{padding-right:10px}
+
+.payment-review-modal.payment-review-compact{width:min(1120px,calc(100vw - 48px));max-height:min(92dvh,860px);border-radius:20px}
+.payment-review-header{padding:22px 28px 14px}
+.payment-review-header .modal-title{font-size:23px;line-height:1.1}
+.payment-review-body{padding:14px 28px 18px}
+.payment-review-main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.payment-review-panel{border:1px solid var(--border-subtle,#e6e8ec);border-radius:14px;background:var(--bg-card,#fff);overflow:hidden}
+.payment-review-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px 11px;border-bottom:1px solid var(--border-subtle,#e6e8ec)}
+.payment-review-panel-head>div{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%}
+.payment-review-panel-head strong{font-size:16px}
+.payment-review-panel-head span{font-size:11px;color:var(--text-tertiary)}
+.payment-review-summary{display:block!important;margin:0!important}
+.review-details-card-head{padding:16px 18px 11px;border-bottom:1px solid var(--border-subtle,#e6e8ec)}
+.review-details-card-head>div{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.review-details-card-head strong{font-size:16px}
+.review-status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;background:rgba(245,166,35,.13);color:#a86600;font-size:10px;font-weight:800;white-space:nowrap}
+.review-detail-list{display:block}
+.review-detail-line{display:grid;grid-template-columns:138px minmax(0,1fr);gap:14px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border-subtle,#e6e8ec);min-height:49px}
+.review-detail-line:last-child{border-bottom:0}
+.review-detail-line>span{font-size:11px;color:var(--text-secondary);font-weight:650}
+.review-detail-line>div{min-width:0}
+.review-detail-line strong{font-size:12.5px;line-height:1.3}
+.review-detail-line small{display:block;margin-top:2px;font-size:10px;color:var(--text-tertiary)}
+.review-sender{display:flex;align-items:center;gap:9px}
+.review-sender-logo{display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;border:1px solid var(--border-subtle);border-radius:9px;background:#fff;padding:4px}
+.review-sender-logo img{width:100%;height:100%;object-fit:contain}
+.review-receipt-block{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.review-receipt-meta{display:flex;align-items:center;gap:8px;min-width:0}
+.review-receipt-icon{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:8px;background:var(--bg-subtle,#f3f5f7);font-weight:800}
+.review-receipt-meta>div{min-width:0}
+.review-receipt-meta strong,.review-receipt-meta small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-missing{font-size:11px;color:var(--status-red)}
+.payment-review-receipt-link{min-height:32px!important;padding:0 11px!important;white-space:nowrap;background:transparent!important;border:1px solid var(--border-subtle);color:var(--primary-mint-dark)!important;text-decoration:none!important}
+
+.payment-review-checks{display:block!important;border:0!important;border-radius:0!important;overflow:visible!important}
+.payment-review-checks .payment-review-check{display:flex!important;align-items:center;justify-content:space-between;gap:12px;min-height:45px!important;padding:8px 18px!important;border:0!important;border-bottom:1px solid var(--border-subtle,#e6e8ec)!important;border-radius:0!important;background:transparent!important}
+.payment-review-checks .payment-review-check:last-child{border-bottom:0!important}
+.payment-review-checks .payment-review-check>div{display:flex;align-items:center;gap:9px;min-width:0;overflow:visible!important}
+.payment-review-checks .payment-review-check strong{font-size:11.5px!important;white-space:normal}
+.payment-review-checks .payment-review-check small{font-size:9.5px!important;margin-left:4px}
+.review-check-icon{display:grid;place-items:center;width:22px;height:22px;flex:0 0 22px;border-radius:999px;font-size:11px;font-weight:900}
+.payment-review-check.pass .review-check-icon{background:rgba(25,186,117,.12);color:var(--primary-mint-dark)}
+.payment-review-check.fail .review-check-icon{background:rgba(255,149,0,.13);color:#a85d00}
+.review-check-badge{min-width:72px!important;padding:5px 9px!important;font-size:9.5px!important}
+.payment-review-balance{margin:10px 12px 12px;border-radius:11px;background:rgba(25,186,117,.08);border:1px solid rgba(25,186,117,.10);padding:12px 14px}
+.payment-review-balance>div{display:grid;gap:2px}
+.payment-review-balance span{font-size:10px;font-weight:700;color:var(--text-secondary)}
+.payment-review-balance strong{font-size:22px;line-height:1.15}
+.payment-review-balance small{font-size:10px;color:var(--text-tertiary)}
+.payment-rejection-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:18px;padding-top:0!important}
+.payment-rejection-grid .form-label{font-size:11px;font-weight:750;margin-bottom:7px}
+.payment-review-note{height:58px!important;min-height:58px!important;resize:none}
+.payment-review-footer{padding:14px 28px 18px;gap:10px;justify-content:flex-end}
+.payment-review-footer .btn{min-height:42px;padding-left:20px;padding-right:20px}
+.payment-review-footer #paymentReviewApproveBtn{min-width:160px}
+
+@media(max-width:980px){
+  .payment-review-modal.payment-review-compact{width:min(96vw,820px)}
+  .payment-review-main-grid{grid-template-columns:1fr}
+  .payment-review-body{padding-left:20px;padding-right:20px}
+  .payment-review-header{padding-left:20px;padding-right:20px}
+  .payment-review-footer{padding-left:20px;padding-right:20px}
+}
+@media(max-width:760px){
+  .portal-payment-review-table thead{display:none}
+  .portal-payment-review-table,.portal-payment-review-table tbody{display:block;width:100%}
+  .portal-payment-review-table tbody tr{display:grid;grid-template-columns:1fr auto;gap:7px 12px;padding:13px 14px;border-bottom:1px solid var(--border-subtle)}
+  .portal-payment-review-table tbody td{display:flex!important;align-items:center;justify-content:space-between;width:auto!important;padding:0!important;border:0!important;min-width:0}
+  .portal-payment-review-table tbody td::before{content:attr(data-label);font-size:9px;font-weight:750;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.04em;margin-right:12px}
+  .portal-payment-review-table tbody td:nth-child(1){grid-column:1/2;display:block!important}
+  .portal-payment-review-table tbody td:nth-child(1)::before{display:none}
+  .portal-payment-review-table tbody td:nth-child(6){grid-column:2;grid-row:1;justify-content:flex-end}
+  .portal-payment-review-table tbody td:nth-child(6)::before{display:none}
+  .portal-payment-review-table tbody td:nth-child(2),.portal-payment-review-table tbody td:nth-child(3),.portal-payment-review-table tbody td:nth-child(4),.portal-payment-review-table tbody td:nth-child(5){grid-column:1/-1}
+  .portal-payment-review-table .portal-bank-cell{justify-content:flex-end}
+  .portal-payment-review-table .portal-project-sub{white-space:normal;margin-top:2px}
+  .payment-rejection-grid{grid-template-columns:1fr}
+  .review-detail-line{grid-template-columns:112px minmax(0,1fr)}
+}
+@media(max-width:460px){
+  .payment-review-modal.payment-review-compact{width:100%;max-width:none;height:100dvh;max-height:100dvh;border-radius:0}
+  .payment-review-header{padding:16px 14px 12px}
+  .payment-review-body{padding:8px 14px 16px}
+  .payment-review-footer{padding:10px 14px max(12px,env(safe-area-inset-bottom));display:grid!important;grid-template-columns:1fr 1fr}
+  .payment-review-footer #paymentReviewApproveBtn{grid-column:1/-1;grid-row:1;width:100%}
+  .payment-review-footer #paymentReviewRejectBtn,.payment-review-footer .btn-secondary{width:100%}
+  .review-detail-line{grid-template-columns:96px minmax(0,1fr);padding:10px 12px}
+  .review-receipt-block{align-items:flex-start;flex-direction:column}
+}
