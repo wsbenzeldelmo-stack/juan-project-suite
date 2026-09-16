@@ -949,6 +949,23 @@
       .catalog-manager-simple{display:block!important;width:100%;}
       .catalog-manager-simple .table-card{width:100%;margin-bottom:16px;}
       @media(max-width:900px){#view-pricelist .catalog-toolbar{align-items:stretch}.catalog-toolbar .toolbar-actions{flex-wrap:wrap}.catalog-toolbar #catalogManagerSearch{min-width:100%}}
+
+/* V1.3.3.2 data-flow patch: Shop table fixed geometry */
+#catalogServicesCard .table-responsive,#catalogPackagesCard .table-responsive{overflow:visible!important;width:100%!important}
+.catalog-services-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+.catalog-services-table th:nth-child(1),.catalog-services-table td:nth-child(1){width:10%!important}
+.catalog-services-table th:nth-child(2),.catalog-services-table td:nth-child(2){width:22%!important}
+.catalog-services-table th:nth-child(3),.catalog-services-table td:nth-child(3){width:20%!important}
+.catalog-services-table th:nth-child(4),.catalog-services-table td:nth-child(4){width:27%!important}
+.catalog-services-table th:nth-child(5),.catalog-services-table td:nth-child(5){width:13%!important;text-align:right!important}
+.catalog-services-table th:nth-child(6),.catalog-services-table td:nth-child(6){width:8%!important;text-align:center!important}
+.catalog-services-table td{min-width:0!important;max-width:none!important}
+.catalog-services-table .catalog-desc-cell{white-space:normal!important;overflow-wrap:anywhere!important}
+.portal-client-access-table{table-layout:fixed!important;width:100%!important}
+.portal-client-access-table th:nth-child(1){width:16%!important}.portal-client-access-table th:nth-child(2){width:29%!important}.portal-client-access-table th:nth-child(3){width:17%!important}.portal-client-access-table th:nth-child(4){width:14%!important}.portal-client-access-table th:nth-child(5){width:16%!important}.portal-client-access-table th:nth-child(6){width:8%!important}
+
+
+.workspace-skeleton-brand img[src*="workspace-master"]{width:150px!important;height:34px!important;object-fit:contain!important;object-position:left center!important}
 </style>
   <link rel="stylesheet" href="/css/v1-2-ux.css">
 
@@ -1076,7 +1093,7 @@
       <div id="workspaceLoadingSkeleton" class="workspace-loading-shell hidden" aria-live="polite" aria-busy="true" aria-label="Loading JUAN PROJECT Workspace">
         <div class="workspace-skeleton-layout">
           <aside class="workspace-skeleton-sidebar" aria-hidden="true">
-            <div class="workspace-skeleton-brand"><img src="/assets/brand/j-mark.svg" alt=""><span>JUAN PROJECT</span></div>
+            <div class="workspace-skeleton-brand"><img src="/assets/brand/juan-project-workspace-master.png" alt="JUAN PROJECT Workspace"></div>
             <div class="skeleton-bar skel w-70"></div><div class="skeleton-bar skel w-88"></div><div class="skeleton-bar skel w-76"></div><div class="skeleton-bar skel w-82"></div><div class="skeleton-bar skel w-64"></div>
             <div class="workspace-skeleton-side-spacer"></div>
             <div class="skeleton-bar skel w-72"></div><div class="skeleton-bar skel w-58"></div>
@@ -1259,15 +1276,15 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label">Gmail / Email *</label>
-                    <input type="email" class="form-control" id="newClientEmail" placeholder="client@gmail.com">
+                    <input type="email" class="form-control" id="newClientEmail" list="juanEmailDomainSuggestions" placeholder="client@gmail.com">
                     <span id="newClientEmailError" class="inline-error"></span>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Phone Number</label>
+                    <label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label>
                     <input type="text" class="form-control" id="newClientPhone" placeholder="+63 900 000 0000">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">Address</label>
+                    <label class="form-label">Location <span class="text-muted">(Optional)</span></label>
                     <input type="text" class="form-control" id="newClientAddress" placeholder="City, Province">
                   </div>
                 </div>
@@ -1441,9 +1458,9 @@
               <div class="card-header"><div><div class="section-kicker">CLIENT</div><h3 class="card-title">Client Information</h3></div></div>
               <div class="project-data-form-grid">
                 <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="projectDataClientName"></div>
-                <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-control" id="projectDataClientEmail"></div>
-                <div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" id="projectDataClientPhone"></div>
-                <div class="form-group"><label class="form-label">Address</label><input class="form-control" id="projectDataClientAddress"></div>
+                <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-control" id="projectDataClientEmail" list="juanEmailDomainSuggestions"></div>
+                <div class="form-group"><label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientPhone"></div>
+                <div class="form-group"><label class="form-label">Location <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientAddress"></div>
               </div>
             </div>
 
@@ -1620,7 +1637,7 @@
           <div class="view-toolbar unified-toolbar portal-toolbar">
             <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
           </div>
-          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table portal-client-access-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table portal-client-access-table"><thead><tr><th>Client ID</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Payment Reviews</strong><span>Open a review to see the full payment details, receipt, verification results, and decision controls.</span></div>
@@ -1843,16 +1860,16 @@
         </div>
         <div class="form-group">
           <label class="form-label">Email *</label>
-          <input type="email" class="form-control" id="editClientEmail" placeholder="client@gmail.com">
+          <input type="email" class="form-control" id="editClientEmail" list="juanEmailDomainSuggestions" placeholder="client@gmail.com">
           <span id="editClientEmailError" class="inline-error"></span>
         </div>
         <div class="form-group">
-          <label class="form-label">Phone Number *</label>
+          <label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label>
           <input type="text" class="form-control" id="editClientPhone" placeholder="+63 900 000 0000">
           <span id="editClientPhoneError" class="inline-error"></span>
         </div>
         <div class="form-group">
-          <label class="form-label">Address</label>
+          <label class="form-label">Location <span class="text-muted">(Optional)</span></label>
           <input type="text" class="form-control" id="editClientAddress" placeholder="City, Province">
         </div>
         <div class="form-group">
@@ -5200,7 +5217,7 @@ ${description}`))actionCallback();return;}
       async function syncDeliverablesToDatabase(project) {
         if (!supabaseClient || !state.isConnected || !project) return;
         const localRows = (Array.isArray(project.deliverables) ? project.deliverables : []).filter(d => !d.is_group);
-        const existingRes = await supabaseClient.from('deliverables').select('id,shared_drive_url,client_visible,due_date').eq('project_id', project.id);
+        const existingRes = await supabaseClient.from('deliverables').select('id,shared_drive_url,client_visible,due_date,source_type,order_item_id,order_item_occurrence,parent_id,parent_key,package_name,child_index').eq('project_id', project.id);
         const existing = new Map((existingRes.data || []).map(row => [String(row.id), row]));
         const del = await supabaseClient.from('deliverables').delete().eq('project_id', project.id);
         if (del.error) throw del.error;
@@ -5218,7 +5235,14 @@ ${description}`))actionCallback();return;}
             completed_at: d.completed_at || null,
             due_date: d.due_date || previous.due_date || project.deadline_date || null,
             shared_drive_url: d.shared_drive_url || previous.shared_drive_url || null,
-            client_visible: d.client_visible !== undefined ? d.client_visible !== false : previous.client_visible !== false
+            client_visible: d.client_visible !== undefined ? d.client_visible !== false : previous.client_visible !== false,
+            source_type: d.source_type || previous.source_type || null,
+            order_item_id: d.order_item_id || previous.order_item_id || null,
+            order_item_occurrence: Number(d.order_item_occurrence || previous.order_item_occurrence || 1),
+            parent_id: d.parent_id || previous.parent_id || null,
+            parent_key: d.parent_key || previous.parent_key || null,
+            package_name: d.package_name || previous.package_name || null,
+            child_index: d.child_index === undefined || d.child_index === null ? (previous.child_index ?? null) : Number(d.child_index)
           };
         });
         const inserted = await supabaseClient.from('deliverables').insert(rows);
@@ -5723,6 +5747,19 @@ ${description}`))actionCallback();return;}
       let projectDataAutosaveBusy=false;
 
       function normalizeProjectClientEmail(value){return String(value||'').trim().toLowerCase();}
+      const JUAN_EMAIL_DOMAINS=['gmail.com','deped.gov.ph'];
+      function updateEmailDomainSuggestions(input){
+        const list=document.getElementById('juanEmailDomainSuggestions');if(!list||!input)return;
+        const raw=String(input.value||'').trim().toLowerCase();
+        const at=raw.indexOf('@');const local=(at>=0?raw.slice(0,at):raw).replace(/\s+/g,'');const typedDomain=at>=0?raw.slice(at+1):'';
+        if(!local){list.innerHTML='';return;}
+        const domains=JUAN_EMAIL_DOMAINS.filter(domain=>!typedDomain||domain.startsWith(typedDomain));
+        list.innerHTML=domains.map(domain=>`<option value="${escapeHtml(local+'@'+domain)}"></option>`).join('');
+      }
+      function bindEmailDomainSuggestions(){
+        ['newClientEmail','editClientEmail','projectDataClientEmail'].forEach(id=>{const input=document.getElementById(id);if(!input||input.dataset.domainSuggestBound)return;input.dataset.domainSuggestBound='1';input.setAttribute('list','juanEmailDomainSuggestions');input.addEventListener('input',()=>updateEmailDomainSuggestions(input));input.addEventListener('focus',()=>updateEmailDomainSuggestions(input));input.addEventListener('blur',()=>{input.value=String(input.value||'').trim().toLowerCase();});});
+      }
+
       function validProjectClientEmail(value){const v=String(value||'').trim();return !v||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);}
       function nextLocalClientCode(){const max=(state.clients||[]).reduce((m,c)=>Math.max(m,Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||0)),0);return `CL-${String(max+1).padStart(3,'0')}`;}
       function getProjectClientRecord(proj){
@@ -5894,7 +5931,7 @@ ${description}`))actionCallback();return;}
         const norm=v=>String(v||'').trim().toLowerCase();
         const oldByKey=new Map();old.forEach(d=>{const key=[d.order_item_id||'',d.order_item_occurrence||1,d.parent_key||'',norm(d.item_name||d.name)].join('|');if(!oldByKey.has(key))oldByKey.set(key,d)});
         const fresh=[];
-        const make=(item,occ,name,extra={})=>{const key=[item.id,occ,extra.parent_key||'',norm(name)].join('|'),prev=oldByKey.get(key);return {...(prev||{}),id:prev?.id||`del_${proj.id}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,item_name:name,name,source_type:'ORDER_ITEM',order_item_id:item.id,order_item_occurrence:occ,completed:!!prev?.completed,progress:prev?.completed?100:Number(prev?.progress||0),status:prev?.completed?'Completed':'Pending',completed_at:prev?.completed_at||null,...extra};};
+        const make=(item,occ,name,extra={})=>{const key=[item.id,occ,extra.parent_key||'',norm(name)].join('|'),prev=oldByKey.get(key);return {...(prev||{}),id:prev?.id||`del_${String(proj.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${String(item.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${occ}_${String(extra.parent_key||name).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,42)}`,item_name:name,name,source_type:'ORDER_ITEM',order_item_id:item.id,order_item_occurrence:occ,completed:!!prev?.completed,progress:prev?.completed?100:Number(prev?.progress||0),status:prev?.completed?'Completed':'Pending',completed_at:prev?.completed_at||null,...extra};};
         items.forEach((item,itemIndex)=>{
           if(!item.id)item.id=`oi_${proj.id}_${Date.now()}_${itemIndex}_${Math.random().toString(36).slice(2,6)}`;
           const qty=Math.max(1,Math.round(Number(item.qty||1))),isPackage=String(item.type||'').toUpperCase()==='PACKAGE';
@@ -6498,8 +6535,8 @@ ${description}`))actionCallback();return;}
           emailInput.classList.add("is-invalid");
           valid = false;
         }
-        if (!phone) {
-          errPhone.innerText = "Phone number is required.";
+        if (phone && !/^[\+\d\s\-\(\)]+$/.test(phone)) {
+          errPhone.innerText = "Please enter a valid phone number or leave it blank.";
           phoneInput.classList.add("is-invalid");
           valid = false;
         }
@@ -6542,15 +6579,30 @@ ${description}`))actionCallback();return;}
         state.projects.forEach(p => {
           if (p.client_id === clientId) {
             p.client_name = name;
-            p.client_email = email;
+            p.client_email = normalizeClientIdentityEmail(email);
+            p.client_phone = phone || '';
+            p.client_address = address || '';
           }
         });
         persistProjectsState();
 
         if (supabaseClient && state.isConnected) {
           try {
-            const { error } = await supabaseClient.from('clients').update({ name, email: normalizeClientIdentityEmail(email), phone, address, notes }).eq('id', clientId);
+            const normalizedEmail = normalizeClientIdentityEmail(email);
+            const { error } = await supabaseClient.from('clients').update({ name, email: normalizedEmail, phone: phone || null, address: address || null, notes }).eq('id', clientId);
             if (error) throw error;
+            const linkedProjects = state.projects.filter(p => p.client_id === clientId);
+            for (const project of linkedProjects) {
+              const update = await supabaseClient.from('projects').update({client_name:name,client_email:normalizedEmail,client_phone:phone||null,client_address:address||null}).eq('id',project.id);
+              if (update.error) console.warn('Project client snapshot sync failed:', update.error);
+            }
+            try {
+              await onlinePortalRequest('POST',{action:'reconcile-client-profile',clientId,name,email:normalizedEmail,phone:phone||'',address:address||''});
+              state.onlinePortalData = null;
+              if (document.getElementById('view-online-portal')?.classList.contains('active')) loadOnlinePortalData(true);
+            } catch(portalError) {
+              console.warn('Portal client profile refresh failed:', portalError?.message||portalError);
+            }
           } catch(e) {
             console.error("Database operation failed while updating client:", e);
             showToast("Warning: Client changes were saved locally, but could not sync to the database.", "Retry", () => syncClientToDatabase(client));
@@ -6856,8 +6908,8 @@ ${description}`))actionCallback();return;}
           if(["temporary_password","active"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="force-password-change" data-client="${escapeHtml(x.id)}">Force Password Change</button>`);
           if(["temporary_password","active","disabled"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="reset-client-temporary-password" data-client="${escapeHtml(x.id)}">Reset Temporary Password</button>`);
           if(x.auth_user_id&&x.status!=="archived")actions.push(`<button class="popover-action portal-account-action ${x.status==="disabled"?"":"text-danger"}" data-action="set-client-access" data-enabled="${x.status==="disabled"?"true":"false"}" data-client="${escapeHtml(x.id)}">${x.status==="disabled"?"Enable Access":"Disable Access"}</button>`);
-          return `<tr><td><strong>${escapeHtml(x.client_code||"—")}</strong></td><td><strong class="portal-responsive-text">${escapeHtml(x.name||"—")}</strong></td><td><span class="portal-responsive-text">${escapeHtml(x.email||"—")}</span></td><td><span class="portal-status ${cls}">${escapeHtml(label)}</span></td><td>${x.password_set?"Changed":"Temporary"}</td><td>${escapeHtml(portalDate(x.last_sign_in_at))}</td><td class="table-row-actions"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Client access actions">⋮</button><div class="popover-panel client-row-menu">${actions.join("")||'<span class="popover-empty">No actions</span>'}</div></div></td></tr>`;
-        }).join("")||`<tr><td colspan="7" class="text-center text-muted">No matching clients.</td></tr>`;
+          return `<tr><td><strong>${escapeHtml(x.client_code||"—")}</strong></td><td><span class="portal-responsive-text">${escapeHtml(x.email||"—")}</span></td><td><span class="portal-status ${cls}">${escapeHtml(label)}</span></td><td>${x.password_set?"Changed":"Temporary"}</td><td>${escapeHtml(portalDate(x.last_sign_in_at))}</td><td class="table-row-actions"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Client access actions">⋮</button><div class="popover-panel client-row-menu">${actions.join("")||'<span class="popover-empty">No actions</span>'}</div></div></td></tr>`;
+        }).join("")||`<tr><td colspan="6" class="text-center text-muted">No matching clients.</td></tr>`;
 
         const clientMap=new Map((data.clients||[]).map(x=>[String(x.id),x]));
         const projectMap=new Map((data.projects||[]).map(x=>[String(x.id),x]));
@@ -7134,7 +7186,7 @@ ${description}`))actionCallback();return;}
     document.addEventListener("DOMContentLoaded", () => {
       app.initWorkspace();
       if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(err=>console.warn('Workspace offline cache unavailable:',err?.message||err)));}
-      setTimeout(()=>{refreshSearchableSelects(document);if(location.hash==="#online-portal")app.navigateTo("online-portal");},60);
+      setTimeout(()=>{refreshSearchableSelects(document);bindEmailDomainSuggestions();if(location.hash==="#online-portal")app.navigateTo("online-portal");},60);
       
       document.addEventListener("click", (e) => {
         if (!e.target.closest("#orderClientTypeahead")) app.hideClientSuggestions();
@@ -7374,6 +7426,7 @@ ${description}`))actionCallback();return;}
 /* V1.3.3.2 invoice brand clipping fix */
 .invoice-brand-img{display:block;width:220px;max-width:100%;height:auto;object-fit:contain;object-position:left center;overflow:visible}.invoice-header>div:first-child{min-width:0;overflow:visible}
 </style>
+<datalist id="juanEmailDomainSuggestions"></datalist>
 </body>
 </html>
 <style id="v111-maintenance-patch">

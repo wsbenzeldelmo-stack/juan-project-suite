@@ -35,10 +35,9 @@ async function getClientAccountSnapshot(svc){
   if(rolesRes.error)throw rolesRes.error;
   if(projectsRes.error)throw projectsRes.error;
 
-  // Client Accounts are project-derived: only clients currently referenced by a project
-  // are exposed/provisioned in JUAN PROJECT Online.
-  const activeClientIds=new Set((projectsRes.data||[]).map(x=>String(x.client_id||'')).filter(Boolean));
-  const projectClients=(clientsRes.data||[]).filter(c=>activeClientIds.has(String(c.id)));
+  // Client Directory is the source of truth for portal access. Every active client
+  // must appear here even before a project is linked (fixes missing mapped clients such as CL-012).
+  const projectClients=(clientsRes.data||[]).filter(c=>!c.archived_at);
   const portalByClient=new Map((portalRes.data||[]).map(x=>[String(x.client_id),x]));
   const authById=new Map(authUsers.map(u=>[u.id,u]));
   const authByEmail=new Map(authUsers.filter(u=>u.email).map(u=>[normEmail(u.email),u]));
@@ -360,6 +359,31 @@ export default async function handler(req,res){
 
     if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
     const body=req.body||{};
+
+    if(body.action==='reconcile-client-profile'){
+      const clientId=String(body.clientId||'').trim();
+      if(!clientId)return res.status(400).json({error:'Client is required.'});
+      const current=await svc.from('clients').select('id,name,email,phone,address,client_code,archived_at').eq('id',clientId).maybeSingle();
+      if(current.error)throw current.error;
+      if(!current.data)return res.status(404).json({error:'Client not found.'});
+      const email=normEmail(body.email??current.data.email);
+      if(email&&!validEmail(email))return res.status(400).json({error:'Enter a valid email address.'});
+      const patch={
+        name:String(body.name??current.data.name??'').trim()||current.data.name,
+        email:email||null,
+        phone:String(body.phone||'').trim()||null,
+        address:String(body.address||'').trim()||null
+      };
+      const updated=await svc.from('clients').update(patch).eq('id',clientId).select('id,name,email,phone,address,client_code,archived_at').single();
+      if(updated.error)throw updated.error;
+      const snapshot=await getClientAccountSnapshot(svc);
+      let portalResult={status:'skipped',message:'Email is required before portal access can be linked.'};
+      if(validEmail(updated.data.email)){
+        try{portalResult=await provisionOneClient(svc,updated.data,snapshot,{refreshTemporary:false});}
+        catch(error){portalResult={status:'needs_setup',message:error?.message||'Portal link needs attention.'};}
+      }
+      return res.status(200).json({ok:true,client:updated.data,portalResult});
+    }
 
     if(body.action==='reconcile-project-client'){
       const result=await reconcileProjectClient(svc,body);
