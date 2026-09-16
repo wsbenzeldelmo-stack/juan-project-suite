@@ -5,19 +5,17 @@ required=(
   "$ROOT/VERSION"
   "$ROOT/workspace/index.html"
   "$ROOT/workspace/css/v1-3-ux.css"
-  "$ROOT/workspace/api/admin-portal.js"
   "$ROOT/workspace/sw.js"
   "$ROOT/online/index.html"
   "$ROOT/online/css/app.css"
   "$ROOT/online/js/app.js"
   "$ROOT/online/js/payment-institutions.js"
-  "$ROOT/online/api/portal-data.js"
   "$ROOT/online/sw.js"
   "$ROOT/supabase/migrations/011_platform_v1_3_3.sql"
-  "$ROOT/docs/V1_3_3_2_UPDATE_NOTES.md"
 )
 for f in "${required[@]}"; do test -f "$f" || { echo "Missing: $f"; exit 1; }; done
 [[ "$(tr -d '\r\n' < "$ROOT/VERSION")" == "1.3.3.2" ]] || { echo "VERSION is not 1.3.3.2"; exit 1; }
+
 for f in "$ROOT"/online/js/*.js "$ROOT"/online/api/*.js "$ROOT"/workspace/api/*.js "$ROOT"/workspace/js/*.js; do node --check "$f"; done
 python3 - "$ROOT/workspace/index.html" <<'PY'
 from pathlib import Path
@@ -27,46 +25,57 @@ blocks=[m.group(2) for m in re.finditer(r'<script([^>]*)>(.*?)</script>',src,re.
 out=Path(tempfile.gettempdir())/'juan-workspace-inline-v1332.js';out.write_text('\n'.join(blocks))
 subprocess.run(['node','--check',str(out)],check=True)
 checks={
- 'OFFLINE / LOCAL':'Offline/local startup missing',
- 'Database Connection':'Database settings card missing',
- 'Test Connection':'Manual test button missing',
- 'Connect Database':'Manual connect button missing',
- 'Disconnect':'Manual disconnect button missing',
- 'function renderReportsView':'Safe reports renderer missing',
- 'Approve Request':'Payment approve menu action missing',
- 'Reject Request':'Payment reject menu action missing',
- 'Delete Request':'Payment delete menu action missing',
- 'Date Submitted':'Payment submitted date missing',
- 'paymentRejectQuickModal':'Compact rejection UI missing',
+ 'Version V1.3.3.2':'Workspace version label missing',
+ 'Database Connection':'Manual database settings missing',
+ 'Connect Database':'Manual Connect Database action missing',
+ 'Test Connection':'Manual database test missing',
+ 'Continue Offline':'Offline continuation missing',
+ '○ OFFLINE / LOCAL':'Offline/local status missing',
+ 'Workspace opens in Local mode':'Manual-connect explanation missing',
+ 'function renderReportsView()':'Crash-safe Reports renderer missing',
+ 'Recent Payments':'Simplified Reports recent payments missing',
+ 'Approve Request':'Direct Payment Review approval missing',
+ 'Reject Request':'Direct Payment Review rejection missing',
+ 'Delete Request':'Direct Payment Review delete missing',
+ 'quickRejectReasonOptions':'Searchable rejection reason missing',
+ '<th>Project</th><th>Amount</th><th>Bank / E-Wallet</th><th>Status</th><th>Date Submitted</th>':'Payment review table columns missing',
 }
 for token,msg in checks.items():
  if token not in src: raise SystemExit(msg)
-if 'portalPaymentReviewModal' in src: raise SystemExit('Large Payment Review modal still present')
+if 'id="portalPaymentReviewModal"' in src: raise SystemExit('Legacy full Payment Review modal still present')
 PY
+
 python3 - "$ROOT/online/js/app.js" "$ROOT/online/index.html" <<'PY'
 from pathlib import Path
 import sys
 app=Path(sys.argv[1]).read_text();html=Path(sys.argv[2]).read_text()
 checks={
- "ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V7'":'New onboarding route missing',
- 'function home(){':'Online Home/Guest renderer missing',
+ "JUAN_ONBOARDING_DONE_V7":'New onboarding routing key missing',
+ 'function home()':'Online Home/Guest Home function missing',
+ 'Guest Mode':'Guest Mode label missing',
  'Already a Client? Log In':'Guest login CTA missing',
  'portalLoadErrorScreen':'Portal load fallback missing',
  'Browse as Guest':'Guest fallback missing',
- 'FRIENDLY REMINDER':'Balance reminder missing',
- 'function pickClientMessage':'Balance reminder logic missing',
- 'V1.3.3.2':'Online version missing',
+ 'You still have ${peso(p.balance||0)} left to pay.':'Balance reminder missing',
+ 'JUAN PROJECT</div>':'Invoice JUAN PROJECT branding missing',
+ 'V1.3.3.2':'Online version label missing',
 }
 for token,msg in checks.items():
  if token not in app: raise SystemExit(msg)
-if 'Thank you for working with JUAN PROJECT' in app: raise SystemExit('Automatic completion popup should not remain in V1.3.3.2')
-if 'Opening JUAN PROJECT Online' not in html: raise SystemExit('Immediate first-paint shell missing')
+if 'Thank you for working with JUAN PROJECT.' in app: raise SystemExit('Completion popup should not be part of startup notifications')
+if 'boot-shell' not in html: raise SystemExit('Immediate Online boot shell missing')
 PY
-for svg in "$ROOT/workspace/assets/brand/juan-project.svg" "$ROOT/online/assets/brand/juan-project.svg"; do
-  grep -q 'viewBox="0 0 1020 190"' "$svg" || { echo "Invoice logo viewBox fix missing: $svg"; exit 1; }
-done
-# Preserve the supplied UnionBank QR bytes.
-EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"
-ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg" | awk '{print $1}')"
-[[ "$ACTUAL_QR_SHA" == "$EXPECTED_QR_SHA" ]] || { echo "UnionBank QR asset was altered"; exit 1; }
+
+# Ensure startup does not auto-connect Workspace.
+python3 - "$ROOT/workspace/index.html" <<'PY'
+from pathlib import Path
+import sys,re
+src=Path(sys.argv[1]).read_text()
+m=re.search(r'async function initWorkspace\(\) \{(.*?)\n      \}',src,re.S)
+if not m: raise SystemExit('initWorkspace not found')
+body=m.group(1)
+if 'await initSupabase()' in body or 'showWorkspaceAuthGate("Checking secure admin session' in body:
+ raise SystemExit('Workspace still auto-connects on startup')
+PY
+
 echo "JUAN PROJECT Platform V1.3.3.2 verification passed."

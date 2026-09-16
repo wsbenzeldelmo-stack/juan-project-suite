@@ -1002,6 +1002,7 @@
         <div class="workspace-skeleton-grid"><div class="skeleton-card hero"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div></div>
         <div class="workspace-skeleton-table"><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div></div>
       </div>
+      <div id="workspaceLocalModeBanner" class="workspace-local-mode-banner"><div><strong>Offline / Local mode</strong><span>Showing the latest data stored on this device. Connect the shared database when you want to load or sync cloud records.</span></div><button class="btn btn-secondary btn-sm" type="button" onclick="app.navigateTo('settings')">Database Settings</button></div>
 
       <!-- VIEW 1: CURRENT WORKS / DASHBOARD -->
       <section id="view-my-works" class="view active">
@@ -1518,7 +1519,7 @@
         </header>
         <div class="online-portal-intro card">
           <div><strong>JUAN PROJECT Online</strong><p>Manage client access, client-facing activity, payment reviews, and portal configuration. Project delivery links now live inside each Project → Deliverables tab.</p></div>
-          <span class="status-badge status-green">V1.3.3.1</span>
+          <span class="status-badge status-green">V1.3.3.2</span>
         </div>
         <div class="portal-tabs" id="onlinePortalTabs">
           <button type="button" data-portal-tab="accounts" class="active">Client Access</button>
@@ -1537,7 +1538,7 @@
           <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
-          <div class="card portal-note"><strong>Payment Reviews</strong><span>Use the action menu to approve, reject, or delete a payment request. Approval still runs the full server-side verification.</span></div>
+          <div class="card portal-note"><strong>Payment Reviews</strong><span>Open a review to see the full payment details, receipt, verification results, and decision controls.</span></div>
           <div class="card table-card portal-payment-review-card"><div class="portal-payment-review-table-wrap"><table class="data-table unified-table portal-payment-review-table"><thead><tr><th>Project</th><th>Amount</th><th>Bank / E-Wallet</th><th>Status</th><th>Date Submitted</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalActivityPanel" class="portal-panel hidden">
@@ -1559,14 +1560,13 @@
         </header>
 
         <div class="settings-grid">
-          <div class="card database-connection-card">
-            <div class="database-card-head"><div><div class="section-kicker">DATA CONNECTION</div><h2 class="card-title">Database Connection</h2><p class="text-sm text-secondary mt-2">Workspace opens with local/cached data. Connect to Supabase only when you choose to sync cloud data.</p></div><div class="database-status-pill"><span id="databaseConnectionDot" class="database-status-dot offline"></span><span id="databaseConnectionStatusText">Offline / Local</span></div></div>
-            <div class="database-fields">
-              <div class="form-group"><label class="form-label" for="databaseSupabaseUrl">Supabase URL</label><input id="databaseSupabaseUrl" class="form-control" type="url" placeholder="https://your-project.supabase.co" autocomplete="off"></div>
-              <div class="form-group"><label class="form-label" for="databasePublishableKey">Publishable Key</label><input id="databasePublishableKey" class="form-control" type="password" placeholder="Public / anon publishable key" autocomplete="off"><div class="text-sm text-muted mt-2">Only the public publishable key belongs here. Service-role/secret keys stay server-side.</div></div>
+          <div class="card manual-db-card">
+            <div class="manual-db-head"><div><h2 class="card-title">Database Connection</h2><p class="text-sm text-secondary mt-2">Workspace opens in Local mode. Connect manually when you want to load or sync the shared Supabase database.</p></div><div id="manualDatabaseStatus" class="manual-db-status offline"><span></span>Offline / Local</div></div>
+            <div class="manual-db-fields">
+              <div class="form-group"><label class="form-label" for="manualSupabaseUrl">Supabase URL</label><input id="manualSupabaseUrl" class="form-control" type="url" placeholder="https://your-project.supabase.co" autocomplete="off"></div>
+              <div class="form-group"><label class="form-label" for="manualSupabaseKey">Publishable Key</label><input id="manualSupabaseKey" class="form-control" type="password" placeholder="Publishable / anon key" autocomplete="off"><div class="text-sm text-muted mt-2">Use only the public publishable key here. Never enter the service-role/secret key in the browser.</div></div>
             </div>
-            <div id="databaseConnectionMessage" class="database-connection-message" data-state="neutral">No automatic connection. Your local Workspace is available now.</div>
-            <div class="database-actions"><button id="databaseLoadConfigBtn" class="btn btn-text btn-sm" onclick="app.loadDeployedDatabaseConfig()">Load Deployed Config</button><span class="database-actions-spacer"></span><button id="databaseTestBtn" class="btn btn-secondary btn-sm" onclick="app.testDatabaseConnection()">Test Connection</button><button class="btn btn-primary btn-sm" onclick="app.connectDatabase()">Connect Database</button><button class="btn btn-secondary btn-sm" onclick="app.disconnectDatabase()">Disconnect</button></div>
+            <div class="manual-db-actions"><button id="manualDatabaseTest" class="btn btn-secondary" type="button" onclick="app.testDatabaseConnection()">Test Connection</button><button id="manualDatabaseConnect" class="btn btn-primary" type="button" onclick="app.connectDatabase()">Connect Database</button><button id="manualDatabaseDisconnect" class="btn btn-text" type="button" onclick="app.disconnectDatabase()" disabled>Disconnect</button></div>
           </div>
           <!-- Profile Section -->
           <div class="card">
@@ -1685,11 +1685,15 @@
   </div>
 
 
-  <div class="modal-backdrop" id="paymentRejectQuickModal">
+  <div class="modal-backdrop" id="portalPaymentRejectModal">
     <div class="modal-card payment-reject-quick-modal">
-      <div class="modal-header"><div><h3 class="modal-title">Reject Payment Request</h3><div class="text-sm text-muted">Choose the clearest reason so the client knows what to fix.</div></div><button class="modal-close" onclick="app.closeModal('paymentRejectQuickModal')">×</button></div>
-      <div class="modal-body"><div class="form-group"><label class="form-label" for="paymentRejectQuickReason">Reason *</label><input id="paymentRejectQuickReason" class="form-control" list="paymentRejectQuickOptions" placeholder="Search or select a reason…" autocomplete="off"><datalist id="paymentRejectQuickOptions"></datalist><div id="paymentRejectQuickValidation" class="form-error hidden">Select a rejection reason.</div></div><div class="form-group"><label class="form-label" for="paymentRejectQuickNote">Optional note</label><textarea id="paymentRejectQuickNote" class="form-control" rows="3" maxlength="500" placeholder="Add a short note for the client…"></textarea></div></div>
-      <div class="modal-footer"><button class="btn btn-secondary" onclick="app.closeModal('paymentRejectQuickModal')">Cancel</button><button class="btn payment-reject-btn" onclick="app.submitPortalPaymentReject()">Reject Request</button></div>
+      <div class="modal-header"><div><h3 class="modal-title">Reject Payment Request</h3><div class="text-sm text-muted">Choose a clear reason the client can understand.</div></div><button class="modal-close" onclick="app.closeModal('portalPaymentRejectModal')">×</button></div>
+      <div class="modal-body">
+        <div class="quick-reject-amount"><span>Submitted Amount</span><strong id="quickRejectAmount">₱0.00</strong></div>
+        <div class="form-group"><label class="form-label" for="quickRejectReason">Reason for Rejection</label><input id="quickRejectReason" class="form-control" list="quickRejectReasonOptions" placeholder="Type to search a reason…" autocomplete="off"><datalist id="quickRejectReasonOptions"></datalist><div id="quickRejectValidation" class="form-error hidden"></div></div>
+        <div class="form-group"><label class="form-label" for="quickRejectNote">Optional Note to Client</label><textarea id="quickRejectNote" class="form-control" rows="3" maxlength="500" placeholder="Add a short note if needed…"></textarea></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" onclick="app.closeModal('portalPaymentRejectModal')">Cancel</button><button class="btn btn-danger" onclick="app.confirmRejectPaymentRequest()">Reject Request</button></div>
     </div>
   </div>
 
@@ -2233,110 +2237,85 @@
       let dragStart = { x: 0, y: 0 };
 
       async function initializeEnvironmentVariables() {
-        state.supabaseUrl = "";
-        state.supabaseAnonKey = "";
-
-        try {
-          const response = await fetch("/api/supabase-config", {
-            method: "GET",
-            cache: "no-store",
-            headers: { "Accept": "application/json" }
-          });
-
-          const contentType = response.headers.get("content-type") || "";
-          const payload = contentType.includes("application/json")
-            ? await response.json()
-            : null;
-
-          if (!response.ok) {
-            throw new Error(payload?.error || `Configuration endpoint returned HTTP ${response.status}`);
-          }
-
-          state.supabaseUrl = String(payload?.SUPABASE_URL || "").trim().replace(/\/$/, "");
-          state.supabaseAnonKey = String(payload?.SUPABASE_ANON_KEY || "").trim();
-
-          if (!state.supabaseUrl || !state.supabaseAnonKey) {
-            throw new Error("Supabase configuration endpoint returned empty credentials.");
-          }
-
-          return true;
-        } catch (error) {
-          console.error("Supabase configuration error:", error);
-
-          // Local fallback is retained for development only. Production should
-          // use the Vercel /api/supabase-config endpoint above.
-          state.supabaseUrl = (localStorage.getItem("SUPABASE_URL") || "").trim().replace(/\/$/, "");
-          state.supabaseAnonKey = (localStorage.getItem("SUPABASE_ANON_KEY") || "").trim();
-
-          if (!state.supabaseUrl || !state.supabaseAnonKey) {
-            state.isConnected = false;
-            return false;
-          }
-          return true;
-        }
+        // V1.3.3.2: database connection is intentionally manual. The Workspace
+        // always opens from the latest local cache and never auto-connects on load.
+        state.supabaseUrl = (localStorage.getItem("SUPABASE_URL") || "").trim().replace(/\/$/, "");
+        state.supabaseAnonKey = (localStorage.getItem("SUPABASE_ANON_KEY") || localStorage.getItem("SUPABASE_PUBLISHABLE_KEY") || "").trim();
+        return Boolean(state.supabaseUrl && state.supabaseAnonKey);
       }
 
+      function databaseFieldValues() {
+        const url = String(document.getElementById('manualSupabaseUrl')?.value || state.supabaseUrl || '').trim().replace(/\/$/, '');
+        const key = String(document.getElementById('manualSupabaseKey')?.value || state.supabaseAnonKey || '').trim();
+        return { url, key };
+      }
 
-function manualDatabaseConfig(){
-  const url=(document.getElementById('databaseSupabaseUrl')?.value||localStorage.getItem('JUAN_MANUAL_SUPABASE_URL')||'').trim().replace(/\/$/,'');
-  const key=(document.getElementById('databasePublishableKey')?.value||localStorage.getItem('JUAN_MANUAL_SUPABASE_KEY')||'').trim();
-  return {url,key};
-}
-function setDatabaseConnectionMessage(message,type='neutral'){
-  const el=document.getElementById('databaseConnectionMessage');if(!el)return;
-  el.textContent=message||'';el.dataset.state=type;
-}
-function populateDatabaseConnectionSettings(){
-  const url=document.getElementById('databaseSupabaseUrl'),key=document.getElementById('databasePublishableKey');
-  if(url&&!url.value)url.value=localStorage.getItem('JUAN_MANUAL_SUPABASE_URL')||'';
-  if(key&&!key.value)key.value=localStorage.getItem('JUAN_MANUAL_SUPABASE_KEY')||'';
-  const status=document.getElementById('databaseConnectionStatusText');
-  if(status)status.textContent=state.isConnected?'Connected to Supabase':'Offline / Local';
-  const dot=document.getElementById('databaseConnectionDot');
-  if(dot)dot.className=`database-status-dot ${state.isConnected?'connected':'offline'}`;
-}
-async function loadDeployedDatabaseConfig(){
-  setDatabaseConnectionMessage('Loading the deployed public database configuration…','working');
-  const ok=await initializeEnvironmentVariables();
-  if(!ok){setDatabaseConnectionMessage('No deployed Supabase public configuration was found. Enter the URL and publishable key manually.','error');return false;}
-  const url=document.getElementById('databaseSupabaseUrl'),key=document.getElementById('databasePublishableKey');
-  if(url)url.value=state.supabaseUrl;if(key)key.value=state.supabaseAnonKey;
-  setDatabaseConnectionMessage('Configuration loaded. Test it, then choose Connect Database.','success');
-  return true;
-}
-async function testDatabaseConnection(){
-  const {url,key}=manualDatabaseConfig();
-  if(!url||!key){setDatabaseConnectionMessage('Enter both the Supabase URL and publishable key.','error');return false;}
-  if(!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)){setDatabaseConnectionMessage('Enter a valid Supabase project URL.','error');return false;}
-  const btn=document.getElementById('databaseTestBtn');if(btn){btn.disabled=true;btn.textContent='Testing…';}
-  setDatabaseConnectionMessage('Testing the database connection…','working');
-  try{
-    const r=await fetch(`${url}/auth/v1/health`,{method:'GET',headers:{apikey:key,Authorization:`Bearer ${key}`},cache:'no-store'});
-    if(!r.ok)throw new Error(`Connection returned HTTP ${r.status}`);
-    setDatabaseConnectionMessage('Connection available. Choose Connect Database when you are ready to load cloud data.','success');return true;
-  }catch(e){setDatabaseConnectionMessage(`Connection failed: ${e?.message||'Unable to reach Supabase.'}`,'error');return false;}
-  finally{if(btn){btn.disabled=false;btn.textContent='Test Connection';}}
-}
-async function connectDatabase(){
-  const {url,key}=manualDatabaseConfig();
-  if(!url||!key){setDatabaseConnectionMessage('Enter the Supabase URL and publishable key first.','error');return false;}
-  if(!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)){setDatabaseConnectionMessage('Enter a valid Supabase project URL.','error');return false;}
-  localStorage.setItem('JUAN_MANUAL_SUPABASE_URL',url);localStorage.setItem('JUAN_MANUAL_SUPABASE_KEY',key);
-  state.supabaseUrl=url;state.supabaseAnonKey=key;
-  setDatabaseConnectionMessage('Connecting…','working');updateConnectionStatus('connecting','SYNCING…');
-  const ok=await initSupabase(false);
-  populateDatabaseConnectionSettings();
-  if(ok){setDatabaseConnectionMessage('Connected. Cloud data is now the shared source for this session.','success');return true;}
-  if(supabaseClient){setDatabaseConnectionMessage('Database reached. Log in with the Workspace admin account to load cloud data.','working');}
-  else setDatabaseConnectionMessage('Could not connect. Workspace remains usable with local/cached data.','error');
-  return false;
-}
-async function disconnectDatabase(){
-  try{await supabaseClient?.auth?.signOut();}catch(_){ }
-  supabaseClient=null;state.isConnected=false;state.onlinePortalData=null;
-  hideWorkspaceAuthGate();updateConnectionStatus('offline','OFFLINE / LOCAL');populateDatabaseConnectionSettings();
-  setDatabaseConnectionMessage('Disconnected. Local/cached Workspace data remains available.','neutral');renderCurrentView();
-}
+      function renderDatabaseConnectionSettings(message = '') {
+        const urlInput=document.getElementById('manualSupabaseUrl');
+        const keyInput=document.getElementById('manualSupabaseKey');
+        const label=document.getElementById('manualDatabaseStatus');
+        if(urlInput && !urlInput.matches(':focus')) urlInput.value=state.supabaseUrl||localStorage.getItem('SUPABASE_URL')||'';
+        if(keyInput && !keyInput.matches(':focus')) keyInput.value=state.supabaseAnonKey||localStorage.getItem('SUPABASE_ANON_KEY')||localStorage.getItem('SUPABASE_PUBLISHABLE_KEY')||'';
+        if(label){
+          label.className=`manual-db-status ${state.isConnected?'connected':'offline'}`;
+          label.innerHTML=`<span></span>${state.isConnected?'Connected to Supabase':'Offline / Local'}${message?` · ${escapeHtml(message)}`:''}`;
+        }
+        const disconnect=document.getElementById('manualDatabaseDisconnect');
+        if(disconnect)disconnect.disabled=!state.isConnected&&!supabaseClient;
+      }
+
+      async function testDatabaseConnection() {
+        const {url,key}=databaseFieldValues();
+        const btn=document.getElementById('manualDatabaseTest');
+        if(!url||!key){showToast('Enter the Supabase URL and Publishable Key first.');return false;}
+        if(!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)){showToast('Enter a valid Supabase project URL.');return false;}
+        if(btn){btn.disabled=true;btn.textContent='Testing…';}
+        try{
+          const res=await fetch(`${url}/auth/v1/settings`,{headers:{apikey:key,Authorization:`Bearer ${key}`},cache:'no-store'});
+          if(!res.ok)throw new Error(`Connection returned HTTP ${res.status}`);
+          state.supabaseUrl=url;state.supabaseAnonKey=key;
+          renderDatabaseConnectionSettings('Connection test passed');
+          showToast('Database connection test passed.');
+          return true;
+        }catch(e){renderDatabaseConnectionSettings('Test failed');showToast(e?.message||'Could not reach Supabase.');return false;}
+        finally{if(btn){btn.disabled=false;btn.textContent='Test Connection';}}
+      }
+
+      async function connectDatabase() {
+        const {url,key}=databaseFieldValues();
+        if(!url||!key){showToast('Enter the Supabase URL and Publishable Key first.');return;}
+        if(!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)){showToast('Enter a valid Supabase project URL.');return;}
+        const btn=document.getElementById('manualDatabaseConnect');
+        if(btn){btn.disabled=true;btn.textContent='Connecting…';}
+        updateConnectionStatus('connecting','◌ CONNECTING…');
+        try{
+          if(!window.supabase||typeof window.supabase.createClient!=='function')throw new Error('Supabase client library did not load.');
+          state.supabaseUrl=url;state.supabaseAnonKey=key;
+          localStorage.setItem('SUPABASE_URL',url);
+          localStorage.setItem('SUPABASE_ANON_KEY',key);
+          localStorage.setItem('SUPABASE_PUBLISHABLE_KEY',key);
+          supabaseClient=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+          const {data:{session}}=await supabaseClient.auth.getSession();
+          if(session?.user && await verifyWorkspaceAdmin()){
+            state.isConnected=true;hideWorkspaceAuthGate();updateConnectionStatus('connected','● CONNECTED');renderDatabaseConnectionSettings();await loadDatabaseData();showToast('Connected to the shared database.');return;
+          }
+          state.isConnected=false;updateConnectionStatus('error','○ LOGIN REQUIRED');renderDatabaseConnectionSettings('Database ready · admin login required');
+          showWorkspaceAuthGate('Database connection is ready. Log in with the Workspace admin account to load shared cloud data.');
+        }catch(e){supabaseClient=null;state.isConnected=false;updateConnectionStatus('error','○ OFFLINE / LOCAL');renderDatabaseConnectionSettings('Connection failed');showToast(e?.message||'Could not connect to Supabase.');}
+        finally{if(btn){btn.disabled=false;btn.textContent='Connect Database';}}
+      }
+
+      async function disconnectDatabase() {
+        try{await supabaseClient?.auth.signOut();}catch(_){ }
+        supabaseClient=null;state.isConnected=false;
+        updateConnectionStatus('error','○ OFFLINE / LOCAL');
+        hideWorkspaceAuthGate();renderDatabaseConnectionSettings();
+        try{const x=JSON.parse(localStorage.getItem('JUAN_PROJECTS_LOCAL')||'[]');if(Array.isArray(x))state.projects=x}catch(_){ }
+        try{const x=JSON.parse(localStorage.getItem('JUAN_CLIENTS_LOCAL')||'[]');if(Array.isArray(x))state.clients=x}catch(_){ }
+        renderCurrentView();showToast('Database disconnected. Workspace is using local data.');
+      }
+
+      function continueWorkspaceOffline(){hideWorkspaceAuthGate();state.isConnected=false;updateConnectionStatus('error','○ OFFLINE / LOCAL');renderDatabaseConnectionSettings();renderCurrentView();}
 
       async function initWorkspace() {
         applyTheme(state.themeMode);
@@ -2404,14 +2383,16 @@ async function disconnectDatabase(){
         // One continuous Project ID sequence, starting at JP-001 with no exceptions.
         renumberProjectSequence();
         persistProjectsState();
-        // V1.3.3.2: Workspace always opens in local/offline mode first.
-        // Database access is now an explicit admin action from Settings → Database Connection.
+        // V1.3.3.2 manual database mode: open the Workspace immediately using
+        // cached/local records. Cloud access is opt-in from Settings → Database Connection.
         state.isConnected = false;
-        supabaseClient = null;
-        updateConnectionStatus("offline", "OFFLINE / LOCAL");
+        await initializeEnvironmentVariables();
         hideWorkspaceAuthGate();
-        populateDatabaseConnectionSettings();
+        updateConnectionStatus("error", "○ OFFLINE / LOCAL");
+        renderTemplatesDropdown();
         renderCurrentView();
+        setWorkspaceLoading(false);
+        setTimeout(()=>renderDatabaseConnectionSettings(),0);
       }
 
 
@@ -3204,8 +3185,9 @@ ${description}`))actionCallback();return;}
         if (msg) msg.textContent = message;
       }
 
-      function hideWorkspaceAuthGate() { document.getElementById("workspaceAuthGate")?.classList.remove("show"); }
-      function continueWorkspaceOffline(){ hideWorkspaceAuthGate(); state.isConnected=false; updateConnectionStatus('offline','OFFLINE / LOCAL'); renderCurrentView(); }
+      function hideWorkspaceAuthGate() {
+        document.getElementById("workspaceAuthGate")?.classList.remove("show");
+      }
 
       async function verifyWorkspaceAdmin() {
         if (!supabaseClient) return false;
@@ -3227,27 +3209,32 @@ ${description}`))actionCallback();return;}
         const email = document.getElementById("workspaceAuthEmail")?.value.trim();
         const password = document.getElementById("workspaceAuthPassword")?.value || "";
         const btn = document.getElementById("workspaceAuthSubmit");
-        if (!email || !password) {
-          showWorkspaceAuthGate("Enter the admin email and password.");
-          return;
-        }
+        if (!email || !password) { showWorkspaceAuthGate("Enter the admin email and password."); return; }
         if (!supabaseClient) {
-          showWorkspaceAuthGate("Connect the database manually in Settings → Database Connection first, then log in.");
-          return;
+          const {url,key}=databaseFieldValues();
+          if(!url||!key){showWorkspaceAuthGate("Connect the database from Settings first, or choose Continue Offline.");return;}
+          try{state.supabaseUrl=url;state.supabaseAnonKey=key;supabaseClient=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});}catch(e){showWorkspaceAuthGate(e?.message||"Could not prepare the database connection.");return;}
         }
         if (btn) { btn.disabled = true; btn.textContent = "Signing in…"; }
         try {
-          const {data:loginData,error:loginError}=await supabaseClient.auth.signInWithPassword({email,password});if(loginError||!loginData?.session)throw new Error('Email or password is incorrect.');
+          // Prefer the protected server login when deployment credentials are present.
+          // Manual mode falls back to Supabase Auth directly so the Workspace is not
+          // blocked by a missing /api/supabase-config deployment variable.
+          let signedIn=false;
+          try{
+            const loginRes=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+            const loginJson=await loginRes.json().catch(()=>({}));
+            if(loginRes.ok&&loginJson.access_token&&loginJson.refresh_token){const setRes=await supabaseClient.auth.setSession({access_token:loginJson.access_token,refresh_token:loginJson.refresh_token});if(setRes.error)throw setRes.error;signedIn=true;}
+          }catch(serverLoginError){console.warn('Server login unavailable; using direct Supabase Auth.',serverLoginError?.message||serverLoginError);}
+          if(!signedIn){const direct=await supabaseClient.auth.signInWithPassword({email,password});if(direct.error||!direct.data?.session)throw new Error('Email or password is incorrect.');}
           const allowed = await verifyWorkspaceAdmin();
-          if (!allowed) {
-            await supabaseClient.auth.signOut();
-            throw new Error("This account is not authorized for JUAN PROJECT Workspace.");
-          }
+          if (!allowed) { await supabaseClient.auth.signOut(); throw new Error("This account is not authorized for JUAN PROJECT Workspace."); }
           hideWorkspaceAuthGate();
           state.isConnected = true;
           updateConnectionStatus("connected", "● CONNECTED");
+          renderDatabaseConnectionSettings();
           await loadDatabaseData();
-          showToast("Workspace signed in securely.");
+          showToast("Connected to the shared database.");
         } catch (e) {
           showWorkspaceAuthGate(e?.message || "Could not sign in.");
         } finally {
@@ -3258,9 +3245,11 @@ ${description}`))actionCallback();return;}
       async function adminSignOut() {
         try { await supabaseClient?.auth.signOut(); } catch (_) {}
         state.isConnected = false;
-        updateConnectionStatus("offline", "OFFLINE / LOCAL");
-        hideWorkspaceAuthGate();populateDatabaseConnectionSettings();
-        showToast("Signed out of cloud data. Local Workspace remains available.");renderCurrentView();
+        updateConnectionStatus("error", "○ OFFLINE / LOCAL");
+        hideWorkspaceAuthGate();
+        renderDatabaseConnectionSettings('Signed out');
+        renderCurrentView();
+        showToast('Signed out of cloud data. Local Workspace remains available.');
       }
 
       async function initSupabase(skipGate = false) {
@@ -3335,9 +3324,12 @@ ${description}`))actionCallback();return;}
       function updateConnectionStatus(type, text) {
         const el = document.getElementById("connectionStatusIndicator");
         const txt = document.getElementById("statusText");
-        if (el && txt) { el.className = `connection-status status-${type}`; txt.innerText = text; }
-        const status=document.getElementById('databaseConnectionStatusText');if(status)status.textContent=state.isConnected?'Connected to Supabase':'Offline / Local';
-        const dot=document.getElementById('databaseConnectionDot');if(dot)dot.className=`database-status-dot ${state.isConnected?'connected':'offline'}`;
+        if (el && txt) {
+          el.className = `connection-status status-${type}`;
+          txt.innerText = text;
+        }
+        const banner=document.getElementById('workspaceLocalModeBanner');
+        if(banner)banner.classList.toggle('hidden',Boolean(state.isConnected));
       }
 
       async function loadDatabaseData() {
@@ -3479,6 +3471,7 @@ ${description}`))actionCallback();return;}
         if (state.activeView === "client-profile") renderClientProfile();
         if (state.activeView === "pricelist") renderPricelist();
         if (state.activeView === "online-portal") renderOnlinePortal();
+        if (state.activeView === "settings") renderDatabaseConnectionSettings();
       }
 
 
@@ -3911,20 +3904,27 @@ ${description}`))actionCallback();return;}
       function renderReportsView(){
         const box=document.getElementById('reportsContent');if(!box)return;
         try{
-          const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0},date=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d};
+          const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
+          const date=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d};
           const projects=(Array.isArray(state.projects)?state.projects:[]).filter(p=>p&&typeof p==='object'&&!p.deleted).map(p=>({...p,payments:Array.isArray(p.payments)?p.payments.filter(Boolean):[]}));
-          const payments=[];for(const p of projects)for(const x of p.payments)payments.push({...x,project_id:x?.project_id||p.id});
-          const total=projects.reduce((a,p)=>a+Math.max(0,num(p.total_amount)),0),collected=payments.reduce((a,p)=>a+Math.max(0,num(p.amount_paid??p.amount)),0),outstanding=Math.max(0,total-collected),now=new Date();
-          const month=payments.reduce((a,p)=>{const d=date(p.payment_date||p.created_at);return d&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()?a+Math.max(0,num(p.amount_paid??p.amount)):a},0);
-          const projectPaid=p=>(p.payments||[]).reduce((a,x)=>a+Math.max(0,num(x.amount_paid??x.amount)),0);
-          const statuses={paid:0,partial:0,unpaid:0,overdue:0};
-          projects.forEach(p=>{const paid=projectPaid(p),bal=Math.max(0,num(p.total_amount)-paid),due=date(p.payment_due_date||p.invoice_due_date||p.deadline_date);if(bal<=0&&num(p.total_amount)>0)statuses.paid++;else if(bal>0&&due&&due<now)statuses.overdue++;else if(paid>0)statuses.partial++;else statuses.unpaid++;});
-          const active=projects.filter(p=>!['completed','delivered','cancelled','archived'].includes(String(p.delivery_status||p.status||'').toLowerCase())).length,completed=projects.filter(p=>['completed','delivered'].includes(String(p.delivery_status||p.status||'').toLowerCase())).length,rate=total?Math.round(Math.min(100,collected/total*100)):0;
-          const months=new Map();payments.forEach(p=>{const d=date(p.payment_date||p.created_at);if(!d)return;const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;months.set(k,(months.get(k)||0)+Math.max(0,num(p.amount_paid??p.amount)));});const trend=[...months.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-6),max=Math.max(1,...trend.map(x=>x[1]));
-          const trendHtml=trend.length?trend.map(([k,v])=>{const d=date(`${k}-01T12:00:00`),label=d?d.toLocaleDateString('en-PH',{month:'short'}):k,pct=Math.max(3,Math.round(v/max*100));return `<div class="report-mini-row"><span>${escapeHtml(label)}</span><div class="report-mini-track"><i style="width:${pct}%"></i></div><strong>${formatCurrency(v)}</strong></div>`}).join(''):'<div class="empty-compact-state"><strong>No payment trend yet</strong><span>Accepted and recorded payments will appear here.</span></div>';
-          const recent=payments.map(p=>({...p,_d:date(p.payment_date||p.created_at)})).filter(p=>p._d).sort((a,b)=>b._d-a._d).slice(0,6),pmap=new Map(projects.map(p=>[String(p.id),p]));
-          box.innerHTML=`<div class="report-simple-kpis"><div><span>Total Receivables</span><strong>${formatCurrency(total)}</strong></div><div><span>Collected</span><strong>${formatCurrency(collected)}</strong></div><div><span>Outstanding</span><strong>${formatCurrency(outstanding)}</strong></div><div><span>This Month</span><strong>${formatCurrency(month)}</strong></div></div><div class="report-simple-grid"><section class="card report-simple-card"><div class="card-header"><div><h2 class="card-title">Revenue Trend</h2><p class="text-sm text-muted">Last six payment months</p></div></div><div class="report-mini-trend">${trendHtml}</div></section><section class="card report-simple-card"><div class="card-header"><h2 class="card-title">Payment Status</h2></div><div class="report-status-list"><div><span>Paid</span><strong>${statuses.paid}</strong></div><div><span>Partially Paid</span><strong>${statuses.partial}</strong></div><div><span>Unpaid</span><strong>${statuses.unpaid}</strong></div><div><span>Overdue</span><strong>${statuses.overdue}</strong></div></div><div class="report-health-line"><span>${active} active · ${completed} completed</span><strong>${rate}% collected</strong></div></section></div><section class="card report-recent-card"><div class="card-header"><div><h2 class="card-title">Recent Payments</h2><p class="text-sm text-muted">Latest recorded payments</p></div></div><div class="report-recent-list">${recent.map(x=>{const p=pmap.get(String(x.project_id));return `<div class="report-recent-row"><div><strong>${escapeHtml(p?.project_code||p?.id||'Project')}</strong><span>${escapeHtml(x.payment_method||x.method||'Payment')} · ${escapeHtml(x.reference_no||x.reference_number||'No reference')}</span></div><strong>${formatCurrency(x.amount_paid??x.amount)}</strong><span>${escapeHtml(x._d.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}))}</span></div>`}).join('')||'<div class="empty-compact-state"><strong>No payments recorded</strong><span>Payment records will appear here.</span></div>'}</div></section>`;
-        }catch(error){console.error('Reports render error:',error);box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>A record could not be summarized, but the rest of Workspace remains available.</span><div style="margin-top:12px"><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry Reports</button></div></div>`;}
+          const projectMap=new Map(projects.map(p=>[String(p.id),p]));
+          const payments=[];
+          for(const p of projects)for(const pay of p.payments)payments.push({...pay,project_id:pay?.project_id||p.id});
+          if(Array.isArray(state.payments))for(const pay of state.payments.filter(Boolean)){const pid=String(pay.id||'');if(!pid||!payments.some(x=>String(x.id||'')===pid))payments.push(pay)}
+          const paidByProject=new Map();for(const pay of payments){const id=String(pay.project_id||'');paidByProject.set(id,(paidByProject.get(id)||0)+Math.max(0,n(pay.amount_paid??pay.amount)))}
+          const totalReceivables=projects.reduce((t,p)=>t+Math.max(0,n(p.total_amount)),0),collected=payments.reduce((t,p)=>t+Math.max(0,n(p.amount_paid??p.amount)),0),outstanding=Math.max(0,totalReceivables-collected),now=new Date();
+          const thisMonthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+          const thisMonth=payments.reduce((t,p)=>{const d=date(p.payment_date||p.created_at);if(!d)return t;return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`===thisMonthKey?t+Math.max(0,n(p.amount_paid??p.amount)):t},0);
+          const statuses={Paid:0,'Partially Paid':0,Unpaid:0,Overdue:0};let active=0,completed=0;
+          for(const p of projects){const st=String(p.delivery_status||p.status||'').toLowerCase();if(['completed','delivered'].includes(st))completed++;else if(!['cancelled','archived'].includes(st))active++;const total=Math.max(0,n(p.total_amount)),paid=Math.max(0,paidByProject.get(String(p.id))||0),bal=Math.max(0,total-paid),due=date(p.payment_due_date||p.invoice_due_date||p.deadline_date);if(total>0&&bal<=0)statuses.Paid++;else if(bal>0&&due&&due<now)statuses.Overdue++;else if(paid>0)statuses['Partially Paid']++;else statuses.Unpaid++;}
+          const collectionRate=totalReceivables?Math.round(Math.min(100,Math.max(0,collected/totalReceivables*100))):0;
+          const months=new Map();for(const pay of payments){const d=date(pay.payment_date||pay.created_at);if(!d)continue;const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;months.set(key,(months.get(key)||0)+Math.max(0,n(pay.amount_paid??pay.amount)))}
+          const trend=[...months.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-6),maxTrend=Math.max(1,...trend.map(x=>x[1]));
+          const trendHtml=trend.length?trend.map(([key,value])=>{const d=date(`${key}-01T12:00:00`),label=d?d.toLocaleDateString('en-PH',{month:'short'}):key,pct=Math.max(4,Math.round(value/maxTrend*100));return `<div class="report-trend-line"><span>${escapeHtml(label)}</span><div><i style="width:${pct}%"></i></div><strong>${formatCurrency(value)}</strong></div>`}).join(''):`<div class="empty-compact-state"><strong>No payment trend yet</strong><span>Accepted payments will appear here.</span></div>`;
+          const recent=payments.map(pay=>({...pay,_date:date(pay.payment_date||pay.created_at)})).sort((a,b)=>(b._date?.getTime()||0)-(a._date?.getTime()||0)).slice(0,8);
+          const recentHtml=recent.map(pay=>{const p=projectMap.get(String(pay.project_id||''));return `<tr><td><strong>${escapeHtml(p?.project_code||p?.id||'—')}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}</td><td>${escapeHtml(pay.reference_no||pay.reference_number||'—')}</td><td><strong>${formatCurrency(Math.max(0,n(pay.amount_paid??pay.amount)))}</strong></td><td>${escapeHtml(pay._date?pay._date.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'—')}</td></tr>`}).join('')||'<tr><td colspan="5" class="text-center text-muted">No payments recorded yet.</td></tr>';
+          box.innerHTML=`<div class="report-kpi-grid report-kpi-grid-four report-safe-grid"><div class="kpi-card report-emphasis"><div class="kpi-label">Total Receivables</div><div class="kpi-value">${formatCurrency(totalReceivables)}</div></div><div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value">${formatCurrency(collected)}</div></div><div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value">${formatCurrency(outstanding)}</div></div><div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value">${formatCurrency(thisMonth)}</div></div></div><div class="reports-simple-grid"><section class="card"><div class="card-header"><div><div class="section-kicker">REVENUE</div><h2 class="card-title">Revenue Trend</h2></div></div><div class="report-trend-list">${trendHtml}</div></section><section class="card"><div class="card-header"><div><div class="section-kicker">PAYMENTS</div><h2 class="card-title">Payment Status</h2></div></div><div class="report-status-list"><div><span>Paid</span><strong>${statuses.Paid}</strong></div><div><span>Partially Paid</span><strong>${statuses['Partially Paid']}</strong></div><div><span>Unpaid</span><strong>${statuses.Unpaid}</strong></div><div><span>Overdue</span><strong>${statuses.Overdue}</strong></div></div></section></div><section class="card report-recent-payments"><div class="card-header"><div><div class="section-kicker">RECENT ACTIVITY</div><h2 class="card-title">Recent Payments</h2></div></div><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project</th><th>Method</th><th>Reference</th><th>Amount</th><th>Date</th></tr></thead><tbody>${recentHtml}</tbody></table></div></section><section class="card report-health-card"><div class="card-header"><div><div class="section-kicker">WORKSPACE</div><h2 class="card-title">Workspace Health</h2></div></div><div class="report-health-inline"><div><span>Active Projects</span><strong>${active}</strong></div><div><span>Completed / Delivered</span><strong>${completed}</strong></div><div><span>Collection Rate</span><strong>${collectionRate}%</strong></div><div><span>Records</span><strong>${projects.length}</strong></div></div></section>`;
+        }catch(error){console.error('Reports render error:',error);box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>Your records are still available. One older record could not be summarized safely.</span><div style="margin-top:12px"><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry</button></div></div>`;}
       }
       function retryReports(){ renderReportsView(); }
 
@@ -6342,8 +6342,8 @@ ${description}`))actionCallback();return;}
           const rawStatus=String(x.status||'pending').toLowerCase(),statusLabel=rawStatus==='approved'||rawStatus==='accepted'?'Accepted':rawStatus==='rejected'?'Rejected':'Pending',statusClass=statusLabel==='Accepted'?'portal-ok':statusLabel==='Rejected'?'portal-danger':'portal-warn',menuId=`paymentReviewMenu_${String(x.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
           const senderCode=escapeHtml(x.sender_institution||'others'),senderName=escapeHtml(x.payment_method||x.sender_institution||'—'),logo=portalInstitutionLogo(senderCode);
           const submittedDate=portalDate(x.submitted_at||x.created_at||x.payment_date);
-          const pending=statusLabel==='Pending';
-          return `<tr class="portal-payment-review-row"><td data-label="Project"><strong>${escapeHtml(p?.project_code||p?.id||"—")}</strong></td><td data-label="Amount"><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td data-label="Bank / E-Wallet"><div class="portal-bank-cell"><span class="portal-bank-logo"><img src="${escapeHtml(logo)}" alt=""></span><span>${senderName}</span></div></td><td data-label="Status"><span class="portal-status ${statusClass}">${statusLabel}</span></td><td data-label="Date Submitted" class="portal-payment-date">${escapeHtml(submittedDate)}</td><td class="table-row-actions" data-label=""><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Payment request actions">⋮</button><div class="popover-panel client-row-menu">${pending?`<button class="popover-action portal-payment-approve" data-id="${escapeHtml(x.id)}">Approve Request</button><button class="popover-action portal-payment-reject" data-id="${escapeHtml(x.id)}">Reject Request</button>`:''}<button class="popover-action portal-payment-delete text-danger" data-id="${escapeHtml(x.id)}" data-status="${escapeHtml(statusLabel)}">Delete Request</button></div></div></td></tr>`;
+          const decisionActions=statusLabel==='Pending'?`<button class="popover-action portal-payment-approve" data-id="${escapeHtml(x.id)}">Approve Request</button><button class="popover-action portal-payment-reject" data-id="${escapeHtml(x.id)}">Reject Request</button>`:'';
+          return `<tr class="portal-payment-review-row"><td data-label="Project"><strong>${escapeHtml(p?.project_code||p?.id||"—")}</strong></td><td data-label="Amount"><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td data-label="Bank / E-Wallet"><div class="portal-bank-cell"><span class="portal-bank-logo"><img src="${escapeHtml(logo)}" alt=""></span><span>${senderName}</span></div></td><td data-label="Status"><span class="portal-status ${statusClass}">${statusLabel}</span></td><td data-label="Date Submitted" class="portal-payment-date">${escapeHtml(submittedDate)}</td><td class="table-row-actions" data-label=""><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Payment review actions">⋮</button><div class="popover-panel client-row-menu">${decisionActions}<button class="popover-action portal-payment-delete text-danger" data-id="${escapeHtml(x.id)}" data-status="${escapeHtml(statusLabel)}">Delete Request</button></div></div></td></tr>`;
         }).join("")||`<tr><td colspan="6" class="text-center text-muted">No payment submissions.</td></tr>`;
 
         const activityRows=document.getElementById("onlinePortalActivityRows");
@@ -6369,27 +6369,38 @@ ${description}`))actionCallback();return;}
         bindOnlinePortalRows();
       }
 
-      function paymentSubmissionById(id){return (state.onlinePortalData?.submissions||[]).find(x=>String(x.id)===String(id))||null;}
+      function paymentReviewRecord(id){return (state.onlinePortalData?.submissions||[]).find(x=>String(x.id)===String(id))||null;}
+
       async function approvePortalPaymentRequest(id){
-        const submission=paymentSubmissionById(id);if(!submission){showToast('Payment request is not available yet.');return;}
-        showConfirmationDialog('Approve payment request?',`Approve ${portalMoney(submission.submitted_amount)}? The server will run all payment checks before recording it.`,'Approve',async()=>{
-          showActionStatus('Approving Payment','Running final verification and recording the payment…',false);
-          try{await onlinePortalRequest('POST',{action:'review-payment',id,decision:'accepted'});state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Accepted','The payment was recorded and the project balance was recalculated.',true);setTimeout(()=>closeModal('actionStatusModal'),1000);}
-          catch(e){closeModal('actionStatusModal');showToast(e.message||'This request could not be approved.');}
+        const submission=paymentReviewRecord(id);if(!submission){showToast('Payment request is no longer available.');return;}
+        const verification=submission.verification||{passed:false,checks:[]};
+        if(!verification.passed){const failed=(verification.checks||[]).filter(c=>!c.ok).map(c=>c.message||c.label).filter(Boolean);showToast(failed[0]||'This payment request needs attention before it can be approved.');return;}
+        showConfirmationDialog('Approve Payment Request',`Approve ${portalMoney(submission.submitted_amount)} and apply it to this project?`,'Approve Request',async()=>{
+          try{showActionStatus('Approving Payment','Running final verification and updating the project balance…',false);await onlinePortalRequest('POST',{action:'review-payment',id,decision:'accepted'});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Accepted','The payment was recorded and the project balance was recalculated.',true);setTimeout(()=>closeModal('actionStatusModal'),950);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not approve this payment request.');}
         });
       }
-      function openPortalPaymentReject(id){
-        const submission=paymentSubmissionById(id);if(!submission){showToast('Payment request is not available yet.');return;}
-        state.portalPaymentReviewId=id;const data=state.onlinePortalData||{},opts=document.getElementById('paymentRejectQuickOptions');
-        if(opts)opts.innerHTML=(data.rejectionReasons||[]).map(r=>`<option value="${escapeHtml(r.code)}" label="${escapeHtml(r.label)}"></option>`).join('');
-        const reason=document.getElementById('paymentRejectQuickReason'),note=document.getElementById('paymentRejectQuickNote');if(reason)reason.value='';if(note)note.value='';document.getElementById('paymentRejectQuickValidation')?.classList.add('hidden');openModal('paymentRejectQuickModal');
+
+      function openRejectPaymentRequest(id){
+        const submission=paymentReviewRecord(id);if(!submission){showToast('Payment request is no longer available.');return;}
+        state.portalPaymentReviewId=id;
+        const reasons=state.onlinePortalData?.rejectionReasons||[];
+        const list=document.getElementById('quickRejectReasonOptions');if(list)list.innerHTML=reasons.map(r=>`<option value="${escapeHtml(r.code)}" label="${escapeHtml(r.label)}"></option>`).join('');
+        const reason=document.getElementById('quickRejectReason');if(reason)reason.value='';
+        const note=document.getElementById('quickRejectNote');if(note)note.value='';
+        const validation=document.getElementById('quickRejectValidation');if(validation){validation.textContent='';validation.classList.add('hidden');}
+        const amount=document.getElementById('quickRejectAmount');if(amount)amount.textContent=portalMoney(submission.submitted_amount);
+        openModal('portalPaymentRejectModal');
       }
-      async function submitPortalPaymentReject(){
-        const id=state.portalPaymentReviewId,reason=document.getElementById('paymentRejectQuickReason'),note=document.getElementById('paymentRejectQuickNote');if(!id)return;
-        if(!reason?.value){document.getElementById('paymentRejectQuickValidation')?.classList.remove('hidden');reason?.focus();return;}
-        closeModal('paymentRejectQuickModal');showActionStatus('Rejecting Payment','Saving the reason for the client…',false);
-        try{await onlinePortalRequest('POST',{action:'review-payment',id,decision:'rejected',reasonCode:reason.value,adminNote:note?.value||''});state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Rejected','The rejection reason was saved for the client.',true);setTimeout(()=>closeModal('actionStatusModal'),1000);}
-        catch(e){closeModal('actionStatusModal');showToast(e.message||'Payment request could not be rejected.');}
+
+      async function confirmRejectPaymentRequest(){
+        const id=state.portalPaymentReviewId,reason=document.getElementById('quickRejectReason'),note=document.getElementById('quickRejectNote'),validation=document.getElementById('quickRejectValidation');
+        if(!id)return;if(!reason?.value){if(validation){validation.textContent='Select a rejection reason.';validation.classList.remove('hidden');}reason?.focus();return;}
+        try{showActionStatus('Rejecting Payment','Saving the reason for the client…',false);await onlinePortalRequest('POST',{action:'review-payment',id,decision:'rejected',reasonCode:reason.value,adminNote:note?.value||''});closeModal('portalPaymentRejectModal');closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Rejected','The rejection reason was saved for the client.',true);setTimeout(()=>closeModal('actionStatusModal'),950);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not reject this payment request.');}
+      }
+
+      function deletePortalPaymentRequest(id,status='Pending'){
+        const warning=status==='Accepted'?' The accepted payment remains in Payment History and project totals are not reversed.':'';
+        showConfirmationDialog('Delete Payment Request',`Delete this ${String(status).toLowerCase()} request?${warning}`,'Delete Request',async()=>{try{showActionStatus('Deleting Request','Removing the payment request…',false);await onlinePortalRequest('POST',{action:'delete-payment-review',id});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Request Deleted','The payment request was removed.',true);setTimeout(()=>closeModal('actionStatusModal'),900)}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not delete payment request.')}});
       }
 
       function bindOnlinePortalRows(){
@@ -6399,9 +6410,9 @@ ${description}`))actionCallback();return;}
           const msg=btn.dataset.action==="reset-client-temporary-password"?"Temporary password reset to the current Client ID.":btn.dataset.action==="set-client-access"?"Client portal access updated.":"Client portal account updated.";
           runOnlinePortalAction(body,msg,true);
         });
-        document.querySelectorAll('.portal-payment-approve').forEach(btn=>btn.onclick=e=>{e.stopPropagation();approvePortalPaymentRequest(btn.dataset.id)});
-        document.querySelectorAll('.portal-payment-reject').forEach(btn=>btn.onclick=e=>{e.stopPropagation();openPortalPaymentReject(btn.dataset.id)});
-        document.querySelectorAll('.portal-payment-delete').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.id,status=btn.dataset.status||'Pending';const warning=status==='Accepted'?' The accepted payment remains in Payment History and project totals are not reversed.':'';showConfirmationDialog('Delete Payment Review',`Delete this ${status.toLowerCase()} payment review?${warning}`,'Delete Review',async()=>{try{showActionStatus('Deleting Review','Removing the review record…',false);await onlinePortalRequest('POST',{action:'delete-payment-review',id});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Review Deleted','The payment review was removed.',true);setTimeout(()=>closeModal('actionStatusModal'),900)}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not delete payment review.')}})});
+        document.querySelectorAll('.portal-payment-approve').forEach(btn=>btn.onclick=()=>approvePortalPaymentRequest(btn.dataset.id));
+        document.querySelectorAll('.portal-payment-reject').forEach(btn=>btn.onclick=()=>openRejectPaymentRequest(btn.dataset.id));
+        document.querySelectorAll('.portal-payment-delete').forEach(btn=>btn.onclick=()=>deletePortalPaymentRequest(btn.dataset.id,btn.dataset.status||'Pending'));
         document.querySelectorAll(".portal-drive-save").forEach(btn=>btn.onclick=()=>{
           const project=CSS.escape(btn.dataset.project),input=document.querySelector(`.portal-drive-input[data-project="${project}"]`),unlock=document.querySelector(`.portal-drive-unlock[data-project="${project}"]`),expires=document.querySelector(`.portal-drive-expires[data-project="${project}"]`);
           runOnlinePortalAction({action:"save-project-drive-link",projectId:btn.dataset.project,url:input?.value||"",unlockAt:unlock?.value||null,expiresAt:expires?.value||null},"Project Drive access saved.",true);
@@ -6434,12 +6445,6 @@ ${description}`))actionCallback();return;}
 
       return {
         initWorkspace,
-        loadDeployedDatabaseConfig,
-        testDatabaseConnection,
-        connectDatabase,
-        disconnectDatabase,
-        continueWorkspaceOffline,
-        submitPortalPaymentReject,
         navigateTo,
         setThemeMode,
         setColorfulMode,
@@ -6491,6 +6496,10 @@ ${description}`))actionCallback();return;}
         addCustomProductToCart,
         renderPricelist,
         renderOnlinePortal,
+        approvePortalPaymentRequest,
+        openRejectPaymentRequest,
+        confirmRejectPaymentRequest,
+        deletePortalPaymentRequest,
         setOnlinePortalTab,
         loadOnlinePortalData,
         switchPricelistTab,
@@ -6584,7 +6593,11 @@ ${description}`))actionCallback();return;}
         assistantQuick,
         sendAssistantMessage,
         adminSignIn,
-        adminSignOut
+        adminSignOut,
+        testDatabaseConnection,
+        connectDatabase,
+        disconnectDatabase,
+        continueWorkspaceOffline
       };
     })();
     // V1.3.1 hotfix: expose the Workspace controller for touch/mobile navigation modules.
@@ -6755,19 +6768,18 @@ ${description}`))actionCallback();return;}
 @media(max-width:720px){.project-batch-custom-grid{grid-template-columns:1fr 76px 110px}.project-batch-custom-grid .btn{grid-column:1/-1}.project-batch-summary{justify-content:space-between}.project-batch-choice{grid-template-columns:24px minmax(0,1fr)}.project-batch-choice em{display:none}.project-overall-progress{padding:13px 14px}}
 </style>
 
-
-<style>
-/* V1.3.3.2 manual database + simplified reports/payment reviews */
-.connection-status.status-offline{color:var(--text-tertiary)}.database-connection-card{grid-column:1/-1}.database-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.database-status-pill{display:inline-flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border-subtle);border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}.database-status-dot{width:8px;height:8px;border-radius:50%;background:#9a9aa0}.database-status-dot.connected{background:var(--status-green)}.database-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.database-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}.database-actions-spacer{flex:1}.database-connection-message{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--bg-subtle);font-size:12px;color:var(--text-secondary)}.database-connection-message[data-state="success"]{background:rgba(52,199,89,.08);color:#18743a}.database-connection-message[data-state="error"]{background:rgba(255,59,48,.08);color:#b42318}.database-connection-message[data-state="working"]{background:rgba(0,122,255,.07);color:#245d9c}.workspace-auth-card .workspace-auth-offline{background:#fff!important;border:1px solid rgba(0,0,0,.12)!important;color:#3a3a3c!important;margin-top:8px!important}.payment-reject-quick-modal{max-width:520px}.portal-payment-review-table-wrap{overflow:visible!important}.portal-payment-review-table{table-layout:fixed;width:100%}.portal-payment-review-table th:nth-child(1){width:18%}.portal-payment-review-table th:nth-child(2){width:16%}.portal-payment-review-table th:nth-child(3){width:24%}.portal-payment-review-table th:nth-child(4){width:16%}.portal-payment-review-table th:nth-child(5){width:20%}.portal-payment-review-table th:last-child{width:42px}.report-simple-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.report-simple-kpis>div{padding:16px 18px;border:1px solid var(--border-subtle);border-radius:14px;background:var(--bg-card)}.report-simple-kpis span{display:block;font-size:11px;color:var(--text-tertiary);font-weight:650}.report-simple-kpis strong{display:block;font-size:22px;margin-top:7px;letter-spacing:-.025em}.report-simple-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,.65fr);gap:16px}.report-simple-card{min-height:0}.report-mini-trend{display:grid;gap:10px;margin-top:8px}.report-mini-row{display:grid;grid-template-columns:44px minmax(80px,1fr) 110px;gap:10px;align-items:center;font-size:12px}.report-mini-row>span{color:var(--text-secondary)}.report-mini-row>strong{text-align:right}.report-mini-track{height:6px;border-radius:999px;background:var(--bg-subtle);overflow:hidden}.report-mini-track i{display:block;height:100%;background:var(--primary-mint-dark);border-radius:inherit}.report-status-list{display:grid}.report-status-list>div{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--border-subtle);font-size:13px}.report-status-list>div:last-child{border-bottom:0}.report-health-line{display:flex;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-subtle);font-size:11px;color:var(--text-secondary)}.report-recent-card{margin-top:16px}.report-recent-list{display:grid}.report-recent-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 115px;gap:16px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border-subtle);font-size:12px}.report-recent-row:last-child{border-bottom:0}.report-recent-row>div{min-width:0}.report-recent-row>div strong,.report-recent-row>div span{display:block}.report-recent-row>div span{color:var(--text-tertiary);font-size:10px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.report-recent-row>span{text-align:right;color:var(--text-secondary)}
-@media(max-width:900px){.database-fields{grid-template-columns:1fr}.report-simple-kpis{grid-template-columns:1fr 1fr}.report-simple-grid{grid-template-columns:1fr}.portal-payment-review-table{table-layout:auto}.portal-payment-review-table th:nth-child(n){width:auto}.report-recent-row{grid-template-columns:minmax(0,1fr) auto}.report-recent-row>span{grid-column:1/-1;text-align:left}.database-card-head{flex-direction:column}}
-@media(max-width:560px){.report-simple-kpis{grid-template-columns:1fr}.report-mini-row{grid-template-columns:38px minmax(60px,1fr) 92px}.database-actions .btn{flex:1 1 calc(50% - 8px)}}
-</style>
 <style>
   .workspace-auth-gate{position:fixed;inset:0;z-index:99999;background:rgba(245,245,247,.96);backdrop-filter:blur(14px);display:none;align-items:center;justify-content:center;padding:24px}
   .workspace-auth-gate.show{display:flex}
   .workspace-auth-card{width:min(420px,100%);background:#fff;border:1px solid rgba(0,0,0,.10);border-radius:24px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.08)}
   .workspace-auth-brand{font-size:13px;font-weight:800;letter-spacing:.08em;margin-bottom:22px}.workspace-auth-card h2{margin:0 0 7px;font-size:28px}.workspace-auth-card p{color:#6e6e73;margin:0 0 22px;line-height:1.5}
   .workspace-auth-card label{display:block;font-size:12px;font-weight:700;margin:13px 0 7px}.workspace-auth-card input{width:100%;height:46px;border:1px solid rgba(0,0,0,.13);border-radius:12px;padding:0 13px;font:inherit;box-sizing:border-box}.workspace-auth-card button{width:100%;height:46px;border:0;border-radius:12px;margin-top:18px;background:#2cf39e;color:#10261d;font-weight:800;cursor:pointer}.workspace-auth-card button:disabled{opacity:.6}.workspace-auth-foot{font-size:11px!important;margin-top:14px!important}
+</style>
+
+<style>
+.manual-db-card{display:grid;gap:18px}.manual-db-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.manual-db-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.manual-db-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.manual-db-status{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:750;background:var(--bg-subtle);color:var(--text-secondary)}.manual-db-status>span{width:8px;height:8px;border-radius:50%;background:#9ca3af}.manual-db-status.connected{background:var(--mint-light-bg);color:var(--primary-mint-dark)}.manual-db-status.connected>span{background:var(--primary-mint-dark)}.manual-db-status.offline>span{background:var(--status-orange)}
+.workspace-auth-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:18px}.workspace-auth-actions button{margin-top:0}.workspace-auth-actions .workspace-offline-btn{background:#fff;color:#444;border:1px solid rgba(0,0,0,.12)}
+@media(max-width:720px){.manual-db-head{flex-direction:column}.manual-db-fields{grid-template-columns:1fr}.manual-db-actions .btn{min-height:44px}.manual-db-status{align-self:flex-start}}
 </style>
 <div id="workspaceAuthGate" class="workspace-auth-gate" role="dialog" aria-modal="true" aria-labelledby="workspaceAuthTitle">
   <div class="workspace-auth-card">
@@ -6778,9 +6790,8 @@ ${description}`))actionCallback();return;}
     <input id="workspaceAuthEmail" type="email" autocomplete="username" placeholder="admin@example.com">
     <label for="workspaceAuthPassword">Password</label>
     <div class="workspace-password-wrap"><input id="workspaceAuthPassword" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')app.adminSignIn()"><button type="button" class="workspace-pass-toggle" aria-label="Show password" onclick="const p=document.getElementById('workspaceAuthPassword');p.type=p.type==='password'?'text':'password'">Show</button></div>
-    <button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Log In</button>
-    <button class="workspace-auth-offline" type="button" onclick="app.continueWorkspaceOffline()">Continue Offline</button>
-    <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth and database policies. You can continue using cached/local data without connecting.</p>
+    <div class="workspace-auth-actions"><button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Log In</button><button class="workspace-offline-btn" type="button" onclick="app.continueWorkspaceOffline()">Continue Offline</button></div>
+    <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth and database policies. You can continue using cached/local Workspace data without connecting.</p>
   </div>
 </div>
 

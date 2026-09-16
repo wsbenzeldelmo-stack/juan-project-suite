@@ -1,11 +1,21 @@
-# V1.3.3.2
+# JUAN PROJECT Platform V1.3.3.2
 
-- Manual-only Workspace database connection; no automatic Supabase connection on startup.
-- Workspace always opens with local/cached data and remains usable offline.
-- Database settings include URL, publishable key, Test Connection, Connect, Disconnect, and optional Load Deployed Config.
-- Simplified, crash-isolated Reports view.
-- Payment Reviews no longer use the large review modal; the ⋮ menu now provides Approve Request, Reject Request, and Delete Request.
-- JUAN PROJECT Online renders immediately: first visit → onboarding → guest mode; returning guests see Guest Home; remembered authenticated sessions upgrade to the client portal.
-- Portal-load failure offers Try Again / Browse as Guest / Log Out.
-- Only balance reminders appear as dismissible client popups.
-- Service worker cache bumped to V1.3.3.2.
+## Workspace
+- Removed automatic database connection at startup.
+- Workspace remains usable with local/cached records even when Supabase is disconnected.
+- Added manual Supabase URL + Publishable Key connection controls in Settings.
+- Added local-mode banner and explicit connection states.
+- Simplified and hardened Reports rendering.
+- Payment Reviews now use direct `⋮` actions: Approve Request, Reject Request, Delete Request.
+
+## JUAN PROJECT Online
+- Fixed blank/white startup by rendering onboarding or Guest Mode before network hydration.
+- Restored missing Home/Guest Home route.
+- First open: onboarding → Guest Mode → Log In only when needed.
+- Added client-portal load recovery screen.
+- Balance reminder is the only automatic client popup and is dismissible.
+- Fixed invoice `JUAN PROJECT` branding clipping.
+- Bumped service-worker cache to force fresh assets.
+
+## Database
+No new migration in this release.
