@@ -95,12 +95,20 @@ async function synchronizeClientMaster(svc){
     if(!expected)continue;
     const portal=snapshot.portalByClient.get(String(row.id));
     const auth=(portal&&snapshot.authById.get(portal.auth_user_id))||snapshot.authByEmail.get(email)||null;
-    if(auth?.user_metadata?.juan_master_login_version===CLIENT_MASTER_VERSION){
-      results.push({client_code:expected,status:'current'});
-      continue;
-    }
     const client={...row,client_code:expected};
     try{
+      // A matching Auth user is not enough: every active master client must also have
+      // a portal_accounts row. Repair Auth Not Linked automatically without changing
+      // an existing user's password. If no Auth user exists, create one using Client ID
+      // as the temporary password (for example CL-012 / ramosdenmar03@gmail.com).
+      if(!portal){
+        results.push({client_code:expected,...await provisionOneClient(svc,client,snapshot,{refreshTemporary:false})});
+        continue;
+      }
+      if(auth?.user_metadata?.juan_master_login_version===CLIENT_MASTER_VERSION){
+        results.push({client_code:expected,status:'current'});
+        continue;
+      }
       results.push({client_code:expected,...await rebootOneClientLogin(svc,client,snapshot,{masterVersion:CLIENT_MASTER_VERSION})});
     }catch(error){
       results.push({client_code:expected,status:'error',message:error?.message||'Client portal initialization failed.'});

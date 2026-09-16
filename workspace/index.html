@@ -1091,19 +1091,9 @@
     <!-- MAIN VIEW CONTAINER -->
     <main class="main-content">
       <div id="workspaceLoadingSkeleton" class="workspace-loading-shell hidden" aria-live="polite" aria-busy="true" aria-label="Loading JUAN PROJECT Workspace">
-        <div class="workspace-skeleton-layout">
-          <aside class="workspace-skeleton-sidebar" aria-hidden="true">
-            <div class="workspace-skeleton-brand"><img src="/assets/brand/juan-project-workspace-master.png" alt="JUAN PROJECT Workspace"></div>
-            <div class="skeleton-bar skel w-70"></div><div class="skeleton-bar skel w-88"></div><div class="skeleton-bar skel w-76"></div><div class="skeleton-bar skel w-82"></div><div class="skeleton-bar skel w-64"></div>
-            <div class="workspace-skeleton-side-spacer"></div>
-            <div class="skeleton-bar skel w-72"></div><div class="skeleton-bar skel w-58"></div>
-          </aside>
-          <section class="workspace-skeleton-main" aria-hidden="true">
-            <div class="workspace-skeleton-head"><div><div class="skeleton-line skel w-46"></div><div class="skeleton-line thin skel w-30"></div></div><div class="skeleton-pill skel"></div></div>
-            <div class="workspace-skeleton-stats"><div class="skeleton-stat"><div class="skeleton-line thin skel w-45"></div><div class="skeleton-value skel"></div></div><div class="skeleton-stat"><div class="skeleton-line thin skel w-52"></div><div class="skeleton-value skel"></div></div><div class="skeleton-stat"><div class="skeleton-line thin skel w-42"></div><div class="skeleton-value skel"></div></div><div class="skeleton-stat"><div class="skeleton-line thin skel w-48"></div><div class="skeleton-value skel"></div></div></div>
-            <div class="workspace-skeleton-grid"><div class="skeleton-panel"><div class="skeleton-line skel w-34"></div><div class="skeleton-chart skel"></div></div><div class="skeleton-panel"><div class="skeleton-line skel w-40"></div><div class="skeleton-list-row"><i class="skel"></i><span class="skel"></span></div><div class="skeleton-list-row"><i class="skel"></i><span class="skel"></span></div><div class="skeleton-list-row"><i class="skel"></i><span class="skel"></span></div></div></div>
-            <div class="skeleton-table-card"><div class="skeleton-line skel w-26"></div><div class="skeleton-table-head skel"></div><div class="skeleton-table-row"><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div><div class="skeleton-table-row"><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div><div class="skeleton-table-row"><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div></div>
-          </section>
+        <div class="workspace-loading-tab">
+          <span class="workspace-loading-spinner" aria-hidden="true"></span>
+          <div class="workspace-loading-copy"><strong>Loading Workspace</strong><small>Syncing your projects and account data…</small></div>
         </div>
       </div>
 
@@ -1630,7 +1620,7 @@
           <button type="button" data-portal-tab="payments">Payment Reviews</button>
           <button type="button" data-portal-tab="settings">Portal Configuration</button>
         </div>
-        <div id="onlinePortalLoading" class="card portal-loading portal-loading-skeleton hidden" aria-busy="true" aria-label="Loading Online Portal"><div class="portal-skeleton-toolbar"><span class="skel"></span><span class="skel"></span></div><div class="portal-skeleton-summary"><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i></div><div class="portal-skeleton-table"><b class="skel"></b><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div></div>
+        <div id="onlinePortalLoading" class="card portal-loading hidden" aria-busy="true" aria-label="Loading Online Portal"><span class="portal-loading-spinner" aria-hidden="true"></span><div><strong>Loading Online Portal</strong><small>Syncing client access and payments…</small></div></div>
         <div id="onlinePortalError" class="card portal-error hidden"></div>
         <div id="onlinePortalAccountsPanel" class="portal-panel">
           <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
@@ -3251,7 +3241,8 @@
       function setWorkspaceLoading(loading) {
         const shell=document.getElementById('workspaceLoadingSkeleton');
         if(shell)shell.classList.toggle('hidden',!loading);
-        document.querySelectorAll('.main-content > .view').forEach(v=>{if(loading)v.classList.add('workspace-loading-hidden');else v.classList.remove('workspace-loading-hidden')});
+        // Keep the current view visible. Loading is a small non-blocking status tab only.
+        document.querySelectorAll('.main-content > .view').forEach(v=>v.classList.remove('workspace-loading-hidden'));
       }
 
       // PROFILE PICTURE CROPPING WORKFLOW
@@ -7427,6 +7418,7 @@ ${description}`))actionCallback();return;}
 .invoice-brand-img{display:block;width:220px;max-width:100%;height:auto;object-fit:contain;object-position:left center;overflow:visible}.invoice-header>div:first-child{min-width:0;overflow:visible}
 </style>
 <datalist id="juanEmailDomainSuggestions"></datalist>
+
 </body>
 </html>
 <style id="v111-maintenance-patch">
@@ -7460,3 +7452,19 @@ ${description}`))actionCallback();return;}
 @media(max-width:900px){.workspace-skeleton-layout{grid-template-columns:1fr}.workspace-skeleton-sidebar{display:none}.workspace-skeleton-main{padding:20px}.workspace-skeleton-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-skeleton-grid{grid-template-columns:1fr}.portal-skeleton-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.skel:after{animation:none;display:none}}
 </style>
+<style id="v1332-old-table-loader-restore">
+/* Restore natural column sizing: content determines width; no forced percentage grid. */
+.clients-table,.projects-table,#view-payments .unified-table,.payment-history-table,.invoice-table,.portal-client-access-table,.portal-payment-review-table{table-layout:auto!important;width:100%!important;min-width:0!important}
+.clients-table th,.clients-table td,.projects-table th,.projects-table td,#view-payments .unified-table th,#view-payments .unified-table td,.payment-history-table th,.payment-history-table td,.invoice-table th,.invoice-table td,.portal-client-access-table th,.portal-client-access-table td,.portal-payment-review-table th,.portal-payment-review-table td{width:auto!important;min-width:0!important;max-width:none!important}
+.clients-table th,.projects-table th,#view-payments .unified-table th,.payment-history-table th,.invoice-table th,.portal-client-access-table th,.portal-payment-review-table th{white-space:nowrap!important}
+.clients-table .table-actions-col,.clients-table td:last-child,.projects-table .table-actions-col,.payment-history-table .table-actions-col,.payment-history-table td:last-child,.portal-client-access-table th:last-child,.portal-client-access-table td:last-child,.portal-payment-review-table th:last-child,.portal-payment-review-table td:last-child{width:1%!important;white-space:nowrap!important}
+.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){width:1%!important;white-space:nowrap!important;text-align:right!important}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3){width:1%!important;white-space:nowrap!important;text-align:right!important}
+/* Loading uses an inline status tab and never blocks or hides the current view. */
+.workspace-loading-shell{position:static!important;inset:auto!important;z-index:auto!important;display:block!important;padding:0!important;margin:0 0 14px!important;background:transparent!important;backdrop-filter:none!important;overflow:visible!important}
+.workspace-loading-shell.hidden{display:none!important}.workspace-loading-tab{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:14px}.workspace-loading-spinner,.portal-loading-spinner{width:20px;height:20px;border:3px solid rgba(25,186,117,.18);border-top-color:var(--primary-mint-dark);border-radius:50%;animation:jpCompactLoadingSpin .8s linear infinite;flex:0 0 20px}.workspace-loading-copy,.portal-loading>div{display:grid;gap:3px}.workspace-loading-copy strong,.portal-loading strong{font-size:12px;color:var(--text-primary)}.workspace-loading-copy small,.portal-loading small{font-size:10px;color:var(--text-tertiary)}
+.portal-loading{display:flex!important;align-items:center!important;gap:12px!important;padding:14px 16px!important;margin-bottom:14px!important;background:var(--bg-card)!important;border:1px solid var(--border-subtle)!important;border-radius:14px!important}.portal-loading.hidden{display:none!important}
+.workspace-skeleton-layout,.portal-loading-skeleton{display:none!important}
+@keyframes jpCompactLoadingSpin{to{transform:rotate(360deg)}}
+@media(max-width:760px){.clients-table,.projects-table,#view-payments .unified-table,.payment-history-table,.invoice-table,.portal-client-access-table,.portal-payment-review-table{table-layout:auto!important}.table-responsive{overflow-x:auto!important;overflow-y:visible!important}.portal-payment-review-table{display:table!important}.portal-payment-review-table thead{display:table-header-group!important}.portal-payment-review-table tbody{display:table-row-group!important}.portal-payment-review-table tr{display:table-row!important}.portal-payment-review-table th,.portal-payment-review-table td{display:table-cell!important}.portal-payment-review-table td:before{display:none!important}}
+</style>
+
