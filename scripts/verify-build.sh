@@ -65,10 +65,10 @@ checks={
  'Reject Request':'Reject Request action missing',
  'Delete Request':'Delete Request action missing',
  'paymentRejectQuickModal':'Compact rejection dialog missing',
- 'Sync Client Accounts':'Client account sync action missing',
- 'Reboot Client Logins':'Client login reboot action missing',
- 'Initial portal password = Client ID':'Client ID password guidance missing',
+ 'CLIENT_MASTER_VERSION':'Client master version missing',
  'CLIENT_ID_BY_EMAIL':'Authoritative Client ID mapping missing from local Workspace',
+ 'setReportsRange':'Reports timeline selector logic missing',
+ 'This Month</option><option value="last-month">Last Month':'Reports timeline options missing',
  'CLIENT_ID_FLOOR = 46':'Client ID historical floor missing',
  'nextLocalClientCode':'Local next Client ID allocator missing',
  'findLocalClientByEmail':'Duplicate-email local identity lookup missing',
@@ -77,6 +77,8 @@ checks={
 }
 for token,msg in checks.items():
     if token not in src: raise SystemExit(msg)
+for forbidden in ('Sync Client Accounts','Reboot Client Logins','Initial portal password = Client ID'):
+    if forbidden in src: raise SystemExit(f'Removed client-account UI remains: {forbidden}')
 if re.search(r'id=["\']manualSupabase(?:Key|Url)["\']',src,re.I) or 'Publishable Key' in src or '<label class="form-label">Supabase URL</label>' in src:
     raise SystemExit('Database credentials are still displayed in Workspace Settings')
 # Offline action must clear in-memory database client.
@@ -104,7 +106,6 @@ checks={
  'Continue as Guest':'Guest-mode continuation missing',
  'Browse as Guest':'Portal-load Guest fallback missing',
  "We couldn't load your portal.":'Friendly portal-load error missing',
- 'Your initial password is your Client ID':'Client ID initial-password copy missing',
  'Make a Payment':'Balance reminder missing',
  'remaining balance':'Balance reminder amount label missing',
  '/assets/onboarding/onboarding-1.png':'Onboarding slide 1 missing',
@@ -113,6 +114,10 @@ checks={
 }
 for token,msg in checks.items():
     if token not in app: raise SystemExit(msg)
+if 'Your initial password is your Client ID' in app or 'Initial portal password = Client ID' in app:
+    raise SystemExit('Initial-password guidance is still displayed in Online UI')
+if 'invoice-brand-wordmark' not in app:
+    raise SystemExit('Plain JUAN PROJECT invoice wordmark missing')
 if 'Thank you for working with JUAN PROJECT' in app:
     raise SystemExit('Automatic completion thank-you popup should not be active in this release')
 if 'defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js' not in html:
@@ -147,8 +152,8 @@ import sys
 sql=Path(sys.argv[1]).read_text(); api=Path(sys.argv[2]).read_text()
 for token in ('greatest(','46,','max((substring(client_code','enforce_juan_client_email_identity','juan-project-client-email:','23505'):
     if token not in sql: raise SystemExit(f'Migration 013 missing {token}')
-for token in ('reboot-client-logins','rebootOneClientLogin','password:client.client_code','password_set:false','must_change_password:true'):
-    if token not in api: raise SystemExit(f'Admin portal reboot flow missing {token}')
+for token in ('CLIENT_MASTER_VERSION','CLIENT_MASTER_BY_EMAIL','synchronizeClientMaster','juan_master_login_version','password:client.client_code','password_set:false','must_change_password:true'):
+    if token not in api: raise SystemExit(f'Client master portal flow missing {token}')
 if ".ilike('email',email).is('archived_at',null)" in api:
     raise SystemExit('Admin reconcile still ignores archived lifetime client identities')
 PY
@@ -156,8 +161,8 @@ PY
 # Confirm bank/e-wallet support and service-worker cache bump.
 grep -q "code:'gotyme'" "$ROOT/online/js/payment-institutions.js" || { echo 'GoTyme missing'; exit 1; }
 grep -q "code:'maribank'" "$ROOT/online/js/payment-institutions.js" || { echo 'MariBank missing'; exit 1; }
-grep -q "juan-online-v1.3.3.2-npw2" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
-grep -q "juan-workspace-v1.3.3.2-npw2" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
+grep -q "juan-online-v1.3.3.2-client-master-ui1" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
+grep -q "juan-workspace-v1.3.3.2-client-master-ui1" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
 
 # Preserve the supplied UnionBank QR bytes.
 EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"
@@ -166,4 +171,4 @@ ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg
 
 if grep -Rqi 'Gemini' "$ROOT/online/js" "$ROOT/online/api"; then echo 'Gemini payment language remains'; exit 1; fi
 
-echo 'JUAN PROJECT Platform V1.3.3.2 NPW verification passed.'
+echo 'JUAN PROJECT Platform V1.3.3.2 Client Master UI patch verification passed.'

@@ -17,6 +17,11 @@ function normEmail(value){return String(value||'').trim().toLowerCase()}
 function validEmail(value){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||'').trim())}
 function validDrive(value){return !value || /^https:\/\/(drive|docs)\.google\.com\//i.test(String(value).trim())}
 
+// Imported from JUAN_PROJECT_Client_ID_Mapping_UPDATED(5).xlsx. The sheet contains
+// authoritative Client ID + email identities; existing database names are preserved.
+const CLIENT_MASTER_VERSION='client-master-2026-09-16-v1';
+const CLIENT_MASTER_BY_EMAIL={"imahemultimediaproductions@gmail.com":"CL-001","yvonnemaedelgado@gmail.com":"CL-002","trishakayemesana@gmail.com":"CL-003","dkian032@gmail.com":"CL-004","dalumpinesmargaret@gmail.com":"CL-005","ws.benzeldelmo@gmail.com":"CL-006","ardienjamesgais@gmail.com":"CL-007","kztksem88@gmail.com":"CL-008","oliver.villaruel@deped.gov.ph":"CL-009","dimaanolorraine37@gmail.com":"CL-010","janellerinn@gmail.com":"CL-011","ramosdenmar03@gmail.com":"CL-012","nikkazara29@gmail.com":"CL-013","mamadoaalexanderissaiah@gmail.com":"CL-014","earljohnmapa12@gmail.com":"CL-015","annefelicityrufo1@gmail.com":"CL-016","sosadanica07@gmail.com":"CL-017","ashleymaeramos001@gmail.com":"CL-018","leisoriano25@gmail.com":"CL-019","bacalaaj@gmail.com":"CL-020","calmorinjareen@gmail.com":"CL-021","danrowey2009@gmail.com":"CL-022","rapaconnicolo7@gmail.com":"CL-023","apriljoy.tabingo@deped.gov.ph":"CL-024","villegasnathaniel10@gmail.com":"CL-025","michaelquinto33@gmail.com":"CL-026","acunamika67@gmail.com":"CL-027","caliaoalthea6@gmail.com":"CL-028","macarimbangesmail18@gmail.com":"CL-029","santos.amielelijah@gmail.com":"CL-030","joycemagtibay@gmail.com":"CL-031","kyledylan1921@gmail.com":"CL-032","iannebaristol2005@gmail.com":"CL-033","jetcastre5@gmail.com":"CL-034","sittieazhimagyusoph@gmail.com":"CL-035","tjmercado1515@gmail.com":"CL-036","allieyahbautista@gmail.com":"CL-037","scharlesleendon@gmail.com":"CL-038","tagapulot.brianaziv@gmail.com":"CL-039","babonmichaelneil@gmail.com":"CL-040","caliguirankathleengrace@gmail.com":"CL-041","brylevicmudo@gmail.com":"CL-042","sharanfaten9@gmail.com":"CL-043","mykellpatigayon949@gmail.com":"CL-044","barejechad05@gmail.com":"CL-045","christian.aficionado@gmail.com":"CL-046"};
+
 async function getClientAccountSnapshot(svc){
   const [clientsRes,portalRes,rolesRes,projectsRes,authUsers]=await Promise.all([
     svc.from('clients').select('id,name,email,client_code,archived_at').order('client_code',{ascending:true,nullsFirst:false}),
@@ -62,6 +67,48 @@ async function getClientAccountSnapshot(svc){
     };
   });
   return {rows,authUsers,portalByClient,authByEmail,roleByUser,emailCounts,authById};
+}
+
+async function synchronizeClientMaster(svc){
+  const clientsRes=await svc.from('clients').select('id,name,email,client_code,archived_at');
+  if(clientsRes.error)throw clientsRes.error;
+  const clients=clientsRes.data||[];
+  const mapped=clients.filter(c=>CLIENT_MASTER_BY_EMAIL[normEmail(c.email)]);
+  const changes=mapped.filter(c=>String(c.client_code||'')!==CLIENT_MASTER_BY_EMAIL[normEmail(c.email)]);
+
+  // Two-phase reassignment prevents temporary unique-code collisions if an older build
+  // put a correct CL-### code on the wrong mapped row.
+  for(const client of changes){
+    const temporary=`MASTER-${String(client.id).replace(/[^a-zA-Z0-9]/g,'').slice(-12)}`;
+    const tmp=await svc.from('clients').update({client_code:temporary}).eq('id',client.id);
+    if(tmp.error)throw tmp.error;
+  }
+  for(const client of changes){
+    const client_code=CLIENT_MASTER_BY_EMAIL[normEmail(client.email)];
+    const upd=await svc.from('clients').update({client_code}).eq('id',client.id);
+    if(upd.error)throw upd.error;
+  }
+
+  let snapshot=await getClientAccountSnapshot(svc);
+  const results=[];
+  for(const row of snapshot.rows){
+    const email=normEmail(row.email),expected=CLIENT_MASTER_BY_EMAIL[email];
+    if(!expected)continue;
+    const portal=snapshot.portalByClient.get(String(row.id));
+    const auth=(portal&&snapshot.authById.get(portal.auth_user_id))||snapshot.authByEmail.get(email)||null;
+    if(auth?.user_metadata?.juan_master_login_version===CLIENT_MASTER_VERSION){
+      results.push({client_code:expected,status:'current'});
+      continue;
+    }
+    const client={...row,client_code:expected};
+    try{
+      results.push({client_code:expected,...await rebootOneClientLogin(svc,client,snapshot,{masterVersion:CLIENT_MASTER_VERSION})});
+    }catch(error){
+      results.push({client_code:expected,status:'error',message:error?.message||'Client portal initialization failed.'});
+    }
+  }
+  snapshot=await getClientAccountSnapshot(svc);
+  return {snapshot,summary:results.reduce((acc,x)=>{acc[x.status]=(acc[x.status]||0)+1;return acc},{total:results.length}),version:CLIENT_MASTER_VERSION};
 }
 
 async function reconcileProjectClient(svc,body){
@@ -139,7 +186,7 @@ async function setAuthMetadata(svc,user,patch){
   return updated.data?.user||user;
 }
 
-async function rebootOneClientLogin(svc,client,snapshot){
+async function rebootOneClientLogin(svc,client,snapshot,{masterVersion=null}={}){
   if(!client)return {status:'error',message:'Client not found.'};
   if(client.archived_at)return {status:'skipped',message:'Archived client was not changed.'};
   if(!client.client_code)return {status:'skipped',message:'Client ID is missing.'};
@@ -162,14 +209,14 @@ async function rebootOneClientLogin(svc,client,snapshot){
       email,
       password:client.client_code,
       email_confirm:true,
-      user_metadata:{...(user.user_metadata||{}),client_code:client.client_code,client_id:client.id,must_change_password:true,juan_project_client:true}
+      user_metadata:{...(user.user_metadata||{}),client_code:client.client_code,client_id:client.id,must_change_password:true,juan_project_client:true,...(masterVersion?{juan_master_login_version:masterVersion}:{})}
     });
     if(updated.error)throw updated.error;
     user=updated.data?.user||user;
   }else{
     const made=await svc.auth.admin.createUser({
       email,password:client.client_code,email_confirm:true,
-      user_metadata:{client_code:client.client_code,client_id:client.id,must_change_password:true,juan_project_client:true}
+      user_metadata:{client_code:client.client_code,client_id:client.id,must_change_password:true,juan_project_client:true,...(masterVersion?{juan_master_login_version:masterVersion}:{})}
     });
     if(made.error)throw made.error;
     user=made.data.user;
@@ -261,13 +308,13 @@ export default async function handler(req,res){
     const {svc,user}=await requireAdmin(req);
 
     if(req.method==='GET'){
-      const [submissions,settings,projects,deliverables,payments,accountSnapshot]=await Promise.all([
+      const masterSync=await synchronizeClientMaster(svc);
+      const [submissions,settings,projects,deliverables,payments]=await Promise.all([
         svc.from('payment_submissions').select('*').order('submitted_at',{ascending:false}).limit(100),
         svc.from('payment_settings').select('*').eq('id',1).maybeSingle(),
         svc.from('projects').select('id,title,client_id,project_code,status,total_amount,deadline_date,drive_url,drive_unlock_at,drive_expires_at').order('project_code',{ascending:true,nullsFirst:false}),
         svc.from('deliverables').select('id,project_id,item_name,client_visible,due_date,completed').order('project_id'),
-        svc.from('payments').select('id,project_id,amount_paid,reference_no'),
-        getClientAccountSnapshot(svc)
+        svc.from('payments').select('id,project_id,amount_paid,reference_no')
       ]);
       if(submissions.error)throw submissions.error;
       if(settings.error)throw settings.error;
@@ -275,6 +322,7 @@ export default async function handler(req,res){
       if(deliverables.error)throw deliverables.error;
       if(payments.error)throw payments.error;
 
+      const accountSnapshot=masterSync.snapshot;
       const clientsForNames=accountSnapshot.rows.map(x=>({id:x.id,name:x.name,email:x.email,client_code:x.client_code}));
       const safeSubmissions=await Promise.all((submissions.data||[]).map(async submission=>{
         let receipt_url=null;
@@ -305,6 +353,7 @@ export default async function handler(req,res){
         deliverables:deliverables.data||[],
         clients:clientsForNames,
         clientAccounts:accountSnapshot.rows,
+        clientMaster:{version:masterSync.version,summary:masterSync.summary},
         rejectionReasons:rejectionReasons()
       });
     }

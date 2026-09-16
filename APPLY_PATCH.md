@@ -8,7 +8,7 @@
 4. Open Workspace. It should start as **Offline / Local**.
 5. Go to **Settings → Database Connection → Log In & Connect** and sign in with the existing JUAN PROJECT admin account.
 6. Confirm cloud data loads.
-7. Go to **Online Portal → Client Accounts** and use **Reboot Client Logins** once.
+7. Open **Online Portal → Client Access** once while signed in as admin. The client master mapping is reconciled automatically and versioned so refreshes do not repeat the password initialization.
 8. Client initial login is their mapped email + Client ID as the temporary password. The portal requires a password change after login.
 
 ## Existing Vercel environment
@@ -42,5 +42,5 @@ bash scripts/verify-build.sh
 Expected result:
 
 ```text
-JUAN PROJECT Platform V1.3.3.2 NPW verification passed.
+JUAN PROJECT Platform V1.3.3.2 Client Master UI patch verification passed.
 ```

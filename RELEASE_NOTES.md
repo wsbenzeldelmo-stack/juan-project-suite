@@ -34,3 +34,9 @@ This package includes migration `013_client_id_identity_lock.sql`. Historical ID
 - Added GoTyme and MariBank assets/validation.
 - Added migration 014 to re-assert CL-001..CL-046, continue CL-047+, and remove retroactive ₱25/₱26-only balances from already-settled historical projects.
 - Added one-click client login reboot: initial temporary password = Client ID, then forced password change.
+
+## Client Master + UI hotfix — 2026-09-16
+
+- Prioritizes the uploaded CL-001–CL-046 email mapping for Client Directory and JUAN PROJECT Online. Existing client names are preserved because the source workbook does not include a name column.
+- Portal temporary login details are initialized silently once per master-data version; no mass sync/reboot controls are shown in the UI.
+- Revenue timeline selector, natural table sizing, top-layer action menus, Shop service column proportions, payment account spacing, and invoice wordmark fixes.

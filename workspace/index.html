@@ -1315,7 +1315,7 @@
 
       <!-- VIEW: REPORTS -->
       <section id="view-reports" class="view">
-        <header class="page-header"><div><div class="greeting-subtitle">Finance & Insights</div><h1 class="page-title">Reports</h1></div></header>
+        <header class="page-header"><div><div class="greeting-subtitle">Finance & Insights</div><h1 class="page-title">Reports</h1></div><div class="report-range-control"><label for="reportsRange">Timeline</label><select id="reportsRange" class="compact-sort reports-range-select" onchange="app.setReportsRange(this.value)"><option value="this-month">This Month</option><option value="last-month">Last Month</option><option value="last-6-months" selected>Last 6 Months</option><option value="last-year">Last Year</option></select></div></header>
         <div id="reportsContent"></div>
       </section>
 
@@ -1555,8 +1555,7 @@
         <div id="onlinePortalAccountsPanel" class="portal-panel">
           <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
           <div class="view-toolbar unified-toolbar portal-toolbar">
-            <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…"><div class="text-sm text-muted mt-2">Initial portal password = Client ID (for example CL-006). Clients are required to change it after first login.</div>
-            <div class="toolbar-actions"><button id="onlinePortalProvisionAll" class="btn btn-secondary">Sync Client Accounts</button><button id="onlinePortalRebootLogins" class="btn btn-primary">Reboot Client Logins</button></div>
+            <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
           </div>
           <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
@@ -2232,6 +2231,7 @@
         projectFilter: "Active",
         clientFilter: "All",
         paymentFilter: "Pending",
+        reportRange: "last-6-months",
         listSorts: {
           projects: "default",
           payments: "default",
@@ -2247,6 +2247,9 @@
         onlinePortalLoading: false
       };
 
+      // Authoritative client identity mapping imported from JUAN_PROJECT_Client_ID_Mapping_UPDATED(5).xlsx
+      // Source SHA-256: 556584cf3e027ffc515346964c19370f33032c60d00df0bea5935c158645976f
+      const CLIENT_MASTER_VERSION = "client-master-2026-09-16-v1";
       const CLIENT_ID_BY_EMAIL = {"imahemultimediaproductions@gmail.com":"CL-001","yvonnemaedelgado@gmail.com":"CL-002","trishakayemesana@gmail.com":"CL-003","dkian032@gmail.com":"CL-004","dalumpinesmargaret@gmail.com":"CL-005","ws.benzeldelmo@gmail.com":"CL-006","ardienjamesgais@gmail.com":"CL-007","kztksem88@gmail.com":"CL-008","oliver.villaruel@deped.gov.ph":"CL-009","dimaanolorraine37@gmail.com":"CL-010","janellerinn@gmail.com":"CL-011","ramosdenmar03@gmail.com":"CL-012","nikkazara29@gmail.com":"CL-013","mamadoaalexanderissaiah@gmail.com":"CL-014","earljohnmapa12@gmail.com":"CL-015","annefelicityrufo1@gmail.com":"CL-016","sosadanica07@gmail.com":"CL-017","ashleymaeramos001@gmail.com":"CL-018","leisoriano25@gmail.com":"CL-019","bacalaaj@gmail.com":"CL-020","calmorinjareen@gmail.com":"CL-021","danrowey2009@gmail.com":"CL-022","rapaconnicolo7@gmail.com":"CL-023","apriljoy.tabingo@deped.gov.ph":"CL-024","villegasnathaniel10@gmail.com":"CL-025","michaelquinto33@gmail.com":"CL-026","acunamika67@gmail.com":"CL-027","caliaoalthea6@gmail.com":"CL-028","macarimbangesmail18@gmail.com":"CL-029","santos.amielelijah@gmail.com":"CL-030","joycemagtibay@gmail.com":"CL-031","kyledylan1921@gmail.com":"CL-032","iannebaristol2005@gmail.com":"CL-033","jetcastre5@gmail.com":"CL-034","sittieazhimagyusoph@gmail.com":"CL-035","tjmercado1515@gmail.com":"CL-036","allieyahbautista@gmail.com":"CL-037","scharlesleendon@gmail.com":"CL-038","tagapulot.brianaziv@gmail.com":"CL-039","babonmichaelneil@gmail.com":"CL-040","caliguirankathleengrace@gmail.com":"CL-041","brylevicmudo@gmail.com":"CL-042","sharanfaten9@gmail.com":"CL-043","mykellpatigayon949@gmail.com":"CL-044","barejechad05@gmail.com":"CL-045","christian.aficionado@gmail.com":"CL-046"};
 
       const CLIENT_ID_FLOOR = 46;
@@ -2266,7 +2269,17 @@
       }
 
       function applyKnownClientIdsLocally(){
-        (state.clients||[]).forEach(client=>{const code=CLIENT_ID_BY_EMAIL[String(client?.email||'').trim().toLowerCase()];if(code)client.client_code=code;});
+        (state.clients||[]).forEach(client=>{
+          const code=CLIENT_ID_BY_EMAIL[normalizeClientIdentityEmail(client?.email)];
+          if(code)client.client_code=code;
+        });
+        // Keep project snapshots aligned with the authoritative directory identity without
+        // guessing or overwriting client names that are not present in the uploaded sheet.
+        const byId=new Map((state.clients||[]).map(c=>[String(c.id),c]));
+        (state.projects||[]).forEach(project=>{
+          const client=byId.get(String(project?.client_id||''));
+          if(client?.client_code)project.client_code=client.client_code;
+        });
       }
 
       // Profile Cropping State Variables
@@ -3565,6 +3578,7 @@ ${description}`))actionCallback();return;}
           state.clients=[...remoteClientById.values()];
           state.projects=mergedProjects;
           pruneClientDirectoryToProjects();
+          applyKnownClientIdsLocally();
           persistClientsState();
           persistProjectsState();
 
@@ -4157,14 +4171,22 @@ ${description}`))actionCallback();return;}
           const collected=payments.reduce((sum,p)=>sum+Math.max(0,safeNumber(p.amount_paid??p.amount)),0);
           const outstanding=Math.max(0,totalReceivables-collected);
           const now=new Date();
-          const currentMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-          const monthCollected=payments.reduce((sum,pay)=>{
-            const d=safeDate(pay.payment_date||pay.created_at);
-            if(!d)return sum;
-            const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-            return key===currentMonth?sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)):sum;
-          },0);
           const collectionRate=totalReceivables?Math.round(Math.max(0,Math.min(100,(collected/totalReceivables)*100))):0;
+          const reportRange=["this-month","last-month","last-6-months","last-year"].includes(state.reportRange)?state.reportRange:"last-6-months";
+          const reportRangeSelect=document.getElementById('reportsRange');if(reportRangeSelect&&reportRangeSelect.value!==reportRange)reportRangeSelect.value=reportRange;
+          const reportIcon=(name)=>{
+            const paths={
+              money:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h10M7 14h10"/><circle cx="12" cy="12" r="2"/>',
+              collected:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v5c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 11v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/>',
+              clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+              calendar:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 9h16"/>',
+              trophy:'<path d="M8 4h8v5c0 3-1.8 5-4 5s-4-2-4-5V4Z"/><path d="M8 6H5v2c0 2 1.3 3 3 3M16 6h3v2c0 2-1.3 3-3 3M12 14v4M9 20h6"/>',
+              check:'<path d="m7 12 3 3 7-7"/>',
+              progress:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8"/>',
+              lock:'<rect x="6" y="10" width="12" height="10" rx="2"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/>'
+            };
+            return `<svg class="report-ui-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name]||''}</svg>`;
+          };
 
           const statusCounts={paid:0,partial:0,unpaid:0,overdue:0};
           projects.forEach(p=>{
@@ -4180,23 +4202,45 @@ ${description}`))actionCallback();return;}
           const deg=(n)=>statusTotal?(n/statusTotal)*360:0;
           const paidEnd=deg(statusCounts.paid),partialEnd=paidEnd+deg(statusCounts.partial),unpaidEnd=partialEnd+deg(statusCounts.unpaid);
 
-          // Always show the latest six calendar months so zero-revenue periods remain visible.
-          const monthly=[];
-          for(let offset=5;offset>=0;offset--){
-            const d=new Date(now.getFullYear(),now.getMonth()-offset,1);
-            const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-            const value=payments.reduce((sum,pay)=>{
-              const pd=safeDate(pay.payment_date||pay.created_at);if(!pd)return sum;
-              const pk=`${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,'0')}`;
-              return pk===key?sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)):sum;
-            },0);
-            monthly.push({key,label:d.toLocaleDateString('en-PH',{month:'short'}),value});
+          const makeDate=(y,m,d=1)=>new Date(y,m,d,0,0,0,0);
+          const paymentDate=pay=>safeDate(pay.payment_date||pay.created_at);
+          let rangeStart,rangeEnd,rangeTitle,rangeSubtitle,buckets=[];
+          const addMonthBuckets=(start,count)=>{
+            for(let i=0;i<count;i++){
+              const a=makeDate(start.getFullYear(),start.getMonth()+i,1),b=makeDate(start.getFullYear(),start.getMonth()+i+1,1);
+              buckets.push({start:a,end:b,label:a.toLocaleDateString('en-PH',{month:'short'})});
+            }
+          };
+          const addWeekBuckets=(start,end)=>{
+            let cursor=new Date(start);
+            while(cursor<end){
+              const a=new Date(cursor),b=new Date(Math.min(end.getTime(),makeDate(a.getFullYear(),a.getMonth(),a.getDate()+7).getTime()));
+              const endDay=new Date(b.getTime()-1).getDate();
+              buckets.push({start:a,end:b,label:`${a.toLocaleDateString('en-PH',{month:'short'})} ${a.getDate()}–${endDay}`});
+              cursor=b;
+            }
+          };
+          if(reportRange==='this-month'){
+            rangeStart=makeDate(now.getFullYear(),now.getMonth(),1);rangeEnd=makeDate(now.getFullYear(),now.getMonth()+1,1);rangeTitle='This Month';rangeSubtitle=now.toLocaleDateString('en-PH',{month:'long',year:'numeric'});addWeekBuckets(rangeStart,rangeEnd);
+          }else if(reportRange==='last-month'){
+            rangeStart=makeDate(now.getFullYear(),now.getMonth()-1,1);rangeEnd=makeDate(now.getFullYear(),now.getMonth(),1);rangeTitle='Last Month';rangeSubtitle=rangeStart.toLocaleDateString('en-PH',{month:'long',year:'numeric'});addWeekBuckets(rangeStart,rangeEnd);
+          }else if(reportRange==='last-year'){
+            rangeStart=makeDate(now.getFullYear()-1,0,1);rangeEnd=makeDate(now.getFullYear(),0,1);rangeTitle='Last Year';rangeSubtitle=String(now.getFullYear()-1);addMonthBuckets(rangeStart,12);
+          }else{
+            rangeStart=makeDate(now.getFullYear(),now.getMonth()-5,1);rangeEnd=makeDate(now.getFullYear(),now.getMonth()+1,1);rangeTitle='Last 6 Months';rangeSubtitle=`${rangeStart.toLocaleDateString('en-PH',{month:'short',year:'numeric'})} – ${now.toLocaleDateString('en-PH',{month:'short',year:'numeric'})}`;addMonthBuckets(rangeStart,6);
           }
+          const rangePayments=payments.filter(pay=>{const d=paymentDate(pay);return d&&d>=rangeStart&&d<rangeEnd});
+          const periodCollected=rangePayments.reduce((sum,pay)=>sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)),0);
+          const trend=buckets.map(bucket=>({
+            ...bucket,
+            value:payments.reduce((sum,pay)=>{const d=paymentDate(pay);return d&&d>=bucket.start&&d<bucket.end?sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)):sum},0)
+          }));
           const chartW=720,chartH=250,padL=58,padR=24,padT=28,padB=38,innerW=chartW-padL-padR,innerH=chartH-padT-padB;
-          const maxTrend=Math.max(1,...monthly.map(x=>x.value));
-          const niceMax=Math.max(1000,Math.ceil(maxTrend/50000)*50000);
-          const points=monthly.map((m,i)=>{
-            const x=padL+(monthly.length===1?innerW/2:(innerW*i/(monthly.length-1)));
+          const maxTrend=Math.max(1,...trend.map(x=>x.value));
+          const magnitude=maxTrend<=10000?1000:maxTrend<=100000?10000:50000;
+          const niceMax=Math.max(magnitude,Math.ceil(maxTrend/magnitude)*magnitude);
+          const points=trend.map((m,i)=>{
+            const x=padL+(trend.length===1?innerW/2:(innerW*i/(trend.length-1)));
             const y=padT+innerH-(m.value/niceMax)*innerH;
             return {...m,x,y};
           });
@@ -4229,17 +4273,17 @@ ${description}`))actionCallback();return;}
           box.innerHTML=`
             <div class="reports-v2">
               <div class="report-kpi-grid-v2">
-                <div class="report-kpi-card-v2"><div class="report-kpi-icon money">₱</div><div><span>Total Receivables</span><strong>${formatCurrency(totalReceivables)}</strong><small>Total amount expected from all customers</small></div></div>
-                <div class="report-kpi-card-v2"><div class="report-kpi-icon collected">◎</div><div><span>Collected</span><strong>${formatCurrency(collected)}</strong><small class="report-positive">${collectionRate}% of total receivables collected</small></div></div>
-                <div class="report-kpi-card-v2"><div class="report-kpi-icon neutral">◷</div><div><span>Outstanding</span><strong>${formatCurrency(outstanding)}</strong><small>Remaining balance to be collected</small></div></div>
-                <div class="report-kpi-card-v2"><div class="report-kpi-icon month">▣</div><div><span>This Month</span><strong>${formatCurrency(monthCollected)}</strong><small>Payments received this month</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon money">${reportIcon('money')}</div><div><span>Total Receivables</span><strong>${formatCurrency(totalReceivables)}</strong><small>Total amount expected from all customers</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon collected">${reportIcon('collected')}</div><div><span>Collected</span><strong>${formatCurrency(collected)}</strong><small class="report-positive">${collectionRate}% of total receivables collected</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon neutral">${reportIcon('clock')}</div><div><span>Outstanding</span><strong>${formatCurrency(outstanding)}</strong><small>Remaining balance to be collected</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon month">${reportIcon('calendar')}</div><div><span>${escapeHtml(rangeTitle)}</span><strong>${formatCurrency(periodCollected)}</strong><small>Payments received in the selected timeline</small></div></div>
               </div>
 
               <div class="report-main-grid-v2">
                 <section class="card report-chart-card-v2">
-                  <div class="report-card-head-v2"><div><h2>Revenue Trend</h2><p>Last 6 payment months</p></div><div class="report-legend-chip"><span></span> Revenue <b>6 months</b></div></div>
+                  <div class="report-card-head-v2"><div><h2>Revenue Trend</h2><p>${escapeHtml(rangeSubtitle)}</p></div><div class="report-legend-chip"><span></span> Revenue <b>${escapeHtml(rangeTitle)}</b></div></div>
                   <div class="report-line-chart-wrap">
-                    <svg class="report-line-chart" viewBox="0 0 ${chartW} ${chartH}" role="img" aria-label="Revenue trend for the last six months">
+                    <svg class="report-line-chart" viewBox="0 0 ${chartW} ${chartH}" role="img" aria-label="Revenue trend for ${escapeHtml(rangeTitle)}">
                       <defs><linearGradient id="revenueFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#14b86e" stop-opacity=".24"/><stop offset="100%" stop-color="#14b86e" stop-opacity="0"/></linearGradient></defs>
                       ${gridLines}
                       ${areaPath?`<path d="${areaPath}" class="report-area-path"/>`:''}
@@ -4267,9 +4311,9 @@ ${description}`))actionCallback();return;}
               </div>
 
               <section class="card report-milestones-v2">
-                <div class="report-milestone-intro"><div class="report-trophy">🏆</div><div><h2>Revenue Milestones</h2><p>Track collected revenue toward your next goal.</p></div></div>
+                <div class="report-milestone-intro"><div class="report-trophy">${reportIcon('trophy')}</div><div><h2>Revenue Milestones</h2><p>Track collected revenue toward your next goal.</p></div></div>
                 <div class="report-milestone-track">
-                  ${milestones.map(m=>`<div class="report-milestone-step ${m.achieved?'achieved':m.inProgress?'in-progress':'upcoming'}"><div class="milestone-icon">${m.achieved?'✓':m.inProgress?'◔':'🔒'}</div><div><strong>₱${Math.round(m.target/1000)}K</strong><span>${m.achieved?'Achieved':m.inProgress?'In Progress':'Upcoming'}</span>${!m.achieved?`<div class="milestone-progress"><i style="width:${m.progress}%"></i></div><small>${Math.round(m.progress)}%</small>`:''}</div></div>`).join('')}
+                  ${milestones.map(m=>`<div class="report-milestone-step ${m.achieved?'achieved':m.inProgress?'in-progress':'upcoming'}"><div class="milestone-icon">${reportIcon(m.achieved?'check':m.inProgress?'progress':'lock')}</div><div><strong>₱${Math.round(m.target/1000)}K</strong><span>${m.achieved?'Achieved':m.inProgress?'In Progress':'Upcoming'}</span>${!m.achieved?`<div class="milestone-progress"><i style="width:${m.progress}%"></i></div><small>${Math.round(m.progress)}%</small>`:''}</div></div>`).join('')}
                 </div>
               </section>
 
@@ -4284,6 +4328,10 @@ ${description}`))actionCallback();return;}
           console.error('Reports render error:',error);
           box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>One or more older records could not be summarized. Your projects and payments are still safe.</span><div style="margin-top:12px"><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry Reports</button></div></div>`;
         }
+      }
+      function setReportsRange(value){
+        state.reportRange=["this-month","last-month","last-6-months","last-year"].includes(value)?value:"last-6-months";
+        renderReportsView();
       }
       function retryReports(){ renderReportsView(); }
 
@@ -6697,15 +6745,6 @@ ${description}`))actionCallback();return;}
         document.querySelectorAll("[data-portal-tab]").forEach(btn=>btn.onclick=()=>setOnlinePortalTab(btn.dataset.portalTab));
         const search=document.getElementById("onlinePortalAccountSearch");
         if(search)search.oninput=()=>renderOnlinePortalData();
-        const provision=document.getElementById("onlinePortalProvisionAll");
-        if(provision)provision.onclick=()=>runOnlinePortalAction({action:"provision-all-clients"},"Missing client accounts processed.",true);
-        const reboot=document.getElementById("onlinePortalRebootLogins");
-        if(reboot)reboot.onclick=()=>showConfirmationDialog(
-          "Reboot all client portal logins?",
-          "This resets every non-admin client portal password to its Client ID (CL-001, CL-002, etc.) and requires each client to create a new password after logging in.",
-          "Reboot Logins",
-          ()=>runOnlinePortalAction({action:"reboot-client-logins"},"Client portal logins rebooted. Initial password = Client ID.",true)
-        );
         const save=document.getElementById("portalSavePaymentSettings");
         if(save)save.onclick=saveOnlinePortalPaymentSettings;
         loadOnlinePortalData(false);
@@ -6969,6 +7008,7 @@ ${description}`))actionCallback();return;}
         deleteTask,
         renderPaymentsView,
         renderReportsView,
+        setReportsRange,
         retryReports,
         renderDeliverablesView,
         openClientProfile,
@@ -7181,6 +7221,27 @@ ${description}`))actionCallback();return;}
 /* Lower paint cost on long management lists without changing layout. */
 .typeahead-menu{will-change:opacity,transform}
 @media(max-width:720px){.project-batch-custom-grid{grid-template-columns:1fr 76px 110px}.project-batch-custom-grid .btn{grid-column:1/-1}.project-batch-summary{justify-content:space-between}.project-batch-choice{grid-template-columns:24px minmax(0,1fr)}.project-batch-choice em{display:none}.project-overall-progress{padding:13px 14px}}
+</style>
+
+<style>
+/* Client Master + clean table UX patch */
+.table-card,.table-card>.table-responsive{overflow:visible!important}
+.table-responsive{overflow:visible!important;max-height:none!important}
+.unified-table{width:100%!important;min-width:0!important;table-layout:auto}
+.unified-table th,.unified-table td{white-space:normal;overflow-wrap:anywhere}
+.popover-wrap.open{position:relative;z-index:6000!important}
+.popover-panel{z-index:6010!important}
+.table-row-actions,.table-actions-col{position:relative}
+.catalog-services-table{width:100%!important;table-layout:fixed}
+.catalog-services-table th:nth-child(1),.catalog-services-table td:nth-child(1){width:10%!important;white-space:nowrap}
+.catalog-services-table th:nth-child(2),.catalog-services-table td:nth-child(2){width:22%!important}
+.catalog-services-table th:nth-child(3),.catalog-services-table td:nth-child(3){width:20%!important}
+.catalog-services-table th:nth-child(4),.catalog-services-table td:nth-child(4){width:30%!important}
+.catalog-services-table th:nth-child(5),.catalog-services-table td:nth-child(5){width:12%!important;white-space:nowrap}
+.catalog-services-table th:nth-child(6),.catalog-services-table td:nth-child(6){width:6%!important;white-space:nowrap;text-align:right}
+.catalog-services-table th,.catalog-services-table td{padding-left:14px!important;padding-right:14px!important}
+.report-range-control{display:flex;align-items:center;gap:10px}.report-range-control label{font-size:11px;font-weight:750;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.05em}.reports-range-select{min-width:150px}.report-ui-icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.report-trophy .report-ui-icon{width:24px;height:24px}.milestone-icon .report-ui-icon{width:17px;height:17px}.report-kpi-icon .report-ui-icon{width:23px;height:23px}
+@media(max-width:760px){.table-responsive{overflow-x:auto!important;overflow-y:visible!important}.unified-table{min-width:760px!important}.report-range-control{width:100%;justify-content:space-between}.reports-range-select{min-width:0;flex:1;max-width:190px}}
 </style>
 
 <style>

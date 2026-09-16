@@ -73,11 +73,11 @@ The authoritative historical mapping is CL-001 through CL-046 from `docs/CLIENT_
 
 Future unique clients continue at **CL-047+**. Duplicate projects under the same normalized email continue using that email's lifetime Client ID.
 
-After migration 014 is applied, use **Workspace → Online Portal → Reboot Client Logins** once. For every non-admin client account it can safely reconcile, the action:
+After migration 014 is applied, open **Workspace → Online Portal → Client Access** once as admin. The Client Master patch performs a versioned one-time reconciliation for each mapped non-admin client account:
 
 - sets the login email to the mapped client email,
 - resets the temporary password to the Client ID,
 - sets `password_set=false`, and
 - requires the client to create a new password after login.
 
-Do not run the reboot action again unless you intentionally want to reset all client portal passwords back to their Client IDs.
+No mass reboot button is exposed. The master version marker prevents the automatic initialization from repeating after clients change their passwords.
