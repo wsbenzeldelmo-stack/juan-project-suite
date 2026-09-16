@@ -1073,12 +1073,20 @@
 
     <!-- MAIN VIEW CONTAINER -->
     <main class="main-content">
-      <div id="workspaceLoadingSkeleton" class="workspace-loading-shell hidden" aria-live="polite" aria-busy="true">
-        <div class="workspace-loader-card">
-          <div class="workspace-loader-mark" aria-hidden="true"><img src="/assets/brand/j-mark.svg" alt=""></div>
-          <div class="workspace-loader-copy"><span class="workspace-loader-kicker">JUAN PROJECT WORKSPACE</span><strong>Loading your workspace</strong><small>Preparing projects, clients, payments, and reports.</small></div>
-          <div class="workspace-loader-track" aria-hidden="true"><span></span></div>
-          <div class="workspace-loader-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div id="workspaceLoadingSkeleton" class="workspace-loading-shell hidden" aria-live="polite" aria-busy="true" aria-label="Loading JUAN PROJECT Workspace">
+        <div class="workspace-skeleton-layout">
+          <aside class="workspace-skeleton-sidebar" aria-hidden="true">
+            <div class="workspace-skeleton-brand"><img src="/assets/brand/j-mark.svg" alt=""><span>JUAN PROJECT</span></div>
+            <div class="skeleton-bar skel w-70"></div><div class="skeleton-bar skel w-88"></div><div class="skeleton-bar skel w-76"></div><div class="skeleton-bar skel w-82"></div><div class="skeleton-bar skel w-64"></div>
+            <div class="workspace-skeleton-side-spacer"></div>
+            <div class="skeleton-bar skel w-72"></div><div class="skeleton-bar skel w-58"></div>
+          </aside>
+          <section class="workspace-skeleton-main" aria-hidden="true">
+            <div class="workspace-skeleton-head"><div><div class="skeleton-line skel w-46"></div><div class="skeleton-line thin skel w-30"></div></div><div class="skeleton-pill skel"></div></div>
+            <div class="workspace-skeleton-stats"><div class="skeleton-stat"><div class="skeleton-line thin skel w-45"></div><div class="skeleton-value skel"></div></div><div class="skeleton-stat"><div class="skeleton-line thin skel w-52"></div><div class="skeleton-value skel"></div></div><div class="skeleton-stat"><div class="skeleton-line thin skel w-42"></div><div class="skeleton-value skel"></div></div><div class="skeleton-stat"><div class="skeleton-line thin skel w-48"></div><div class="skeleton-value skel"></div></div></div>
+            <div class="workspace-skeleton-grid"><div class="skeleton-panel"><div class="skeleton-line skel w-34"></div><div class="skeleton-chart skel"></div></div><div class="skeleton-panel"><div class="skeleton-line skel w-40"></div><div class="skeleton-list-row"><i class="skel"></i><span class="skel"></span></div><div class="skeleton-list-row"><i class="skel"></i><span class="skel"></span></div><div class="skeleton-list-row"><i class="skel"></i><span class="skel"></span></div></div></div>
+            <div class="skeleton-table-card"><div class="skeleton-line skel w-26"></div><div class="skeleton-table-head skel"></div><div class="skeleton-table-row"><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div><div class="skeleton-table-row"><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div><div class="skeleton-table-row"><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div></div>
+          </section>
         </div>
       </div>
 
@@ -1605,7 +1613,7 @@
           <button type="button" data-portal-tab="payments">Payment Reviews</button>
           <button type="button" data-portal-tab="settings">Portal Configuration</button>
         </div>
-        <div id="onlinePortalLoading" class="card portal-loading hidden"><span class="portal-loading-spinner" aria-hidden="true"></span><div><strong>Loading Online Portal</strong><small>Refreshing client access and payment reviews.</small></div></div>
+        <div id="onlinePortalLoading" class="card portal-loading portal-loading-skeleton hidden" aria-busy="true" aria-label="Loading Online Portal"><div class="portal-skeleton-toolbar"><span class="skel"></span><span class="skel"></span></div><div class="portal-skeleton-summary"><i class="skel"></i><i class="skel"></i><i class="skel"></i><i class="skel"></i></div><div class="portal-skeleton-table"><b class="skel"></b><span class="skel"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div></div>
         <div id="onlinePortalError" class="card portal-error hidden"></div>
         <div id="onlinePortalAccountsPanel" class="portal-panel">
           <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
@@ -3639,17 +3647,27 @@ ${description}`))actionCallback();return;}
 
           const remoteClientIds=new Set(remoteClients.map(c=>String(c.id)));
           const remoteProjectIds=new Set(remoteProjects.map(p=>String(p.id)));
-          await migrateLocalOnlyBusinessRecords(remoteClientIds,remoteProjectIds);
-          await flushOfflineSyncQueue();
 
+          // Paint the usable Workspace as soon as primary business data is ready.
+          // Secondary reconciliation/catalog work continues after the skeleton is dismissed.
           loadTasksState();
           if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
-          else if(supabaseClient&&state.isConnected)await syncWorkspaceSettingsNow();
-
-          const remoteCatalogLoaded = await loadSharedCatalogFromDatabase();
-          if (!remoteCatalogLoaded && supabaseClient && state.isConnected) await syncSharedCatalogToDatabase({ silent: true });
           renderTemplatesDropdown();
           renderCurrentView();
+          setWorkspaceLoading(false);
+
+          void (async()=>{
+            try{
+              await migrateLocalOnlyBusinessRecords(remoteClientIds,remoteProjectIds);
+              await flushOfflineSyncQueue();
+              if(!settingsRes.data&&supabaseClient&&state.isConnected)await syncWorkspaceSettingsNow();
+              const remoteCatalogLoaded=await loadSharedCatalogFromDatabase();
+              if(!remoteCatalogLoaded&&supabaseClient&&state.isConnected)await syncSharedCatalogToDatabase({silent:true});
+              renderTemplatesDropdown();
+            }catch(backgroundErr){
+              console.warn('Background Workspace reconciliation:',backgroundErr);
+            }
+          })();
         } catch (err) {
           console.error('Database error:', err);
           showToast('Cloud data could not be loaded. Showing the latest local cache.', 'Retry', () => loadDatabaseData());
@@ -7379,3 +7397,13 @@ ${description}`))actionCallback();return;}
 </style>
 
 <style id="portal-loading-ui-final">.portal-loading{display:flex!important;align-items:center!important;gap:12px!important;padding:15px 16px!important}.portal-loading.hidden{display:none!important}.portal-loading>div{display:grid;gap:3px}.portal-loading strong{font-size:12px}.portal-loading small{font-size:10px;color:var(--text-tertiary)}.portal-loading-spinner{width:24px;height:24px;border:2px solid var(--mint-subtle-border);border-top-color:var(--primary-mint-dark);border-radius:50%;animation:portalLoadingSpin .8s linear infinite;flex:0 0 24px}@keyframes portalLoadingSpin{to{transform:rotate(360deg)}}</style>
+
+<style id="v1332-skeleton-loading-hotfix">
+/* Skeleton loading hotfix: visual placeholders instead of simulated progress. */
+.workspace-loading-shell{padding:0!important;background:#f7faf8!important;backdrop-filter:none!important;place-items:stretch!important;overflow:hidden!important}.workspace-loading-shell.hidden{display:none!important}
+.workspace-skeleton-layout{min-height:100dvh;display:grid;grid-template-columns:220px minmax(0,1fr);background:#f7faf8}.workspace-skeleton-sidebar{padding:22px 18px;border-right:1px solid rgba(17,24,39,.06);background:#fff;display:flex;flex-direction:column;gap:14px}.workspace-skeleton-brand{display:flex;align-items:center;gap:9px;margin-bottom:20px;font-size:11px;font-weight:850;letter-spacing:.05em;color:#26322d}.workspace-skeleton-brand img{width:28px;height:28px;object-fit:contain}.workspace-skeleton-side-spacer{flex:1}.workspace-skeleton-main{padding:28px;display:grid;align-content:start;gap:18px;overflow:hidden}.workspace-skeleton-head{display:flex;align-items:center;justify-content:space-between;gap:18px}.workspace-skeleton-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.workspace-skeleton-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.75fr);gap:14px}.skeleton-stat,.skeleton-panel,.skeleton-table-card{background:#fff;border:1px solid rgba(17,24,39,.06);border-radius:16px;padding:16px}.skeleton-stat{min-height:84px}.skeleton-value{width:42%;height:26px;border-radius:8px;margin-top:14px}.skeleton-panel{min-height:240px}.skeleton-chart{height:164px;border-radius:12px;margin-top:18px}.skeleton-list-row{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:center;margin-top:17px}.skeleton-list-row i{width:32px;height:32px;border-radius:9px}.skeleton-list-row span{height:12px;border-radius:6px}.skeleton-table-card{display:grid;gap:13px}.skeleton-table-head{height:34px;border-radius:9px}.skeleton-table-row{display:grid;grid-template-columns:.8fr 1.8fr 1fr .7fr;gap:12px}.skeleton-table-row span{height:14px;border-radius:6px}.skeleton-line{height:15px;border-radius:6px}.skeleton-line.thin{height:9px;margin-top:8px}.skeleton-pill{width:104px;height:34px;border-radius:999px}.skeleton-bar{height:12px;border-radius:6px}.w-88{width:88%}.w-82{width:82%}.w-76{width:76%}.w-72{width:72%}.w-70{width:70%}.w-64{width:64%}.w-58{width:58%}.w-52{width:52%}.w-48{width:48%}.w-46{width:46%}.w-45{width:45%}.w-42{width:42%}.w-40{width:40%}.w-34{width:34%}.w-30{width:30%}.w-26{width:26%}.skel{position:relative;overflow:hidden;background:#edf2ef!important}.skel:after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.78),transparent);animation:juanSkeletonShimmer 1.35s ease-in-out infinite}
+.portal-loading-skeleton{display:grid!important;gap:13px!important;padding:16px!important}.portal-loading-skeleton.hidden{display:none!important}.portal-skeleton-toolbar{display:flex;justify-content:space-between;gap:12px}.portal-skeleton-toolbar span:first-child{width:38%;height:12px;border-radius:6px}.portal-skeleton-toolbar span:last-child{width:112px;height:32px;border-radius:9px}.portal-skeleton-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.portal-skeleton-summary i{height:62px;border-radius:11px}.portal-skeleton-table{display:grid;gap:9px}.portal-skeleton-table b{height:30px;border-radius:8px}.portal-skeleton-table span{height:18px;border-radius:7px}
+@keyframes juanSkeletonShimmer{100%{transform:translateX(100%)}}
+@media(max-width:900px){.workspace-skeleton-layout{grid-template-columns:1fr}.workspace-skeleton-sidebar{display:none}.workspace-skeleton-main{padding:20px}.workspace-skeleton-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-skeleton-grid{grid-template-columns:1fr}.portal-skeleton-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.skel:after{animation:none;display:none}}
+</style>

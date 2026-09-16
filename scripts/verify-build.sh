@@ -76,7 +76,8 @@ checks={
  'JUAN PROJECT':'Invoice brand missing',
  'portal-client-access-table':'Client Access table sizing class missing',
  'v1332-static-table-final-override':'Static table final override missing',
- 'workspace-loader-card':'Improved Workspace loading state missing',
+ 'workspace-skeleton-layout':'Workspace skeleton loading state missing',
+ 'Paint the usable Workspace as soon as primary business data is ready.':'Workspace still blocks primary rendering on background sync',
  '<th class="table-actions-col" aria-label="Actions"></th>':'Payment Review trailing action column missing',
 }
 for token,msg in checks.items():
@@ -124,8 +125,8 @@ if 'Your initial password is your Client ID' in app or 'Initial portal password 
     raise SystemExit('Initial-password guidance is still displayed in Online UI')
 if 'id="rememberLogin"' in app:
     raise SystemExit('Optional Remember Me checkbox remains; Online should persist login automatically')
-if 'jp-boot-card' not in html:
-    raise SystemExit('Improved Online loading card missing')
+if 'jp-boot-skeleton' not in html or 'jp-skel' not in html:
+    raise SystemExit('Online skeleton loading state missing')
 if 'storage:window.localStorage' not in Path(str(Path(sys.argv[1]).parent/'auth.js')).read_text():
     raise SystemExit('Online Supabase session is not explicitly persisted in localStorage')
 if 'invoice-brand-wordmark' not in app:
@@ -136,6 +137,8 @@ if 'defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js' not in html:
     raise SystemExit('Supabase client script is still blocking first paint')
 if 'jp-boot-shell' not in html or 'jp-boot-shell' not in css:
     raise SystemExit('Immediate Online boot shell missing')
+if 'Still connecting securely' in html or 'jpBootCopy' in html:
+    raise SystemExit('Legacy timed loading copy remains')
 PY
 
 # Validate the authoritative Client ID mapping artifact and both identity migrations.
@@ -173,8 +176,8 @@ PY
 # Confirm bank/e-wallet support and service-worker cache bump.
 grep -q "code:'gotyme'" "$ROOT/online/js/payment-institutions.js" || { echo 'GoTyme missing'; exit 1; }
 grep -q "code:'maribank'" "$ROOT/online/js/payment-institutions.js" || { echo 'MariBank missing'; exit 1; }
-grep -q "juan-online-v1.3.3.2-static-tables-loading2" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
-grep -q "juan-workspace-v1.3.3.2-static-tables-loading2" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
+grep -q "juan-online-v1.3.3.2-skeleton-loading1" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
+grep -q "juan-workspace-v1.3.3.2-skeleton-loading1" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
 
 # Preserve the supplied UnionBank QR bytes.
 EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"
@@ -183,4 +186,4 @@ ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg
 
 if grep -Rqi 'Gemini' "$ROOT/online/js" "$ROOT/online/api"; then echo 'Gemini payment language remains'; exit 1; fi
 
-echo 'JUAN PROJECT Platform V1.3.3.2 Static Tables + Loading patch verification passed.'
+echo 'JUAN PROJECT Platform V1.3.3.2 Skeleton Loading hotfix verification passed.'
