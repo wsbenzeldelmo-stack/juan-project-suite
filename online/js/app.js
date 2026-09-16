@@ -17,6 +17,94 @@ let state={
   notificationOpen:false,senderInstitution:'',guestGateContext:'default',receiptPreviewUrl:'',receiptPreviewType:'',receiptPreviewName:'',clientMessage:null
 };
 
+let portalRealtimeChannel=null;
+let portalRealtimeRefreshTimer=null;
+let portalRealtimeFallbackTimer=null;
+let portalRealtimeRefreshInFlight=false;
+let portalRealtimeRefreshQueued=false;
+let portalRealtimeLastEvent=null;
+
+function stopPortalRealtimeSync(){
+  if(portalRealtimeRefreshTimer){clearTimeout(portalRealtimeRefreshTimer);portalRealtimeRefreshTimer=null;}
+  if(portalRealtimeFallbackTimer){clearInterval(portalRealtimeFallbackTimer);portalRealtimeFallbackTimer=null;}
+  const channel=portalRealtimeChannel;portalRealtimeChannel=null;
+  if(channel){getSupabase().then(sb=>sb.removeChannel(channel)).catch(()=>{});}
+}
+
+function schedulePortalRealtimeRefresh(eventRow=null,delay=280){
+  if(eventRow)portalRealtimeLastEvent=eventRow;
+  if(!state.portal?.profile||navigator.onLine===false)return;
+  if(portalRealtimeRefreshTimer)clearTimeout(portalRealtimeRefreshTimer);
+  portalRealtimeRefreshTimer=setTimeout(()=>{portalRealtimeRefreshTimer=null;refreshPortalFromRealtime(portalRealtimeLastEvent);portalRealtimeLastEvent=null;},delay);
+}
+
+function portalRealtimeCanRender(){
+  const el=document.activeElement;
+  if(!el)return true;
+  return !['INPUT','TEXTAREA','SELECT'].includes(el.tagName);
+}
+
+async function refreshPortalFromRealtime(eventRow=null){
+  if(!state.portal?.profile||navigator.onLine===false)return false;
+  if(portalRealtimeRefreshInFlight){portalRealtimeRefreshQueued=true;return false;}
+  portalRealtimeRefreshInFlight=true;
+  try{
+    const entity=String(eventRow?.entity||'');
+    const clientId=String(state.portal.profile.id||'');
+    if(eventRow?.client_id&&String(eventRow.client_id)!==clientId)return true;
+    const portalPromise=getPortal();
+    const catalogPromise=entity.startsWith('catalog_')?getCatalog():Promise.resolve(null);
+    const [portal,catalog]=await Promise.all([portalPromise,catalogPromise]);
+    state.portal=portal;
+    if(catalog){state.catalog=catalog;state.catalogLoaded=true;}
+    if(!state.portal.passwordSet){renderSetPassword();return true;}
+    if(state.selected&&!state.portal.projects?.some(p=>String(p.id)===String(state.selected))){state.selected=null;if(['project','invoice'].includes(state.route))state.route='orders';}
+    state.clientMessage=pickClientMessage();
+    if(portalRealtimeCanRender())render();
+    return true;
+  }catch(e){
+    console.warn('Live portal refresh failed:',e?.message||e);
+    return false;
+  }finally{
+    portalRealtimeRefreshInFlight=false;
+    if(portalRealtimeRefreshQueued){portalRealtimeRefreshQueued=false;schedulePortalRealtimeRefresh(null,120);}
+  }
+}
+
+async function startPortalRealtimeSync(){
+  if(!state.portal?.profile||navigator.onLine===false)return false;
+  stopPortalRealtimeSync();
+  try{
+    const sb=await getSupabase();
+    const clientId=String(state.portal.profile.id||'');
+    portalRealtimeChannel=sb
+      .channel(`juan-online-sync-${clientId}-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'juan_sync_events'},payload=>{
+        const row=payload?.new||null;
+        if(row?.client_id&&String(row.client_id)!==clientId)return;
+        schedulePortalRealtimeRefresh(row);
+      })
+      .subscribe(status=>{
+        if(['CHANNEL_ERROR','TIMED_OUT'].includes(status))console.warn('JUAN PROJECT Online live sync reconnecting:',status);
+      });
+    portalRealtimeFallbackTimer=setInterval(()=>{
+      if(document.visibilityState==='visible'&&state.portal?.profile&&navigator.onLine!==false)schedulePortalRealtimeRefresh(null,40);
+    },20000);
+    return true;
+  }catch(e){
+    console.warn('JUAN PROJECT Online Realtime unavailable; polling fallback is active:',e?.message||e);
+    portalRealtimeFallbackTimer=setInterval(()=>{
+      if(document.visibilityState==='visible'&&state.portal?.profile&&navigator.onLine!==false)schedulePortalRealtimeRefresh(null,40);
+    },20000);
+    return false;
+  }
+}
+
+window.addEventListener('online',()=>{if(state.portal?.profile){startPortalRealtimeSync();schedulePortalRealtimeRefresh(null,80);}});
+window.addEventListener('offline',()=>{stopPortalRealtimeSync();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.portal?.profile){schedulePortalRealtimeRefresh(null,60);}});
+window.addEventListener('focus',()=>{if(state.portal?.profile)schedulePortalRealtimeRefresh(null,80);});
+
 const isLoggedIn=()=>Boolean(state.portal?.profile);
 const initials=()=>esc((state.portal?.profile?.name||state.portal?.profile?.email||'JP').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase());
 const brand=(compact=false)=>`<div class="brand-logo ${compact?'compact':''}" aria-label="JUAN PROJECT Online"><img src="/assets/brand/juan-project-online.svg" alt="JUAN PROJECT Online"></div>`;
@@ -112,22 +200,23 @@ async function renderPortalLoadError(error){
   root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card portal-load-error"><div class="password-icon">${icon('alert',34)}</div><div class="auth-copy centered"><span class="eyebrow">CLIENT PORTAL</span><h1>We couldn't load your portal.</h1><p>Your account may still be signed in. You can try again or continue browsing as a guest.</p></div><div class="info-box">${icon('help',18)}<span>${esc(message)}</span></div><button id="portalRetry" class="btn primary full">Try Again</button><button id="portalGuest" class="btn full">Browse as Guest</button><button id="portalLogout" class="text-button full">Log Out</button></div></div>`;
   document.getElementById('portalRetry').onclick=()=>loadPortal();
   document.getElementById('portalGuest').onclick=()=>{state.portal=null;state.route='home';render()};
-  document.getElementById('portalLogout').onclick=async()=>{try{await signOut()}catch(_){}localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
+  document.getElementById('portalLogout').onclick=async()=>{stopPortalRealtimeSync();try{await signOut()}catch(_){}localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
 }
 
 async function loadPortal(){
   try{
     state.portal=await getPortal();localStorage.setItem(ONBOARDING_KEY,'1');
-    if(!state.portal.passwordSet)return renderSetPassword();
+    if(!state.portal.passwordSet){stopPortalRealtimeSync();return renderSetPassword();}
     state.clientMessage=pickClientMessage();
     state.route='home';render();
-  }catch(e){state.portal=null;renderPortalLoadError(e)}
+    await startPortalRealtimeSync();
+  }catch(e){stopPortalRealtimeSync();state.portal=null;renderPortalLoadError(e)}
 }
 function renderSetPassword(){
   root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="passwordBack" class="icon-button auth-back" aria-label="Log out">${icon('back')}</button><div class="password-icon">${icon('lock',34)}</div><div class="auth-copy centered"><span class="eyebrow">SECURITY STEP</span><h1>Change your password</h1><p>You are using a temporary password. Create a new password before continuing to your portal.</p></div><div class="field"><label>Current Password</label><div class="password-input-wrap"><input id="currentPass" class="input" type="password" autocomplete="current-password" placeholder="Current password"><button type="button" class="password-eye" data-toggle-pass="currentPass">${icon('eye',18)}</button></div></div><div class="field"><label>New Password</label><div class="password-input-wrap"><input id="p1" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="p1">${icon('eye',18)}</button></div></div><div class="field"><label>Confirm New Password</label><div class="password-input-wrap"><input id="p2" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="Confirm new password"><button type="button" class="password-eye" data-toggle-pass="p2">${icon('eye',18)}</button></div><div id="passwordValidation" class="field-error"></div></div><div class="password-rule">${icon('lock',18)}<span>Use at least 8 characters. A mix of letters, numbers, and symbols is recommended.</span></div><button id="savep" class="btn primary full">Update Password & Continue</button></div></div>`;
-  document.getElementById('passwordBack').onclick=async()=>{await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
+  document.getElementById('passwordBack').onclick=async()=>{stopPortalRealtimeSync();await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
   document.querySelectorAll('[data-toggle-pass]').forEach(b=>b.onclick=()=>{const input=document.getElementById(b.dataset.togglePass);if(input)input.type=input.type==='password'?'text':'password'});
-  document.getElementById('savep').onclick=async()=>{const cur=document.getElementById('currentPass'),p1=document.getElementById('p1'),p2=document.getElementById('p2'),btn=document.getElementById('savep');setFieldError('passwordValidation','');if(!cur.value){setFieldError('passwordValidation','Enter your temporary password.');return}if(p1.value.length<8){setFieldError('passwordValidation','Use at least 8 characters.');return}if(p1.value!==p2.value){setFieldError('passwordValidation','Passwords do not match.');return}try{btn.disabled=true;btn.innerHTML=`<span class="btn-spinner"></span> Updating…`;await changePasswordWithCurrent(state.portal.profile.email,cur.value,p1.value);await markPasswordSet();state.portal.passwordSet=true;root.innerHTML=`<div class="flow-screen success"><div class="flow-check">✓</div><span class="eyebrow">ACCOUNT READY</span><h2>Password Updated</h2><p>Your JUAN PROJECT Online account is ready to use.</p><button id="passwordDone" class="btn primary full">Continue to Home</button></div>`;document.getElementById('passwordDone').onclick=()=>{state.route='home';render()}}catch(e){setFieldError('passwordValidation',e.message||'Password could not be updated.')}finally{if(document.body.contains(btn)){btn.disabled=false;btn.textContent='Update Password & Continue'}}};
+  document.getElementById('savep').onclick=async()=>{const cur=document.getElementById('currentPass'),p1=document.getElementById('p1'),p2=document.getElementById('p2'),btn=document.getElementById('savep');setFieldError('passwordValidation','');if(!cur.value){setFieldError('passwordValidation','Enter your temporary password.');return}if(p1.value.length<8){setFieldError('passwordValidation','Use at least 8 characters.');return}if(p1.value!==p2.value){setFieldError('passwordValidation','Passwords do not match.');return}try{btn.disabled=true;btn.innerHTML=`<span class="btn-spinner"></span> Updating…`;await changePasswordWithCurrent(state.portal.profile.email,cur.value,p1.value);await markPasswordSet();state.portal.passwordSet=true;root.innerHTML=`<div class="flow-screen success"><div class="flow-check">✓</div><span class="eyebrow">ACCOUNT READY</span><h2>Password Updated</h2><p>Your JUAN PROJECT Online account is ready to use.</p><button id="passwordDone" class="btn primary full">Continue to Home</button></div>`;document.getElementById('passwordDone').onclick=()=>{state.route='home';render();startPortalRealtimeSync()}}catch(e){setFieldError('passwordValidation',e.message||'Password could not be updated.')}finally{if(document.body.contains(btn)){btn.disabled=false;btn.textContent='Update Password & Continue'}}};
 }
 
 
@@ -431,7 +520,7 @@ function bind(){
     await setProfilePhoto(path);state.portal=await getPortal();if(status)status.textContent='Photo updated.';toast('Profile photo updated.');render();
   }catch(e){if(status)status.textContent=e.message||'Could not update photo.';toast(e.message||'Could not update photo.')}};
   const changeBtn=document.getElementById('changePass');if(changeBtn)changeBtn.onclick=async()=>{try{const p1=document.getElementById('newPass'),p2=document.getElementById('newPass2');if((p1?.value||'').length<8)throw Error('Use at least 8 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');changeBtn.disabled=true;changeBtn.textContent='Updating…';await setPassword(p1.value);await markPasswordSet();toast('Password updated.');p1.value=p2.value=''}catch(e){toast(e.message)}finally{if(document.body.contains(changeBtn)){changeBtn.disabled=false;changeBtn.textContent='Update Password'}}};
-  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';state.onboardingStep=0;onboardingScreen()};
+  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{stopPortalRealtimeSync();await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';state.onboardingStep=0;onboardingScreen()};
   const gateX=document.getElementById('gateX');if(gateX)gateX.onclick=()=>{state.gateOpen=false;render()};
   const gateLogIn=document.getElementById('gateLogIn');if(gateLogIn)gateLogIn.onclick=()=>authScreen();
   const gateShop=document.getElementById('gateShop');if(gateShop)gateShop.onclick=()=>{state.gateOpen=false;state.route='shop';render()};

@@ -2545,7 +2545,8 @@
           updateConnectionStatus("connected","● CONNECTED");
           updateManualDatabasePanel();
           await loadDatabaseData();
-          showToast("Connected to the shared database.");
+          await startWorkspaceRealtimeSync();
+          showToast("Connected to the shared database. Live sync is active.");
           return true;
         } catch(e) {
           state.isConnected = false;
@@ -2559,6 +2560,7 @@
       }
 
       async function disconnectDatabase() {
+        stopWorkspaceRealtimeSync();
         try { await supabaseClient?.auth?.signOut(); } catch(_) {}
         clearWorkspaceCloudMemory();
         supabaseClient = null;
@@ -2571,6 +2573,7 @@
       }
 
       function continueWorkspaceOffline() {
+        stopWorkspaceRealtimeSync();
         clearWorkspaceCloudMemory();
         supabaseClient = null;
         hideWorkspaceAuthGate();
@@ -2966,8 +2969,124 @@
         return false;
       }
 
-      window.addEventListener('online',()=>{if(state.isConnected){updateConnectionStatus('connected','● CONNECTED');flushOfflineSyncQueue();}});
-      window.addEventListener('offline',()=>{updateConnectionStatus('error','○ OFFLINE');showToast('You are offline. Changes will be stored on this device until you reconnect.');});
+      let workspaceRealtimeChannel=null;
+      let workspaceRealtimeRefreshTimer=null;
+      let workspaceRealtimeFallbackTimer=null;
+      let workspaceRealtimeRefreshInFlight=false;
+      let workspaceRealtimeRefreshQueued=false;
+      let workspaceRealtimeLastEvent=null;
+
+      function stopWorkspaceRealtimeSync(){
+        if(workspaceRealtimeRefreshTimer){clearTimeout(workspaceRealtimeRefreshTimer);workspaceRealtimeRefreshTimer=null;}
+        if(workspaceRealtimeFallbackTimer){clearInterval(workspaceRealtimeFallbackTimer);workspaceRealtimeFallbackTimer=null;}
+        if(workspaceRealtimeChannel&&supabaseClient){try{supabaseClient.removeChannel(workspaceRealtimeChannel);}catch(_){}}
+        workspaceRealtimeChannel=null;
+      }
+
+      function scheduleWorkspaceRealtimeRefresh(eventRow=null,delay=320){
+        if(eventRow)workspaceRealtimeLastEvent=eventRow;
+        if(!cloudAvailable())return;
+        if(workspaceRealtimeRefreshTimer)clearTimeout(workspaceRealtimeRefreshTimer);
+        workspaceRealtimeRefreshTimer=setTimeout(()=>{workspaceRealtimeRefreshTimer=null;refreshWorkspaceFromCloudRealtime(workspaceRealtimeLastEvent);workspaceRealtimeLastEvent=null;},delay);
+      }
+
+      async function refreshWorkspaceFromCloudRealtime(eventRow=null){
+        if(!cloudAvailable())return false;
+        if(workspaceRealtimeRefreshInFlight){workspaceRealtimeRefreshQueued=true;return false;}
+        workspaceRealtimeRefreshInFlight=true;
+        try{
+          const [clientsRes,projectsRes,settingsRes,sharedRes]=await Promise.all([
+            supabaseClient.from('clients').select('*').order('name'),
+            supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at',{ascending:false}),
+            supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle(),
+            supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle()
+          ]);
+          if(clientsRes.error)throw clientsRes.error;
+          if(projectsRes.error)throw projectsRes.error;
+          const pendingIds=queuedProjectIds();
+          const localById=new Map((state.projects||[]).filter(p=>p?.id).map(p=>[String(p.id),p]));
+          const remoteProjects=(projectsRes.data||[]).map(p=>({
+            ...p,
+            payments:Array.isArray(p.payments)?p.payments:[],
+            deliverables:Array.isArray(p.deliverables)?p.deliverables:[],
+            project_items:Array.isArray(p.project_items)?p.project_items:[]
+          }));
+          state.projects=remoteProjects.map(remote=>{
+            const local=localById.get(String(remote.id));
+            localById.delete(String(remote.id));
+            if(!local)return remote;
+            if(pendingIds.has(String(remote.id)))return local;
+            return remote;
+          });
+          for(const localOnly of localById.values())state.projects.push(localOnly);
+          state.clients=(clientsRes.data||[]).filter(c=>!c.archived_at);
+          applyKnownClientIdsLocally();
+          persistClientsState();
+          persistProjectsState();
+          if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
+          if(sharedRes?.data)applyWorkspaceSharedStateRecord(sharedRes.data);
+
+          const entity=String(eventRow?.entity||'');
+          if(entity.startsWith('catalog_')){
+            try{await loadSharedCatalogFromDatabase();}catch(e){console.warn('Realtime catalog refresh:',e?.message||e);}
+          }
+          if(['payment_submissions','portal_accounts','payment_settings','clients','projects','payments'].includes(entity)){
+            state.onlinePortalData=null;
+            if(state.activeView==='online-portal'){try{await loadOnlinePortalData(true);}catch(_){}}
+          }
+          renderTemplatesDropdown();
+          renderCurrentView();
+          try{window.dispatchEvent(new CustomEvent('juan:realtime-sync',{detail:eventRow||{}}));}catch(_){}
+          return true;
+        }catch(e){
+          console.warn('Realtime Workspace refresh failed:',e?.message||e);
+          return false;
+        }finally{
+          workspaceRealtimeRefreshInFlight=false;
+          if(workspaceRealtimeRefreshQueued){workspaceRealtimeRefreshQueued=false;scheduleWorkspaceRealtimeRefresh(null,120);}
+        }
+      }
+
+      async function startWorkspaceRealtimeSync(){
+        if(!cloudAvailable())return false;
+        stopWorkspaceRealtimeSync();
+        try{
+          workspaceRealtimeChannel=supabaseClient
+            .channel(`juan-workspace-sync-${Math.random().toString(36).slice(2)}`)
+            .on('postgres_changes',{event:'INSERT',schema:'public',table:'juan_sync_events'},payload=>{
+              scheduleWorkspaceRealtimeRefresh(payload?.new||null);
+            })
+            .subscribe(status=>{
+              if(status==='SUBSCRIBED'){
+                updateConnectionStatus('connected','● CONNECTED · LIVE');
+              }else if(['CHANNEL_ERROR','TIMED_OUT'].includes(status)){
+                updateConnectionStatus('connecting','● CONNECTED · SYNCING');
+              }
+            });
+          workspaceRealtimeFallbackTimer=setInterval(()=>{
+            if(document.visibilityState==='visible'&&cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,40);
+          },20000);
+          return true;
+        }catch(e){
+          console.warn('Workspace Realtime subscription unavailable:',e?.message||e);
+          workspaceRealtimeFallbackTimer=setInterval(()=>{
+            if(document.visibilityState==='visible'&&cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,40);
+          },20000);
+          return false;
+        }
+      }
+
+      window.addEventListener('online',async()=>{
+        if(state.isConnected){
+          updateConnectionStatus('connected','● CONNECTED · SYNCING');
+          await flushOfflineSyncQueue();
+          await startWorkspaceRealtimeSync();
+          scheduleWorkspaceRealtimeRefresh(null,80);
+        }
+      });
+      window.addEventListener('offline',()=>{stopWorkspaceRealtimeSync();updateConnectionStatus('error','○ OFFLINE');showToast('You are offline. Changes will be stored on this device until you reconnect.');});
+      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,60);});
+      window.addEventListener('focus',()=>{if(cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,80);});
 
       function loadTasksState() {
         try {
@@ -2977,8 +3096,41 @@
         } catch (e) { state.tasks = []; }
       }
 
+      let workspaceSharedStateSyncTimer=null;
+      let workspaceSharedStateHydrating=false;
+
+      function queueWorkspaceSharedStateSync(){
+        if(workspaceSharedStateHydrating||!cloudAvailable())return;
+        if(workspaceSharedStateSyncTimer)clearTimeout(workspaceSharedStateSyncTimer);
+        workspaceSharedStateSyncTimer=setTimeout(async()=>{
+          workspaceSharedStateSyncTimer=null;
+          if(!cloudAvailable())return;
+          try{
+            const {error}=await supabaseClient.from('workspace_shared_state').upsert({
+              id:1,
+              tasks:Array.isArray(state.tasks)?state.tasks:[],
+              templates:Array.isArray(state.templates)?state.templates:[],
+              updated_at:new Date().toISOString()
+            },{onConflict:'id'});
+            if(error)throw error;
+          }catch(e){console.warn('Shared Workspace state sync failed:',e?.message||e);}
+        },220);
+      }
+
+      function applyWorkspaceSharedStateRecord(record){
+        if(!record)return;
+        workspaceSharedStateHydrating=true;
+        try{
+          if(Array.isArray(record.tasks))state.tasks=record.tasks;
+          if(Array.isArray(record.templates))state.templates=record.templates;
+          localStorage.setItem("JUAN_TASKS_LOCAL",JSON.stringify(state.tasks||[]));
+          localStorage.setItem("JUAN_TEMPLATES",JSON.stringify(state.templates||[]));
+        }finally{workspaceSharedStateHydrating=false;}
+      }
+
       function persistTasksState() {
         localStorage.setItem("JUAN_TASKS_LOCAL", JSON.stringify(state.tasks));
+        queueWorkspaceSharedStateSync();
       }
 
       function loadTaskStateOnce() {
@@ -2996,6 +3148,7 @@
       function persistTemplatesState() {
         localStorage.setItem("JUAN_TEMPLATES", JSON.stringify(state.templates));
         renderTemplatesDropdown();
+        queueWorkspaceSharedStateSync();
       }
 
       function persistCatalogState() {
@@ -3525,7 +3678,8 @@ ${description}`))actionCallback();return;}
           updateConnectionStatus("connected", "● CONNECTED");
           updateManualDatabasePanel();
           await loadDatabaseData();
-          showToast("Workspace signed in securely.");
+          await startWorkspaceRealtimeSync();
+          showToast("Workspace signed in securely. Live sync is active.");
         } catch (e) {
           showWorkspaceAuthGate(e?.message || "Could not sign in.");
         } finally {
@@ -3534,6 +3688,7 @@ ${description}`))actionCallback();return;}
       }
 
       async function adminSignOut() {
+        stopWorkspaceRealtimeSync();
         try { await supabaseClient?.auth.signOut(); } catch (_) {}
         clearWorkspaceCloudMemory();
         state.isConnected = false;
@@ -3591,9 +3746,11 @@ ${description}`))actionCallback();return;}
           state.isConnected = true;
           updateConnectionStatus("connected", "● CONNECTED");
           await loadDatabaseData();
+          await startWorkspaceRealtimeSync();
           return true;
         } catch (err) {
           console.error("Supabase connection error:", err);
+          stopWorkspaceRealtimeSync();
           state.isConnected = false;
           supabaseClient = null;
           updateConnectionStatus("error", "○ NOT CONNECTED");
@@ -3627,14 +3784,16 @@ ${description}`))actionCallback();return;}
         try {
           const localClients=(()=>{try{const x=JSON.parse(localStorage.getItem('JUAN_CLIENTS_LOCAL')||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}})();
           const localProjects=(()=>{try{const x=JSON.parse(localStorage.getItem('JUAN_PROJECTS_LOCAL')||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}})();
-          const [clientsRes, projectsRes, settingsRes] = await Promise.all([
+          const [clientsRes, projectsRes, settingsRes, sharedRes] = await Promise.all([
             supabaseClient ? supabaseClient.from('clients').select('*').order('name') : { data: [], error:null },
             supabaseClient ? supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at', { ascending: false }) : { data: [], error:null },
-            supabaseClient ? supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle() : { data:null, error:null }
+            supabaseClient ? supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle() : { data:null, error:null },
+            supabaseClient ? supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle() : { data:null, error:null }
           ]);
           if (clientsRes.error) throw clientsRes.error;
           if (projectsRes.error) throw projectsRes.error;
           if (settingsRes.error && !/workspace_settings/i.test(String(settingsRes.error.message||''))) console.warn('Workspace settings load:',settingsRes.error);
+          if (sharedRes?.error) console.warn('Shared Workspace state load:',sharedRes.error);
 
           const remoteClients=(clientsRes.data||[]).filter(c=>!c.archived_at);
           const remoteProjects=(projectsRes.data||[]).map(p=>({
@@ -3664,7 +3823,8 @@ ${description}`))actionCallback();return;}
           }
           state.clients=[...remoteClientById.values()];
           state.projects=mergedProjects;
-          pruneClientDirectoryToProjects();
+          // The cloud Client Directory is the master list. Never prune clients merely
+          // because they do not currently have a project in this browser.
           applyKnownClientIdsLocally();
           persistClientsState();
           persistProjectsState();
@@ -3676,6 +3836,9 @@ ${description}`))actionCallback();return;}
           // Secondary reconciliation/catalog work continues after the skeleton is dismissed.
           loadTasksState();
           if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
+          const remoteSharedHasData=Boolean(sharedRes?.data&&((Array.isArray(sharedRes.data.tasks)&&sharedRes.data.tasks.length)||(Array.isArray(sharedRes.data.templates)&&sharedRes.data.templates.length)));
+          if(remoteSharedHasData)applyWorkspaceSharedStateRecord(sharedRes.data);
+          else if(!sharedRes?.error)queueWorkspaceSharedStateSync();
           renderTemplatesDropdown();
           renderCurrentView();
           setWorkspaceLoading(false);
