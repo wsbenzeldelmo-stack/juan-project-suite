@@ -302,9 +302,14 @@ async function exportNodeAsPng(element,filename){
   const svgUrl=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
   try{const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Could not render invoice image.'));img.src=svgUrl});const maxSide=8192,scale=Math.max(1,Math.min(2,maxSide/width,maxSide/height)),canvas=document.createElement('canvas');canvas.width=Math.round(width*scale);canvas.height=Math.round(height*scale);const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));if(!png)throw Error('Could not create PNG.');const finalName=filename||'JUAN-PROJECT-Invoice.png',file=new File([png],finalName,{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:finalName});return}catch(e){if(e?.name==='AbortError')return}}const url=URL.createObjectURL(png),a=document.createElement('a');a.href=url;a.download=finalName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}finally{URL.revokeObjectURL(svgUrl)}
 }
+function maintenanceFeeForSubtotal(subtotal){
+  const value=Math.max(0,Number(subtotal||0));
+  if(!(value>0))return 0;
+  return Math.abs(Math.round(value))%100===99?26:25;
+}
 function clientInvoiceFees(p,subtotal,discount,storedTotal){
   const rows=[],add=(label,amount)=>{amount=Math.max(0,Number(amount||0));if(amount>0)rows.push({label,amount})};
-  const baseRush=Math.max(0,Number(p.rush_fee||0)),workload=Math.max(0,Number(p.workload_surcharge||0)),maintenance=Math.max(0,Number(p.system_maintenance_fee||0));
+  const baseRush=Math.max(0,Number(p.rush_fee||0)),workload=Math.max(0,Number(p.workload_surcharge||0)),storedMaintenance=Math.max(0,Number(p.system_maintenance_fee||0)),maintenance=storedMaintenance>0?storedMaintenance:maintenanceFeeForSubtotal(subtotal);
   let rushDisplay=baseRush+workload;
   const others=[];if(Array.isArray(p.additional_fees))p.additional_fees.forEach(f=>{const amount=Math.max(0,Number(f?.amount||0));if(amount>0)others.push({label:String(f?.label||f?.name||'Additional Fee'),amount})});
   const explicitOther=others.reduce((sum,f)=>sum+f.amount,0),expected=Math.max(0,subtotal+rushDisplay+maintenance+explicitOther-discount),legacyDelta=storedTotal>expected+0.005?storedTotal-expected:0;

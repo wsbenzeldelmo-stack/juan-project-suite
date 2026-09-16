@@ -2,6 +2,12 @@ import { requireUser, ensurePortalAccount, sendError } from './_lib.js';
 
 const paidSum=rows=>(rows||[]).reduce((s,p)=>s+Number(p.amount_paid||p.amount||0),0);
 
+function maintenanceFeeForSubtotal(subtotal){
+  const value=Math.max(0,Number(subtotal||0));
+  if(!(value>0))return 0;
+  return Math.abs(Math.round(value))%100===99?26:25;
+}
+
 export default async function handler(req,res){
   try{
     if(req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
@@ -40,10 +46,18 @@ export default async function handler(req,res){
       const its=items.filter(i=>i.project_id===p.id).map(i=>({id:i.id,project_id:i.project_id,name:i.name,price:Number(i.price||0),qty:Number(i.qty||1),type:i.type||'Item'}));
       if(!ds.length)ds=its.map((i,idx)=>({id:`derived-${p.id}-${idx}`,project_id:p.id,item_name:i.name,completed:false,status:'Pending',progress:0,due_date:p.deadline_date,client_visible:true}));
       const pays=payments.filter(x=>x.project_id===p.id).map(x=>({id:x.id,amount_paid:Number(x.amount_paid||x.amount||0),payment_date:x.payment_date||null,payment_method:x.payment_method||null,reference_no:x.reference_no||null}));
-      const amountPaid=paidSum(pays),total=Number(p.total_amount||0),balance=Math.max(0,total-amountPaid);
+      const amountPaid=paidSum(pays);
+      const itemSubtotal=its.reduce((sum,i)=>sum+Math.max(0,Number(i.price||0))*Math.max(1,Number(i.qty||1)),0);
+      const subtotal=Math.max(0,Number(p.subtotal_amount||itemSubtotal||0));
+      const storedMaintenance=Math.max(0,Number(p.system_maintenance_fee||0));
+      const maintenance=storedMaintenance>0?storedMaintenance:maintenanceFeeForSubtotal(subtotal);
+      const discount=Math.max(0,Number(p.discount_amount||0));
+      const knownTotal=Math.max(0,subtotal-discount+Math.max(0,Number(p.rush_fee||0))+Math.max(0,Number(p.workload_surcharge||0))+maintenance);
+      const total=Math.max(Math.max(0,Number(p.total_amount||0)),knownTotal),balance=Math.max(0,total-amountPaid);
       const delivered=String(p.delivery_status||'').toLowerCase()==='delivered'||['completed','delivered'].includes(String(p.status||'').toLowerCase());
       return {
         ...p,status:delivered?'Delivered':p.status,delivery_status:delivered?'Delivered':(p.delivery_status||'Pending'),
+        system_maintenance_fee:maintenance,total_amount:total,
         items:its,deliverables:ds,payments:pays,amount_paid:amountPaid,balance,
         drive_url:p.drive_url||null,
         payment_status:balance<=0?'PAID':amountPaid>0?'PARTIALLY PAID':(p.deadline_date&&new Date(p.deadline_date)<new Date()?'OVERDUE':'UNPAID')

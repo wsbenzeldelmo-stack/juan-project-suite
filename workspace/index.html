@@ -1043,6 +1043,22 @@
 @keyframes workspaceLoaderDot{0%,70%,100%{transform:translateY(0);background:#cdd8d2}35%{transform:translateY(-4px);background:#19ba75}}
 /* On narrow screens keep tables static and wrap content instead of creating an inner scrollbar. */
 @media(max-width:760px){.table-responsive{overflow:visible!important}.unified-table{min-width:0!important;table-layout:fixed!important}.unified-table th,.unified-table td{padding-left:8px!important;padding-right:8px!important;font-size:11px}.portal-payment-review-table{display:table!important}.portal-payment-review-table thead{display:table-header-group!important}.portal-payment-review-table tbody{display:table-row-group!important}.portal-payment-review-table tr{display:table-row!important;padding:0!important}.portal-payment-review-table th,.portal-payment-review-table td{display:table-cell!important;width:auto;white-space:normal!important}.portal-payment-review-table td:before{display:none!important}.portal-payment-review-table td.table-row-actions{display:table-cell!important;padding:8px!important}.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:16%!important}.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:30%!important}.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:18%!important}.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:12%!important}.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:11%!important}.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:13%!important}.portal-payment-review-table th:nth-child(7),.portal-payment-review-table td:nth-child(7){width:42px!important;min-width:42px!important;max-width:42px!important}}
+
+<style id="jp-maintenance-shop-hotfix">
+/* Shop table repair: keep every catalog cell in the table formatting context.
+   A legacy -webkit-box rule on DESCRIPTION was collapsing the table grid and
+   creating the large white band between Description and Price. */
+#catalogServicesCard .table-responsive{width:100%!important;overflow:visible!important}
+#catalogServicesCard .catalog-services-table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important}
+#catalogServicesCard .catalog-services-table th:nth-child(1),#catalogServicesCard .catalog-services-table td:nth-child(1){width:10%!important}
+#catalogServicesCard .catalog-services-table th:nth-child(2),#catalogServicesCard .catalog-services-table td:nth-child(2){width:22%!important}
+#catalogServicesCard .catalog-services-table th:nth-child(3),#catalogServicesCard .catalog-services-table td:nth-child(3){width:20%!important}
+#catalogServicesCard .catalog-services-table th:nth-child(4),#catalogServicesCard .catalog-services-table td:nth-child(4){width:28%!important}
+#catalogServicesCard .catalog-services-table th:nth-child(5),#catalogServicesCard .catalog-services-table td:nth-child(5){width:13%!important;text-align:right!important;white-space:nowrap!important}
+#catalogServicesCard .catalog-services-table th:nth-child(6),#catalogServicesCard .catalog-services-table td:nth-child(6){width:7%!important;text-align:center!important;white-space:nowrap!important}
+#catalogServicesCard .catalog-services-table td.catalog-desc-cell{display:table-cell!important;-webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;overflow:visible!important;white-space:normal!important;overflow-wrap:break-word!important;word-break:normal!important;line-height:1.35!important}
+#catalogServicesCard .catalog-services-table th,#catalogServicesCard .catalog-services-table td{box-sizing:border-box!important;min-width:0!important;max-width:none!important}
+</style>
 </style>
 </head>
 <body>
@@ -4906,8 +4922,16 @@ ${description}`))actionCallback();return;}
       function automaticMaintenanceFee(items=[],projectNo=null,explicitSubtotal=null){const subtotal=explicitSubtotal!==null&&explicitSubtotal!==undefined?Number(explicitSubtotal):(items||[]).reduce((sum,i)=>sum+Math.max(0,Number(i?.price||0))*Math.max(1,Number(i?.qty||1)),0);if(!(subtotal>0))return 0;return Math.abs(Math.round(subtotal))%100===99?26:25;}
       function storedOrAutomaticMaintenanceFee(proj,items=[],explicitSubtotal=null){
         const storedDefined=proj&&proj.system_maintenance_fee!==undefined&&proj.system_maintenance_fee!==null&&Number.isFinite(Number(proj.system_maintenance_fee));
-        if(storedDefined)return Math.max(0,Number(proj.system_maintenance_fee));
-        return automaticMaintenanceFee(items,projectNumber(proj),explicitSubtotal);
+        const stored=storedDefined?Math.max(0,Number(proj.system_maintenance_fee)):0;
+        // Older projects may have a persisted 0 because the maintenance-fee field was added
+        // after the project was created. Treat zero as missing for active/unpaid projects so
+        // the canonical ₱25 / ₱26 rule is restored instead of silently dropping the fee.
+        if(stored>0)return stored;
+        const auto=automaticMaintenanceFee(items,projectNumber(proj),explicitSubtotal);
+        const paid=Math.max(0,getProjectPaid(proj)),existingTotal=Math.max(0,Number(proj?.total_amount||0));
+        // Preserve truly historical fully-settled records that intentionally had no fee.
+        if(storedDefined&&existingTotal>0&&paid>=existingTotal-0.005)return stored;
+        return auto;
       }
       function maintenanceFeeForRecalculation(proj,items=[],explicitSubtotal=null){
         const paid=Math.max(0,getProjectPaid(proj)),existingTotal=Math.max(0,Number(proj?.total_amount||0));
@@ -6116,6 +6140,7 @@ ${description}`))actionCallback();return;}
         const items=Array.isArray(proj.project_items)?proj.project_items:[];
         const itemsSubtotal=Number(proj.subtotal_amount||items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0));
         const maintenance=storedOrAutomaticMaintenanceFee(proj,items,itemsSubtotal);
+        if(maintenance>0&&Math.max(0,Number(proj.system_maintenance_fee||0))!==maintenance)proj.system_maintenance_fee=maintenance;
         const workloadSurcharge=resolvedWorkloadSurcharge(proj);
         const otherFees=Array.isArray(proj.additional_fees)?proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0):0;
         const discounts=Math.max(0,Number(proj.discount_amount||0));
@@ -6160,6 +6185,7 @@ ${description}`))actionCallback();return;}
         const itemSubtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0);
         const storedSubtotal=Math.max(0,Number(proj.subtotal_amount||itemSubtotal||0));
         const maintenance=storedOrAutomaticMaintenanceFee(proj,items,storedSubtotal);
+        if(maintenance>0&&Math.max(0,Number(proj.system_maintenance_fee||0))!==maintenance)proj.system_maintenance_fee=maintenance;
         const workloadSurcharge=Math.max(0,resolvedWorkloadSurcharge(proj));
         const otherFees=[];
         if(Array.isArray(proj.additional_fees)){
