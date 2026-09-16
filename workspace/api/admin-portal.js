@@ -86,7 +86,7 @@ async function reconcileProjectClient(svc,body){
 
   let matched=null;
   if(email){
-    const r=await svc.from('clients').select('id,name,email,phone,address,client_code,archived_at').ilike('email',email).is('archived_at',null).limit(1).maybeSingle();
+    const r=await svc.from('clients').select('id,name,email,phone,address,client_code,archived_at').ilike('email',email).limit(1).maybeSingle();
     if(r.error)throw r.error;matched=r.data||null;
   }
 
@@ -137,6 +137,68 @@ async function setAuthMetadata(svc,user,patch){
   const updated=await svc.auth.admin.updateUserById(user.id,{user_metadata:{...current,...patch}});
   if(updated.error)throw updated.error;
   return updated.data?.user||user;
+}
+
+async function rebootOneClientLogin(svc,client,snapshot){
+  if(!client)return {status:'error',message:'Client not found.'};
+  if(client.archived_at)return {status:'skipped',message:'Archived client was not changed.'};
+  if(!client.client_code)return {status:'skipped',message:'Client ID is missing.'};
+  if(!validEmail(client.email))return {status:'skipped',message:'A valid email is required.'};
+  const email=normEmail(client.email);
+  if((snapshot.emailCounts.get(email)||0)>1)return {status:'skipped',message:'Duplicate client email. Resolve duplicates first.'};
+
+  const existingPortal=snapshot.portalByClient.get(String(client.id));
+  let user=(existingPortal&&snapshot.authById.get(existingPortal.auth_user_id))||snapshot.authByEmail.get(email)||null;
+
+  if(user){
+    const role=snapshot.roleByUser.get(user.id);
+    if(role==='admin')return {status:'skipped',message:'Admin account was not changed.'};
+    const conflict=await svc.from('portal_accounts').select('client_id').eq('auth_user_id',user.id).maybeSingle();
+    if(conflict.error)throw conflict.error;
+    if(conflict.data&&String(conflict.data.client_id)!==String(client.id)){
+      return {status:'skipped',message:'This Auth user is linked to another client.'};
+    }
+    const updated=await svc.auth.admin.updateUserById(user.id,{
+      email,
+      password:client.client_code,
+      email_confirm:true,
+      user_metadata:{...(user.user_metadata||{}),client_code:client.client_code,client_id:client.id,must_change_password:true,juan_project_client:true}
+    });
+    if(updated.error)throw updated.error;
+    user=updated.data?.user||user;
+  }else{
+    const made=await svc.auth.admin.createUser({
+      email,password:client.client_code,email_confirm:true,
+      user_metadata:{client_code:client.client_code,client_id:client.id,must_change_password:true,juan_project_client:true}
+    });
+    if(made.error)throw made.error;
+    user=made.data.user;
+  }
+
+  const role=snapshot.roleByUser.get(user.id);
+  if(role&&role==='admin')return {status:'skipped',message:'Admin account was not changed.'};
+  if(role){
+    const roleUpdate=await svc.from('user_roles').update({role:'client'}).eq('auth_user_id',user.id);
+    if(roleUpdate.error)throw roleUpdate.error;
+  }else{
+    const roleInsert=await svc.from('user_roles').insert({auth_user_id:user.id,role:'client'});
+    if(roleInsert.error)throw roleInsert.error;
+  }
+
+  if(existingPortal&&String(existingPortal.auth_user_id)!==String(user.id)){
+    const clear=await svc.from('portal_accounts').delete().eq('client_id',client.id);
+    if(clear.error)throw clear.error;
+  }
+  const account=await svc.from('portal_accounts').upsert({
+    auth_user_id:user.id,
+    client_id:client.id,
+    password_set:false,
+    portal_enabled:true,
+    updated_at:new Date().toISOString()
+  },{onConflict:'auth_user_id'});
+  if(account.error)throw account.error;
+
+  return {status:'rebooted',message:'Initial password reset to Client ID.',auth_user_id:user.id,initial_password:client.client_code};
 }
 
 async function provisionOneClient(svc,client,snapshot,{refreshTemporary=false}={}){
@@ -253,6 +315,18 @@ export default async function handler(req,res){
     if(body.action==='reconcile-project-client'){
       const result=await reconcileProjectClient(svc,body);
       return res.status(200).json({ok:true,...result});
+    }
+
+    if(body.action==='reboot-client-logins'){
+      const snapshot=await getClientAccountSnapshot(svc);
+      const results=[];
+      for(const row of snapshot.rows){
+        const client={id:row.id,name:row.name,email:row.email,client_code:row.client_code,archived_at:row.archived_at};
+        try{results.push({...client,...await rebootOneClientLogin(svc,client,snapshot)})}
+        catch(error){results.push({...client,status:'error',message:error?.message||'Login reboot failed.'})}
+      }
+      const summary=results.reduce((acc,x)=>{acc[x.status]=(acc[x.status]||0)+1;return acc},{total:results.length});
+      return res.status(200).json({ok:true,summary,results,initial_password_rule:'Client ID'});
     }
 
     if(body.action==='provision-all-clients'){

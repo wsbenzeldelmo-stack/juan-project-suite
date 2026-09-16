@@ -1,18 +1,29 @@
 # V1.3.3.2 Update Notes
 
-This release changes Workspace from automatic database startup to explicit manual connection while preserving local/offline access. It also repairs JUAN PROJECT Online startup routing and restores its missing Home/Guest Mode renderer.
+## Manual database connection
+Workspace no longer auto-connects to Supabase on startup. It renders local/cache data first and remains usable offline. Cloud data is loaded only after the admin opens Settings → Database Connection and explicitly connects.
 
-### Workspace startup
-1. Load local/cached records.
-2. Render Workspace immediately as `Offline / Local`.
-3. User optionally opens Settings → Database Connection.
-4. User tests and connects using Supabase URL + public publishable key.
-5. Admin authentication is requested only when cloud data is requested.
-6. Successful connection loads and merges shared Supabase data.
+A browser form accepts only the Supabase URL and publishable key. Service-role/secret credentials remain server-side.
 
-### Online startup
-- First open → onboarding.
-- Finish/skip onboarding → Guest Mode.
-- Returning guest → Guest Home immediately.
-- Returning authenticated client → Guest-safe first paint, then client portal after session/data hydration.
-- Portal load failure never traps the user on a blank/login screen.
+## Client ID / portal login
+`docs/CLIENT_ID_MAPPING_V1_3_3_2.csv` is the authoritative mapping for the historical client set supplied with this release. Migration 012 applies those IDs to matching existing client emails, moves unmatched active clients after CL-046, and changes future Client ID allocation to MAX+1.
+
+Client portal username remains the registered email. The initial password for newly provisioned or still-temporary accounts is the current Client ID (for example `CL-006`). The client must change it on first login. Existing activated passwords are not overwritten by the migration.
+
+After migration, use Online Portal → Client Access → **Sync Client Accounts**.
+
+## JUAN PROJECT Online entry flow
+- First open: 3-slide onboarding → Guest Mode.
+- Returning guest: Guest Mode.
+- Remembered valid client session: Guest shell appears first, then the portal can restore in the background.
+- Protected actions prompt existing clients to Log In.
+- Portal loading errors never trap the user; Guest Mode remains available.
+
+## Payment Reviews
+The main table is intentionally compact and non-scrollable horizontally:
+`PROJECT | AMOUNT | BANK / E-WALLET | STATUS | DATE SUBMITTED | ⋮`
+
+Pending rows expose Approve Request, Reject Request, and Delete Request through the ⋮ menu. Rejection uses a compact reason dialog. Approval still runs server-side verification before recording a payment.
+
+## Reports
+Reports continue to normalize legacy/malformed project and payment records before calculation. A bad record produces a retryable Reports error state instead of stopping Workspace.

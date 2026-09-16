@@ -7,6 +7,7 @@ import {PAYMENT_INSTITUTIONS,getPaymentInstitution,validatePaymentReference,sani
 const root=document.getElementById('root');
 const QR_FALLBACK='/assets/unionbank-bankqr-placeholder.jpg';
 const ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V7';
+const REMEMBERED_CLIENT_KEY='JUAN_REMEMBERED_CLIENT';
 
 let state={
   route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
@@ -19,7 +20,7 @@ let state={
 const isLoggedIn=()=>Boolean(state.portal?.profile);
 const initials=()=>esc((state.portal?.profile?.name||state.portal?.profile?.email||'JP').split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase());
 const brand=(compact=false)=>`<div class="brand-logo ${compact?'compact':''}" aria-label="JUAN PROJECT Online"><img src="/assets/brand/juan-project-online.svg" alt="JUAN PROJECT Online"></div>`;
-const invoiceBrand=()=>`<div class="invoice-brand-text" aria-label="JUAN PROJECT">JUAN PROJECT</div>`;
+const invoiceBrand=()=>`<div class="invoice-brand-logo" aria-label="JUAN PROJECT"><img src="/assets/brand/juan-project.svg" alt="JUAN PROJECT"></div>`;
 
 const icons={
   home:'<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/>',
@@ -86,9 +87,9 @@ function setFieldError(id,message=''){
 function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||'').trim())}
 
 function authScreen(message=''){
-  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options"><label class="remember"><input id="rememberLogin" type="checkbox" checked> <span>Remember me</span></label><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Client accounts are provided by JUAN PROJECT when a project is created. If you received a temporary password, you will be asked to change it after logging in.</span></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div>`;
+  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options"><label class="remember"><input id="rememberLogin" type="checkbox" checked> <span>Remember me</span></label><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Client accounts are provided by JUAN PROJECT. Your initial password is your Client ID (for example, CL-006). You can change it after your first login.</span></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div>`;
   const email=document.getElementById('ae'),pass=document.getElementById('ap'),btn=document.getElementById('ab');
-  document.getElementById('authBack').onclick=()=>{localStorage.getItem(ONBOARDING_KEY)==='1'?render():welcomeScreen()};
+  document.getElementById('authBack').onclick=()=>{state.route='home';state.portal=null;render()};
   email.addEventListener('blur',()=>setFieldError('emailValidation',email.value.trim()&&!validEmail(email.value)?'Enter a valid email address.':''));
   btn.onclick=async()=>{
     setFieldError('emailValidation','');setFieldError('loginValidation','');
@@ -98,12 +99,20 @@ function authScreen(message=''){
     if(!pass.value){setFieldError('loginValidation','Enter your password.');pass.focus();return}
     try{
       btn.disabled=true;btn.innerHTML=`<span class="btn-spinner"></span> Logging you in…`;
-      await signIn(e,pass.value);await loadPortal();
+      await signIn(e,pass.value);localStorage.setItem(REMEMBERED_CLIENT_KEY,document.getElementById('rememberLogin')?.checked?'1':'0');await loadPortal();
     }catch(err){setFieldError('loginValidation','Email or password is incorrect.');toast('Log in failed. Check your credentials and try again.')}finally{if(document.body.contains(btn)){btn.disabled=false;btn.textContent='Log In'}}
   };
   pass.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click()});
   const toggle=document.getElementById('toggleLoginPass');if(toggle)toggle.onclick=()=>{const show=pass.type==='password';pass.type=show?'text':'password';toggle.setAttribute('aria-label',show?'Hide password':'Show password')};
   document.getElementById('forgotPassword').onclick=async()=>{try{const e=email.value.trim();if(!e||!validEmail(e)){setFieldError('emailValidation','Enter your registered email address first.');return}await sendPasswordReset(e);toast('If this account can receive email, a password reset link has been sent.')}catch(err){toast('Password reset could not be started right now.')}};
+}
+
+async function renderPortalLoadError(error){
+  const message=error?.message||'We could not load your client information right now.';
+  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card portal-load-error"><div class="password-icon">${icon('alert',34)}</div><div class="auth-copy centered"><span class="eyebrow">CLIENT PORTAL</span><h1>We couldn't load your portal.</h1><p>Your account may still be signed in. You can try again or continue browsing as a guest.</p></div><div class="info-box">${icon('help',18)}<span>${esc(message)}</span></div><button id="portalRetry" class="btn primary full">Try Again</button><button id="portalGuest" class="btn full">Browse as Guest</button><button id="portalLogout" class="text-button full">Log Out</button></div></div>`;
+  document.getElementById('portalRetry').onclick=()=>loadPortal();
+  document.getElementById('portalGuest').onclick=()=>{state.portal=null;state.route='home';render()};
+  document.getElementById('portalLogout').onclick=async()=>{try{await signOut()}catch(_){}localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
 }
 
 async function loadPortal(){
@@ -112,11 +121,11 @@ async function loadPortal(){
     if(!state.portal.passwordSet)return renderSetPassword();
     state.clientMessage=pickClientMessage();
     state.route='home';render();
-  }catch(e){state.portal=null;portalLoadErrorScreen(e?.message||'We could not load your client portal.')}
+  }catch(e){state.portal=null;renderPortalLoadError(e)}
 }
 function renderSetPassword(){
   root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="passwordBack" class="icon-button auth-back" aria-label="Log out">${icon('back')}</button><div class="password-icon">${icon('lock',34)}</div><div class="auth-copy centered"><span class="eyebrow">SECURITY STEP</span><h1>Change your password</h1><p>You are using a temporary password. Create a new password before continuing to your portal.</p></div><div class="field"><label>Current Password</label><div class="password-input-wrap"><input id="currentPass" class="input" type="password" autocomplete="current-password" placeholder="Current password"><button type="button" class="password-eye" data-toggle-pass="currentPass">${icon('eye',18)}</button></div></div><div class="field"><label>New Password</label><div class="password-input-wrap"><input id="p1" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="p1">${icon('eye',18)}</button></div></div><div class="field"><label>Confirm New Password</label><div class="password-input-wrap"><input id="p2" class="input" type="password" autocomplete="new-password" minlength="8" placeholder="Confirm new password"><button type="button" class="password-eye" data-toggle-pass="p2">${icon('eye',18)}</button></div><div id="passwordValidation" class="field-error"></div></div><div class="password-rule">${icon('lock',18)}<span>Use at least 8 characters. A mix of letters, numbers, and symbols is recommended.</span></div><button id="savep" class="btn primary full">Update Password & Continue</button></div></div>`;
-  document.getElementById('passwordBack').onclick=async()=>{await signOut();state.portal=null;authScreen()};
+  document.getElementById('passwordBack').onclick=async()=>{await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
   document.querySelectorAll('[data-toggle-pass]').forEach(b=>b.onclick=()=>{const input=document.getElementById(b.dataset.togglePass);if(input)input.type=input.type==='password'?'text':'password'});
   document.getElementById('savep').onclick=async()=>{const cur=document.getElementById('currentPass'),p1=document.getElementById('p1'),p2=document.getElementById('p2'),btn=document.getElementById('savep');setFieldError('passwordValidation','');if(!cur.value){setFieldError('passwordValidation','Enter your temporary password.');return}if(p1.value.length<8){setFieldError('passwordValidation','Use at least 8 characters.');return}if(p1.value!==p2.value){setFieldError('passwordValidation','Passwords do not match.');return}try{btn.disabled=true;btn.innerHTML=`<span class="btn-spinner"></span> Updating…`;await changePasswordWithCurrent(state.portal.profile.email,cur.value,p1.value);await markPasswordSet();state.portal.passwordSet=true;root.innerHTML=`<div class="flow-screen success"><div class="flow-check">✓</div><span class="eyebrow">ACCOUNT READY</span><h2>Password Updated</h2><p>Your JUAN PROJECT Online account is ready to use.</p><button id="passwordDone" class="btn primary full">Continue to Home</button></div>`;document.getElementById('passwordDone').onclick=()=>{state.route='home';render()}}catch(e){setFieldError('passwordValidation',e.message||'Password could not be updated.')}finally{if(document.body.contains(btn)){btn.disabled=false;btn.textContent='Update Password & Continue'}}};
 }
@@ -138,9 +147,22 @@ function pickClientMessage(){
   return null;
 }
 function clientMessageOverlay(){
-  const m=state.clientMessage;if(!m||!isLoggedIn()||m.type!=='balance')return '';
-  const p=(state.portal?.projects||[]).find(x=>String(x.id)===String(m.projectId));if(!p)return '';
-  return `<div class="overlay client-message-overlay"><div class="sheet center client-message-sheet"><button id="messageClose" class="icon-button sheet-x" aria-label="Close">×</button><div class="sheet-icon">${icon('payment',26)}</div><span class="eyebrow">FRIENDLY REMINDER</span><h2>You still have ${peso(p.balance||0)} left to pay.</h2><p>Whenever you're ready, you can review the invoice or send your payment proof for ${esc(p.project_code||'your project')}.</p><div class="sheet-actions"><button id="messagePay" class="btn primary full">Make a Payment</button><button id="messageInvoice" class="btn full">View Invoice</button><button id="messageCloseLater" class="text-button full">Later</button></div></div></div>`;
+  const m=state.clientMessage;if(!m||!isLoggedIn())return '';
+  const p=(state.portal?.projects||[]).find(x=>String(x.id)===String(m.projectId));if(!p||Number(p.balance||0)<=0)return '';
+  return `<div class="overlay client-message-overlay"><div class="payment-reminder-modal" role="dialog" aria-modal="true" aria-label="Payment reminder">
+    <div class="payment-reminder-icon">${icon('payment',34)}</div>
+    <div class="payment-reminder-pill">PAYMENT REMINDER</div>
+    <h2>You still have</h2>
+    <div class="payment-reminder-amount">${peso(p.balance||0)}</div>
+    <div class="payment-reminder-label">remaining balance</div>
+    <p>Whenever you’re ready, you can review the invoice or send your payment proof for ${esc(p.project_code||'your project')}.</p>
+    <div class="payment-reminder-invoice">${icon('receipt',19)}<span>Invoice: <b>${esc(p.project_code||p.invoice_number||'Project')}</b></span></div>
+    <div class="payment-reminder-actions">
+      <button id="messagePay" class="btn primary full">Make a Payment <span aria-hidden="true">→</span></button>
+      <button id="messageInvoice" class="btn full">Review Invoice</button>
+      <button id="messageClose" class="text-button full">Maybe Later</button>
+    </div>
+  </div></div>`;
 }
 
 function gate(context='default'){state.guestGateContext=context;state.gateOpen=true;render()}
@@ -167,7 +189,14 @@ function shopOverlay(){if(!state.shopItem)return'';const x=state.shopItem,price=
 function pageHead(title,{back=false,more=false}={}){return `<div class="screen-head"><button id="screenBack" class="icon-button ${back?'':'ghost-space'}" ${back?'':'disabled'} aria-label="Back">${back?icon('back'):''}</button><h1>${esc(title)}</h1><button class="icon-button ${more?'':'ghost-space'}" aria-label="More">${more?icon('more'):''}</button></div>`}
 function projectStats(p){const ds=p?.deliverables||[],done=ds.filter(d=>d.completed||String(d.status||'').toLowerCase()==='completed').length,total=ds.length||Math.max(1,p?.items?.length||0),pct=total?Math.round(done/total*100):0;return{done,total,pct}}
 function nextDeliverable(p){return (p?.deliverables||[]).filter(d=>!d.completed&&String(d.status||'').toLowerCase()!=='completed').sort((a,b)=>new Date(a.due_date||'9999-12-31')-new Date(b.due_date||'9999-12-31'))[0]||null}
-function activeProject(){return (state.portal?.projects||[]).filter(p=>!['cancelled','delivered'].includes(String(effectiveProjectStatus(p)||'').toLowerCase())).sort((a,b)=>new Date(a.deadline_date||'9999-12-31')-new Date(b.deadline_date||'9999-12-31'))[0]||null}
+function activeProject(){
+  const projects=(state.portal?.projects||[]).filter(p=>String(p?.status||'').toLowerCase()!=='cancelled');
+  const active=projects.filter(p=>Number(p.balance||0)>0||!isProjectDelivered(p));
+  return active.sort((a,b)=>{
+    const ab=Number(a.balance||0)>0?0:1,bb=Number(b.balance||0)>0?0:1;
+    return ab-bb||new Date(a.deadline_date||'9999-12-31')-new Date(b.deadline_date||'9999-12-31');
+  })[0]||null
+}
 function latestProject(){return (state.portal?.projects||[])[0]||null}
 function pendingSubmissionFor(p){return (state.portal?.paymentSubmissions||[]).find(x=>String(x.project_id)===String(p?.id)&&String(x.status||'').toLowerCase()==='pending')}
 function nextAction(p){if(!p)return{kind:'none',title:'No action required',body:'You have no active project right now.'};const sub=pendingSubmissionFor(p);if(sub)return{kind:'pending',title:'Payment under review',body:`${peso(sub.submitted_amount)} submitted ${fmtDate(sub.payment_date||sub.submitted_at)}.`,cta:'View Payment',route:'payment'};if(Number(p.balance||0)>0)return{kind:'payment',title:'Payment required',body:`${peso(p.balance)} balance due for ${p.project_code||'your project'}.`,cta:'Pay Now',route:'payment'};const next=nextDeliverable(p);if(next)return{kind:'progress',title:'Production in progress',body:`Next: ${next.item_name||'Deliverable'} · ${fmtDate(next.due_date||p.deadline_date)}.`,cta:'Track Order',route:'project'};return{kind:'none',title:'No action required',body:'Your project is moving forward. We will surface the next step here.'}}
@@ -187,21 +216,34 @@ function activityFeed(){
 }
 
 function home(){
-  if(!isLoggedIn())return `<div class="guest-home"><div class="guest-brand">${brand(true)}</div><div class="guest-mode-chip">Guest Mode</div><div class="guest-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Browse first.<br><strong>Log in when you need your project.</strong></h1><p>Explore JUAN PROJECT services freely. Client-only project, payment, invoice, and file tools open after you log in.</p></div><div class="guest-actions"><button id="homeShop" class="btn primary full">Browse Shop</button><button id="homeLogIn" class="btn full">Already a Client? Log In</button></div><div class="card guest-access"><div class="mini-icon">${icon('lock',19)}</div><div><b>Client access is private</b><p>Your JUAN PROJECT account is provided when your project is recorded. There is no public sign-up.</p></div></div></div>`;
-  const p=activeProject(),action=nextAction(p),feed=activityFeed().slice(0,4),profile=state.portal?.profile||{};
-  return `<div class="dashboard-head"><div><span>JUAN PROJECT ONLINE</span><h1>Hi, ${esc(String(profile.name||'Client').split(/\s+/)[0])}</h1></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">${icon('bell',19)}</button><button id="topAccount" class="icon-button" aria-label="Account">${icon('account',19)}</button></div></div>${p?`<button id="homeOrders" class="card active-project project-button"><div class="card-topline"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Project')}</div></div><span class="status-dot-label">${esc(effectiveProjectStatus(p))}</span></div><div class="progress"><span style="width:${projectStats(p).pct}%"></span></div><div class="meta"><span>${projectStats(p).done} of ${projectStats(p).total} deliverables</span><b>${projectStats(p).pct}%</b></div>${nextDeliverable(p)?`<div class="next-deliverable"><span>NEXT DELIVERABLE</span><b>${esc(nextDeliverable(p).item_name||'Deliverable')}</b><small>${esc(fmtDate(nextDeliverable(p).due_date||p.deadline_date))}</small></div>`:''}<div class="card-action-row"><span>Open order tracker</span>${icon('chevron',17)}</div></button>`:`<div class="card empty guided-empty"><b>No active project</b><span>Your active JUAN PROJECT orders will appear here.</span></div>`}<button id="nextActionBtn" class="card next-action-card ${esc(action.kind)}"><span class="next-action-icon">${icon(action.kind==='payment'?'payment':action.kind==='pending'?'clock':action.kind==='progress'?'orders':'check',18)}</span><div><b>${esc(action.title)}</b><p>${esc(action.body)}</p></div>${action.cta?icon('chevron',17):''}</button><div class="section-head"><h2>Recent Activity</h2></div><div class="card activity-card">${feed.map(x=>`<div class="activity-row"><span class="activity-icon">${icon(x.icon,15)}</span><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No recent activity yet.</div>'}</div>`;
-}
+  if(!isLoggedIn()){
+    return `<div class="guest-home">
+      <div class="guest-brand">${brand()}</div>
+      <div class="guest-copy"><span class="eyebrow">WELCOME TO JUAN PROJECT</span><h1>Browse first.<br><strong>Log in when it’s yours.</strong></h1><p>Explore JUAN PROJECT services in Guest Mode. If you already have a project with us, use your client account to open your private portal.</p></div>
+      <div class="guest-actions"><button id="homeShop" class="btn primary full">Browse Services</button><button id="homeLogIn" class="btn full">Already a Client? Log In</button></div>
+      <div class="guest-access"><div class="mini-icon">${icon('lock',17)}</div><div><b>Client access is private</b><p>Your orders, invoices, payments, and project files only appear after you log in.</p></div></div>
+    </div>`;
+  }
 
-function portalLoadErrorScreen(message=''){
-  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><div class="password-icon">${icon('alert',34)}</div><div class="auth-copy centered"><span class="eyebrow">CLIENT PORTAL</span><h1>We couldn't load your portal right now.</h1><p>${esc(message||'Your account is signed in, but project information could not be loaded. You can retry or continue browsing as a guest.')}</p></div><button id="portalRetry" class="btn primary full">Try Again</button><button id="portalBrowseGuest" class="btn full">Browse as Guest</button><button id="portalLogOut" class="text-button full">Log Out</button></div></div>`;
-  document.getElementById('portalRetry').onclick=()=>loadPortal();
-  document.getElementById('portalBrowseGuest').onclick=()=>{state.portal=null;state.route='home';render()};
-  document.getElementById('portalLogOut').onclick=async()=>{await signOut();state.portal=null;state.route='home';render()};
+  const p=activeProject(),action=nextAction(p),feed=activityFeed(),profile=state.portal?.profile||{};
+  const avatar=profile.profile_photo_url?`<img src="${esc(profile.profile_photo_url)}" alt="">`:initials();
+  const pStats=p?projectStats(p):null,next=p?nextDeliverable(p):null;
+  return `<div class="dashboard-head"><div><span>Welcome back</span><h1>${esc((profile.name||'Client').split(/\s+/)[0])}</h1></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">${icon('bell',19)}</button><button id="topAccount" class="avatar top-avatar" aria-label="Account">${avatar}</button></div></div>
+    ${p?`<button class="card active-project project-button" id="homeOrders" data-open="${esc(p.id)}"><div class="card-topline"><span class="project-code">${esc(p.project_code||p.id)}</span><span class="status-dot-label">${Number(p.balance||0)>0?'Balance Pending':esc(effectiveProjectStatus(p))}</span></div><div class="project-name">${esc(p.title||'Untitled Project')}</div><div class="progress"><span style="width:${pStats.pct}%"></span></div><div class="meta"><span>${pStats.done}/${pStats.total} deliverables</span><b>${pStats.pct}%</b></div>${next?`<div class="next-deliverable"><span>NEXT DELIVERABLE</span><b>${esc(next.item_name||next.name||'Deliverable')}</b><small>${esc(fmtDate(next.due_date||p.deadline_date))}</small></div>`:''}<div class="card-action-row"><span>${Number(p.balance||0)>0?`${peso(p.balance)} balance remaining`:'View project details'}</span>${icon('chevron',16)}</div></button>`:`<div class="card empty guided-empty"><b>No active project right now</b><span>Your next JUAN PROJECT order will appear here.</span><button id="homeShop" class="btn primary small">Browse Services</button></div>`}
+    <div class="section-head"><h2>Next Action</h2></div>
+    <div class="card next-action-card ${esc(action.kind||'none')}"><div class="next-action-icon">${icon(action.kind==='payment'?'payment':action.kind==='pending'?'clock':action.kind==='progress'?'spark':'check',18)}</div><div><b>${esc(action.title)}</b><p>${esc(action.body)}</p></div>${action.cta?`<button id="nextActionBtn" class="btn small">${esc(action.cta)}</button>`:''}</div>
+    <div class="section-head"><h2>Recent Activity</h2><span>${feed.length?'Latest updates':''}</span></div>
+    <div class="card activity-card">${feed.slice(0,4).map(x=>`<div class="activity-row"><div class="activity-icon">${icon(x.icon,15)}</div><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No recent activity yet.</div>'}</div>`;
 }
 
 function orders(){
   const all=state.portal?.projects||[],filter=state.orderFilter;
-  const ps=all.filter(p=>filter==='all'||(filter==='completed'?String(effectiveProjectStatus(p)).toLowerCase()==='delivered':!['cancelled','delivered'].includes(String(effectiveProjectStatus(p)).toLowerCase())));
+  const ps=all.filter(p=>{
+    const cancelled=String(p?.status||'').toLowerCase()==='cancelled';
+    const active=!cancelled&&(Number(p.balance||0)>0||!isProjectDelivered(p));
+    const completed=!cancelled&&Number(p.balance||0)<=0&&isProjectDelivered(p);
+    return filter==='all'||(filter==='completed'?completed:active);
+  });
   return `${pageHead('Orders',{back:false,more:false})}<p class="screen-subtitle">Track each JUAN PROJECT order from confirmation to delivery.</p><div class="tabs order-tabs"><button data-order-filter="active" class="${filter==='active'?'active':''}">Active</button><button data-order-filter="completed" class="${filter==='completed'?'active':''}">Completed</button><button data-order-filter="all" class="${filter==='all'?'active':''}">All</button></div><div class="project-list">${ps.map(p=>{const s=projectStats(p);return `<button class="card project-list-card project-button" data-open="${esc(p.id)}"><div class="project-list-top"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Untitled Project')}</div><small>${esc(effectiveProjectStatus(p))}</small></div>${icon('chevron',18)}</div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done}/${s.total} deliverables</span><b>${s.pct}%</b></div>${p.deadline_date?`<div class="order-deadline">Estimated completion · ${esc(fmtDate(p.deadline_date))}</div>`:''}</button>`}).join('')||'<div class="card empty guided-empty"><b>No matching orders</b><span>Orders in this status will appear here.</span></div>'}</div>`;
 }
 
@@ -262,7 +304,7 @@ async function exportNodeAsPng(element,filename){
 }
 function clientInvoiceFees(p,subtotal,discount,storedTotal){
   const rows=[],add=(label,amount)=>{amount=Math.max(0,Number(amount||0));if(amount>0)rows.push({label,amount})};
-  const baseRush=Math.max(0,Number(p.rush_fee||0)),workload=Math.max(0,Number(p.workload_surcharge||0)),maintenance=subtotal>0?(Math.abs(Math.round(subtotal))%100===99?26:25):0;
+  const baseRush=Math.max(0,Number(p.rush_fee||0)),workload=Math.max(0,Number(p.workload_surcharge||0)),maintenance=Math.max(0,Number(p.system_maintenance_fee||0));
   let rushDisplay=baseRush+workload;
   const others=[];if(Array.isArray(p.additional_fees))p.additional_fees.forEach(f=>{const amount=Math.max(0,Number(f?.amount||0));if(amount>0)others.push({label:String(f?.label||f?.name||'Additional Fee'),amount})});
   const explicitOther=others.reduce((sum,f)=>sum+f.amount,0),expected=Math.max(0,subtotal+rushDisplay+maintenance+explicitOther-discount),legacyDelta=storedTotal>expected+0.005?storedTotal-expected:0;
@@ -307,10 +349,9 @@ function bind(){
   const topAccount=document.getElementById('topAccount');if(topAccount)topAccount.onclick=()=>{state.route='account';render()};
   const homeShop=document.getElementById('homeShop');if(homeShop)homeShop.onclick=()=>{state.route='shop';render()};
   const homeLogIn=document.getElementById('homeLogIn');if(homeLogIn)homeLogIn.onclick=()=>authScreen();
-  const homeOrders=document.getElementById('homeOrders');if(homeOrders)homeOrders.onclick=()=>{if(!isLoggedIn())return gate('orders');state.route='orders';render()};
   const guestAccountLogin=document.getElementById('guestAccountLogin');if(guestAccountLogin)guestAccountLogin.onclick=()=>authScreen();
   const notificationBtn=document.getElementById('notificationBtn');if(notificationBtn)notificationBtn.onclick=()=>{state.notificationOpen=true;render()};
-  const nextActionBtn=document.getElementById('nextActionBtn');if(nextActionBtn)nextActionBtn.onclick=()=>{const p=activeProject(),a=nextAction(p);if(a.route==='project'&&p)state.selected=p.id;if(a.route)state.route=a.route;render()};
+  const nextActionBtn=document.getElementById('nextActionBtn');if(nextActionBtn)nextActionBtn.onclick=()=>{const p=activeProject(),a=nextAction(p);if(a.route==='project'&&p)state.selected=p.id;if(a.route==='payment'&&p)state.paymentProjectId=p.id;if(a.route)state.route=a.route;render()};
   const back=document.getElementById('screenBack');if(back&&!back.disabled)back.onclick=()=>{if(state.route==='invoice'){state.route='project'}else if(state.route==='project'){state.route='orders'}else{state.route='home'}render()};
   document.querySelectorAll('[data-order-filter]').forEach(b=>b.onclick=()=>{state.orderFilter=b.dataset.orderFilter;render()});
   const payProject=document.getElementById('payProject');if(payProject)payProject.onclick=()=>{state.paymentProjectId=state.selected;state.route='payment';render()};
@@ -385,14 +426,12 @@ function bind(){
     await setProfilePhoto(path);state.portal=await getPortal();if(status)status.textContent='Photo updated.';toast('Profile photo updated.');render();
   }catch(e){if(status)status.textContent=e.message||'Could not update photo.';toast(e.message||'Could not update photo.')}};
   const changeBtn=document.getElementById('changePass');if(changeBtn)changeBtn.onclick=async()=>{try{const p1=document.getElementById('newPass'),p2=document.getElementById('newPass2');if((p1?.value||'').length<8)throw Error('Use at least 8 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');changeBtn.disabled=true;changeBtn.textContent='Updating…';await setPassword(p1.value);await markPasswordSet();toast('Password updated.');p1.value=p2.value=''}catch(e){toast(e.message)}finally{if(document.body.contains(changeBtn)){changeBtn.disabled=false;changeBtn.textContent='Update Password'}}};
-  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{await signOut();state.portal=null;state.route='home';render()};
+  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';state.onboardingStep=0;onboardingScreen()};
   const gateX=document.getElementById('gateX');if(gateX)gateX.onclick=()=>{state.gateOpen=false;render()};
   const gateLogIn=document.getElementById('gateLogIn');if(gateLogIn)gateLogIn.onclick=()=>authScreen();
   const gateShop=document.getElementById('gateShop');if(gateShop)gateShop.onclick=()=>{state.gateOpen=false;state.route='shop';render()};
   const notificationX=document.getElementById('notificationX');if(notificationX)notificationX.onclick=()=>{state.notificationOpen=false;render()};
-  const dismissClientMessage=()=>{const m=state.clientMessage;if(m)sessionStorage.setItem(m.key,'1');state.clientMessage=null;render()};
-  const messageClose=document.getElementById('messageClose');if(messageClose)messageClose.onclick=dismissClientMessage;
-  const messageCloseLater=document.getElementById('messageCloseLater');if(messageCloseLater)messageCloseLater.onclick=dismissClientMessage;
+  const messageClose=document.getElementById('messageClose');if(messageClose)messageClose.onclick=()=>{const m=state.clientMessage;if(m){if(m.type==='thanks')localStorage.setItem(m.key,'1');else sessionStorage.setItem(m.key,'1')}state.clientMessage=null;render()};
   const messagePay=document.getElementById('messagePay');if(messagePay)messagePay.onclick=()=>{const m=state.clientMessage;if(m)sessionStorage.setItem(m.key,'1');state.paymentProjectId=m?.projectId||null;state.clientMessage=null;state.route='payment';render()};
   const messageInvoice=document.getElementById('messageInvoice');if(messageInvoice)messageInvoice.onclick=()=>{const m=state.clientMessage;if(m)sessionStorage.setItem(m.key,'1');state.selected=m?.projectId||null;state.clientMessage=null;state.route='invoice';render()};
   const messageFiles=document.getElementById('messageFiles');if(messageFiles)messageFiles.onclick=()=>{const m=state.clientMessage,p=(state.portal?.projects||[]).find(x=>String(x.id)===String(m?.projectId));if(m)localStorage.setItem(m.key,'1');state.clientMessage=null;if(p?.drive_url)window.open(p.drive_url,'_blank','noopener');render()};
@@ -403,18 +442,24 @@ function bind(){
 }
 
 (async()=>{
-  // V1.3.3.2: never leave a long blank page while network requests are pending.
-  // First-time visitors see onboarding immediately; returning visitors enter Guest Mode.
-  const introduced=localStorage.getItem(ONBOARDING_KEY)==='1';
-  if(introduced){state.route='home';render();}else{state.onboardingStep=0;onboardingScreen();}
+  // V1.3.3.2: paint the first useful screen before any network request.
+  // New/no-remembered visitors always see onboarding first, then Guest Mode.
+  const remembered=localStorage.getItem(REMEMBERED_CLIENT_KEY)==='1';
+  if(!remembered){
+    // First opening OR no remembered client: onboarding → Guest Mode → optional client login.
+    state.onboardingStep=0;
+    onboardingScreen();
+  } else {
+    // Returning client: paint immediately while the remembered session restores.
+    state.route='home';
+    render();
+  }
 
-  // Public catalog and remembered client session hydrate in the background.
-  try{state.catalog=await getCatalog();state.catalogLoaded=true;if(introduced&&!isLoggedIn()&&state.route==='shop')render();}catch(e){console.warn('Catalog unavailable:',e?.message||e)}
-  try{
-    await getSupabase();
-    const remembered=await session();
-    // Respect onboarding on a genuinely fresh first open. Once introduction is done,
-    // a valid remembered session may take the client directly into their portal.
-    if(remembered&&introduced)return await loadPortal();
-  }catch(e){console.warn('JUAN PROJECT Online cloud connection unavailable:',e?.message||e);}
+  // Public catalog never blocks onboarding/guest UI.
+  getCatalog().then(c=>{state.catalog=c;state.catalogLoaded=true;if(!isLoggedIn()&&state.route==='shop')render();}).catch(e=>console.warn('Catalog unavailable:',e?.message||e));
+
+  if(remembered){
+    try{await getSupabase();const s=await session();if(s)await loadPortal();else{localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.onboardingStep=0;onboardingScreen()}}
+    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.onboardingStep=0;onboardingScreen()}
+  }
 })();

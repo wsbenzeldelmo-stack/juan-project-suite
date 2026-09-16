@@ -951,6 +951,30 @@
       @media(max-width:900px){#view-pricelist .catalog-toolbar{align-items:stretch}.catalog-toolbar .toolbar-actions{flex-wrap:wrap}.catalog-toolbar #catalogManagerSearch{min-width:100%}}
 </style>
   <link rel="stylesheet" href="/css/v1-2-ux.css">
+
+  <style id="v1332-payment-review-table-fix">
+    .portal-payment-review-table-wrap{overflow:visible!important;width:100%;max-width:100%}
+    .portal-payment-review-table{width:100%!important;min-width:0!important;table-layout:fixed}
+    .portal-payment-review-table th:nth-child(1){width:20%}
+    .portal-payment-review-table th:nth-child(2){width:15%}
+    .portal-payment-review-table th:nth-child(3){width:24%}
+    .portal-payment-review-table th:nth-child(4){width:14%}
+    .portal-payment-review-table th:nth-child(5){width:20%}
+    .portal-payment-review-table th:nth-child(6){width:7%}
+    .portal-payment-review-table th,.portal-payment-review-table td{min-width:0!important}
+    .portal-payment-review-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .portal-payment-review-table .portal-bank-cell{min-width:0}
+    .portal-payment-review-table .portal-bank-cell span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    @media(max-width:720px){
+      .portal-payment-review-table,.portal-payment-review-table tbody,.portal-payment-review-table tr,.portal-payment-review-table td{display:block;width:100%!important}
+      .portal-payment-review-table thead{display:none}
+      .portal-payment-review-table tr{padding:12px 14px;border-bottom:1px solid var(--border-subtle)}
+      .portal-payment-review-table td{display:grid!important;grid-template-columns:118px minmax(0,1fr);align-items:center;gap:10px;padding:6px 0!important;border:0!important;white-space:normal}
+      .portal-payment-review-table td:before{content:attr(data-label);font-size:10px;font-weight:750;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.04em}
+      .portal-payment-review-table td.table-row-actions{display:flex!important;justify-content:flex-end;padding-top:8px!important}
+      .portal-payment-review-table td.table-row-actions:before{display:none}
+    }
+  </style>
 </head>
 <body>
 
@@ -960,7 +984,7 @@
       <div class="brand">
         <div class="brand-title">JUAN PROJECT</div>
         <div class="brand-subtitle-large">WORKSPACE</div>
-        <div id="connectionStatusIndicator" class="connection-status status-connected">
+        <div id="connectionStatusIndicator" class="connection-status status-connected" role="button" tabindex="0" title="Database connection settings" onclick="app.navigateTo('settings')">
           <span class="status-dot"></span> <span id="statusText">OFFLINE · LOCAL</span>
         </div>
       </div>
@@ -1002,7 +1026,6 @@
         <div class="workspace-skeleton-grid"><div class="skeleton-card hero"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div></div>
         <div class="workspace-skeleton-table"><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div></div>
       </div>
-      <div id="workspaceLocalModeBanner" class="workspace-local-mode-banner"><div><strong>Offline / Local mode</strong><span>Showing the latest data stored on this device. Connect the shared database when you want to load or sync cloud records.</span></div><button class="btn btn-secondary btn-sm" type="button" onclick="app.navigateTo('settings')">Database Settings</button></div>
 
       <!-- VIEW 1: CURRENT WORKS / DASHBOARD -->
       <section id="view-my-works" class="view active">
@@ -1532,14 +1555,14 @@
         <div id="onlinePortalAccountsPanel" class="portal-panel">
           <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
           <div class="view-toolbar unified-toolbar portal-toolbar">
-            <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
-            <div class="toolbar-actions"><button id="onlinePortalProvisionAll" class="btn btn-primary">Create Missing Accounts</button></div>
+            <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…"><div class="text-sm text-muted mt-2">Initial portal password = Client ID (for example CL-006). Clients are required to change it after first login.</div>
+            <div class="toolbar-actions"><button id="onlinePortalProvisionAll" class="btn btn-secondary">Sync Client Accounts</button><button id="onlinePortalRebootLogins" class="btn btn-primary">Reboot Client Logins</button></div>
           </div>
           <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Payment Reviews</strong><span>Open a review to see the full payment details, receipt, verification results, and decision controls.</span></div>
-          <div class="card table-card portal-payment-review-card"><div class="portal-payment-review-table-wrap"><table class="data-table unified-table portal-payment-review-table"><thead><tr><th>Project</th><th>Amount</th><th>Bank / E-Wallet</th><th>Status</th><th>Date Submitted</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
+          <div class="card table-card portal-payment-review-card"><div class="portal-payment-review-table-wrap"><table class="data-table unified-table portal-payment-review-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Bank / E-Wallet</th><th>Ref ID</th><th>Status</th><th>Date Submitted</th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalActivityPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Client-facing activity only.</strong><span>Use Projects and Clients for business records; this panel shows portal access and submission activity.</span></div>
@@ -1560,14 +1583,6 @@
         </header>
 
         <div class="settings-grid">
-          <div class="card manual-db-card">
-            <div class="manual-db-head"><div><h2 class="card-title">Database Connection</h2><p class="text-sm text-secondary mt-2">Workspace opens in Local mode. Connect manually when you want to load or sync the shared Supabase database.</p></div><div id="manualDatabaseStatus" class="manual-db-status offline"><span></span>Offline / Local</div></div>
-            <div class="manual-db-fields">
-              <div class="form-group"><label class="form-label" for="manualSupabaseUrl">Supabase URL</label><input id="manualSupabaseUrl" class="form-control" type="url" placeholder="https://your-project.supabase.co" autocomplete="off"></div>
-              <div class="form-group"><label class="form-label" for="manualSupabaseKey">Publishable Key</label><input id="manualSupabaseKey" class="form-control" type="password" placeholder="Publishable / anon key" autocomplete="off"><div class="text-sm text-muted mt-2">Use only the public publishable key here. Never enter the service-role/secret key in the browser.</div></div>
-            </div>
-            <div class="manual-db-actions"><button id="manualDatabaseTest" class="btn btn-secondary" type="button" onclick="app.testDatabaseConnection()">Test Connection</button><button id="manualDatabaseConnect" class="btn btn-primary" type="button" onclick="app.connectDatabase()">Connect Database</button><button id="manualDatabaseDisconnect" class="btn btn-text" type="button" onclick="app.disconnectDatabase()" disabled>Disconnect</button></div>
-          </div>
           <!-- Profile Section -->
           <div class="card">
             <h2 class="card-title mb-4">Profile</h2>
@@ -1605,6 +1620,14 @@
               <label class="form-label">Role</label>
               <input type="text" class="form-control" value="Workspace Owner" disabled style="background:var(--bg-subtle);">
             </div>
+          </div>
+
+          <!-- Manual Database Connection -->
+          <div class="card database-connection-card">
+            <div class="database-connection-head"><div><h2 class="card-title">Database Connection</h2><p class="text-sm text-secondary mt-2">Cloud access is manual. Your deployment credentials stay in Vercel and are never shown in Workspace.</p></div><span id="manualDatabaseStatus" class="database-state-pill offline">Offline / Local</span></div>
+            <div id="manualDatabaseDetail" class="database-connection-detail">Workspace is using local/cache data. Log in with your admin account when you want to load and sync the shared database.</div>
+            <div class="action-buttons-group mt-3"><button id="manualDatabaseConnect" class="btn btn-primary btn-sm" onclick="app.connectDatabaseManually()">Log In &amp; Connect</button><button id="manualDatabaseDisconnect" class="btn btn-secondary btn-sm" onclick="app.disconnectDatabase()" disabled>Disconnect</button></div>
+            <div class="text-sm text-muted mt-3">After a successful manual login, the cloud session stays connected across refreshes and signs out after 30 minutes without activity.</div>
           </div>
 
           <!-- Appearance & Dark Mode Toggle Section -->
@@ -1685,15 +1708,11 @@
   </div>
 
 
-  <div class="modal-backdrop" id="portalPaymentRejectModal">
-    <div class="modal-card payment-reject-quick-modal">
-      <div class="modal-header"><div><h3 class="modal-title">Reject Payment Request</h3><div class="text-sm text-muted">Choose a clear reason the client can understand.</div></div><button class="modal-close" onclick="app.closeModal('portalPaymentRejectModal')">×</button></div>
-      <div class="modal-body">
-        <div class="quick-reject-amount"><span>Submitted Amount</span><strong id="quickRejectAmount">₱0.00</strong></div>
-        <div class="form-group"><label class="form-label" for="quickRejectReason">Reason for Rejection</label><input id="quickRejectReason" class="form-control" list="quickRejectReasonOptions" placeholder="Type to search a reason…" autocomplete="off"><datalist id="quickRejectReasonOptions"></datalist><div id="quickRejectValidation" class="form-error hidden"></div></div>
-        <div class="form-group"><label class="form-label" for="quickRejectNote">Optional Note to Client</label><textarea id="quickRejectNote" class="form-control" rows="3" maxlength="500" placeholder="Add a short note if needed…"></textarea></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-secondary" onclick="app.closeModal('portalPaymentRejectModal')">Cancel</button><button class="btn btn-danger" onclick="app.confirmRejectPaymentRequest()">Reject Request</button></div>
+  <div class="modal-backdrop" id="paymentRejectQuickModal">
+    <div class="modal-card payment-reject-quick-card">
+      <div class="modal-header"><div><h3 class="modal-title">Reject Payment Request</h3><div class="text-sm text-muted">Select a clear reason the client can understand.</div></div><button class="modal-close" onclick="app.closeModal('paymentRejectQuickModal')">×</button></div>
+      <div class="modal-body"><div class="form-group"><label class="form-label">Reason *</label><input id="quickRejectReason" class="form-control" list="quickRejectReasonOptions" placeholder="Search or select a reason…" autocomplete="off"><datalist id="quickRejectReasonOptions"></datalist><div id="quickRejectValidation" class="form-error hidden">Select a rejection reason.</div></div><div class="form-group"><label class="form-label">Optional note</label><textarea id="quickRejectNote" class="form-control" rows="3" maxlength="500" placeholder="Add a short note for the client…"></textarea></div></div>
+      <div class="modal-footer"><button class="btn btn-secondary" onclick="app.closeModal('paymentRejectQuickModal')">Cancel</button><button id="quickRejectConfirm" class="btn payment-reject-btn">Reject Request</button></div>
     </div>
   </div>
 
@@ -2210,7 +2229,7 @@
         catalogCategories: [],
         catalogManagerCategory: "ALL",
         catalogManagerFilter: "All",
-        projectFilter: "Pending",
+        projectFilter: "Active",
         clientFilter: "All",
         paymentFilter: "Pending",
         listSorts: {
@@ -2228,6 +2247,28 @@
         onlinePortalLoading: false
       };
 
+      const CLIENT_ID_BY_EMAIL = {"imahemultimediaproductions@gmail.com":"CL-001","yvonnemaedelgado@gmail.com":"CL-002","trishakayemesana@gmail.com":"CL-003","dkian032@gmail.com":"CL-004","dalumpinesmargaret@gmail.com":"CL-005","ws.benzeldelmo@gmail.com":"CL-006","ardienjamesgais@gmail.com":"CL-007","kztksem88@gmail.com":"CL-008","oliver.villaruel@deped.gov.ph":"CL-009","dimaanolorraine37@gmail.com":"CL-010","janellerinn@gmail.com":"CL-011","ramosdenmar03@gmail.com":"CL-012","nikkazara29@gmail.com":"CL-013","mamadoaalexanderissaiah@gmail.com":"CL-014","earljohnmapa12@gmail.com":"CL-015","annefelicityrufo1@gmail.com":"CL-016","sosadanica07@gmail.com":"CL-017","ashleymaeramos001@gmail.com":"CL-018","leisoriano25@gmail.com":"CL-019","bacalaaj@gmail.com":"CL-020","calmorinjareen@gmail.com":"CL-021","danrowey2009@gmail.com":"CL-022","rapaconnicolo7@gmail.com":"CL-023","apriljoy.tabingo@deped.gov.ph":"CL-024","villegasnathaniel10@gmail.com":"CL-025","michaelquinto33@gmail.com":"CL-026","acunamika67@gmail.com":"CL-027","caliaoalthea6@gmail.com":"CL-028","macarimbangesmail18@gmail.com":"CL-029","santos.amielelijah@gmail.com":"CL-030","joycemagtibay@gmail.com":"CL-031","kyledylan1921@gmail.com":"CL-032","iannebaristol2005@gmail.com":"CL-033","jetcastre5@gmail.com":"CL-034","sittieazhimagyusoph@gmail.com":"CL-035","tjmercado1515@gmail.com":"CL-036","allieyahbautista@gmail.com":"CL-037","scharlesleendon@gmail.com":"CL-038","tagapulot.brianaziv@gmail.com":"CL-039","babonmichaelneil@gmail.com":"CL-040","caliguirankathleengrace@gmail.com":"CL-041","brylevicmudo@gmail.com":"CL-042","sharanfaten9@gmail.com":"CL-043","mykellpatigayon949@gmail.com":"CL-044","barejechad05@gmail.com":"CL-045","christian.aficionado@gmail.com":"CL-046"};
+
+      const CLIENT_ID_FLOOR = 46;
+      function normalizeClientIdentityEmail(value){ return String(value||'').trim().toLowerCase(); }
+      function clientCodeNumber(value){ const m=String(value||'').toUpperCase().match(/^CL-(\d+)$/); return m?Number(m[1]):0; }
+      function nextLocalClientCode(){
+        const used=(state.clients||[]).map(c=>clientCodeNumber(c?.client_code)).filter(Number.isFinite);
+        const historical=Object.values(CLIENT_ID_BY_EMAIL).map(clientCodeNumber);
+        const lastLocal=Number(localStorage.getItem('JUAN_CLIENT_ID_LAST')||CLIENT_ID_FLOOR)||CLIENT_ID_FLOOR;
+        const next=Math.max(CLIENT_ID_FLOOR,lastLocal,...used,...historical)+1;
+        localStorage.setItem('JUAN_CLIENT_ID_LAST',String(next));
+        return `CL-${String(next).padStart(3,'0')}`;
+      }
+      function findLocalClientByEmail(email,excludeId=''){
+        const normalized=normalizeClientIdentityEmail(email); if(!normalized)return null;
+        return (state.clients||[]).find(c=>String(c?.id)!==String(excludeId||'')&&normalizeClientIdentityEmail(c?.email)===normalized)||null;
+      }
+
+      function applyKnownClientIdsLocally(){
+        (state.clients||[]).forEach(client=>{const code=CLIENT_ID_BY_EMAIL[String(client?.email||'').trim().toLowerCase()];if(code)client.client_code=code;});
+      }
+
       // Profile Cropping State Variables
       let cropImageObj = null;
       let cropCanvasCtx = null;
@@ -2236,86 +2277,233 @@
       let isDragging = false;
       let dragStart = { x: 0, y: 0 };
 
-      async function initializeEnvironmentVariables() {
-        // V1.3.3.2: database connection is intentionally manual. The Workspace
-        // always opens from the latest local cache and never auto-connects on load.
-        state.supabaseUrl = (localStorage.getItem("SUPABASE_URL") || "").trim().replace(/\/$/, "");
-        state.supabaseAnonKey = (localStorage.getItem("SUPABASE_ANON_KEY") || localStorage.getItem("SUPABASE_PUBLISHABLE_KEY") || "").trim();
-        return Boolean(state.supabaseUrl && state.supabaseAnonKey);
+      const WORKSPACE_CLOUD_INTENT_KEY = "JUAN_WORKSPACE_CLOUD_CONNECTED";
+      const WORKSPACE_LAST_ACTIVITY_KEY = "JUAN_WORKSPACE_LAST_ACTIVITY";
+      const WORKSPACE_IDLE_MS = 30 * 60 * 1000;
+      let workspaceIdleTimer = null;
+      let workspaceActivityBound = false;
+      let lastWorkspaceActivityWrite = 0;
+
+      function workspaceCloudIntent() {
+        return localStorage.getItem(WORKSPACE_CLOUD_INTENT_KEY) === "1";
       }
 
-      function databaseFieldValues() {
-        const url = String(document.getElementById('manualSupabaseUrl')?.value || state.supabaseUrl || '').trim().replace(/\/$/, '');
-        const key = String(document.getElementById('manualSupabaseKey')?.value || state.supabaseAnonKey || '').trim();
-        return { url, key };
+      function workspaceIdleExpired() {
+        const last = Number(localStorage.getItem(WORKSPACE_LAST_ACTIVITY_KEY) || 0);
+        return !last || Date.now() - last >= WORKSPACE_IDLE_MS;
       }
 
-      function renderDatabaseConnectionSettings(message = '') {
-        const urlInput=document.getElementById('manualSupabaseUrl');
-        const keyInput=document.getElementById('manualSupabaseKey');
-        const label=document.getElementById('manualDatabaseStatus');
-        if(urlInput && !urlInput.matches(':focus')) urlInput.value=state.supabaseUrl||localStorage.getItem('SUPABASE_URL')||'';
-        if(keyInput && !keyInput.matches(':focus')) keyInput.value=state.supabaseAnonKey||localStorage.getItem('SUPABASE_ANON_KEY')||localStorage.getItem('SUPABASE_PUBLISHABLE_KEY')||'';
-        if(label){
-          label.className=`manual-db-status ${state.isConnected?'connected':'offline'}`;
-          label.innerHTML=`<span></span>${state.isConnected?'Connected to Supabase':'Offline / Local'}${message?` · ${escapeHtml(message)}`:''}`;
+      function clearWorkspaceCloudMemory() {
+        localStorage.removeItem(WORKSPACE_CLOUD_INTENT_KEY);
+        localStorage.removeItem(WORKSPACE_LAST_ACTIVITY_KEY);
+        localStorage.removeItem("SUPABASE_URL");
+        localStorage.removeItem("SUPABASE_ANON_KEY");
+        if (workspaceIdleTimer) clearInterval(workspaceIdleTimer);
+        workspaceIdleTimer = null;
+      }
+
+      function rememberWorkspaceCloudConnection() {
+        localStorage.setItem(WORKSPACE_CLOUD_INTENT_KEY, "1");
+        localStorage.setItem(WORKSPACE_LAST_ACTIVITY_KEY, String(Date.now()));
+        lastWorkspaceActivityWrite = Date.now();
+        startWorkspaceIdleWatch();
+      }
+
+      function touchWorkspaceActivity() {
+        if (!state.isConnected || !workspaceCloudIntent()) return;
+        const now = Date.now();
+        if (now - lastWorkspaceActivityWrite < 10000) return;
+        lastWorkspaceActivityWrite = now;
+        localStorage.setItem(WORKSPACE_LAST_ACTIVITY_KEY, String(now));
+      }
+
+      function installWorkspaceActivityTracking() {
+        if (workspaceActivityBound) return;
+        workspaceActivityBound = true;
+        ["pointerdown","keydown","touchstart","scroll"].forEach(eventName => {
+          window.addEventListener(eventName, touchWorkspaceActivity, { passive: true });
+        });
+      }
+
+      async function expireWorkspaceCloudSession() {
+        if (!workspaceCloudIntent() || !workspaceIdleExpired()) return;
+        try { await supabaseClient?.auth?.signOut(); } catch (_) {}
+        clearWorkspaceCloudMemory();
+        supabaseClient = null;
+        state.isConnected = false;
+        hideWorkspaceAuthGate();
+        updateConnectionStatus("error", "○ OFFLINE · LOCAL");
+        updateManualDatabasePanel("Cloud session ended after 30 minutes of inactivity. Log in again when you want to reconnect.");
+        renderCurrentView();
+        showToast("Cloud session ended after 30 minutes of inactivity.");
+      }
+
+      function startWorkspaceIdleWatch() {
+        if (workspaceIdleTimer) clearInterval(workspaceIdleTimer);
+        workspaceIdleTimer = setInterval(() => { expireWorkspaceCloudSession(); }, 30000);
+      }
+
+      function readManualDatabaseFields() {
+        return { url: "", key: "" };
+      }
+
+      function hydrateManualDatabaseFields() {
+        localStorage.removeItem("SUPABASE_URL");
+        localStorage.removeItem("SUPABASE_ANON_KEY");
+        updateManualDatabasePanel();
+      }
+
+      function updateManualDatabasePanel(message = "") {
+        const status = document.getElementById("manualDatabaseStatus");
+        const detail = document.getElementById("manualDatabaseDetail");
+        const connect = document.getElementById("manualDatabaseConnect");
+        const disconnect = document.getElementById("manualDatabaseDisconnect");
+        if (status) {
+          status.textContent = state.isConnected ? "Connected to Supabase" : "Offline / Local";
+          status.className = `database-state-pill ${state.isConnected ? "connected" : "offline"}`;
         }
-        const disconnect=document.getElementById('manualDatabaseDisconnect');
-        if(disconnect)disconnect.disabled=!state.isConnected&&!supabaseClient;
+        if (detail) detail.textContent = message || (state.isConnected
+          ? "Cloud data is connected. This session remains active across refreshes and expires after 30 minutes without activity."
+          : "Workspace is running from local/cache data. Choose Log In & Connect to load the shared database.");
+        if (connect) connect.disabled = state.isConnected;
+        if (disconnect) disconnect.disabled = !state.isConnected && !supabaseClient;
+      }
+
+      async function initializeEnvironmentVariables() {
+        state.supabaseUrl = "";
+        state.supabaseAnonKey = "";
+        try {
+          const response = await fetch("/api/supabase-config", { method:"GET", cache:"no-store", headers:{Accept:"application/json"} });
+          const payload = (response.headers.get("content-type")||"").includes("application/json") ? await response.json() : null;
+          if (!response.ok) throw new Error(payload?.error || "Database deployment configuration is unavailable.");
+          const url = String(payload?.SUPABASE_URL || "").trim().replace(/\/$/, "");
+          const key = String(payload?.SUPABASE_ANON_KEY || "").trim();
+          if (!url || !key) return false;
+          if (!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)) throw new Error("The deployed Supabase URL is invalid.");
+          state.supabaseUrl = url;
+          state.supabaseAnonKey = key;
+          localStorage.removeItem("SUPABASE_URL");
+          localStorage.removeItem("SUPABASE_ANON_KEY");
+          return true;
+        } catch (error) {
+          console.warn("Deployment database configuration unavailable:", error);
+          return false;
+        }
       }
 
       async function testDatabaseConnection() {
-        const {url,key}=databaseFieldValues();
-        const btn=document.getElementById('manualDatabaseTest');
-        if(!url||!key){showToast('Enter the Supabase URL and Publishable Key first.');return false;}
-        if(!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)){showToast('Enter a valid Supabase project URL.');return false;}
-        if(btn){btn.disabled=true;btn.textContent='Testing…';}
-        try{
-          const res=await fetch(`${url}/auth/v1/settings`,{headers:{apikey:key,Authorization:`Bearer ${key}`},cache:'no-store'});
-          if(!res.ok)throw new Error(`Connection returned HTTP ${res.status}`);
-          state.supabaseUrl=url;state.supabaseAnonKey=key;
-          renderDatabaseConnectionSettings('Connection test passed');
-          showToast('Database connection test passed.');
+        try {
+          const ready = await initializeEnvironmentVariables();
+          if (!ready) throw new Error("Database credentials are not configured in the Vercel deployment.");
+          const response = await fetch(`${state.supabaseUrl}/auth/v1/health`, { headers:{apikey:state.supabaseAnonKey} });
+          if (!response.ok) throw new Error(`Supabase returned HTTP ${response.status}.`);
+          updateManualDatabasePanel("Database is reachable. Log in with the Workspace admin account to load cloud data.");
+          showToast("Database is reachable.");
           return true;
-        }catch(e){renderDatabaseConnectionSettings('Test failed');showToast(e?.message||'Could not reach Supabase.');return false;}
-        finally{if(btn){btn.disabled=false;btn.textContent='Test Connection';}}
+        } catch (e) {
+          updateManualDatabasePanel(e?.message || "Database connection test failed.");
+          showToast(e?.message || "Database connection test failed.");
+          return false;
+        }
       }
 
-      async function connectDatabase() {
-        const {url,key}=databaseFieldValues();
-        if(!url||!key){showToast('Enter the Supabase URL and Publishable Key first.');return;}
-        if(!/^https:\/\/[^\s]+\.supabase\.co(?:\/.*)?$/i.test(url)){showToast('Enter a valid Supabase project URL.');return;}
-        const btn=document.getElementById('manualDatabaseConnect');
-        if(btn){btn.disabled=true;btn.textContent='Connecting…';}
-        updateConnectionStatus('connecting','◌ CONNECTING…');
-        try{
-          if(!window.supabase||typeof window.supabase.createClient!=='function')throw new Error('Supabase client library did not load.');
-          state.supabaseUrl=url;state.supabaseAnonKey=key;
-          localStorage.setItem('SUPABASE_URL',url);
-          localStorage.setItem('SUPABASE_ANON_KEY',key);
-          localStorage.setItem('SUPABASE_PUBLISHABLE_KEY',key);
-          supabaseClient=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-          const {data:{session}}=await supabaseClient.auth.getSession();
-          if(session?.user && await verifyWorkspaceAdmin()){
-            state.isConnected=true;hideWorkspaceAuthGate();updateConnectionStatus('connected','● CONNECTED');renderDatabaseConnectionSettings();await loadDatabaseData();showToast('Connected to the shared database.');return;
+      async function connectDatabaseManually() {
+        const btn = document.getElementById("manualDatabaseConnect");
+        if (btn) { btn.disabled = true; btn.textContent = "Connecting…"; }
+        try {
+          const ready = await initializeEnvironmentVariables();
+          if (!ready) throw new Error("Database credentials are not configured in the Vercel deployment.");
+          if (!window.supabase?.createClient) throw new Error("Supabase client library did not load.");
+
+          supabaseClient = window.supabase.createClient(state.supabaseUrl, state.supabaseAnonKey, {
+            auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+          });
+
+          if (!workspaceCloudIntent() || workspaceIdleExpired()) {
+            try { await supabaseClient.auth.signOut(); } catch (_) {}
+            clearWorkspaceCloudMemory();
           }
-          state.isConnected=false;updateConnectionStatus('error','○ LOGIN REQUIRED');renderDatabaseConnectionSettings('Database ready · admin login required');
-          showWorkspaceAuthGate('Database connection is ready. Log in with the Workspace admin account to load shared cloud data.');
-        }catch(e){supabaseClient=null;state.isConnected=false;updateConnectionStatus('error','○ OFFLINE / LOCAL');renderDatabaseConnectionSettings('Connection failed');showToast(e?.message||'Could not connect to Supabase.');}
-        finally{if(btn){btn.disabled=false;btn.textContent='Connect Database';}}
+
+          const {data:{session}} = await supabaseClient.auth.getSession();
+          if (!session?.user) {
+            state.isConnected = false;
+            updateConnectionStatus("error","○ SIGN IN REQUIRED");
+            updateManualDatabasePanel("Database reached. Sign in with your Workspace admin account.");
+            showWorkspaceAuthGate("Sign in with your JUAN PROJECT Workspace admin account to connect the database.");
+            return false;
+          }
+
+          const allowed = await verifyWorkspaceAdmin();
+          if (!allowed) {
+            await supabaseClient.auth.signOut();
+            clearWorkspaceCloudMemory();
+            throw new Error("This account is not authorized for JUAN PROJECT Workspace.");
+          }
+
+          state.isConnected = true;
+          rememberWorkspaceCloudConnection();
+          hideWorkspaceAuthGate();
+          updateConnectionStatus("connected","● CONNECTED");
+          updateManualDatabasePanel();
+          await loadDatabaseData();
+          showToast("Connected to the shared database.");
+          return true;
+        } catch(e) {
+          state.isConnected = false;
+          updateConnectionStatus("error","○ OFFLINE · LOCAL");
+          updateManualDatabasePanel(e?.message || "Could not connect to Supabase.");
+          showToast(e?.message || "Could not connect to Supabase.");
+          return false;
+        } finally {
+          if (btn) { btn.disabled = state.isConnected; btn.textContent = "Log In & Connect"; }
+        }
       }
 
       async function disconnectDatabase() {
-        try{await supabaseClient?.auth.signOut();}catch(_){ }
-        supabaseClient=null;state.isConnected=false;
-        updateConnectionStatus('error','○ OFFLINE / LOCAL');
-        hideWorkspaceAuthGate();renderDatabaseConnectionSettings();
-        try{const x=JSON.parse(localStorage.getItem('JUAN_PROJECTS_LOCAL')||'[]');if(Array.isArray(x))state.projects=x}catch(_){ }
-        try{const x=JSON.parse(localStorage.getItem('JUAN_CLIENTS_LOCAL')||'[]');if(Array.isArray(x))state.clients=x}catch(_){ }
-        renderCurrentView();showToast('Database disconnected. Workspace is using local data.');
+        try { await supabaseClient?.auth?.signOut(); } catch(_) {}
+        clearWorkspaceCloudMemory();
+        supabaseClient = null;
+        state.isConnected = false;
+        hideWorkspaceAuthGate();
+        updateConnectionStatus("error","○ OFFLINE · LOCAL");
+        updateManualDatabasePanel("Disconnected. Workspace continues using the latest local/cache data.");
+        renderCurrentView();
+        showToast("Database disconnected. Local Workspace remains available.");
       }
 
-      function continueWorkspaceOffline(){hideWorkspaceAuthGate();state.isConnected=false;updateConnectionStatus('error','○ OFFLINE / LOCAL');renderDatabaseConnectionSettings();renderCurrentView();}
+      function continueWorkspaceOffline() {
+        clearWorkspaceCloudMemory();
+        supabaseClient = null;
+        hideWorkspaceAuthGate();
+        state.isConnected = false;
+        updateConnectionStatus("error","○ OFFLINE · LOCAL");
+        updateManualDatabasePanel("Offline mode is active. Workspace is using local/cache data only.");
+        renderCurrentView();
+      }
+
+      async function restoreWorkspaceCloudConnectionIfEligible() {
+        if (!workspaceCloudIntent()) return false;
+        if (workspaceIdleExpired()) {
+          clearWorkspaceCloudMemory();
+          updateManualDatabasePanel("Previous cloud session expired after 30 minutes of inactivity. Log in again to reconnect.");
+          return false;
+        }
+        const ready = await initializeEnvironmentVariables();
+        if (!ready) {
+          clearWorkspaceCloudMemory();
+          updateManualDatabasePanel("Cloud connection could not be restored because the deployment database configuration is unavailable.");
+          return false;
+        }
+        const restored = await initSupabase(true);
+        if (restored) {
+          rememberWorkspaceCloudConnection();
+          updateManualDatabasePanel();
+          return true;
+        }
+        clearWorkspaceCloudMemory();
+        updateManualDatabasePanel("Saved cloud session could not be restored. Log in again when you want to reconnect.");
+        return false;
+      }
 
       async function initWorkspace() {
         applyTheme(state.themeMode);
@@ -2362,6 +2550,8 @@
         if (savedClients) {
           try { state.clients = JSON.parse(savedClients); } catch(e){}
         }
+        applyKnownClientIdsLocally();
+        persistClientsState();
 
         const addrInput = document.getElementById("ownerAddressInput");
         const phoneInput = document.getElementById("ownerPhoneInput");
@@ -2383,16 +2573,18 @@
         // One continuous Project ID sequence, starting at JP-001 with no exceptions.
         renumberProjectSequence();
         persistProjectsState();
-        // V1.3.3.2 manual database mode: open the Workspace immediately using
-        // cached/local records. Cloud access is opt-in from Settings → Database Connection.
+        // Workspace always paints local/cache data first. Cloud data only resumes if this
+        // browser previously completed an explicit admin login and the 30-minute idle window is valid.
+        supabaseClient = null;
         state.isConnected = false;
-        await initializeEnvironmentVariables();
+        updateConnectionStatus("error", "○ OFFLINE · LOCAL");
         hideWorkspaceAuthGate();
-        updateConnectionStatus("error", "○ OFFLINE / LOCAL");
+        hydrateManualDatabaseFields();
+        installWorkspaceActivityTracking();
         renderTemplatesDropdown();
         renderCurrentView();
         setWorkspaceLoading(false);
-        setTimeout(()=>renderDatabaseConnectionSettings(),0);
+        void restoreWorkspaceCloudConnectionIfEligible();
       }
 
 
@@ -3209,32 +3401,31 @@ ${description}`))actionCallback();return;}
         const email = document.getElementById("workspaceAuthEmail")?.value.trim();
         const password = document.getElementById("workspaceAuthPassword")?.value || "";
         const btn = document.getElementById("workspaceAuthSubmit");
-        if (!email || !password) { showWorkspaceAuthGate("Enter the admin email and password."); return; }
+        if (!email || !password) {
+          showWorkspaceAuthGate("Enter the admin email and password.");
+          return;
+        }
         if (!supabaseClient) {
-          const {url,key}=databaseFieldValues();
-          if(!url||!key){showWorkspaceAuthGate("Connect the database from Settings first, or choose Continue Offline.");return;}
-          try{state.supabaseUrl=url;state.supabaseAnonKey=key;supabaseClient=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});}catch(e){showWorkspaceAuthGate(e?.message||"Could not prepare the database connection.");return;}
+          const ready = await initializeEnvironmentVariables({allowDeploymentFallback:true});
+          if (!ready) { showWorkspaceAuthGate("Database deployment configuration is unavailable. Check the Vercel environment variables, then try again."); return; }
+          if (!window.supabase?.createClient) { showWorkspaceAuthGate("Supabase client library did not load."); return; }
+          supabaseClient = window.supabase.createClient(state.supabaseUrl,state.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
         }
         if (btn) { btn.disabled = true; btn.textContent = "Signing in…"; }
         try {
-          // Prefer the protected server login when deployment credentials are present.
-          // Manual mode falls back to Supabase Auth directly so the Workspace is not
-          // blocked by a missing /api/supabase-config deployment variable.
-          let signedIn=false;
-          try{
-            const loginRes=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-            const loginJson=await loginRes.json().catch(()=>({}));
-            if(loginRes.ok&&loginJson.access_token&&loginJson.refresh_token){const setRes=await supabaseClient.auth.setSession({access_token:loginJson.access_token,refresh_token:loginJson.refresh_token});if(setRes.error)throw setRes.error;signedIn=true;}
-          }catch(serverLoginError){console.warn('Server login unavailable; using direct Supabase Auth.',serverLoginError?.message||serverLoginError);}
-          if(!signedIn){const direct=await supabaseClient.auth.signInWithPassword({email,password});if(direct.error||!direct.data?.session)throw new Error('Email or password is incorrect.');}
+          const loginRes=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const loginJson=await loginRes.json().catch(()=>({}));if(!loginRes.ok)throw new Error(loginJson.error||'Email or password is incorrect.');const setRes=await supabaseClient.auth.setSession({access_token:loginJson.access_token,refresh_token:loginJson.refresh_token});if(setRes.error)throw setRes.error;
           const allowed = await verifyWorkspaceAdmin();
-          if (!allowed) { await supabaseClient.auth.signOut(); throw new Error("This account is not authorized for JUAN PROJECT Workspace."); }
+          if (!allowed) {
+            await supabaseClient.auth.signOut();
+            throw new Error("This account is not authorized for JUAN PROJECT Workspace.");
+          }
           hideWorkspaceAuthGate();
           state.isConnected = true;
+          rememberWorkspaceCloudConnection();
           updateConnectionStatus("connected", "● CONNECTED");
-          renderDatabaseConnectionSettings();
+          updateManualDatabasePanel();
           await loadDatabaseData();
-          showToast("Connected to the shared database.");
+          showToast("Workspace signed in securely.");
         } catch (e) {
           showWorkspaceAuthGate(e?.message || "Could not sign in.");
         } finally {
@@ -3244,12 +3435,13 @@ ${description}`))actionCallback();return;}
 
       async function adminSignOut() {
         try { await supabaseClient?.auth.signOut(); } catch (_) {}
+        clearWorkspaceCloudMemory();
         state.isConnected = false;
-        updateConnectionStatus("error", "○ OFFLINE / LOCAL");
+        supabaseClient = null;
+        updateConnectionStatus("error", "○ OFFLINE · LOCAL");
         hideWorkspaceAuthGate();
-        renderDatabaseConnectionSettings('Signed out');
+        updateManualDatabasePanel("Signed out from cloud data. Local Workspace remains available.");
         renderCurrentView();
-        showToast('Signed out of cloud data. Local Workspace remains available.');
       }
 
       async function initSupabase(skipGate = false) {
@@ -3291,7 +3483,7 @@ ${description}`))actionCallback();return;}
             await supabaseClient.auth.signOut();
             state.isConnected = false;
             updateConnectionStatus("error", "○ UNAUTHORIZED");
-            showWorkspaceAuthGate("This signed-in account is not an authorized Workspace admin.");
+            if (!skipGate) showWorkspaceAuthGate("This signed-in account is not an authorized Workspace admin.");
             return false;
           }
 
@@ -3305,7 +3497,7 @@ ${description}`))actionCallback();return;}
           state.isConnected = false;
           supabaseClient = null;
           updateConnectionStatus("error", "○ NOT CONNECTED");
-          showWorkspaceAuthGate(`Cloud connection unavailable. ${err?.message || ""}`.trim());
+          if (!skipGate) showWorkspaceAuthGate(`Cloud connection unavailable. ${err?.message || ""}`.trim());
 
           const localProjs = localStorage.getItem("JUAN_PROJECTS_LOCAL");
           if (localProjs) {
@@ -3328,8 +3520,6 @@ ${description}`))actionCallback();return;}
           el.className = `connection-status status-${type}`;
           txt.innerText = text;
         }
-        const banner=document.getElementById('workspaceLocalModeBanner');
-        if(banner)banner.classList.toggle('hidden',Boolean(state.isConnected));
       }
 
       async function loadDatabaseData() {
@@ -3471,7 +3661,6 @@ ${description}`))actionCallback();return;}
         if (state.activeView === "client-profile") renderClientProfile();
         if (state.activeView === "pricelist") renderPricelist();
         if (state.activeView === "online-portal") renderOnlinePortal();
-        if (state.activeView === "settings") renderDatabaseConnectionSettings();
       }
 
 
@@ -3487,6 +3676,15 @@ ${description}`))actionCallback();return;}
         const stored = Number(proj.pending_amount);
         if (proj.pending_amount !== undefined && proj.pending_amount !== null && Number.isFinite(stored)) return Math.max(0, stored);
         return Math.max(0, Number(proj.total_amount || 0) - getProjectPaid(proj));
+      }
+
+      function projectIsActiveByPayment(proj) {
+        if (!proj || proj.deleted || String(proj.status||"").toLowerCase()==="cancelled") return false;
+        const balanceOpen=getProjectBalance(proj)>0.005;
+        const workComplete=["completed","delivered"].includes(String(proj.status||"").toLowerCase())||String(proj.delivery_status||"").toLowerCase()==="delivered";
+        // Delivery never hides an unpaid project. A project becomes non-active only when
+        // the work is complete AND its balance has been settled.
+        return balanceOpen || !workComplete;
       }
 
       function getProjectProgress(proj) {
@@ -3742,6 +3940,8 @@ ${description}`))actionCallback();return;}
       function formatProjectId(proj){ return `JP-${String(projectNumber(proj)).padStart(3,'0')}`; }
       function formatClientId(client){
         if(!client)return 'CL-000';
+        const mapped=CLIENT_ID_BY_EMAIL[normalizeClientIdentityEmail(client.email)];
+        if(mapped)return mapped;
         if(client.client_code && /^CL-\d+$/i.test(String(client.client_code))) return String(client.client_code).toUpperCase();
         const ordered=state.clients.slice().sort((a,b)=>{
           const af=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(a.id)).map(projectNumber).filter(Number.isFinite);
@@ -3832,11 +4032,21 @@ ${description}`))actionCallback();return;}
 
       function renderProjects() {
         const body=document.getElementById("projectsTableBody"),filters=document.getElementById("projectFilters");if(!body||!filters)return;
-        const names=["All","Pending","Completed"],current=state.projectFilter||"Pending";filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setProjectFilter('${n}')">${n}</button>`).join("");
-        const q=(document.getElementById("projectsSearch")?.value||"").trim().toLowerCase();let rows=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.project_type||''} ${getProjectType(p)||''}`).toLowerCase().includes(q));
-        if(current==='Pending')rows=rows.filter(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);else if(current==='Completed')rows=rows.filter(p=>p.status==='Completed'||p.delivery_status==='Delivered'||p.archived_at);
-        rows=sortProjectsFor('projects',rows,current);const sortEl=document.getElementById('projectsSort');if(sortEl)sortEl.value=state.listSorts?.projects||'default';
-        body.innerHTML=rows.map(p=>{const bal=getProjectBalance(p),prog=getProjectProgress(p),category=displayCategory(p.project_type||getProjectType(p)||'—'),priority=projectIsPriority(p),status=(p.status==='Completed'||p.delivery_status==='Delivered'||p.archived_at)?'COMPLETED':'PENDING',menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${status==='COMPLETED'?'badge-green':'badge-neutral'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`}).join('')||`<tr><td colspan="10" class="text-center text-muted py-4">No projects found.</td></tr>`;
+        const q=(document.getElementById("projectsSearch")?.value||"").trim().toLowerCase();
+        const baseRows=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.project_type||''} ${getProjectType(p)||''}`).toLowerCase().includes(q));
+        const hasActive=baseRows.some(projectIsActiveByPayment);
+        if((state.projectFilter||"Active")==="Active"&&!hasActive)state.projectFilter="All";
+        const names=["All","Active","Completed"],current=state.projectFilter||"All";
+        filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setProjectFilter('${n}')">${n}</button>`).join("");
+        let rows=baseRows;
+        if(current==='Active')rows=rows.filter(projectIsActiveByPayment);
+        else if(current==='Completed')rows=rows.filter(p=>!projectIsActiveByPayment(p));
+        rows=sortProjectsFor('projects',rows,current);
+        const sortEl=document.getElementById('projectsSort');if(sortEl)sortEl.value=state.listSorts?.projects||'default';
+        body.innerHTML=rows.map(p=>{
+          const bal=getProjectBalance(p),prog=getProjectProgress(p),category=displayCategory(p.project_type||getProjectType(p)||'—'),priority=projectIsPriority(p),active=projectIsActiveByPayment(p),status=active?'ACTIVE':'COMPLETED',menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${active?'badge-orange':'badge-green'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`;
+        }).join('')||`<tr><td colspan="10" class="text-center text-muted py-4">No projects found.</td></tr>`;
       }
 
       function setProjectFilter(filter){ state.projectFilter=filter; renderProjects(); }
@@ -3881,19 +4091,23 @@ ${description}`))actionCallback();return;}
 
       function renderPaymentsView(){
         const body=document.getElementById("paymentsTableBody"),filters=document.getElementById("paymentFilters");if(!body||!filters)return;
-        const names=["All","Pending","Completed"],current=state.paymentFilter||"Pending";filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setPaymentFilter('${n}')">${n}</button>`).join("");
-        const q=(document.getElementById("paymentsSearch")?.value||"").trim().toLowerCase();let projects=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.client_email||''}`).toLowerCase().includes(q));
-        const encodedPaymentStatus=p=>String(p?.payment_status||"").trim();
+        const q=(document.getElementById("paymentsSearch")?.value||"").trim().toLowerCase();
+        const baseProjects=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.client_email||''}`).toLowerCase().includes(q));
+        const hasPending=baseProjects.some(p=>getProjectPaymentStatus(p)!=='Completed');
+        if((state.paymentFilter||"Pending")==="Pending"&&!hasPending)state.paymentFilter="All";
+        const names=["All","Pending","Completed"],current=state.paymentFilter||"All";
+        filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setPaymentFilter('${n}')">${n}</button>`).join("");
+        let projects=baseProjects;
         if(current==='Completed')projects=projects.filter(p=>getProjectPaymentStatus(p)==='Completed');
         else if(current==='Pending')projects=projects.filter(p=>getProjectPaymentStatus(p)!=='Completed');
         projects=projects.slice().sort(current==='Pending'?(a,b)=>{const ad=parseDateSafe(a.payment_due_date||a.deadline_date)?.getTime()??Infinity,bd=parseDateSafe(b.payment_due_date||b.deadline_date)?.getTime()??Infinity;return ad-bd||Number(projectIsPriority(b))-Number(projectIsPriority(a))||projectNumber(a)-projectNumber(b)}:(a,b)=>projectNumber(a)-projectNumber(b));
         body.innerHTML=projects.map(p=>{
-          const paid=getProjectPaid(p),bal=getProjectBalance(p),od=isProjectOverdue(p);
-          const sourceStatus=encodedPaymentStatus(p);
+          const paid=getProjectPaid(p),bal=getProjectBalance(p);
           const displayStatus=getProjectPaymentStatus(p);
           const statusKey=displayStatus.toLowerCase();
-          const badgeClass=statusKey.includes('overdue')?'badge-red':statusKey.includes('completed')?'badge-green':'badge-orange';
-          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td>${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(displayStatus.toUpperCase())}</span></td></tr>`;
+          const badgeClass=isProjectOverdue(p)?'badge-red':statusKey.includes('completed')?'badge-green':'badge-orange';
+          const label=isProjectOverdue(p)&&bal>0?'Overdue':displayStatus;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td>${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td></tr>`;
         }).join("")||`<tr><td colspan="8" class="text-center text-muted py-4">No matching invoice or payment records.</td></tr>`;
       }
       function setPaymentFilter(filter){ state.paymentFilter=filter; renderPaymentsView(); }
@@ -3902,29 +4116,174 @@ ${description}`))actionCallback();return;}
         if(!root)return;root.querySelectorAll('.number-animate,.kpi-value').forEach(el=>{if(el.dataset.animating==='1')return;const raw=el.textContent||'',match=raw.replace(/,/g,'').match(/-?\d+(?:\.\d+)?/);if(!match)return;const target=Number(match[0]);if(!Number.isFinite(target))return;const isMoney=raw.includes('₱'),decimals=(raw.match(/\.(\d+)/)?.[1]||'').length,duration=520,start=performance.now();el.dataset.animating='1';const frame=now=>{const t=Math.min(1,(now-start)/duration),eased=1-Math.pow(1-t,3),value=target*eased;el.textContent=isMoney?new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP',minimumFractionDigits:decimals,maximumFractionDigits:decimals}).format(value):Math.round(value).toLocaleString('en-PH');if(t<1)requestAnimationFrame(frame);else{el.textContent=raw;delete el.dataset.animating;}};requestAnimationFrame(frame);});
       }
       function renderReportsView(){
-        const box=document.getElementById('reportsContent');if(!box)return;
+        const box=document.getElementById('reportsContent');
+        if(!box)return;
         try{
-          const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
-          const date=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d};
-          const projects=(Array.isArray(state.projects)?state.projects:[]).filter(p=>p&&typeof p==='object'&&!p.deleted).map(p=>({...p,payments:Array.isArray(p.payments)?p.payments.filter(Boolean):[]}));
-          const projectMap=new Map(projects.map(p=>[String(p.id),p]));
+          const safeNumber=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+          const safeDate=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d};
+          const projects=(Array.isArray(state.projects)?state.projects:[])
+            .filter(p=>p&&typeof p==='object'&&!p.deleted)
+            .map(p=>({...p,payments:Array.isArray(p.payments)?p.payments.filter(Boolean):[]}));
+
           const payments=[];
-          for(const p of projects)for(const pay of p.payments)payments.push({...pay,project_id:pay?.project_id||p.id});
-          if(Array.isArray(state.payments))for(const pay of state.payments.filter(Boolean)){const pid=String(pay.id||'');if(!pid||!payments.some(x=>String(x.id||'')===pid))payments.push(pay)}
-          const paidByProject=new Map();for(const pay of payments){const id=String(pay.project_id||'');paidByProject.set(id,(paidByProject.get(id)||0)+Math.max(0,n(pay.amount_paid??pay.amount)))}
-          const totalReceivables=projects.reduce((t,p)=>t+Math.max(0,n(p.total_amount)),0),collected=payments.reduce((t,p)=>t+Math.max(0,n(p.amount_paid??p.amount)),0),outstanding=Math.max(0,totalReceivables-collected),now=new Date();
-          const thisMonthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-          const thisMonth=payments.reduce((t,p)=>{const d=date(p.payment_date||p.created_at);if(!d)return t;return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`===thisMonthKey?t+Math.max(0,n(p.amount_paid??p.amount)):t},0);
-          const statuses={Paid:0,'Partially Paid':0,Unpaid:0,Overdue:0};let active=0,completed=0;
-          for(const p of projects){const st=String(p.delivery_status||p.status||'').toLowerCase();if(['completed','delivered'].includes(st))completed++;else if(!['cancelled','archived'].includes(st))active++;const total=Math.max(0,n(p.total_amount)),paid=Math.max(0,paidByProject.get(String(p.id))||0),bal=Math.max(0,total-paid),due=date(p.payment_due_date||p.invoice_due_date||p.deadline_date);if(total>0&&bal<=0)statuses.Paid++;else if(bal>0&&due&&due<now)statuses.Overdue++;else if(paid>0)statuses['Partially Paid']++;else statuses.Unpaid++;}
-          const collectionRate=totalReceivables?Math.round(Math.min(100,Math.max(0,collected/totalReceivables*100))):0;
-          const months=new Map();for(const pay of payments){const d=date(pay.payment_date||pay.created_at);if(!d)continue;const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;months.set(key,(months.get(key)||0)+Math.max(0,n(pay.amount_paid??pay.amount)))}
-          const trend=[...months.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-6),maxTrend=Math.max(1,...trend.map(x=>x[1]));
-          const trendHtml=trend.length?trend.map(([key,value])=>{const d=date(`${key}-01T12:00:00`),label=d?d.toLocaleDateString('en-PH',{month:'short'}):key,pct=Math.max(4,Math.round(value/maxTrend*100));return `<div class="report-trend-line"><span>${escapeHtml(label)}</span><div><i style="width:${pct}%"></i></div><strong>${formatCurrency(value)}</strong></div>`}).join(''):`<div class="empty-compact-state"><strong>No payment trend yet</strong><span>Accepted payments will appear here.</span></div>`;
-          const recent=payments.map(pay=>({...pay,_date:date(pay.payment_date||pay.created_at)})).sort((a,b)=>(b._date?.getTime()||0)-(a._date?.getTime()||0)).slice(0,8);
-          const recentHtml=recent.map(pay=>{const p=projectMap.get(String(pay.project_id||''));return `<tr><td><strong>${escapeHtml(p?.project_code||p?.id||'—')}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}</td><td>${escapeHtml(pay.reference_no||pay.reference_number||'—')}</td><td><strong>${formatCurrency(Math.max(0,n(pay.amount_paid??pay.amount)))}</strong></td><td>${escapeHtml(pay._date?pay._date.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'—')}</td></tr>`}).join('')||'<tr><td colspan="5" class="text-center text-muted">No payments recorded yet.</td></tr>';
-          box.innerHTML=`<div class="report-kpi-grid report-kpi-grid-four report-safe-grid"><div class="kpi-card report-emphasis"><div class="kpi-label">Total Receivables</div><div class="kpi-value">${formatCurrency(totalReceivables)}</div></div><div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value">${formatCurrency(collected)}</div></div><div class="kpi-card"><div class="kpi-label">Outstanding</div><div class="kpi-value">${formatCurrency(outstanding)}</div></div><div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value">${formatCurrency(thisMonth)}</div></div></div><div class="reports-simple-grid"><section class="card"><div class="card-header"><div><div class="section-kicker">REVENUE</div><h2 class="card-title">Revenue Trend</h2></div></div><div class="report-trend-list">${trendHtml}</div></section><section class="card"><div class="card-header"><div><div class="section-kicker">PAYMENTS</div><h2 class="card-title">Payment Status</h2></div></div><div class="report-status-list"><div><span>Paid</span><strong>${statuses.Paid}</strong></div><div><span>Partially Paid</span><strong>${statuses['Partially Paid']}</strong></div><div><span>Unpaid</span><strong>${statuses.Unpaid}</strong></div><div><span>Overdue</span><strong>${statuses.Overdue}</strong></div></div></section></div><section class="card report-recent-payments"><div class="card-header"><div><div class="section-kicker">RECENT ACTIVITY</div><h2 class="card-title">Recent Payments</h2></div></div><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project</th><th>Method</th><th>Reference</th><th>Amount</th><th>Date</th></tr></thead><tbody>${recentHtml}</tbody></table></div></section><section class="card report-health-card"><div class="card-header"><div><div class="section-kicker">WORKSPACE</div><h2 class="card-title">Workspace Health</h2></div></div><div class="report-health-inline"><div><span>Active Projects</span><strong>${active}</strong></div><div><span>Completed / Delivered</span><strong>${completed}</strong></div><div><span>Collection Rate</span><strong>${collectionRate}%</strong></div><div><span>Records</span><strong>${projects.length}</strong></div></div></section>`;
-        }catch(error){console.error('Reports render error:',error);box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>Your records are still available. One older record could not be summarized safely.</span><div style="margin-top:12px"><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry</button></div></div>`;}
+          const seenPaymentIds=new Set();
+          projects.forEach(project=>{
+            (project.payments||[]).forEach(pay=>{
+              const id=String(pay?.id||'');
+              if(id)seenPaymentIds.add(id);
+              payments.push({...pay,project_id:pay?.project_id||project.id});
+            });
+          });
+          if(Array.isArray(state.payments))state.payments.filter(Boolean).forEach(pay=>{
+            const id=String(pay?.id||'');
+            if(!id||!seenPaymentIds.has(id))payments.push(pay);
+          });
+
+          const paidByProject=new Map();
+          payments.forEach(pay=>{
+            const key=String(pay?.project_id||'');
+            if(!key)return;
+            paidByProject.set(key,(paidByProject.get(key)||0)+Math.max(0,safeNumber(pay.amount_paid??pay.amount)));
+          });
+
+          const projectPaid=p=>{
+            const mapped=paidByProject.get(String(p.id));
+            if(mapped!==undefined)return mapped;
+            return (p.payments||[]).reduce((sum,pay)=>sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)),0);
+          };
+          const projectBalance=p=>Math.max(0,Math.max(0,safeNumber(p.total_amount))-projectPaid(p));
+
+          const totalReceivables=projects.reduce((sum,p)=>sum+Math.max(0,safeNumber(p.total_amount)),0);
+          const collected=payments.reduce((sum,p)=>sum+Math.max(0,safeNumber(p.amount_paid??p.amount)),0);
+          const outstanding=Math.max(0,totalReceivables-collected);
+          const now=new Date();
+          const currentMonth=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+          const monthCollected=payments.reduce((sum,pay)=>{
+            const d=safeDate(pay.payment_date||pay.created_at);
+            if(!d)return sum;
+            const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            return key===currentMonth?sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)):sum;
+          },0);
+          const collectionRate=totalReceivables?Math.round(Math.max(0,Math.min(100,(collected/totalReceivables)*100))):0;
+
+          const statusCounts={paid:0,partial:0,unpaid:0,overdue:0};
+          projects.forEach(p=>{
+            const total=Math.max(0,safeNumber(p.total_amount)),paid=projectPaid(p),balance=Math.max(0,total-paid);
+            if(total>0&&balance<=0.005){statusCounts.paid++;return}
+            if(balance<=0.005)return;
+            const due=safeDate(p.payment_due_date||p.invoice_due_date||p.deadline_date);
+            if(due&&due.getTime()<Date.now()){statusCounts.overdue++;return}
+            if(paid>0){statusCounts.partial++;return}
+            statusCounts.unpaid++;
+          });
+          const statusTotal=Object.values(statusCounts).reduce((a,b)=>a+b,0);
+          const deg=(n)=>statusTotal?(n/statusTotal)*360:0;
+          const paidEnd=deg(statusCounts.paid),partialEnd=paidEnd+deg(statusCounts.partial),unpaidEnd=partialEnd+deg(statusCounts.unpaid);
+
+          // Always show the latest six calendar months so zero-revenue periods remain visible.
+          const monthly=[];
+          for(let offset=5;offset>=0;offset--){
+            const d=new Date(now.getFullYear(),now.getMonth()-offset,1);
+            const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            const value=payments.reduce((sum,pay)=>{
+              const pd=safeDate(pay.payment_date||pay.created_at);if(!pd)return sum;
+              const pk=`${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,'0')}`;
+              return pk===key?sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)):sum;
+            },0);
+            monthly.push({key,label:d.toLocaleDateString('en-PH',{month:'short'}),value});
+          }
+          const chartW=720,chartH=250,padL=58,padR=24,padT=28,padB=38,innerW=chartW-padL-padR,innerH=chartH-padT-padB;
+          const maxTrend=Math.max(1,...monthly.map(x=>x.value));
+          const niceMax=Math.max(1000,Math.ceil(maxTrend/50000)*50000);
+          const points=monthly.map((m,i)=>{
+            const x=padL+(monthly.length===1?innerW/2:(innerW*i/(monthly.length-1)));
+            const y=padT+innerH-(m.value/niceMax)*innerH;
+            return {...m,x,y};
+          });
+          const linePath=points.map((pt,i)=>`${i?'L':'M'} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`).join(' ');
+          const areaPath=points.length?`${linePath} L ${points[points.length-1].x.toFixed(1)} ${(padT+innerH).toFixed(1)} L ${points[0].x.toFixed(1)} ${(padT+innerH).toFixed(1)} Z`:'';
+          const gridLines=[0,.25,.5,.75,1].map(frac=>{
+            const y=padT+innerH-(frac*innerH),value=niceMax*frac;
+            return `<line x1="${padL}" x2="${chartW-padR}" y1="${y}" y2="${y}" class="report-grid-line"/><text x="${padL-10}" y="${y+4}" text-anchor="end" class="report-axis-label">${value>=1000?Math.round(value/1000)+'K':Math.round(value)}</text>`;
+          }).join('');
+          const chartLabels=points.map(pt=>`<text x="${pt.x}" y="${chartH-12}" text-anchor="middle" class="report-axis-label">${escapeHtml(pt.label)}</text><circle cx="${pt.x}" cy="${pt.y}" r="5" class="report-line-dot"/><text x="${pt.x}" y="${Math.max(16,pt.y-12)}" text-anchor="middle" class="report-point-label">${pt.value?escapeHtml(formatCurrency(pt.value)):''}</text>`).join('');
+
+          const milestoneStep=100000;
+          const nextMilestone=Math.max(500000,Math.ceil(Math.max(collected,1)/milestoneStep)*milestoneStep+milestoneStep);
+          const milestoneMax=Math.min(1000000,nextMilestone);
+          const milestones=[];
+          for(let target=100000;target<=milestoneMax;target+=milestoneStep){
+            const achieved=collected>=target-0.005;
+            const previous=target-milestoneStep;
+            const inProgress=!achieved&&collected>previous;
+            const progress=Math.max(0,Math.min(100,(collected/target)*100));
+            milestones.push({target,achieved,inProgress,progress});
+          }
+
+          const recentPayments=payments.slice().sort((a,b)=>{
+            const ad=safeDate(a.payment_date||a.created_at)?.getTime()||0,bd=safeDate(b.payment_date||b.created_at)?.getTime()||0;
+            return bd-ad;
+          }).slice(0,6);
+          const projectMap=new Map(projects.map(p=>[String(p.id),p]));
+
+          box.innerHTML=`
+            <div class="reports-v2">
+              <div class="report-kpi-grid-v2">
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon money">₱</div><div><span>Total Receivables</span><strong>${formatCurrency(totalReceivables)}</strong><small>Total amount expected from all customers</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon collected">◎</div><div><span>Collected</span><strong>${formatCurrency(collected)}</strong><small class="report-positive">${collectionRate}% of total receivables collected</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon neutral">◷</div><div><span>Outstanding</span><strong>${formatCurrency(outstanding)}</strong><small>Remaining balance to be collected</small></div></div>
+                <div class="report-kpi-card-v2"><div class="report-kpi-icon month">▣</div><div><span>This Month</span><strong>${formatCurrency(monthCollected)}</strong><small>Payments received this month</small></div></div>
+              </div>
+
+              <div class="report-main-grid-v2">
+                <section class="card report-chart-card-v2">
+                  <div class="report-card-head-v2"><div><h2>Revenue Trend</h2><p>Last 6 payment months</p></div><div class="report-legend-chip"><span></span> Revenue <b>6 months</b></div></div>
+                  <div class="report-line-chart-wrap">
+                    <svg class="report-line-chart" viewBox="0 0 ${chartW} ${chartH}" role="img" aria-label="Revenue trend for the last six months">
+                      <defs><linearGradient id="revenueFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#14b86e" stop-opacity=".24"/><stop offset="100%" stop-color="#14b86e" stop-opacity="0"/></linearGradient></defs>
+                      ${gridLines}
+                      ${areaPath?`<path d="${areaPath}" class="report-area-path"/>`:''}
+                      ${linePath?`<path d="${linePath}" class="report-line-path"/>`:''}
+                      ${chartLabels}
+                    </svg>
+                  </div>
+                </section>
+
+                <section class="card report-status-card-v2">
+                  <div class="report-card-head-v2"><div><h2>Payment Status</h2><p>Overview of all project payments</p></div></div>
+                  <div class="report-status-body-v2">
+                    <div class="report-donut-v2" style="background:conic-gradient(#20bf78 0 ${paidEnd}deg,#f4b122 ${paidEnd}deg ${partialEnd}deg,#f47b20 ${partialEnd}deg ${unpaidEnd}deg,#ef4b55 ${unpaidEnd}deg 360deg)">
+                      <div><strong>${statusTotal}</strong><span>Total Payments</span></div>
+                    </div>
+                    <div class="report-status-legend-v2">
+                      <div><span class="dot paid"></span><b>Paid</b><strong>${statusCounts.paid}</strong></div>
+                      <div><span class="dot partial"></span><b>Partially Paid</b><strong>${statusCounts.partial}</strong></div>
+                      <div><span class="dot unpaid"></span><b>Unpaid</b><strong>${statusCounts.unpaid}</strong></div>
+                      <div><span class="dot overdue"></span><b>Overdue</b><strong>${statusCounts.overdue}</strong></div>
+                    </div>
+                  </div>
+                  <div class="report-status-footer-v2"><span><b>${projects.filter(p=>projectBalance(p)<=0.005).length}</b> settled projects</span><span><b>${collectionRate}%</b> collected</span><span><b>${projects.filter(p=>projectIsActiveByPayment(p)).length}</b> active</span></div>
+                </section>
+              </div>
+
+              <section class="card report-milestones-v2">
+                <div class="report-milestone-intro"><div class="report-trophy">🏆</div><div><h2>Revenue Milestones</h2><p>Track collected revenue toward your next goal.</p></div></div>
+                <div class="report-milestone-track">
+                  ${milestones.map(m=>`<div class="report-milestone-step ${m.achieved?'achieved':m.inProgress?'in-progress':'upcoming'}"><div class="milestone-icon">${m.achieved?'✓':m.inProgress?'◔':'🔒'}</div><div><strong>₱${Math.round(m.target/1000)}K</strong><span>${m.achieved?'Achieved':m.inProgress?'In Progress':'Upcoming'}</span>${!m.achieved?`<div class="milestone-progress"><i style="width:${m.progress}%"></i></div><small>${Math.round(m.progress)}%</small>`:''}</div></div>`).join('')}
+                </div>
+              </section>
+
+              <section class="card report-recent-v2">
+                <div class="report-card-head-v2"><div><h2>Recent Payments</h2><p>Latest recorded payments</p></div><button class="btn btn-secondary btn-sm" onclick="app.navigateTo('payments')">View all payments →</button></div>
+                <div class="table-responsive"><table class="data-table unified-table report-recent-table"><thead><tr><th>Reference</th><th>Payment Method</th><th>Amount</th><th>Date</th></tr></thead><tbody>
+                  ${recentPayments.map(pay=>{const pr=projectMap.get(String(pay.project_id));return `<tr><td><strong>${escapeHtml(pr?formatProjectId(pr):(pay.reference_no||pay.reference_number||'—'))}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}${pay.reference_no||pay.reference_number?` · ${escapeHtml(pay.reference_no||pay.reference_number)}`:''}</td><td><strong>${formatCurrency(Math.max(0,safeNumber(pay.amount_paid??pay.amount)))}</strong></td><td>${escapeHtml(formatProjectDate(pay.payment_date||pay.created_at))}</td></tr>`}).join('')||`<tr><td colspan="4" class="text-center text-muted py-4">No payments recorded yet.</td></tr>`}
+                </tbody></table></div>
+              </section>
+            </div>`;
+        }catch(error){
+          console.error('Reports render error:',error);
+          box.innerHTML=`<div class="card reports-error-state"><strong>Reports couldn’t be loaded.</strong><span>One or more older records could not be summarized. Your projects and payments are still safe.</span><div style="margin-top:12px"><button class="btn btn-secondary btn-sm" onclick="app.retryReports()">Retry Reports</button></div></div>`;
+        }
       }
       function retryReports(){ renderReportsView(); }
 
@@ -4416,6 +4775,19 @@ ${description}`))actionCallback();return;}
       function nextProjectNumber(){const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite);return used.length?Math.max(...used)+1:1;}
       function projectHasPackageItems(items=[]){return (items||[]).some(i=>String(i.type||'').toUpperCase()==='PACKAGE'||String(i.product_code||'').toUpperCase().startsWith('PKG-'));}
       function automaticMaintenanceFee(items=[],projectNo=null,explicitSubtotal=null){const subtotal=explicitSubtotal!==null&&explicitSubtotal!==undefined?Number(explicitSubtotal):(items||[]).reduce((sum,i)=>sum+Math.max(0,Number(i?.price||0))*Math.max(1,Number(i?.qty||1)),0);if(!(subtotal>0))return 0;return Math.abs(Math.round(subtotal))%100===99?26:25;}
+      function storedOrAutomaticMaintenanceFee(proj,items=[],explicitSubtotal=null){
+        const storedDefined=proj&&proj.system_maintenance_fee!==undefined&&proj.system_maintenance_fee!==null&&Number.isFinite(Number(proj.system_maintenance_fee));
+        if(storedDefined)return Math.max(0,Number(proj.system_maintenance_fee));
+        return automaticMaintenanceFee(items,projectNumber(proj),explicitSubtotal);
+      }
+      function maintenanceFeeForRecalculation(proj,items=[],explicitSubtotal=null){
+        const paid=Math.max(0,getProjectPaid(proj)),existingTotal=Math.max(0,Number(proj?.total_amount||0));
+        const storedDefined=proj&&proj.system_maintenance_fee!==undefined&&proj.system_maintenance_fee!==null&&Number.isFinite(Number(proj.system_maintenance_fee));
+        // A settled project keeps its stored fee exactly as-is. This prevents the NPW cleanup
+        // from recreating the historical ₱25/₱26 balance after a project had already been fully paid.
+        if(storedDefined&&existingTotal>0&&paid>=existingTotal-0.005)return Math.max(0,Number(proj.system_maintenance_fee));
+        return automaticMaintenanceFee(items,projectNumber(proj),explicitSubtotal);
+      }
       function workloadContext(startDate,deadlineDate,excludeId=''){const start=parseDateSafe(startDate)||new Date(),due=parseDateSafe(deadlineDate),days=due?Math.max(0,Math.ceil((due-start)/86400000)):14;const active=state.projects.filter(p=>!p.deleted&&p.id!==excludeId&&p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at).length;return {active,days,high:active>=9&&days<=5};}
       function resolvedWorkloadSurcharge(proj){return Math.max(0,Number(proj?.workload_surcharge||0));}
       function updateCartCalculations() {
@@ -4937,8 +5309,24 @@ ${description}`))actionCallback();return;}
           clientEmail = document.getElementById("newClientEmail").value.trim();
           const phone = document.getElementById("newClientPhone").value.trim();
           const address = document.getElementById("newClientAddress").value.trim();
-          const normalizedEmail = clientEmail.toLowerCase();
-          const matchedClient = normalizedEmail ? state.clients.find(c => String(c.email || "").trim().toLowerCase() === normalizedEmail) : null;
+          const normalizedEmail = normalizeClientIdentityEmail(clientEmail);
+          let matchedClient = normalizedEmail ? findLocalClientByEmail(normalizedEmail) : null;
+          if (!matchedClient && normalizedEmail && supabaseClient && state.isConnected) {
+            try {
+              const cloudMatch = await supabaseClient.from('clients').select('id,name,email,phone,address,client_code,archived_at').ilike('email', normalizedEmail).limit(1).maybeSingle();
+              if (cloudMatch.error) throw cloudMatch.error;
+              if (cloudMatch.data) {
+                if (cloudMatch.data.archived_at) {
+                  const restored = await supabaseClient.from('clients').update({archived_at:null}).eq('id',cloudMatch.data.id).select('id,name,email,phone,address,client_code,archived_at').single();
+                  if (restored.error) throw restored.error;
+                  cloudMatch.data = restored.data;
+                }
+                matchedClient = state.clients.find(c=>String(c.id)===String(cloudMatch.data.id)) || {...cloudMatch.data};
+                if (!state.clients.some(c=>String(c.id)===String(matchedClient.id))) state.clients.push(matchedClient);
+                persistClientsState();
+              }
+            } catch (e) { console.warn('Cloud client identity lookup failed:', e?.message||e); }
+          }
 
           if (matchedClient) {
             clientId = matchedClient.id;
@@ -4947,7 +5335,7 @@ ${description}`))actionCallback();return;}
             state.cart.selectedClientId = matchedClient.id;
             showToast(`Existing client ${formatClientId(matchedClient)} matched by email. Reusing the same Client ID.`);
           } else {
-            const newClient = { id: 'client_' + Date.now(), name: clientName, email: clientEmail, phone, address };
+            const newClient = { id: 'client_' + Date.now(), client_code: nextLocalClientCode(), name: clientName, email: clientEmail, phone, address };
             state.clients.push(newClient);
             clientId = newClient.id;
             persistClientsState();
@@ -5368,7 +5756,7 @@ ${description}`))actionCallback();return;}
         proj.subtotal_amount = subtotal;
         const discount = Math.max(0, Number(proj.discount_amount || 0));
         const rush = Math.max(0, Number(proj.rush_fee || 0));
-        const maintenance = automaticMaintenanceFee(items,projectNumber(proj));
+        const maintenance = maintenanceFeeForRecalculation(proj,items,subtotal);
         const workload = resolvedWorkloadSurcharge(proj);
         const otherFees = Array.isArray(proj.additional_fees) ? proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0) : 0;
         proj.system_maintenance_fee = maintenance;
@@ -5578,7 +5966,7 @@ ${description}`))actionCallback();return;}
         const overviewEl=document.getElementById('paymentCalculationsOverview'),listEl=document.getElementById('paymentHistoryList');
         const items=Array.isArray(proj.project_items)?proj.project_items:[];
         const itemsSubtotal=Number(proj.subtotal_amount||items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0));
-        const maintenance=automaticMaintenanceFee(items,projectNumber(proj),itemsSubtotal);if(Number(proj.system_maintenance_fee||0)!==maintenance){proj.system_maintenance_fee=maintenance;proj.updated_at=new Date().toISOString();}
+        const maintenance=storedOrAutomaticMaintenanceFee(proj,items,itemsSubtotal);
         const workloadSurcharge=resolvedWorkloadSurcharge(proj);
         const otherFees=Array.isArray(proj.additional_fees)?proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0):0;
         const discounts=Math.max(0,Number(proj.discount_amount||0));
@@ -5622,7 +6010,7 @@ ${description}`))actionCallback();return;}
         const baseRush=Math.max(0,Number(proj.rush_fee||0));
         const itemSubtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0);
         const storedSubtotal=Math.max(0,Number(proj.subtotal_amount||itemSubtotal||0));
-        const maintenance=automaticMaintenanceFee(items,projectNumber(proj),storedSubtotal);if(Number(proj.system_maintenance_fee||0)!==maintenance){proj.system_maintenance_fee=maintenance;proj.updated_at=new Date().toISOString();}
+        const maintenance=storedOrAutomaticMaintenanceFee(proj,items,storedSubtotal);
         const workloadSurcharge=Math.max(0,resolvedWorkloadSurcharge(proj));
         const otherFees=[];
         if(Array.isArray(proj.additional_fees)){
@@ -6006,6 +6394,21 @@ ${description}`))actionCallback();return;}
           return;
         }
 
+        let duplicateClient=findLocalClientByEmail(email,clientId);
+        if (!duplicateClient && supabaseClient && state.isConnected) {
+          try {
+            const cloudDuplicate=await supabaseClient.from('clients').select('id,name,email,client_code,archived_at').ilike('email',normalizeClientIdentityEmail(email)).neq('id',clientId).limit(1).maybeSingle();
+            if (cloudDuplicate.error) throw cloudDuplicate.error;
+            duplicateClient=cloudDuplicate.data||null;
+          } catch(e){console.warn('Client identity duplicate check failed:',e?.message||e);}
+        }
+        if(duplicateClient){
+          errEmail.innerText=`This email already belongs to ${formatClientId(duplicateClient)}. Use the existing client instead.`;
+          emailInput.classList.add("is-invalid");
+          showToast(`Email already belongs to ${formatClientId(duplicateClient)}. Client IDs are permanent and are not duplicated.`);
+          return;
+        }
+
         client.name = name;
         client.email = email;
         client.phone = phone;
@@ -6025,7 +6428,8 @@ ${description}`))actionCallback();return;}
 
         if (supabaseClient && state.isConnected) {
           try {
-            await supabaseClient.from('clients').update({ name, email, phone, address, notes }).eq('id', clientId);
+            const { error } = await supabaseClient.from('clients').update({ name, email: normalizeClientIdentityEmail(email), phone, address, notes }).eq('id', clientId);
+            if (error) throw error;
           } catch(e) {
             console.error("Database operation failed while updating client:", e);
             showToast("Warning: Client changes were saved locally, but could not sync to the database.", "Retry", () => syncClientToDatabase(client));
@@ -6259,6 +6663,8 @@ ${description}`))actionCallback();return;}
         if(c==='metrobank')return '/assets/payment-institutions/metrobank.png';
         if(c==='landbank')return '/assets/payment-institutions/landbank.png';
         if(c==='unionbank')return '/assets/payment-institutions/unionbank.png';
+        if(c==='gotyme')return '/assets/payment-institutions/gotyme.png';
+        if(c==='maribank'||c==='maribank-seabank')return '/assets/payment-institutions/maribank.png';
         if(c==='pnb')return '/assets/payment-institutions/pnb.png';
         return '/assets/payment-institutions/others.svg';
       }
@@ -6293,6 +6699,13 @@ ${description}`))actionCallback();return;}
         if(search)search.oninput=()=>renderOnlinePortalData();
         const provision=document.getElementById("onlinePortalProvisionAll");
         if(provision)provision.onclick=()=>runOnlinePortalAction({action:"provision-all-clients"},"Missing client accounts processed.",true);
+        const reboot=document.getElementById("onlinePortalRebootLogins");
+        if(reboot)reboot.onclick=()=>showConfirmationDialog(
+          "Reboot all client portal logins?",
+          "This resets every non-admin client portal password to its Client ID (CL-001, CL-002, etc.) and requires each client to create a new password after logging in.",
+          "Reboot Logins",
+          ()=>runOnlinePortalAction({action:"reboot-client-logins"},"Client portal logins rebooted. Initial password = Client ID.",true)
+        );
         const save=document.getElementById("portalSavePaymentSettings");
         if(save)save.onclick=saveOnlinePortalPaymentSettings;
         loadOnlinePortalData(false);
@@ -6341,9 +6754,8 @@ ${description}`))actionCallback();return;}
           const p=projectMap.get(String(x.project_id));
           const rawStatus=String(x.status||'pending').toLowerCase(),statusLabel=rawStatus==='approved'||rawStatus==='accepted'?'Accepted':rawStatus==='rejected'?'Rejected':'Pending',statusClass=statusLabel==='Accepted'?'portal-ok':statusLabel==='Rejected'?'portal-danger':'portal-warn',menuId=`paymentReviewMenu_${String(x.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
           const senderCode=escapeHtml(x.sender_institution||'others'),senderName=escapeHtml(x.payment_method||x.sender_institution||'—'),logo=portalInstitutionLogo(senderCode);
-          const submittedDate=portalDate(x.submitted_at||x.created_at||x.payment_date);
-          const decisionActions=statusLabel==='Pending'?`<button class="popover-action portal-payment-approve" data-id="${escapeHtml(x.id)}">Approve Request</button><button class="popover-action portal-payment-reject" data-id="${escapeHtml(x.id)}">Reject Request</button>`:'';
-          return `<tr class="portal-payment-review-row"><td data-label="Project"><strong>${escapeHtml(p?.project_code||p?.id||"—")}</strong></td><td data-label="Amount"><strong>${escapeHtml(portalMoney(x.submitted_amount))}</strong></td><td data-label="Bank / E-Wallet"><div class="portal-bank-cell"><span class="portal-bank-logo"><img src="${escapeHtml(logo)}" alt=""></span><span>${senderName}</span></div></td><td data-label="Status"><span class="portal-status ${statusClass}">${statusLabel}</span></td><td data-label="Date Submitted" class="portal-payment-date">${escapeHtml(submittedDate)}</td><td class="table-row-actions" data-label=""><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Payment review actions">⋮</button><div class="popover-panel client-row-menu">${decisionActions}<button class="popover-action portal-payment-delete text-danger" data-id="${escapeHtml(x.id)}" data-status="${escapeHtml(statusLabel)}">Delete Request</button></div></div></td></tr>`;
+          const submittedDate=portalDate(x.submitted_at||x.created_at||x.payment_date),reference=String(x.reference_number||x.extracted_reference||x.reference_no||'—');
+          return `<tr class="portal-payment-review-row"><td data-label="Project ID"><strong>${escapeHtml(p?.project_code||p?.id||"—")}</strong></td><td data-label="Project Name"><strong class="portal-responsive-text">${escapeHtml(p?.title||"Untitled Project")}</strong></td><td data-label="Bank / E-Wallet"><div class="portal-bank-cell"><span class="portal-bank-logo"><img src="${escapeHtml(logo)}" alt=""></span><span>${senderName}</span></div></td><td data-label="Ref ID"><span class="portal-responsive-text">${escapeHtml(reference)}</span></td><td data-label="Status"><div class="portal-status-action"><span class="portal-status ${statusClass}">${statusLabel}</span><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Payment request actions">⋮</button><div class="popover-panel client-row-menu">${statusLabel==='Pending'?`<button class="popover-action portal-payment-approve" data-id="${escapeHtml(x.id)}">Approve Request</button><button class="popover-action portal-payment-reject" data-id="${escapeHtml(x.id)}">Reject Request</button>`:''}<button class="popover-action portal-payment-delete text-danger" data-id="${escapeHtml(x.id)}" data-status="${escapeHtml(statusLabel)}">Delete Request</button></div></div></div></td><td data-label="Date Submitted" class="portal-payment-date">${escapeHtml(submittedDate)}</td></tr>`;
         }).join("")||`<tr><td colspan="6" class="text-center text-muted">No payment submissions.</td></tr>`;
 
         const activityRows=document.getElementById("onlinePortalActivityRows");
@@ -6369,39 +6781,39 @@ ${description}`))actionCallback();return;}
         bindOnlinePortalRows();
       }
 
-      function paymentReviewRecord(id){return (state.onlinePortalData?.submissions||[]).find(x=>String(x.id)===String(id))||null;}
+      function paymentSubmissionById(id){return (state.onlinePortalData?.submissions||[]).find(x=>String(x.id)===String(id));}
 
       async function approvePortalPaymentRequest(id){
-        const submission=paymentReviewRecord(id);if(!submission){showToast('Payment request is no longer available.');return;}
-        const verification=submission.verification||{passed:false,checks:[]};
-        if(!verification.passed){const failed=(verification.checks||[]).filter(c=>!c.ok).map(c=>c.message||c.label).filter(Boolean);showToast(failed[0]||'This payment request needs attention before it can be approved.');return;}
-        showConfirmationDialog('Approve Payment Request',`Approve ${portalMoney(submission.submitted_amount)} and apply it to this project?`,'Approve Request',async()=>{
-          try{showActionStatus('Approving Payment','Running final verification and updating the project balance…',false);await onlinePortalRequest('POST',{action:'review-payment',id,decision:'accepted'});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Accepted','The payment was recorded and the project balance was recalculated.',true);setTimeout(()=>closeModal('actionStatusModal'),950);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not approve this payment request.');}
+        const row=paymentSubmissionById(id);if(!row)return showToast("Payment request could not be found.");
+        const failed=(row.verification?.checks||[]).find(x=>!x.ok);
+        if(!row.verification?.passed){return showToast(failed?.message||"This payment cannot be approved until all system checks pass.");}
+        showConfirmationDialog('Approve Payment Request',`Approve ${portalMoney(row.submitted_amount)} and apply it to the project balance?`,'Approve Request',async()=>{
+          try{showActionStatus('Approving Payment','Running final verification and recording the payment…',false);await onlinePortalRequest('POST',{action:'review-payment',id,decision:'accepted'});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Accepted','The payment was recorded and the project balance was recalculated.',true);setTimeout(()=>closeModal('actionStatusModal'),1000)}catch(e){closeModal('actionStatusModal');showToast(e.message||'Payment could not be approved.');}
         });
       }
 
-      function openRejectPaymentRequest(id){
-        const submission=paymentReviewRecord(id);if(!submission){showToast('Payment request is no longer available.');return;}
+      function rejectPortalPaymentRequest(id){
+        const row=paymentSubmissionById(id);if(!row)return showToast("Payment request could not be found.");
         state.portalPaymentReviewId=id;
-        const reasons=state.onlinePortalData?.rejectionReasons||[];
-        const list=document.getElementById('quickRejectReasonOptions');if(list)list.innerHTML=reasons.map(r=>`<option value="${escapeHtml(r.code)}" label="${escapeHtml(r.label)}"></option>`).join('');
-        const reason=document.getElementById('quickRejectReason');if(reason)reason.value='';
-        const note=document.getElementById('quickRejectNote');if(note)note.value='';
-        const validation=document.getElementById('quickRejectValidation');if(validation){validation.textContent='';validation.classList.add('hidden');}
-        const amount=document.getElementById('quickRejectAmount');if(amount)amount.textContent=portalMoney(submission.submitted_amount);
-        openModal('portalPaymentRejectModal');
+        const opts=document.getElementById('quickRejectReasonOptions');if(opts)opts.innerHTML=(state.onlinePortalData?.rejectionReasons||[]).map(r=>`<option value="${escapeHtml(r.code)}" label="${escapeHtml(r.label)}"></option>`).join('');
+        const reason=document.getElementById('quickRejectReason'),note=document.getElementById('quickRejectNote');if(reason)reason.value='';if(note)note.value='';document.getElementById('quickRejectValidation')?.classList.add('hidden');
+        const confirm=document.getElementById('quickRejectConfirm');if(confirm)confirm.onclick=submitQuickPaymentRejection;
+        openModal('paymentRejectQuickModal');
       }
 
-      async function confirmRejectPaymentRequest(){
-        const id=state.portalPaymentReviewId,reason=document.getElementById('quickRejectReason'),note=document.getElementById('quickRejectNote'),validation=document.getElementById('quickRejectValidation');
-        if(!id)return;if(!reason?.value){if(validation){validation.textContent='Select a rejection reason.';validation.classList.remove('hidden');}reason?.focus();return;}
-        try{showActionStatus('Rejecting Payment','Saving the reason for the client…',false);await onlinePortalRequest('POST',{action:'review-payment',id,decision:'rejected',reasonCode:reason.value,adminNote:note?.value||''});closeModal('portalPaymentRejectModal');closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Rejected','The rejection reason was saved for the client.',true);setTimeout(()=>closeModal('actionStatusModal'),950);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not reject this payment request.');}
+      async function submitQuickPaymentRejection(){
+        const id=state.portalPaymentReviewId,reason=document.getElementById('quickRejectReason'),note=document.getElementById('quickRejectNote');
+        if(!id)return;if(!reason?.value){document.getElementById('quickRejectValidation')?.classList.remove('hidden');reason?.focus();return;}
+        try{showActionStatus('Rejecting Payment','Saving the reason for the client…',false);await onlinePortalRequest('POST',{action:'review-payment',id,decision:'rejected',reasonCode:reason.value,adminNote:note?.value||''});closeModal('paymentRejectQuickModal');closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Payment Rejected','The client can see the rejection reason in JUAN PROJECT Online.',true);setTimeout(()=>closeModal('actionStatusModal'),1000)}catch(e){closeModal('actionStatusModal');showToast(e.message||'Payment could not be rejected.');}
       }
 
       function deletePortalPaymentRequest(id,status='Pending'){
         const warning=status==='Accepted'?' The accepted payment remains in Payment History and project totals are not reversed.':'';
-        showConfirmationDialog('Delete Payment Request',`Delete this ${String(status).toLowerCase()} request?${warning}`,'Delete Request',async()=>{try{showActionStatus('Deleting Request','Removing the payment request…',false);await onlinePortalRequest('POST',{action:'delete-payment-review',id});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Request Deleted','The payment request was removed.',true);setTimeout(()=>closeModal('actionStatusModal'),900)}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not delete payment request.')}});
+        showConfirmationDialog('Delete Payment Request',`Delete this ${String(status).toLowerCase()} payment request?${warning}`,'Delete Request',async()=>{try{showActionStatus('Deleting Request','Removing the review request…',false);await onlinePortalRequest('POST',{action:'delete-payment-review',id});closeModal('actionStatusModal');state.onlinePortalData=null;await loadOnlinePortalData(true);showActionStatus('Request Deleted','The payment request was removed.',true);setTimeout(()=>closeModal('actionStatusModal'),900)}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not delete payment request.')}});
       }
+
+      // Compatibility alias for older mobile hooks: open the actions through verification-safe approval UI.
+      function openPortalPaymentReview(id){ const row=paymentSubmissionById(id); if(!row)return; showToast('Use the ⋮ menu to approve, reject, or delete this payment request.'); }
 
       function bindOnlinePortalRows(){
         document.querySelectorAll(".portal-account-action").forEach(btn=>btn.onclick=()=>{
@@ -6410,9 +6822,9 @@ ${description}`))actionCallback();return;}
           const msg=btn.dataset.action==="reset-client-temporary-password"?"Temporary password reset to the current Client ID.":btn.dataset.action==="set-client-access"?"Client portal access updated.":"Client portal account updated.";
           runOnlinePortalAction(body,msg,true);
         });
-        document.querySelectorAll('.portal-payment-approve').forEach(btn=>btn.onclick=()=>approvePortalPaymentRequest(btn.dataset.id));
-        document.querySelectorAll('.portal-payment-reject').forEach(btn=>btn.onclick=()=>openRejectPaymentRequest(btn.dataset.id));
-        document.querySelectorAll('.portal-payment-delete').forEach(btn=>btn.onclick=()=>deletePortalPaymentRequest(btn.dataset.id,btn.dataset.status||'Pending'));
+        document.querySelectorAll('.portal-payment-approve').forEach(btn=>btn.onclick=e=>{e.stopPropagation();approvePortalPaymentRequest(btn.dataset.id)});
+        document.querySelectorAll('.portal-payment-reject').forEach(btn=>btn.onclick=e=>{e.stopPropagation();rejectPortalPaymentRequest(btn.dataset.id)});
+        document.querySelectorAll('.portal-payment-delete').forEach(btn=>btn.onclick=e=>{e.stopPropagation();deletePortalPaymentRequest(btn.dataset.id,btn.dataset.status||'Pending')});
         document.querySelectorAll(".portal-drive-save").forEach(btn=>btn.onclick=()=>{
           const project=CSS.escape(btn.dataset.project),input=document.querySelector(`.portal-drive-input[data-project="${project}"]`),unlock=document.querySelector(`.portal-drive-unlock[data-project="${project}"]`),expires=document.querySelector(`.portal-drive-expires[data-project="${project}"]`);
           runOnlinePortalAction({action:"save-project-drive-link",projectId:btn.dataset.project,url:input?.value||"",unlockAt:unlock?.value||null,expiresAt:expires?.value||null},"Project Drive access saved.",true);
@@ -6425,6 +6837,9 @@ ${description}`))actionCallback();return;}
           if(body.action==="provision-all-clients"&&result.summary){
             const s=result.summary;
             showToast(`Accounts: ${s.created||0} created · ${s.active||0} active · ${s.temporary_password||0} temporary · ${s.skipped||0} skipped · ${s.error||0} failed`);
+          }else if(body.action==="reboot-client-logins"&&result.summary){
+            const s=result.summary;
+            showToast(`Client logins rebooted: ${s.rebooted||0} reset · ${s.skipped||0} skipped · ${s.error||0} failed`);
           }else showToast(successMessage||"Online Portal updated.");
           if(refresh){state.onlinePortalData=null;await loadOnlinePortalData(true);}
           return result;
@@ -6496,10 +6911,7 @@ ${description}`))actionCallback();return;}
         addCustomProductToCart,
         renderPricelist,
         renderOnlinePortal,
-        approvePortalPaymentRequest,
-        openRejectPaymentRequest,
-        confirmRejectPaymentRequest,
-        deletePortalPaymentRequest,
+        openPortalPaymentReview,
         setOnlinePortalTab,
         loadOnlinePortalData,
         switchPricelistTab,
@@ -6595,9 +7007,12 @@ ${description}`))actionCallback();return;}
         adminSignIn,
         adminSignOut,
         testDatabaseConnection,
-        connectDatabase,
+        connectDatabaseManually,
         disconnectDatabase,
-        continueWorkspaceOffline
+        continueWorkspaceOffline,
+        approvePortalPaymentRequest,
+        rejectPortalPaymentRequest,
+        deletePortalPaymentRequest
       };
     })();
     // V1.3.1 hotfix: expose the Workspace controller for touch/mobile navigation modules.
@@ -6775,12 +7190,6 @@ ${description}`))actionCallback();return;}
   .workspace-auth-brand{font-size:13px;font-weight:800;letter-spacing:.08em;margin-bottom:22px}.workspace-auth-card h2{margin:0 0 7px;font-size:28px}.workspace-auth-card p{color:#6e6e73;margin:0 0 22px;line-height:1.5}
   .workspace-auth-card label{display:block;font-size:12px;font-weight:700;margin:13px 0 7px}.workspace-auth-card input{width:100%;height:46px;border:1px solid rgba(0,0,0,.13);border-radius:12px;padding:0 13px;font:inherit;box-sizing:border-box}.workspace-auth-card button{width:100%;height:46px;border:0;border-radius:12px;margin-top:18px;background:#2cf39e;color:#10261d;font-weight:800;cursor:pointer}.workspace-auth-card button:disabled{opacity:.6}.workspace-auth-foot{font-size:11px!important;margin-top:14px!important}
 </style>
-
-<style>
-.manual-db-card{display:grid;gap:18px}.manual-db-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.manual-db-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}.manual-db-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.manual-db-status{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:750;background:var(--bg-subtle);color:var(--text-secondary)}.manual-db-status>span{width:8px;height:8px;border-radius:50%;background:#9ca3af}.manual-db-status.connected{background:var(--mint-light-bg);color:var(--primary-mint-dark)}.manual-db-status.connected>span{background:var(--primary-mint-dark)}.manual-db-status.offline>span{background:var(--status-orange)}
-.workspace-auth-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:18px}.workspace-auth-actions button{margin-top:0}.workspace-auth-actions .workspace-offline-btn{background:#fff;color:#444;border:1px solid rgba(0,0,0,.12)}
-@media(max-width:720px){.manual-db-head{flex-direction:column}.manual-db-fields{grid-template-columns:1fr}.manual-db-actions .btn{min-height:44px}.manual-db-status{align-self:flex-start}}
-</style>
 <div id="workspaceAuthGate" class="workspace-auth-gate" role="dialog" aria-modal="true" aria-labelledby="workspaceAuthTitle">
   <div class="workspace-auth-card">
     <div class="workspace-auth-brand">JUAN PROJECT WORKSPACE</div>
@@ -6790,8 +7199,9 @@ ${description}`))actionCallback();return;}
     <input id="workspaceAuthEmail" type="email" autocomplete="username" placeholder="admin@example.com">
     <label for="workspaceAuthPassword">Password</label>
     <div class="workspace-password-wrap"><input id="workspaceAuthPassword" type="password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')app.adminSignIn()"><button type="button" class="workspace-pass-toggle" aria-label="Show password" onclick="const p=document.getElementById('workspaceAuthPassword');p.type=p.type==='password'?'text':'password'">Show</button></div>
-    <div class="workspace-auth-actions"><button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Log In</button><button class="workspace-offline-btn" type="button" onclick="app.continueWorkspaceOffline()">Continue Offline</button></div>
-    <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth and database policies. You can continue using cached/local Workspace data without connecting.</p>
+    <button id="workspaceAuthSubmit" type="button" onclick="app.adminSignIn()">Log In & Connect</button>
+    <button type="button" class="workspace-auth-offline" onclick="app.continueWorkspaceOffline()">Continue Offline</button>
+    <p class="workspace-auth-foot">Cloud data is protected by Supabase Auth. Closing this connection never blocks your local Workspace.</p>
   </div>
 </div>
 
@@ -6818,6 +7228,17 @@ ${description}`))actionCallback();return;}
 <style>
 .project-data-autosave-row{display:flex;justify-content:flex-end;padding:4px 2px 0}.project-data-autosave-status{font-size:11px;color:var(--text-tertiary);display:inline-flex;align-items:center;gap:6px;min-height:24px}.project-data-autosave-status.saving{color:var(--text-secondary)}.project-data-autosave-status.saved{color:var(--primary-mint-dark)}.project-data-autosave-status.warning{color:var(--status-orange)}.project-data-autosave-status.error{color:var(--status-red)}
 @media(max-width:720px){.project-data-autosave-row{justify-content:flex-start}.project-data-autosave-status{font-size:10px}}
+</style>
+
+<style>
+/* V1.3.3.2 — manual database connection + compact payment request actions */
+.database-connection-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.database-state-pill{display:inline-flex;align-items:center;white-space:nowrap;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800}.database-state-pill.offline{background:#f2f3f4;color:#5f6368}.database-state-pill.connected{background:rgba(44,243,158,.14);color:#08794d}.database-connection-detail{margin-top:4px;padding:10px 12px;border-radius:10px;background:var(--bg-subtle);font-size:11px;color:var(--text-secondary)}.workspace-auth-offline{background:#f2f3f4!important;color:#303438!important;margin-top:8px!important}.payment-reject-quick-card{max-width:480px}.portal-payment-reviews-table,.portal-payment-reviews-table .table-responsive{overflow:visible!important}.portal-payment-review-row td{vertical-align:middle}.portal-payment-review-row .popover-panel{right:0;left:auto;min-width:180px}.connection-status{cursor:pointer}.connection-status:focus-visible{outline:2px solid var(--primary-mint-dark);outline-offset:3px}
+@media(max-width:720px){.database-connection-head{align-items:flex-start}.database-connection-card .form-grid{grid-template-columns:1fr}.database-connection-card .action-buttons-group{display:grid;grid-template-columns:1fr 1fr}.database-connection-card .action-buttons-group .btn:last-child{grid-column:1/-1}}
+</style>
+
+<style>
+/* V1.3.3.2 invoice brand clipping fix */
+.invoice-brand-img{display:block;width:220px;max-width:100%;height:auto;object-fit:contain;object-position:left center;overflow:visible}.invoice-header>div:first-child{min-width:0;overflow:visible}
 </style>
 </body>
 </html>
