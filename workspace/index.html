@@ -975,6 +975,58 @@
       .portal-payment-review-table td.table-row-actions:before{display:none}
     }
   </style>
+
+<style id="v1332-static-tables-loading-v2">
+/* Static table policy: page scrolls; table bodies never become nested scroll areas. */
+.table-card,.table-card>.table-responsive,.table-responsive,.portal-payment-review-table-wrap,.portal-payment-review-card{overflow:visible!important;max-height:none!important}
+.data-table,.unified-table{width:100%!important;min-width:0!important}
+.unified-table th,.unified-table td{white-space:normal!important;overflow-wrap:anywhere;word-break:normal}
+.table-row-actions,.table-actions-col{overflow:visible!important;position:relative!important}
+.popover-wrap.open{position:relative!important;z-index:99990!important}
+.popover-wrap.open .popover-panel,.popover-panel{z-index:100000!important}
+.unified-table tr:has(.popover-wrap.open){position:relative;z-index:99980}
+.unified-table td:has(.popover-wrap.open){position:relative;z-index:99985;overflow:visible!important}
+/* Client Access: reserve enough room for the Actions label/menu. */
+.portal-client-access-table{table-layout:fixed!important}
+.portal-client-access-table th:nth-child(1),.portal-client-access-table td:nth-child(1){width:10%}
+.portal-client-access-table th:nth-child(2),.portal-client-access-table td:nth-child(2){width:18%}
+.portal-client-access-table th:nth-child(3),.portal-client-access-table td:nth-child(3){width:22%}
+.portal-client-access-table th:nth-child(4),.portal-client-access-table td:nth-child(4){width:14%}
+.portal-client-access-table th:nth-child(5),.portal-client-access-table td:nth-child(5){width:12%}
+.portal-client-access-table th:nth-child(6),.portal-client-access-table td:nth-child(6){width:14%}
+.portal-client-access-table th:nth-child(7),.portal-client-access-table td:nth-child(7){width:10%;text-align:right}
+/* Payment Reviews: exact requested data proportions plus a compact trailing action control. */
+.portal-payment-review-table{table-layout:fixed!important}
+.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:16%}
+.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:30%}
+.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:18%}
+.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:12%}
+.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:11%}
+.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:13%}
+.portal-payment-review-table th:nth-child(7),.portal-payment-review-table td:nth-child(7){width:48px!important;min-width:48px!important;max-width:48px!important;text-align:right}
+.portal-bank-cell{display:flex;align-items:center;gap:9px;min-width:0}
+.portal-bank-logo{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid var(--border-subtle);border-radius:9px;background:#fff;overflow:hidden;padding:3px}
+.portal-bank-logo img{display:block;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;border-radius:6px}
+/* Workspace loading state: branded, immediate, and never a blank page. */
+.workspace-loading-shell{position:fixed!important;inset:0!important;z-index:120000!important;display:grid!important;place-items:center!important;padding:24px!important;background:rgba(248,250,249,.96)!important;backdrop-filter:blur(8px)}
+.workspace-loading-shell.hidden{display:none!important}
+.workspace-loader-card{width:min(440px,calc(100vw - 40px));display:grid;justify-items:center;text-align:center;gap:12px;padding:30px 28px 26px;border:1px solid rgba(17,24,39,.07);border-radius:24px;background:#fff;box-shadow:0 24px 70px rgba(20,43,34,.10)}
+.workspace-loader-mark{width:62px;height:62px;border-radius:19px;background:#e9fff5;display:grid;place-items:center;position:relative;overflow:hidden}
+.workspace-loader-mark:after{content:"";position:absolute;inset:-35%;border:2px solid transparent;border-top-color:#19ba75;border-radius:50%;animation:workspaceLoaderSpin 1.05s linear infinite}
+.workspace-loader-mark img{width:30px;height:30px;object-fit:contain;position:relative;z-index:1}
+.workspace-loader-copy{display:grid;gap:5px}
+.workspace-loader-kicker{font-size:9px;font-weight:850;letter-spacing:.12em;color:#0b8d59}
+.workspace-loader-copy strong{font-size:20px;letter-spacing:-.02em;color:var(--text-primary)}
+.workspace-loader-copy small{font-size:11px;color:var(--text-tertiary)}
+.workspace-loader-track{width:156px;height:4px;border-radius:999px;background:#edf2ef;overflow:hidden;margin-top:2px}
+.workspace-loader-track span{display:block;width:45%;height:100%;border-radius:inherit;background:#19ba75;animation:workspaceLoaderTrack 1.2s ease-in-out infinite}
+.workspace-loader-dots{display:flex;gap:5px}.workspace-loader-dots i{width:5px;height:5px;border-radius:50%;background:#cdd8d2;animation:workspaceLoaderDot 1.2s ease-in-out infinite}.workspace-loader-dots i:nth-child(2){animation-delay:.15s}.workspace-loader-dots i:nth-child(3){animation-delay:.3s}
+@keyframes workspaceLoaderSpin{to{transform:rotate(360deg)}}
+@keyframes workspaceLoaderTrack{0%{transform:translateX(-110%)}100%{transform:translateX(230%)}}
+@keyframes workspaceLoaderDot{0%,70%,100%{transform:translateY(0);background:#cdd8d2}35%{transform:translateY(-4px);background:#19ba75}}
+/* On narrow screens keep tables static and wrap content instead of creating an inner scrollbar. */
+@media(max-width:760px){.table-responsive{overflow:visible!important}.unified-table{min-width:0!important;table-layout:fixed!important}.unified-table th,.unified-table td{padding-left:8px!important;padding-right:8px!important;font-size:11px}.portal-payment-review-table{display:table!important}.portal-payment-review-table thead{display:table-header-group!important}.portal-payment-review-table tbody{display:table-row-group!important}.portal-payment-review-table tr{display:table-row!important;padding:0!important}.portal-payment-review-table th,.portal-payment-review-table td{display:table-cell!important;width:auto;white-space:normal!important}.portal-payment-review-table td:before{display:none!important}.portal-payment-review-table td.table-row-actions{display:table-cell!important;padding:8px!important}.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:16%!important}.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:30%!important}.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:18%!important}.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:12%!important}.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:11%!important}.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:13%!important}.portal-payment-review-table th:nth-child(7),.portal-payment-review-table td:nth-child(7){width:42px!important;min-width:42px!important;max-width:42px!important}}
+</style>
 </head>
 <body>
 
@@ -1022,9 +1074,12 @@
     <!-- MAIN VIEW CONTAINER -->
     <main class="main-content">
       <div id="workspaceLoadingSkeleton" class="workspace-loading-shell hidden" aria-live="polite" aria-busy="true">
-        <div class="workspace-loading-banner"><span class="workspace-loading-spinner"></span><div><strong>Loading workspace data…</strong><small>Preparing projects, clients, payments, and reports.</small></div></div>
-        <div class="workspace-skeleton-grid"><div class="skeleton-card hero"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div><div class="skeleton-card"><span></span><b></b><i></i></div></div>
-        <div class="workspace-skeleton-table"><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div><div><span></span><b></b><i></i><em></em></div></div>
+        <div class="workspace-loader-card">
+          <div class="workspace-loader-mark" aria-hidden="true"><img src="/assets/brand/j-mark.svg" alt=""></div>
+          <div class="workspace-loader-copy"><span class="workspace-loader-kicker">JUAN PROJECT WORKSPACE</span><strong>Loading your workspace</strong><small>Preparing projects, clients, payments, and reports.</small></div>
+          <div class="workspace-loader-track" aria-hidden="true"><span></span></div>
+          <div class="workspace-loader-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
       </div>
 
       <!-- VIEW 1: CURRENT WORKS / DASHBOARD -->
@@ -1550,18 +1605,18 @@
           <button type="button" data-portal-tab="payments">Payment Reviews</button>
           <button type="button" data-portal-tab="settings">Portal Configuration</button>
         </div>
-        <div id="onlinePortalLoading" class="card portal-loading hidden">Loading Online Portal data…</div>
+        <div id="onlinePortalLoading" class="card portal-loading hidden"><span class="portal-loading-spinner" aria-hidden="true"></span><div><strong>Loading Online Portal</strong><small>Refreshing client access and payment reviews.</small></div></div>
         <div id="onlinePortalError" class="card portal-error hidden"></div>
         <div id="onlinePortalAccountsPanel" class="portal-panel">
           <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
           <div class="view-toolbar unified-toolbar portal-toolbar">
             <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
           </div>
-          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table portal-client-access-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Payment Reviews</strong><span>Open a review to see the full payment details, receipt, verification results, and decision controls.</span></div>
-          <div class="card table-card portal-payment-review-card"><div class="portal-payment-review-table-wrap"><table class="data-table unified-table portal-payment-review-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Bank / E-Wallet</th><th>Ref ID</th><th>Status</th><th>Date Submitted</th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
+          <div class="card table-card portal-payment-review-card"><div class="portal-payment-review-table-wrap"><table class="data-table unified-table portal-payment-review-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Bank / E-Wallet</th><th>Ref ID</th><th>Status</th><th>Date Submitted</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody id="onlinePortalPaymentRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalActivityPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Client-facing activity only.</strong><span>Use Projects and Clients for business records; this panel shows portal access and submission activity.</span></div>
@@ -6794,8 +6849,8 @@ ${description}`))actionCallback();return;}
           const rawStatus=String(x.status||'pending').toLowerCase(),statusLabel=rawStatus==='approved'||rawStatus==='accepted'?'Accepted':rawStatus==='rejected'?'Rejected':'Pending',statusClass=statusLabel==='Accepted'?'portal-ok':statusLabel==='Rejected'?'portal-danger':'portal-warn',menuId=`paymentReviewMenu_${String(x.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
           const senderCode=escapeHtml(x.sender_institution||'others'),senderName=escapeHtml(x.payment_method||x.sender_institution||'—'),logo=portalInstitutionLogo(senderCode);
           const submittedDate=portalDate(x.submitted_at||x.created_at||x.payment_date),reference=String(x.reference_number||x.extracted_reference||x.reference_no||'—');
-          return `<tr class="portal-payment-review-row"><td data-label="Project ID"><strong>${escapeHtml(p?.project_code||p?.id||"—")}</strong></td><td data-label="Project Name"><strong class="portal-responsive-text">${escapeHtml(p?.title||"Untitled Project")}</strong></td><td data-label="Bank / E-Wallet"><div class="portal-bank-cell"><span class="portal-bank-logo"><img src="${escapeHtml(logo)}" alt=""></span><span>${senderName}</span></div></td><td data-label="Ref ID"><span class="portal-responsive-text">${escapeHtml(reference)}</span></td><td data-label="Status"><div class="portal-status-action"><span class="portal-status ${statusClass}">${statusLabel}</span><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Payment request actions">⋮</button><div class="popover-panel client-row-menu">${statusLabel==='Pending'?`<button class="popover-action portal-payment-approve" data-id="${escapeHtml(x.id)}">Approve Request</button><button class="popover-action portal-payment-reject" data-id="${escapeHtml(x.id)}">Reject Request</button>`:''}<button class="popover-action portal-payment-delete text-danger" data-id="${escapeHtml(x.id)}" data-status="${escapeHtml(statusLabel)}">Delete Request</button></div></div></div></td><td data-label="Date Submitted" class="portal-payment-date">${escapeHtml(submittedDate)}</td></tr>`;
-        }).join("")||`<tr><td colspan="6" class="text-center text-muted">No payment submissions.</td></tr>`;
+          return `<tr class="portal-payment-review-row"><td data-label="Project ID"><strong>${escapeHtml(p?.project_code||p?.id||"—")}</strong></td><td data-label="Project Name"><strong class="portal-responsive-text">${escapeHtml(p?.title||"Untitled Project")}</strong></td><td data-label="Bank / E-Wallet"><div class="portal-bank-cell"><span class="portal-bank-logo"><img src="${escapeHtml(logo)}" alt=""></span><span>${senderName}</span></div></td><td data-label="Ref ID"><span class="portal-responsive-text">${escapeHtml(reference)}</span></td><td data-label="Status"><span class="portal-status ${statusClass}">${statusLabel}</span></td><td data-label="Date Submitted" class="portal-payment-date">${escapeHtml(submittedDate)}</td><td class="table-row-actions" data-label="Actions"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Payment request actions">⋮</button><div class="popover-panel client-row-menu">${statusLabel==='Pending'?`<button class="popover-action portal-payment-approve" data-id="${escapeHtml(x.id)}">Approve Request</button><button class="popover-action portal-payment-reject" data-id="${escapeHtml(x.id)}">Reject Request</button>`:''}<button class="popover-action portal-payment-delete text-danger" data-id="${escapeHtml(x.id)}" data-status="${escapeHtml(statusLabel)}">Delete Request</button></div></div></td></tr>`;
+        }).join("")||`<tr><td colspan="7" class="text-center text-muted">No payment submissions.</td></tr>`;
 
         const activityRows=document.getElementById("onlinePortalActivityRows");
         if(activityRows){
@@ -7306,3 +7361,21 @@ ${description}`))actionCallback();return;}
 <style id="v111-maintenance-patch">
 .snapshot-v111{padding:18px}.snapshot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.snapshot-stat{border:1px solid var(--border-subtle);border-radius:12px;padding:13px;background:var(--bg-card)}.snapshot-stat span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);font-weight:750}.snapshot-stat strong{display:block;font-size:18px;margin-top:5px}.snapshot-stat small{display:block;margin-top:5px;color:var(--text-tertiary);font-size:10px;line-height:1.35}.snapshot-meter{height:5px;background:var(--bg-subtle);border-radius:999px;margin-top:9px;overflow:hidden}.snapshot-meter i{display:block;height:100%;background:var(--primary-mint-dark);border-radius:inherit}.catalog-service-id{font-size:11px;letter-spacing:.04em;color:var(--primary-mint-dark)}
 </style>
+
+<style id="v1332-static-table-final-override">
+/* Final override — tables are static page content, never nested scroll lists. */
+.table-card,.table-card>.table-responsive,.table-responsive,.portal-payment-review-table-wrap,.portal-payment-review-card{overflow:visible!important;max-height:none!important}
+.data-table,.unified-table{width:100%!important;min-width:0!important}
+.unified-table th,.unified-table td{white-space:normal!important;overflow-wrap:anywhere!important}
+.table-row-actions,.table-actions-col{overflow:visible!important;position:relative!important}
+.popover-wrap.open{position:relative!important;z-index:99990!important}.popover-wrap.open .popover-panel,.popover-panel{z-index:100000!important}
+.unified-table tr:has(.popover-wrap.open){position:relative!important;z-index:99980!important}.unified-table td:has(.popover-wrap.open){position:relative!important;z-index:99985!important;overflow:visible!important}
+.portal-client-access-table{table-layout:fixed!important}.portal-client-access-table th:nth-child(1),.portal-client-access-table td:nth-child(1){width:10%!important}.portal-client-access-table th:nth-child(2),.portal-client-access-table td:nth-child(2){width:18%!important}.portal-client-access-table th:nth-child(3),.portal-client-access-table td:nth-child(3){width:22%!important}.portal-client-access-table th:nth-child(4),.portal-client-access-table td:nth-child(4){width:14%!important}.portal-client-access-table th:nth-child(5),.portal-client-access-table td:nth-child(5){width:12%!important}.portal-client-access-table th:nth-child(6),.portal-client-access-table td:nth-child(6){width:14%!important}.portal-client-access-table th:nth-child(7),.portal-client-access-table td:nth-child(7){width:10%!important;min-width:0!important;text-align:right!important}
+.portal-payment-review-table{table-layout:fixed!important;min-width:0!important}.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:16%!important}.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:30%!important}.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:18%!important}.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:12%!important}.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:11%!important}.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:13%!important}.portal-payment-review-table th:nth-child(7),.portal-payment-review-table td:nth-child(7){width:48px!important;min-width:48px!important;max-width:48px!important;text-align:right!important}
+.portal-bank-cell{display:flex!important;align-items:center!important;gap:9px!important;min-width:0}.portal-bank-logo{width:34px!important;height:34px!important;aspect-ratio:1/1!important;flex:0 0 34px!important;display:grid!important;place-items:center!important;border:1px solid var(--border-subtle)!important;border-radius:9px!important;background:#fff!important;overflow:hidden!important;padding:3px!important}.portal-bank-logo img{display:block!important;width:100%!important;height:100%!important;aspect-ratio:1/1!important;object-fit:contain!important;object-position:center!important;border-radius:6px!important}
+.workspace-loading-shell{position:fixed!important;inset:0!important;z-index:120000!important;display:grid!important;place-items:center!important;padding:24px!important;background:rgba(248,250,249,.96)!important;backdrop-filter:blur(8px)!important}.workspace-loading-shell.hidden{display:none!important}.workspace-loader-card{width:min(440px,calc(100vw - 40px));display:grid;justify-items:center;text-align:center;gap:12px;padding:30px 28px 26px;border:1px solid rgba(17,24,39,.07);border-radius:24px;background:#fff;box-shadow:0 24px 70px rgba(20,43,34,.10)}.workspace-loader-mark{width:62px;height:62px;border-radius:19px;background:#e9fff5;display:grid;place-items:center;position:relative;overflow:hidden}.workspace-loader-mark:after{content:"";position:absolute;inset:-35%;border:2px solid transparent;border-top-color:#19ba75;border-radius:50%;animation:workspaceLoaderSpin 1.05s linear infinite}.workspace-loader-mark img{width:30px;height:30px;object-fit:contain;position:relative;z-index:1}.workspace-loader-copy{display:grid;gap:5px}.workspace-loader-kicker{font-size:9px;font-weight:850;letter-spacing:.12em;color:#0b8d59}.workspace-loader-copy strong{font-size:20px;letter-spacing:-.02em;color:var(--text-primary)}.workspace-loader-copy small{font-size:11px;color:var(--text-tertiary)}.workspace-loader-track{width:156px;height:4px;border-radius:999px;background:#edf2ef;overflow:hidden;margin-top:2px}.workspace-loader-track span{display:block;width:45%;height:100%;border-radius:inherit;background:#19ba75;animation:workspaceLoaderTrack 1.2s ease-in-out infinite}.workspace-loader-dots{display:flex;gap:5px}.workspace-loader-dots i{width:5px;height:5px;border-radius:50%;background:#cdd8d2;animation:workspaceLoaderDot 1.2s ease-in-out infinite}.workspace-loader-dots i:nth-child(2){animation-delay:.15s}.workspace-loader-dots i:nth-child(3){animation-delay:.3s}
+@keyframes workspaceLoaderSpin{to{transform:rotate(360deg)}}@keyframes workspaceLoaderTrack{0%{transform:translateX(-110%)}100%{transform:translateX(230%)}}@keyframes workspaceLoaderDot{0%,70%,100%{transform:translateY(0);background:#cdd8d2}35%{transform:translateY(-4px);background:#19ba75}}
+@media(max-width:760px){.table-responsive{overflow:visible!important}.unified-table{min-width:0!important;table-layout:fixed!important}.unified-table th,.unified-table td{padding-left:8px!important;padding-right:8px!important;font-size:11px!important}.portal-payment-review-table{display:table!important}.portal-payment-review-table thead{display:table-header-group!important}.portal-payment-review-table tbody{display:table-row-group!important}.portal-payment-review-table tr{display:table-row!important;padding:0!important}.portal-payment-review-table th,.portal-payment-review-table td{display:table-cell!important;white-space:normal!important}.portal-payment-review-table td:before{display:none!important}.portal-payment-review-table td.table-row-actions{display:table-cell!important;padding:8px!important}}
+</style>
+
+<style id="portal-loading-ui-final">.portal-loading{display:flex!important;align-items:center!important;gap:12px!important;padding:15px 16px!important}.portal-loading.hidden{display:none!important}.portal-loading>div{display:grid;gap:3px}.portal-loading strong{font-size:12px}.portal-loading small{font-size:10px;color:var(--text-tertiary)}.portal-loading-spinner{width:24px;height:24px;border:2px solid var(--mint-subtle-border);border-top-color:var(--primary-mint-dark);border-radius:50%;animation:portalLoadingSpin .8s linear infinite;flex:0 0 24px}@keyframes portalLoadingSpin{to{transform:rotate(360deg)}}</style>

@@ -5,7 +5,7 @@ export async function getSupabase(){
   const c=await getConfig();
   const started=Date.now();while(!window.supabase?.createClient&&Date.now()-started<5000)await new Promise(r=>setTimeout(r,40));
   if(!window.supabase?.createClient)throw new Error('Secure client connection is still loading. Please try again.');
-  client=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  client=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
   return client;
 }
 export async function session(){const sb=await getSupabase();return (await sb.auth.getSession()).data.session}

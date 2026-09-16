@@ -74,6 +74,10 @@ checks={
  'findLocalClientByEmail':'Duplicate-email local identity lookup missing',
  'projectIsActiveByPayment':'Balance-aware active project logic missing',
  'JUAN PROJECT':'Invoice brand missing',
+ 'portal-client-access-table':'Client Access table sizing class missing',
+ 'v1332-static-table-final-override':'Static table final override missing',
+ 'workspace-loader-card':'Improved Workspace loading state missing',
+ '<th class="table-actions-col" aria-label="Actions"></th>':'Payment Review trailing action column missing',
 }
 for token,msg in checks.items():
     if token not in src: raise SystemExit(msg)
@@ -106,6 +110,8 @@ checks={
  'Continue as Guest':'Guest-mode continuation missing',
  'Browse as Guest':'Portal-load Guest fallback missing',
  "We couldn't load your portal.":'Friendly portal-load error missing',
+ "localStorage.setItem(REMEMBERED_CLIENT_KEY,'1')":'Persistent Online login is not forced on',
+ 'Your login stays saved on this device.':'Persistent login notice missing',
  'Make a Payment':'Balance reminder missing',
  'remaining balance':'Balance reminder amount label missing',
  '/assets/onboarding/onboarding-1.png':'Onboarding slide 1 missing',
@@ -116,6 +122,12 @@ for token,msg in checks.items():
     if token not in app: raise SystemExit(msg)
 if 'Your initial password is your Client ID' in app or 'Initial portal password = Client ID' in app:
     raise SystemExit('Initial-password guidance is still displayed in Online UI')
+if 'id="rememberLogin"' in app:
+    raise SystemExit('Optional Remember Me checkbox remains; Online should persist login automatically')
+if 'jp-boot-card' not in html:
+    raise SystemExit('Improved Online loading card missing')
+if 'storage:window.localStorage' not in Path(str(Path(sys.argv[1]).parent/'auth.js')).read_text():
+    raise SystemExit('Online Supabase session is not explicitly persisted in localStorage')
 if 'invoice-brand-wordmark' not in app:
     raise SystemExit('Plain JUAN PROJECT invoice wordmark missing')
 if 'Thank you for working with JUAN PROJECT' in app:
@@ -161,8 +173,8 @@ PY
 # Confirm bank/e-wallet support and service-worker cache bump.
 grep -q "code:'gotyme'" "$ROOT/online/js/payment-institutions.js" || { echo 'GoTyme missing'; exit 1; }
 grep -q "code:'maribank'" "$ROOT/online/js/payment-institutions.js" || { echo 'MariBank missing'; exit 1; }
-grep -q "juan-online-v1.3.3.2-client-master-ui1" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
-grep -q "juan-workspace-v1.3.3.2-client-master-ui1" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
+grep -q "juan-online-v1.3.3.2-static-tables-loading2" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
+grep -q "juan-workspace-v1.3.3.2-static-tables-loading2" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
 
 # Preserve the supplied UnionBank QR bytes.
 EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"
@@ -171,4 +183,4 @@ ACTUAL_QR_SHA="$(sha256sum "$ROOT/online/assets/unionbank-bankqr-placeholder.jpg
 
 if grep -Rqi 'Gemini' "$ROOT/online/js" "$ROOT/online/api"; then echo 'Gemini payment language remains'; exit 1; fi
 
-echo 'JUAN PROJECT Platform V1.3.3.2 Client Master UI patch verification passed.'
+echo 'JUAN PROJECT Platform V1.3.3.2 Static Tables + Loading patch verification passed.'

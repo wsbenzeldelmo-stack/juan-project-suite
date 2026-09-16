@@ -87,7 +87,7 @@ function setFieldError(id,message=''){
 function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||'').trim())}
 
 function authScreen(message=''){
-  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options"><label class="remember"><input id="rememberLogin" type="checkbox" checked> <span>Remember me</span></label><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Use the client login details provided by JUAN PROJECT. You can update your password securely after signing in.</span></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div>`;
+  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options persistent-login-note"><span>Your login stays saved on this device.</span><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Use the client login details provided by JUAN PROJECT. You can update your password securely after signing in.</span></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div>`;
   const email=document.getElementById('ae'),pass=document.getElementById('ap'),btn=document.getElementById('ab');
   document.getElementById('authBack').onclick=()=>{state.route='home';state.portal=null;render()};
   email.addEventListener('blur',()=>setFieldError('emailValidation',email.value.trim()&&!validEmail(email.value)?'Enter a valid email address.':''));
@@ -99,7 +99,7 @@ function authScreen(message=''){
     if(!pass.value){setFieldError('loginValidation','Enter your password.');pass.focus();return}
     try{
       btn.disabled=true;btn.innerHTML=`<span class="btn-spinner"></span> Logging you in…`;
-      await signIn(e,pass.value);localStorage.setItem(REMEMBERED_CLIENT_KEY,document.getElementById('rememberLogin')?.checked?'1':'0');await loadPortal();
+      await signIn(e,pass.value);localStorage.setItem(REMEMBERED_CLIENT_KEY,'1');await loadPortal();
     }catch(err){setFieldError('loginValidation','Email or password is incorrect.');toast('Log in failed. Check your credentials and try again.')}finally{if(document.body.contains(btn)){btn.disabled=false;btn.textContent='Log In'}}
   };
   pass.addEventListener('keydown',e=>{if(e.key==='Enter')btn.click()});
@@ -450,9 +450,8 @@ function bind(){
     state.onboardingStep=0;
     onboardingScreen();
   } else {
-    // Returning client: paint immediately while the remembered session restores.
-    state.route='home';
-    render();
+    // Returning client: keep the branded loading state visible while the persisted
+    // Supabase session restores. Do not flash an empty portal or login screen.
   }
 
   // Public catalog never blocks onboarding/guest UI.
@@ -460,6 +459,6 @@ function bind(){
 
   if(remembered){
     try{await getSupabase();const s=await session();if(s)await loadPortal();else{localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.onboardingStep=0;onboardingScreen()}}
-    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.onboardingStep=0;onboardingScreen()}
+    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);state.portal=null;renderPortalLoadError(e)}
   }
 })();
