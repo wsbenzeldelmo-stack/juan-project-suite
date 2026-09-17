@@ -986,12 +986,17 @@
     .workspace-loader-mark{width:20px!important;height:20px!important;flex:0 0 20px;border:3px solid rgba(25,186,117,.18)!important;border-top-color:var(--primary-mint-dark)!important;border-radius:50%!important;animation:spin .75s linear infinite!important}
     .workspace-loader-copy strong{font-size:14px!important}.workspace-loader-copy span{font-size:12px!important}
     .sync-center-card{display:grid;gap:16px}.sync-center-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-    .sync-state-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800;background:#eaf9f2;color:#08794d}
+    .sync-state-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800;background:#eaf9f2;color:#08794d;white-space:nowrap}
     .sync-state-badge.saving{background:#eef6ff;color:#2c6ca3}.sync-state-badge.local{background:#fff8e8;color:#8a5c00}.sync-state-badge.failed{background:#fff0ef;color:#b42318}
     .sync-center-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sync-metric{padding:14px;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--bg-subtle)}
-    .sync-metric span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700}.sync-metric b{display:block;font-size:18px;margin-top:4px}
-    .sync-activity{display:grid;gap:8px}.sync-activity-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border-subtle);font-size:12px}.sync-activity-row:first-child{border-top:0}
+    .sync-metric span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700}.sync-metric b{display:block;font-size:18px;margin-top:4px}.sync-metric small{display:block;margin-top:3px;font-size:10px;color:var(--text-tertiary);line-height:1.35}
+    .sync-queue-notice{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:14px 16px;border:1px solid #f0d99c;border-radius:var(--radius-sm);background:#fffaf0;color:#6f4d00}.sync-queue-notice.failed{border-color:#f1c2bd;background:#fff6f5;color:#8d241c}.sync-queue-notice.hidden{display:none!important}
+    .sync-queue-copy{display:flex;gap:10px;align-items:flex-start;min-width:0}.sync-queue-icon{width:24px;height:24px;flex:0 0 24px;border-radius:999px;display:grid;place-items:center;background:rgba(138,92,0,.10);font-size:12px;font-weight:900}.sync-queue-notice.failed .sync-queue-icon{background:rgba(180,35,24,.09)}
+    .sync-queue-copy strong{display:block;font-size:13px;line-height:1.35}.sync-queue-copy p{margin:3px 0 0;font-size:11px;line-height:1.45;color:inherit;opacity:.86}.sync-queue-notice .btn{flex:0 0 auto}
+    .sync-center-actions{display:flex;align-items:center;justify-content:flex-start;gap:10px}.sync-activity-section{border-top:1px solid var(--border-subtle);padding-top:4px}.sync-activity-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 2px}.sync-activity-title{font-size:11px;font-weight:800;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em}.sync-activity-clear{border:0;background:transparent;color:var(--text-tertiary);font:inherit;font-size:11px;cursor:pointer;padding:5px 7px;border-radius:var(--radius-xs)}.sync-activity-clear:hover{background:var(--bg-subtle);color:var(--text-secondary)}
+    .sync-activity{display:grid;gap:0}.sync-activity-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border-subtle);font-size:12px}.sync-activity-row:first-child{border-top:0}.sync-activity-label{display:flex;align-items:center;gap:8px;min-width:0}.sync-activity-dot{width:7px;height:7px;border-radius:50%;background:#17a56b;flex:0 0 7px}.sync-activity-row[data-status="failed"] .sync-activity-dot{background:#d94b40}.sync-activity-row[data-status="queued"] .sync-activity-dot{background:#d59a18}.sync-activity-row[data-status="connection"] .sync-activity-dot{background:#4584c4}
     @media(max-width:900px){.sync-center-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.sync-center-head{align-items:flex-start}.sync-queue-notice{display:block}.sync-queue-notice .btn{margin-top:12px;width:100%}.sync-center-actions .btn{width:100%}}
 </style>
   <link rel="stylesheet" href="/css/v1-2-ux.css">
 
@@ -1744,17 +1749,24 @@
           <!-- Save-first Sync Center -->
           <div class="card sync-center-card" id="syncCenterCard">
             <div class="sync-center-head">
-              <div><h2 class="card-title">Sync Center</h2><p class="text-sm text-secondary mt-2">Local-first protection with confirmed cloud synchronization. Cloud refreshes never replace unsaved local edits.</p></div>
-              <span id="syncCenterState" class="sync-state-badge">● Synced</span>
+              <div><h2 class="card-title">Sync Center</h2><p class="text-sm text-secondary mt-2">Local-first protection with confirmed cloud synchronization. Pending changes stay safe on this device until cloud sync succeeds.</p></div>
+              <span id="syncCenterState" class="sync-state-badge" aria-live="polite">● Synced</span>
             </div>
             <div class="sync-center-grid">
-              <div class="sync-metric"><span>Pending changes</span><b id="syncPendingCount">0</b></div>
-              <div class="sync-metric"><span>Failed changes</span><b id="syncFailedCount">0</b></div>
-              <div class="sync-metric"><span>Last synced</span><b id="syncLastSynced">—</b></div>
-              <div class="sync-metric"><span>Realtime</span><b id="syncRealtimeState">Off</b></div>
+              <div class="sync-metric"><span>Pending changes</span><b id="syncPendingCount">0</b><small>Saved on this device</small></div>
+              <div class="sync-metric"><span>Needs Retry</span><b id="syncFailedCount">0</b><small>Automatic retry queue</small></div>
+              <div class="sync-metric"><span>Last Synced</span><b id="syncLastSynced">Not synced yet</b><small>Last successful cloud sync</small></div>
+              <div class="sync-metric"><span>Realtime</span><b id="syncRealtimeState">Off</b><small id="syncRealtimeHint">Cloud listener is off</small></div>
             </div>
-            <div class="action-buttons-group"><button class="btn btn-primary btn-sm" onclick="app.syncNowSafe()">Sync Now</button><button class="btn btn-secondary btn-sm" onclick="app.clearSyncActivity()">Clear Activity</button></div>
-            <div id="syncActivityList" class="sync-activity"></div>
+            <div id="syncQueueNotice" class="sync-queue-notice hidden" role="status" aria-live="polite">
+              <div class="sync-queue-copy"><span class="sync-queue-icon">!</span><div><strong id="syncQueueTitle">Changes waiting to sync</strong><p id="syncQueueMessage">Your changes are safe on this device.</p></div></div>
+              <button class="btn btn-primary btn-sm" onclick="app.syncNowSafe()">Sync Now</button>
+            </div>
+            <div class="sync-center-actions"><button class="btn btn-primary btn-sm" onclick="app.syncNowSafe()">Sync Now</button></div>
+            <div class="sync-activity-section">
+              <div class="sync-activity-head"><span class="sync-activity-title">Recent Sync Activity</span><button class="sync-activity-clear" type="button" onclick="app.clearSyncActivity()" aria-label="Clear sync activity history">Clear history</button></div>
+              <div id="syncActivityList" class="sync-activity"></div>
+            </div>
           </div>
 
           <!-- Appearance & Dark Mode Toggle Section -->
@@ -2979,26 +2991,59 @@
       }
 
       const OFFLINE_SYNC_KEY="JUAN_OFFLINE_SYNC_QUEUE_V133";
-      const SYNC_ACTIVITY_KEY="JUAN_SYNC_ACTIVITY_V134";
+      const SYNC_ACTIVITY_KEY="JUAN_SYNC_ACTIVITY_V135";
       const SYNC_LAST_OK_KEY="JUAN_SYNC_LAST_OK_V134";
+      const SYNC_ACTIVITY_LABELS=new Set(['Project synced','Payment synced','Changes queued','Sync failed','Connection restored']);
       let syncRetryTimer=null;
       let syncFlushInFlight=false;
       let workspaceRealtimeSubscribed=false;
-      function readSyncActivity(){try{const x=JSON.parse(localStorage.getItem(SYNC_ACTIVITY_KEY)||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}}
-      function writeSyncActivity(items){localStorage.setItem(SYNC_ACTIVITY_KEY,JSON.stringify((items||[]).slice(0,12)));}
-      function pushSyncActivity(label,status='ok'){const items=readSyncActivity();items.unshift({label,status,at:new Date().toISOString()});writeSyncActivity(items);renderSyncCenter();}
+      function readSyncActivity(){
+        try{
+          const x=JSON.parse(localStorage.getItem(SYNC_ACTIVITY_KEY)||'[]');
+          if(!Array.isArray(x))return[];
+          return x.filter(item=>item&&SYNC_ACTIVITY_LABELS.has(String(item.label||''))).slice(0,12);
+        }catch(_){return[]}
+      }
+      function writeSyncActivity(items){localStorage.setItem(SYNC_ACTIVITY_KEY,JSON.stringify((items||[]).filter(item=>item&&SYNC_ACTIVITY_LABELS.has(String(item.label||''))).slice(0,12)));}
+      function pushSyncActivity(label,status='ok'){
+        if(!SYNC_ACTIVITY_LABELS.has(String(label||'')))return;
+        const items=readSyncActivity(),now=Date.now(),latest=items[0];
+        if(latest&&latest.label===label&&latest.status===status&&now-new Date(latest.at).getTime()<15000){renderSyncCenter();return;}
+        items.unshift({label,status,at:new Date(now).toISOString()});writeSyncActivity(items);renderSyncCenter();
+      }
       function syncPendingCount(){return readOfflineSyncQueue().length;}
       function setSyncLastOk(){localStorage.setItem(SYNC_LAST_OK_KEY,new Date().toISOString());}
       function renderSyncCenter(){
-        const pending=syncPendingCount(), failed=readOfflineSyncQueue().filter(x=>Number(x.failures||0)>0).length;
-        const badge=document.getElementById('syncCenterState'),p=document.getElementById('syncPendingCount'),f=document.getElementById('syncFailedCount'),last=document.getElementById('syncLastSynced'),rt=document.getElementById('syncRealtimeState'),list=document.getElementById('syncActivityList');
-        if(p)p.textContent=String(pending);if(f)f.textContent=String(failed);if(last){const v=localStorage.getItem(SYNC_LAST_OK_KEY);last.textContent=v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'—';}if(rt)rt.textContent=workspaceRealtimeSubscribed?'Active':'Off';
-        if(badge){badge.className='sync-state-badge';if(syncFlushInFlight){badge.classList.add('saving');badge.textContent='● Saving…';}else if(pending){badge.classList.add(failed?'failed':'local');badge.textContent=failed?'● Sync failed — retrying':'● Saved locally';}else{badge.textContent=state.isConnected?'● Synced':'● Saved locally';}}
-        if(list){const rows=readSyncActivity();list.innerHTML=rows.length?rows.slice(0,5).map(x=>`<div class="sync-activity-row"><span>${escapeHtml(x.label||'Sync update')}</span><span class="text-muted">${new Date(x.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>`).join(''):`<div class="text-sm text-muted">No sync activity yet.</div>`;}
+        const queue=readOfflineSyncQueue(),pending=queue.length,failed=queue.filter(x=>Number(x.failures||0)>0).length;
+        const badge=document.getElementById('syncCenterState'),p=document.getElementById('syncPendingCount'),f=document.getElementById('syncFailedCount'),last=document.getElementById('syncLastSynced'),rt=document.getElementById('syncRealtimeState'),rtHint=document.getElementById('syncRealtimeHint'),notice=document.getElementById('syncQueueNotice'),noticeTitle=document.getElementById('syncQueueTitle'),noticeMessage=document.getElementById('syncQueueMessage'),list=document.getElementById('syncActivityList');
+        if(p)p.textContent=String(pending);
+        if(f)f.textContent=String(failed);
+        if(last){const v=localStorage.getItem(SYNC_LAST_OK_KEY);last.textContent=v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Not synced yet';}
+        if(rt)rt.textContent=workspaceRealtimeSubscribed?'Active':'Off';
+        if(rtHint)rtHint.textContent=workspaceRealtimeSubscribed?'Listening for cloud updates':'Cloud listener is off';
+        if(badge){
+          badge.className='sync-state-badge';
+          if(syncFlushInFlight){badge.classList.add('saving');badge.textContent='● Saving…';}
+          else if(failed){badge.classList.add('failed');badge.textContent='● Sync failed';}
+          else if(pending||!state.isConnected){badge.classList.add('local');badge.textContent='● Saved locally';}
+          else{badge.textContent='● Synced';}
+        }
+        if(notice){
+          notice.classList.toggle('hidden',pending===0);notice.classList.toggle('failed',failed>0);
+          if(pending>0&&noticeTitle)noticeTitle.textContent=`${pending} change${pending===1?'':'s'} waiting to sync`;
+          if(pending>0&&noticeMessage)noticeMessage.textContent=failed>0?'Your changes are safe on this device. Sync will retry automatically, or you can try again now.':'Your changes are safe on this device and will sync automatically when cloud access is available.';
+        }
+        if(list){
+          const rows=readSyncActivity();
+          list.innerHTML=rows.length?rows.slice(0,5).map(x=>`<div class="sync-activity-row" data-status="${escapeHtml(x.status||'ok')}"><span class="sync-activity-label"><span class="sync-activity-dot"></span><span>${escapeHtml(x.label)}</span></span><span class="text-muted">${new Date(x.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>`).join(''):`<div class="text-sm text-muted" style="padding:10px 0">No sync activity yet.</div>`;
+        }
       }
       function clearSyncActivity(){writeSyncActivity([]);renderSyncCenter();}
       function markProjectDirty(project,reason='Project update'){
-        if(!project?.id)return;project.updated_at=new Date().toISOString();queueOfflineProject(project,reason);renderSyncCenter();
+        if(!project?.id)return;
+        const hadPending=syncPendingCount()>0;
+        project.updated_at=new Date().toISOString();queueOfflineProject(project,reason);
+        if(!hadPending)pushSyncActivity('Changes queued','queued');else renderSyncCenter();
         if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),140);}
       }
       async function syncNowSafe(){if(!cloudAvailable()){showToast('Saved locally. Connect to Supabase to sync.');renderSyncCenter();return false;}return flushOfflineSyncQueue();}
@@ -3018,7 +3063,7 @@
         if(!cloudAvailable()){renderSyncCenter();return false;}
         let queue=readOfflineSyncQueue();if(!queue.length){setSyncLastOk();renderSyncCenter();return true;}
         syncFlushInFlight=true;renderSyncCenter();
-        const remaining=[];
+        const remaining=[];let syncedProjects=0;
         for(const item of queue){
           if(item.type!=='project-upsert'||!item.project?.id)continue;
           try{
@@ -3029,12 +3074,13 @@
               applyCloudClientReconcile(current,response,current.client_id);
             }
             await syncProjectToDatabase(current,{quiet:true});
-            pushSyncActivity(`${item.reason||'Project update'} synced`,'ok');
+            syncedProjects++;
           }catch(e){console.warn('Sync item remains queued:',e?.message||e);remaining.push({...item,failures:Number(item.failures||0)+1,last_error:String(e?.message||e),last_attempt:new Date().toISOString()});}
         }
         writeOfflineSyncQueue(remaining);syncFlushInFlight=false;
-        if(!remaining.length){setSyncLastOk();pushSyncActivity('All changes synced','ok');renderSyncCenter();return true;}
-        pushSyncActivity(`${remaining.length} change${remaining.length===1?'':'s'} waiting to retry`,'failed');renderSyncCenter();
+        if(syncedProjects>0)pushSyncActivity('Project synced','ok');
+        if(!remaining.length){setSyncLastOk();renderSyncCenter();return true;}
+        pushSyncActivity('Sync failed','failed');renderSyncCenter();
         if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>{if(cloudAvailable())flushOfflineSyncQueue();},5000);
         return false;
       }
@@ -3152,6 +3198,7 @@
 
       window.addEventListener('online',async()=>{
         if(state.isConnected){
+          pushSyncActivity('Connection restored','connection');
           updateConnectionStatus('connected','● CONNECTED · SYNCING');
           await flushOfflineSyncQueue();
           await startWorkspaceRealtimeSync();
@@ -5575,6 +5622,8 @@ ${description}`))actionCallback();return;}
             reference_no: payment.reference_no
           }]);
           if (error) throw error;
+          setSyncLastOk();
+          pushSyncActivity('Payment synced','ok');
           showToast("Payment synchronized successfully.");
         } catch (e) {
           console.error("Payment sync retry failed:", e);
