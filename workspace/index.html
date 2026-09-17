@@ -5407,8 +5407,14 @@ ${description}`))actionCallback();return;}
         const del = await supabaseClient.from('deliverables').delete().eq('project_id', project.id);
         if (del.error) throw del.error;
         if (!localRows.length) return;
+        const usedDatabaseIds = new Set();
         const rows = localRows.map((d, index) => {
-          const id = String(d.id || `del_${project.id}_${Date.now()}_${index}`);
+          let id = String(d.id || `del_${project.id}_${Date.now()}_${index}`);
+          if(usedDatabaseIds.has(id)){
+            id = `${id}_${d.child_index ?? index}`;
+            d.id = id;
+          }
+          usedDatabaseIds.add(id);
           const previous = existing.get(id) || {};
           return {
             id,
@@ -6119,9 +6125,20 @@ ${description}`))actionCallback();return;}
         const items=Array.isArray(proj.project_items)?proj.project_items:[],old=Array.isArray(proj.deliverables)?proj.deliverables:[];
         const manual=old.filter(d=>String(d.source_type||'').toUpperCase()==='MANUAL'||(!d.order_item_id&&String(d.source_type||'').toUpperCase()!=='ORDER_ITEM'));
         const norm=v=>String(v||'').trim().toLowerCase();
-        const oldByKey=new Map();old.forEach(d=>{const key=[d.order_item_id||'',d.order_item_occurrence||1,d.parent_key||'',norm(d.item_name||d.name)].join('|');if(!oldByKey.has(key))oldByKey.set(key,d)});
-        const fresh=[];
-        const make=(item,occ,name,extra={})=>{const key=[item.id,occ,extra.parent_key||'',norm(name)].join('|'),prev=oldByKey.get(key);return {...(prev||{}),id:prev?.id||`del_${String(proj.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${String(item.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${occ}_${String(extra.parent_key||name).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,42)}`,item_name:name,name,source_type:'ORDER_ITEM',order_item_id:item.id,order_item_occurrence:occ,completed:!!prev?.completed,progress:prev?.completed?100:Number(prev?.progress||0),status:prev?.completed?'Completed':'Pending',completed_at:prev?.completed_at||null,...extra};};
+        const oldByKey=new Map();old.forEach(d=>{const key=[d.order_item_id||'',d.order_item_occurrence||1,d.parent_key||'',d.child_index??'',norm(d.item_name||d.name)].join('|');if(!oldByKey.has(key))oldByKey.set(key,d)});
+        const fresh=[],usedDeliverableIds=new Set();
+        const make=(item,occ,name,extra={})=>{
+          const key=[item.id,occ,extra.parent_key||'',extra.child_index??'',norm(name)].join('|'),prev=oldByKey.get(key);
+          const identity=[extra.parent_key||'',extra.child_index??'',name].filter(v=>String(v).length).join('_');
+          const baseId=`del_${String(proj.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${String(item.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${occ}_${String(identity||name).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,56)}`;
+          let id=String(prev?.id||baseId);
+          if(usedDeliverableIds.has(id)){
+            const suffix=extra.child_index??fresh.length;
+            id=`${baseId}_${suffix}`;
+          }
+          usedDeliverableIds.add(id);
+          return {...(prev||{}),id,item_name:name,name,source_type:'ORDER_ITEM',order_item_id:item.id,order_item_occurrence:occ,completed:!!prev?.completed,progress:prev?.completed?100:Number(prev?.progress||0),status:prev?.completed?'Completed':'Pending',completed_at:prev?.completed_at||null,...extra};
+        };
         items.forEach((item,itemIndex)=>{
           if(!item.id)item.id=`oi_${proj.id}_${Date.now()}_${itemIndex}_${Math.random().toString(36).slice(2,6)}`;
           const qty=Math.max(1,Math.round(Number(item.qty||1))),isPackage=String(item.type||'').toUpperCase()==='PACKAGE';
