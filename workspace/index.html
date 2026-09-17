@@ -3198,7 +3198,6 @@
       }
 
       function persistProjectsState() {
-        // Business records are cloud-only. Keep state in memory; Supabase is canonical.
         localStorage.removeItem("JUAN_PROJECTS_LOCAL");
       }
 
@@ -3406,7 +3405,6 @@
       }
 
       function persistClientsState() {
-        // Business records are cloud-only. Keep state in memory; Supabase is canonical.
         localStorage.removeItem("JUAN_CLIENTS_LOCAL");
       }
 
@@ -5075,9 +5073,19 @@ ${description}`))actionCallback();return;}
         updateCartCalculations();
       }
 
+      function pricingVersionForProject(projectOrNo){const n=typeof projectOrNo==='number'?projectOrNo:projectNumber(projectOrNo);return Number(n)>=54?'v2':'legacy';}
+      function countDeliverablesFromItems(items=[]){return (items||[]).reduce((total,item)=>{const qty=Math.max(1,Math.round(Number(item?.qty||1))),isPackage=String(item?.type||'').toUpperCase()==='PACKAGE'||String(item?.product_code||'').toUpperCase().startsWith('PKG-');if(!isPackage)return total+qty;const pkg=(state.packagesList||[]).find(p=>String(p.product_code||'')===String(item.product_code||'')||String(p.name||'').trim().toLowerCase()===String(item.name||'').trim().toLowerCase());const count=Math.max(1,(pkg?.includedServiceNames||item?.includedItems||[]).length);return total+(count*qty);},0);}
+      function pricingStandardDays(items=[],projectNo=null){if(Number(projectNo)>=54)return projectHasPackageItems(items)?14:10;return 14;}
+      function pricingRushRate(items=[],projectNo=null){if(Number(projectNo)<54)return 500;const count=countDeliverablesFromItems(items);return count<=3?500:count<=8?800:1200;}
+      function calculateRushForProject(projectOrItems,startValue,deadlineValue,projectNo=null){const items=Array.isArray(projectOrItems)?projectOrItems:(projectOrItems?.project_items||[]),no=projectNo??(Array.isArray(projectOrItems)?null:projectNumber(projectOrItems));const start=parseDateSafe(startValue),due=parseDateSafe(deadlineValue);const standard=pricingStandardDays(items,no);if(!start||!due)return {duration:null,daysEarly:0,fee:0,standard,deliverableCount:countDeliverablesFromItems(items),rate:pricingRushRate(items,no)};const duration=Math.max(0,Math.round((due-start)/86400000)),daysEarly=Math.max(0,standard-duration),rate=pricingRushRate(items,no),fee=daysEarly>0?Math.ceil(daysEarly/4)*rate:0;return {duration,daysEarly,fee,standard,deliverableCount:countDeliverablesFromItems(items),rate};}
       function nextProjectNumber(){const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite);return used.length?Math.max(...used)+1:1;}
       function projectHasPackageItems(items=[]){return (items||[]).some(i=>String(i.type||'').toUpperCase()==='PACKAGE'||String(i.product_code||'').toUpperCase().startsWith('PKG-'));}
-      function automaticMaintenanceFee(items=[],projectNo=null,explicitSubtotal=null){const subtotal=explicitSubtotal!==null&&explicitSubtotal!==undefined?Number(explicitSubtotal):(items||[]).reduce((sum,i)=>sum+Math.max(0,Number(i?.price||0))*Math.max(1,Number(i?.qty||1)),0);if(!(subtotal>0))return 0;return Math.abs(Math.round(subtotal))%100===99?26:25;}
+      function automaticMaintenanceFee(items=[],projectNo=null,explicitSubtotal=null){
+        const subtotal=explicitSubtotal!==null&&explicitSubtotal!==undefined?Number(explicitSubtotal):(items||[]).reduce((sum,i)=>sum+Math.max(0,Number(i?.price||0))*Math.max(1,Number(i?.qty||1)),0);
+        if(!(subtotal>0))return 0;
+        if(Number(projectNo)>=54)return projectHasPackageItems(items)?31:30;
+        return Math.abs(Math.round(subtotal))%100===99?26:25;
+      }
       function storedOrAutomaticMaintenanceFee(proj,items=[],explicitSubtotal=null){
         const storedDefined=proj&&proj.system_maintenance_fee!==undefined&&proj.system_maintenance_fee!==null&&Number.isFinite(Number(proj.system_maintenance_fee));
         const stored=storedDefined?Math.max(0,Number(proj.system_maintenance_fee)):0;
@@ -5125,7 +5133,7 @@ ${description}`))actionCallback();return;}
         discountAmount = Math.min(subtotal, Math.max(0, discountAmount));
 
         const rushFee = Number(state.cart.rushFee || 0);
-        const maintenanceFee = automaticMaintenanceFee(state.cart.items);
+        const maintenanceFee = automaticMaintenanceFee(state.cart.items,nextProjectNumber());
         const total = Math.max(0, subtotal - discountAmount + rushFee + maintenanceFee);
 
         document.getElementById("summarySubtotal").innerText = formatCurrency(subtotal);
@@ -5172,7 +5180,7 @@ ${description}`))actionCallback();return;}
         startInput.value = state.cart.startDate || today;
 
         if (!state.cart.deadlineDate || forceDeadline === true || state.cart.deadlineManuallySet === false) {
-          state.cart.deadlineDate = addDaysToDateString(startInput.value, 14);
+          state.cart.deadlineDate = addDaysToDateString(startInput.value, pricingStandardDays(state.cart.items,nextProjectNumber()));
         }
 
         deadlineInput.value = state.cart.deadlineDate;
@@ -5189,7 +5197,7 @@ ${description}`))actionCallback();return;}
         // intentionally changed the deadline. This makes the default timeline
         // predictable without overriding an intentional rush request.
         if (!state.cart.deadlineManuallySet) {
-          state.cart.deadlineDate = addDaysToDateString(startInput.value, 14);
+          state.cart.deadlineDate = addDaysToDateString(startInput.value, pricingStandardDays(state.cart.items,nextProjectNumber()));
           const deadlineInput = document.getElementById("orderDeadlineDate");
           if (deadlineInput) deadlineInput.value = state.cart.deadlineDate;
         }
@@ -5228,21 +5236,12 @@ ${description}`))actionCallback();return;}
 
         const start = new Date(`${startVal}T00:00:00`);
         const dead = new Date(`${deadVal}T00:00:00`);
-        const diffDays = Math.round((dead - start) / (1000 * 60 * 60 * 24));
-        const durationDays = Math.max(0, diffDays);
-
-        // Standard = 14 days. Every completed 4-day block earlier than 14 days
-        // adds ₱500: 14d = ₱0, 10d = ₱500, 6d = ₱1,000, 2d = ₱1,500.
-        const STANDARD_DAYS = 14;
-        const RUSH_BLOCK_DAYS = 4;
-        const RUSH_BLOCK_FEE = 500;
-        const daysEarly = Math.max(0, STANDARD_DAYS - durationDays);
-        const rushFee = daysEarly > 0
-          ? Math.ceil(daysEarly / RUSH_BLOCK_DAYS) * RUSH_BLOCK_FEE
-          : 0;
-
-        state.cart.rushDaysEarly = daysEarly;
-        state.cart.rushFee = rushFee;
+        const calc=calculateRushForProject(state.cart.items,startVal,deadVal,nextProjectNumber());
+        const diffDays=calc.duration;
+        const daysEarly=calc.daysEarly;
+        const rushFee=calc.fee;
+        state.cart.rushDaysEarly=daysEarly;
+        state.cart.rushFee=rushFee;
 
         if (durationEl) {
           durationEl.innerText = `${durationDays} day${durationDays === 1 ? '' : 's'}`;
@@ -5457,6 +5456,7 @@ ${description}`))actionCallback();return;}
           archived_at: project.archived_at || null,
           notes: project.notes || '',
           project_code: formatProjectId(project),
+          pricing_version: pricingVersionForProject(project),
           updated_at: project.updated_at || new Date().toISOString()
         };
         let result = await supabaseClient.from('projects').update(payload).eq('id', project.id).select('id');
@@ -5966,16 +5966,8 @@ ${description}`))actionCallback();return;}
       }
       function referencedClientIds(){return new Set((state.projects||[]).filter(p=>!p.deleted).map(p=>String(p.client_id||'')).filter(Boolean));}
       function pruneClientDirectoryToProjects(){
-        const activeProjects=(state.projects||[]).filter(p=>!p.deleted&&p.client_id),refs=new Set(activeProjects.map(p=>String(p.client_id))),byId=new Map((state.clients||[]).map(c=>[String(c.id),c]));
-        activeProjects.slice().sort((a,b)=>new Date(a.updated_at||a.created_at||0)-new Date(b.updated_at||b.created_at||0)).forEach(p=>{
-          const id=String(p.client_id),client=byId.get(id)||{id:p.client_id,client_code:'',name:p.client_name||'Client',email:p.client_email||'',phone:p.client_phone||'',address:p.client_address||'',notes:''};
-          if(p.client_name!==undefined&&p.client_name!==null&&String(p.client_name).trim())client.name=p.client_name;
-          if(p.client_email!==undefined&&p.client_email!==null)client.email=p.client_email;
-          if(p.client_phone!==undefined&&p.client_phone!==null)client.phone=p.client_phone;
-          if(p.client_address!==undefined&&p.client_address!==null)client.address=p.client_address;
-          byId.set(id,client);
-        });
-        state.clients=[...byId.entries()].filter(([id])=>refs.has(id)).map(([,c])=>c);
+        // Client Directory is canonical. Never rebuild or overwrite clients from project snapshots.
+        state.clients=(state.clients||[]).filter(c=>!c.archived_at);
       }
       function syncClientSnapshotToProjects(client){
         if(!client)return;
@@ -6039,7 +6031,7 @@ ${description}`))actionCallback();return;}
       function populateProjectData(proj){
         if(!proj)return;const client=getProjectClientRecord(proj)||{};
         const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v??''};
-        set('projectDataClientName',proj.client_name||client.name||'');set('projectDataClientEmail',proj.client_email||client.email||'');set('projectDataClientPhone',proj.client_phone||client.phone||'');set('projectDataClientAddress',proj.client_address||client.address||'');
+        set('projectDataClientName',client.name||proj.client_name||'');set('projectDataClientEmail',client.email||proj.client_email||'');set('projectDataClientPhone',client.phone||proj.client_phone||'');set('projectDataClientAddress',client.address||proj.client_address||'');
         set('projectDataProjectId',formatProjectId(proj));set('projectDataProjectName',proj.title||'');set('projectDataStartDate',proj.start_date||'');set('projectDataDeadline',proj.deadline_date||'');
         const priorityEl=document.getElementById('projectDataPriority');if(priorityEl)priorityEl.checked=projectIsPriority(proj);
         bindProjectDataAutosave();setProjectDataAutosaveStatus('All changes save automatically.');
@@ -6057,7 +6049,7 @@ ${description}`))actionCallback();return;}
         const previousClientId=proj.client_id,previousEmail=proj.client_email||'',previousStart=proj.start_date||'',previousDeadline=proj.deadline_date||'';
         try{
           proj.title=name;proj.client_name=document.getElementById('projectDataClientName')?.value.trim()||'';proj.client_email=email;proj.client_phone=document.getElementById('projectDataClientPhone')?.value.trim()||'';proj.client_address=document.getElementById('projectDataClientAddress')?.value.trim()||'';proj.start_date=document.getElementById('projectDataStartDate')?.value||'';proj.deadline_date=document.getElementById('projectDataDeadline')?.value||'';proj.payment_due_date=proj.deadline_date;proj.invoice_due_date=proj.deadline_date;
-          const start=parseDateSafe(proj.start_date),due=parseDateSafe(proj.deadline_date),dateChanged=previousStart!==proj.start_date||previousDeadline!==proj.deadline_date,rushCalc=calculateRushFromTimeline(proj.start_date,proj.deadline_date);
+          const start=parseDateSafe(proj.start_date),due=parseDateSafe(proj.deadline_date),dateChanged=previousStart!==proj.start_date||previousDeadline!==proj.deadline_date,rushCalc=pricingVersionForProject(proj)==='v2'?calculateRushForProject(proj,proj.start_date,proj.deadline_date):calculateRushFromTimeline(proj.start_date,proj.deadline_date);
           if(dateChanged&&start&&due){proj.rush_days_early=rushCalc.daysEarly;proj.rush_fee=rushCalc.fee;if(Array.isArray(proj.project_items)&&proj.project_items.length)recalculateProjectFromOrderItems(proj);}
           const autoPriority=Number(proj.rush_fee||0)>0||Number(proj.rush_days_early||0)>0||!!(start&&due&&Math.ceil((due-start)/86400000)<14);
           proj.priority=autoPriority||!!document.getElementById('projectDataPriority')?.checked;proj.updated_at=new Date().toISOString();
@@ -6108,19 +6100,18 @@ ${description}`))actionCallback();return;}
       async function saveProjectFilesAccess(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const url=document.getElementById('projectFilesDriveUrl')?.value.trim()||'',unlock=document.getElementById('projectFilesUnlockAt')?.value||null,expires=document.getElementById('projectFilesExpiresAt')?.value||null;if(url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(url)){showToast('Enter a valid Google Drive URL.');return}showActionStatus('Saving Project Files','Updating client delivery access…',false);try{await onlinePortalRequest('POST',{action:'save-project-drive-link',projectId:proj.id,url,unlockAt:unlock,expiresAt:expires});proj.drive_url=url||null;proj.drive_unlock_at=unlock?new Date(unlock).toISOString():null;proj.drive_expires_at=expires?new Date(expires).toISOString():null;persistProjectsState();renderProjectFilesAccess(proj);showActionStatus('Project Files Saved','The same folder access is now connected to JUAN PROJECT Online.',true);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not save project files.')}setTimeout(()=>closeModal('actionStatusModal'),1050);}
 
       function recalculateProjectFromOrderItems(proj) {
-        const items = Array.isArray(proj.project_items) ? proj.project_items : [];
-        const subtotal = items.reduce((sum,item) => sum + Math.max(0,Number(item.price||0)) * Math.max(1,Number(item.qty||1)), 0);
-        proj.subtotal_amount = subtotal;
-        const discount = Math.max(0, Number(proj.discount_amount || 0));
-        const rush = Math.max(0, Number(proj.rush_fee || 0));
-        const maintenance = maintenanceFeeForRecalculation(proj,items,subtotal);
-        const workload = resolvedWorkloadSurcharge(proj);
-        const otherFees = Array.isArray(proj.additional_fees) ? proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0) : 0;
-        proj.system_maintenance_fee = maintenance;
-        proj.total_amount = Math.max(0, subtotal - discount + rush + workload + maintenance + otherFees);
-        proj.pending_amount = Math.max(0, proj.total_amount - getProjectPaid(proj));
+        const items=Array.isArray(proj.project_items)?proj.project_items:[];
+        const subtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price||0))*Math.max(1,Number(item.qty||1)),0);
+        proj.subtotal_amount=subtotal;
+        const discount=Math.max(0,Number(proj.discount_amount||0));
+        const isV2=pricingVersionForProject(proj)==='v2';
+        if(isV2){const rc=calculateRushForProject(proj,proj.start_date,proj.deadline_date);proj.rush_days_early=rc.daysEarly;proj.rush_fee=rc.fee;proj.system_maintenance_fee=automaticMaintenanceFee(items,projectNumber(proj),subtotal);proj.pricing_version='v2';}
+        else{proj.pricing_version='legacy';if(proj.system_maintenance_fee===undefined||proj.system_maintenance_fee===null)proj.system_maintenance_fee=automaticMaintenanceFee(items,projectNumber(proj),subtotal);}
+        const rush=Math.max(0,Number(proj.rush_fee||0)),maintenance=Math.max(0,Number(proj.system_maintenance_fee||0)),workload=resolvedWorkloadSurcharge(proj),otherFees=Array.isArray(proj.additional_fees)?proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0):0;
+        proj.total_amount=Math.max(0,subtotal-discount+rush+workload+maintenance+otherFees);
+        proj.pending_amount=Math.max(0,proj.total_amount-getProjectPaid(proj));
         if(!proj.project_type){const cats=[...new Set(items.map(i=>String(i.category||'').trim()).filter(Boolean))];proj.project_type=cats.length===1?cats[0]:(cats.length>1?'Mixed Services':'');}
-        proj.updated_at = new Date().toISOString();
+        proj.updated_at=new Date().toISOString();
       }
 
       function syncProjectDeliverablesFromOrderItems(proj){
@@ -7367,6 +7358,10 @@ ${description}`))actionCallback();return;}
       };
     })();
     // V1.3.1 hotfix: expose the Workspace controller for touch/mobile navigation modules.
+    // Database Authority Reset: remove stale business caches. Supabase is canonical.
+    localStorage.removeItem("JUAN_CLIENTS_LOCAL");
+    localStorage.removeItem("JUAN_PROJECTS_LOCAL");
+    localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");
     window.app = app;
 
     document.addEventListener("DOMContentLoaded", () => {
