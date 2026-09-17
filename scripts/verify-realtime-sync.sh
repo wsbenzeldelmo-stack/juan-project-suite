@@ -13,8 +13,8 @@ grep -q "alter publication supabase_realtime add table public.juan_sync_events" 
 grep -q "juan_sync_events_client_read" "$M" || { echo "Client-scoped realtime RLS missing"; exit 1; }
 grep -q "payment_submissions" "$M" || { echo "Portal-to-Workspace event trigger coverage missing"; exit 1; }
 grep -q "catalog_package_items" "$M" || { echo "Catalog realtime trigger coverage missing"; exit 1; }
-grep -q "realtime-sync1" "$ROOT/workspace/sw.js" || { echo "Workspace cache bump missing"; exit 1; }
-grep -q "realtime-sync1" "$ROOT/online/sw.js" || { echo "Online cache bump missing"; exit 1; }
+grep -q "platform-update-v134" "$ROOT/workspace/sw.js" || { echo "Workspace cache bump missing"; exit 1; }
+grep -q "platform-update-v134" "$ROOT/online/sw.js" || { echo "Online cache bump missing"; exit 1; }
 node --check "$O" >/dev/null
 python - "$W" <<'PY'
 import re, subprocess, sys, tempfile, pathlib

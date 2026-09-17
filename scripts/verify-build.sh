@@ -176,8 +176,8 @@ PY
 # Confirm bank/e-wallet support and service-worker cache bump.
 grep -q "code:'gotyme'" "$ROOT/online/js/payment-institutions.js" || { echo 'GoTyme missing'; exit 1; }
 grep -q "code:'maribank'" "$ROOT/online/js/payment-institutions.js" || { echo 'MariBank missing'; exit 1; }
-grep -q "juan-online-v1.3.3.2-realtime-sync1" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
-grep -q "juan-workspace-v1.3.3.2-realtime-sync1" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
+grep -q "juan-online-v1.3.3.2-platform-update-v134" "$ROOT/online/sw.js" || { echo 'Online SW cache version stale'; exit 1; }
+grep -q "juan-workspace-v1.3.3.2-platform-update-v134" "$ROOT/workspace/sw.js" || { echo 'Workspace SW cache version stale'; exit 1; }
 
 # Preserve the supplied UnionBank QR bytes.
 EXPECTED_QR_SHA="330adb858996ce52aebdb21ce0776da360533d6047620343b2afc000fb732d51"

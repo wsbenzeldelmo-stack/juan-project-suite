@@ -966,6 +966,32 @@
 
 
 .workspace-skeleton-brand img[src*="workspace-master"]{width:150px!important;height:34px!important;object-fit:contain!important;object-position:left center!important}
+
+
+    /* JUAN PROJECT PLATFORM UPDATE — unified geometry + sync UX */
+    :root{
+      --radius-2xs:4px; --radius-xs:8px; --radius-sm:12px; --radius-md:16px; --radius-lg:20px; --radius-xl:24px;
+      --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px; --space-8:32px;
+    }
+    .card,.kpi-card,.metric-card,.portal-summary-card,.database-connection-card,.reset-data-card{border-radius:var(--radius-md)!important}
+    .modal-card{border-radius:var(--radius-lg)!important}
+    .form-control,.btn,.search-input,.filter-select,.database-connection-detail{border-radius:var(--radius-xs)!important}
+    .btn-sm,.icon-more-button,.popover-action{border-radius:var(--radius-xs)!important}
+    .portal-status,.database-state-pill,.status-badge,.badge,.pill,.priority-badge{border-radius:999px!important}
+    .table-container,.projects-table-shell,.portal-table-wrap{border-radius:var(--radius-md)!important;overflow:visible!important}
+    table{border-collapse:collapse!important;width:100%!important;table-layout:auto!important}
+    th,td{vertical-align:middle}
+    .workspace-loading-shell{position:relative!important;inset:auto!important;z-index:auto!important;display:block!important;padding:0!important;background:transparent!important;backdrop-filter:none!important}
+    .workspace-loader-card{width:100%!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;gap:12px!important;padding:16px!important;border:1px solid var(--border-subtle)!important;border-radius:var(--radius-md)!important;background:var(--bg-card)!important;box-shadow:none!important}
+    .workspace-loader-mark{width:20px!important;height:20px!important;flex:0 0 20px;border:3px solid rgba(25,186,117,.18)!important;border-top-color:var(--primary-mint-dark)!important;border-radius:50%!important;animation:spin .75s linear infinite!important}
+    .workspace-loader-copy strong{font-size:14px!important}.workspace-loader-copy span{font-size:12px!important}
+    .sync-center-card{display:grid;gap:16px}.sync-center-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+    .sync-state-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800;background:#eaf9f2;color:#08794d}
+    .sync-state-badge.saving{background:#eef6ff;color:#2c6ca3}.sync-state-badge.local{background:#fff8e8;color:#8a5c00}.sync-state-badge.failed{background:#fff0ef;color:#b42318}
+    .sync-center-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.sync-metric{padding:14px;border:1px solid var(--border-subtle);border-radius:var(--radius-sm);background:var(--bg-subtle)}
+    .sync-metric span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700}.sync-metric b{display:block;font-size:18px;margin-top:4px}
+    .sync-activity{display:grid;gap:8px}.sync-activity-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--border-subtle);font-size:12px}.sync-activity-row:first-child{border-top:0}
+    @media(max-width:900px){.sync-center-grid{grid-template-columns:1fr 1fr}}
 </style>
   <link rel="stylesheet" href="/css/v1-2-ux.css">
 
@@ -1713,6 +1739,22 @@
             <div id="manualDatabaseDetail" class="database-connection-detail">Workspace is using local/cache data. Log in with your admin account when you want to load and sync the shared database.</div>
             <div class="action-buttons-group mt-3"><button id="manualDatabaseConnect" class="btn btn-primary btn-sm" onclick="app.connectDatabaseManually()">Log In &amp; Connect</button><button id="manualDatabaseDisconnect" class="btn btn-secondary btn-sm" onclick="app.disconnectDatabase()" disabled>Disconnect</button></div>
             <div class="text-sm text-muted mt-3">After a successful manual login, the cloud session stays connected across refreshes and signs out after 30 minutes without activity.</div>
+          </div>
+
+          <!-- Save-first Sync Center -->
+          <div class="card sync-center-card" id="syncCenterCard">
+            <div class="sync-center-head">
+              <div><h2 class="card-title">Sync Center</h2><p class="text-sm text-secondary mt-2">Local-first protection with confirmed cloud synchronization. Cloud refreshes never replace unsaved local edits.</p></div>
+              <span id="syncCenterState" class="sync-state-badge">● Synced</span>
+            </div>
+            <div class="sync-center-grid">
+              <div class="sync-metric"><span>Pending changes</span><b id="syncPendingCount">0</b></div>
+              <div class="sync-metric"><span>Failed changes</span><b id="syncFailedCount">0</b></div>
+              <div class="sync-metric"><span>Last synced</span><b id="syncLastSynced">—</b></div>
+              <div class="sync-metric"><span>Realtime</span><b id="syncRealtimeState">Off</b></div>
+            </div>
+            <div class="action-buttons-group"><button class="btn btn-primary btn-sm" onclick="app.syncNowSafe()">Sync Now</button><button class="btn btn-secondary btn-sm" onclick="app.clearSyncActivity()">Clear Activity</button></div>
+            <div id="syncActivityList" class="sync-activity"></div>
           </div>
 
           <!-- Appearance & Dark Mode Toggle Section -->
@@ -2937,6 +2979,29 @@
       }
 
       const OFFLINE_SYNC_KEY="JUAN_OFFLINE_SYNC_QUEUE_V133";
+      const SYNC_ACTIVITY_KEY="JUAN_SYNC_ACTIVITY_V134";
+      const SYNC_LAST_OK_KEY="JUAN_SYNC_LAST_OK_V134";
+      let syncRetryTimer=null;
+      let syncFlushInFlight=false;
+      let workspaceRealtimeSubscribed=false;
+      function readSyncActivity(){try{const x=JSON.parse(localStorage.getItem(SYNC_ACTIVITY_KEY)||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}}
+      function writeSyncActivity(items){localStorage.setItem(SYNC_ACTIVITY_KEY,JSON.stringify((items||[]).slice(0,12)));}
+      function pushSyncActivity(label,status='ok'){const items=readSyncActivity();items.unshift({label,status,at:new Date().toISOString()});writeSyncActivity(items);renderSyncCenter();}
+      function syncPendingCount(){return readOfflineSyncQueue().length;}
+      function setSyncLastOk(){localStorage.setItem(SYNC_LAST_OK_KEY,new Date().toISOString());}
+      function renderSyncCenter(){
+        const pending=syncPendingCount(), failed=readOfflineSyncQueue().filter(x=>Number(x.failures||0)>0).length;
+        const badge=document.getElementById('syncCenterState'),p=document.getElementById('syncPendingCount'),f=document.getElementById('syncFailedCount'),last=document.getElementById('syncLastSynced'),rt=document.getElementById('syncRealtimeState'),list=document.getElementById('syncActivityList');
+        if(p)p.textContent=String(pending);if(f)f.textContent=String(failed);if(last){const v=localStorage.getItem(SYNC_LAST_OK_KEY);last.textContent=v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'—';}if(rt)rt.textContent=workspaceRealtimeSubscribed?'Active':'Off';
+        if(badge){badge.className='sync-state-badge';if(syncFlushInFlight){badge.classList.add('saving');badge.textContent='● Saving…';}else if(pending){badge.classList.add(failed?'failed':'local');badge.textContent=failed?'● Sync failed — retrying':'● Saved locally';}else{badge.textContent=state.isConnected?'● Synced':'● Saved locally';}}
+        if(list){const rows=readSyncActivity();list.innerHTML=rows.length?rows.slice(0,5).map(x=>`<div class="sync-activity-row"><span>${escapeHtml(x.label||'Sync update')}</span><span class="text-muted">${new Date(x.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>`).join(''):`<div class="text-sm text-muted">No sync activity yet.</div>`;}
+      }
+      function clearSyncActivity(){writeSyncActivity([]);renderSyncCenter();}
+      function markProjectDirty(project,reason='Project update'){
+        if(!project?.id)return;project.updated_at=new Date().toISOString();queueOfflineProject(project,reason);renderSyncCenter();
+        if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),140);}
+      }
+      async function syncNowSafe(){if(!cloudAvailable()){showToast('Saved locally. Connect to Supabase to sync.');renderSyncCenter();return false;}return flushOfflineSyncQueue();}
       function cloudAvailable(){return !!supabaseClient&&state.isConnected&&navigator.onLine!==false;}
       function readOfflineSyncQueue(){try{const q=JSON.parse(localStorage.getItem(OFFLINE_SYNC_KEY)||'[]');return Array.isArray(q)?q:[]}catch(_){return[]}}
       function writeOfflineSyncQueue(queue){localStorage.setItem(OFFLINE_SYNC_KEY,JSON.stringify(queue||[]));}
@@ -2944,28 +3009,33 @@
       function queueOfflineProject(project,reason='Project update'){
         if(!project?.id)return;
         const queue=readOfflineSyncQueue().filter(x=>!(x.type==='project-upsert'&&String(x.project?.id)===String(project.id)));
-        queue.push({id:`project-${project.id}`,type:'project-upsert',project:JSON.parse(JSON.stringify(project)),reason,queued_at:new Date().toISOString()});
+        const prior=readOfflineSyncQueue().find(x=>x.type==='project-upsert'&&String(x.project?.id)===String(project.id));
+        queue.push({id:`project-${project.id}`,type:'project-upsert',project:JSON.parse(JSON.stringify(project)),reason,queued_at:new Date().toISOString(),failures:Number(prior?.failures||0)});
         writeOfflineSyncQueue(queue);
       }
       async function flushOfflineSyncQueue(){
-        if(!cloudAvailable())return false;
-        let queue=readOfflineSyncQueue();if(!queue.length)return true;
+        if(syncFlushInFlight)return false;
+        if(!cloudAvailable()){renderSyncCenter();return false;}
+        let queue=readOfflineSyncQueue();if(!queue.length){setSyncLastOk();renderSyncCenter();return true;}
+        syncFlushInFlight=true;renderSyncCenter();
         const remaining=[];
         for(const item of queue){
-          if(item.type!=='project-upsert'||!item.project?.id){continue}
+          if(item.type!=='project-upsert'||!item.project?.id)continue;
           try{
             const snapshot=item.project;
-            let current=state.projects.find(p=>String(p.id)===String(snapshot.id))||snapshot;
+            const current=state.projects.find(p=>String(p.id)===String(snapshot.id))||snapshot;
             if(validProjectClientEmail(current.client_email||'')){
               const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:current.id,name:current.client_name||'',email:current.client_email||'',phone:current.client_phone||'',address:current.client_address||''});
               applyCloudClientReconcile(current,response,current.client_id);
             }
             await syncProjectToDatabase(current,{quiet:true});
-          }catch(e){console.warn('Offline sync item remains queued:',e?.message||e);remaining.push(item);}
+            pushSyncActivity(`${item.reason||'Project update'} synced`,'ok');
+          }catch(e){console.warn('Sync item remains queued:',e?.message||e);remaining.push({...item,failures:Number(item.failures||0)+1,last_error:String(e?.message||e),last_attempt:new Date().toISOString()});}
         }
-        writeOfflineSyncQueue(remaining);
-        if(!remaining.length){showToast('Offline changes are synced.');return true}
-        showToast(`${remaining.length} offline change${remaining.length===1?'':'s'} still need sync.`);
+        writeOfflineSyncQueue(remaining);syncFlushInFlight=false;
+        if(!remaining.length){setSyncLastOk();pushSyncActivity('All changes synced','ok');renderSyncCenter();return true;}
+        pushSyncActivity(`${remaining.length} change${remaining.length===1?'':'s'} waiting to retry`,'failed');renderSyncCenter();
+        if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>{if(cloudAvailable())flushOfflineSyncQueue();},5000);
         return false;
       }
 
@@ -2980,18 +3050,20 @@
         if(workspaceRealtimeRefreshTimer){clearTimeout(workspaceRealtimeRefreshTimer);workspaceRealtimeRefreshTimer=null;}
         if(workspaceRealtimeFallbackTimer){clearInterval(workspaceRealtimeFallbackTimer);workspaceRealtimeFallbackTimer=null;}
         if(workspaceRealtimeChannel&&supabaseClient){try{supabaseClient.removeChannel(workspaceRealtimeChannel);}catch(_){}}
-        workspaceRealtimeChannel=null;
+        workspaceRealtimeChannel=null;workspaceRealtimeSubscribed=false;renderSyncCenter();
       }
 
       function scheduleWorkspaceRealtimeRefresh(eventRow=null,delay=320){
         if(eventRow)workspaceRealtimeLastEvent=eventRow;
         if(!cloudAvailable())return;
+        if(syncFlushInFlight||syncPendingCount()>0){workspaceRealtimeRefreshQueued=true;return;}
         if(workspaceRealtimeRefreshTimer)clearTimeout(workspaceRealtimeRefreshTimer);
         workspaceRealtimeRefreshTimer=setTimeout(()=>{workspaceRealtimeRefreshTimer=null;refreshWorkspaceFromCloudRealtime(workspaceRealtimeLastEvent);workspaceRealtimeLastEvent=null;},delay);
       }
 
       async function refreshWorkspaceFromCloudRealtime(eventRow=null){
         if(!cloudAvailable())return false;
+        if(syncFlushInFlight||syncPendingCount()>0){workspaceRealtimeRefreshQueued=true;return false;}
         if(workspaceRealtimeRefreshInFlight){workspaceRealtimeRefreshQueued=true;return false;}
         workspaceRealtimeRefreshInFlight=true;
         try{
@@ -3058,20 +3130,22 @@
             })
             .subscribe(status=>{
               if(status==='SUBSCRIBED'){
+                workspaceRealtimeSubscribed=true;renderSyncCenter();
                 updateConnectionStatus('connected','● CONNECTED · LIVE');
               }else if(['CHANNEL_ERROR','TIMED_OUT'].includes(status)){
+                workspaceRealtimeSubscribed=false;renderSyncCenter();
                 updateConnectionStatus('connecting','● CONNECTED · SYNCING');
               }
             });
           workspaceRealtimeFallbackTimer=setInterval(()=>{
-            if(document.visibilityState==='visible'&&cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,40);
-          },20000);
+            if(document.visibilityState==='visible'&&cloudAvailable()&&!syncFlushInFlight&&syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,80);
+          },60000);
           return true;
         }catch(e){
           console.warn('Workspace Realtime subscription unavailable:',e?.message||e);
           workspaceRealtimeFallbackTimer=setInterval(()=>{
-            if(document.visibilityState==='visible'&&cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,40);
-          },20000);
+            if(document.visibilityState==='visible'&&cloudAvailable()&&!syncFlushInFlight&&syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,80);
+          },60000);
           return false;
         }
       }
@@ -3081,12 +3155,13 @@
           updateConnectionStatus('connected','● CONNECTED · SYNCING');
           await flushOfflineSyncQueue();
           await startWorkspaceRealtimeSync();
-          scheduleWorkspaceRealtimeRefresh(null,80);
+          if(syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,120);
+          renderSyncCenter();
         }
       });
       window.addEventListener('offline',()=>{stopWorkspaceRealtimeSync();updateConnectionStatus('error','○ OFFLINE');showToast('You are offline. Changes will be stored on this device until you reconnect.');});
-      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,60);});
-      window.addEventListener('focus',()=>{if(cloudAvailable())scheduleWorkspaceRealtimeRefresh(null,80);});
+      document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&cloudAvailable()&&!syncFlushInFlight&&syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,120);});
+      window.addEventListener('focus',()=>{if(cloudAvailable()&&!syncFlushInFlight&&syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,120);});
 
       function loadTasksState() {
         try {
@@ -5468,15 +5543,11 @@ ${description}`))actionCallback();return;}
       }
 
       function scheduleProjectStructureSync(project, delay = 250) {
-        if (!supabaseClient || !state.isConnected || !project) return;
-        const key = String(project.id);
-        const prior = projectStructureSyncTimers.get(key);
-        if (prior) clearTimeout(prior);
-        const timer = setTimeout(() => {
-          projectStructureSyncTimers.delete(key);
-          syncProjectStructureToDatabase(project);
-        }, delay);
-        projectStructureSyncTimers.set(key, timer);
+        if(!project)return;
+        const key=String(project.id),prior=projectStructureSyncTimers.get(key);if(prior)clearTimeout(prior);
+        markProjectDirty(project,'Project structure update');
+        const timer=setTimeout(()=>{projectStructureSyncTimers.delete(key);if(cloudAvailable())flushOfflineSyncQueue();},delay);
+        projectStructureSyncTimers.set(key,timer);
       }
 
       async function syncProjectToDatabase(project, options = {}) {
@@ -6160,7 +6231,7 @@ ${description}`))actionCallback();return;}
       function renderProjectOrderBatchSelected(){const box=document.getElementById('projectOrderBatchSelected'),count=document.getElementById('projectOrderBatchCount'),totalEl=document.getElementById('projectOrderBatchTotal'),btn=document.getElementById('projectOrderBatchAddBtn'),entries=Object.entries(state.projectOrderBatchSelection||{}),total=entries.reduce((sum,[,x])=>sum+Number(x.price||0)*Math.max(1,Number(x.qty||1)),0);state.projectOrderBatchSelectedKeys=entries.map(([key])=>key);if(count)count.textContent=`${entries.length} item${entries.length===1?'':'s'}`;if(totalEl)totalEl.textContent=formatCurrency(total);if(btn){btn.disabled=!entries.length;btn.textContent=entries.length?`Add ${entries.length} Item${entries.length===1?'':'s'}`:'Add Selected Items';}if(box)box.innerHTML=entries.length?entries.map(([key,x],index)=>`<div class="project-batch-selected-row"><div><strong>${escapeHtml(x.name)}</strong><span>${formatCurrency(x.price||0)} each</span></div><div class="batch-qty-control"><label>Qty</label><input class="form-control" type="number" min="1" value="${Math.max(1,Number(x.qty||1))}" onchange="app.updateProjectOrderBatchQty(${index},this.value)"></div><button type="button" class="icon-more-button" aria-label="Remove selected item" onclick="app.removeProjectOrderBatchChoice(${index})">×</button></div>`).join(''):'';}
       function updateProjectOrderBatchQty(index,value){const key=(state.projectOrderBatchSelectedKeys||[])[Number(index)],item=state.projectOrderBatchSelection?.[key];if(!item)return;item.qty=Math.max(1,Math.round(Number(value||1)));renderProjectOrderBatchSelected();}
       function removeProjectOrderBatchChoice(index){const key=(state.projectOrderBatchSelectedKeys||[])[Number(index)];if(key&&state.projectOrderBatchSelection)delete state.projectOrderBatchSelection[key];renderProjectOrderBatchSelected();renderProjectOrderBatchChoices(document.getElementById('projectOrderBatchSearch')?.value||'');}
-      function commitProjectOrderBatch(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const entries=Object.values(state.projectOrderBatchSelection||{});if(!entries.length)return;if(!Array.isArray(proj.project_items))proj.project_items=[];entries.forEach((item,i)=>proj.project_items.push({id:`oi_${proj.id}_${Date.now()}_${i}_${Math.random().toString(36).slice(2,6)}`,name:item.name,qty:Math.max(1,Number(item.qty||1)),price:Math.max(0,Number(item.price||0)),type:item.type||'SOLO',product_code:item.code||null,category:item.category||''}));recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();closeModal('projectOrderBatchModal');renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast(`${entries.length} item${entries.length===1?'':'s'} added.`);}
+      function commitProjectOrderBatch(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const entries=Object.values(state.projectOrderBatchSelection||{});if(!entries.length)return;if(!Array.isArray(proj.project_items))proj.project_items=[];entries.forEach((item,i)=>proj.project_items.push({id:`oi_${proj.id}_${Date.now()}_${i}_${Math.random().toString(36).slice(2,6)}`,name:item.name,qty:Math.max(1,Number(item.qty||1)),price:Math.max(0,Number(item.price||0)),type:item.type||'SOLO',product_code:item.code||null,category:item.category||''}));recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();scheduleProjectStructureSync(proj,80);closeModal('projectOrderBatchModal');renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast(`${entries.length} item${entries.length===1?'':'s'} added.`);}
 
       function selectProjectOrderItemSuggestion(index){
         const x=(state.projectOrderItemSuggestionCache||[])[Number(index)];if(!x)return;document.getElementById('projectOrderItemName').value=x.name;document.getElementById('projectOrderItemPrice').value=x.price;setProjectOrderItemType(x.type);state.projectOrderItemSelected={code:x.code,category:x.category,type:x.type,name:x.name};document.getElementById('projectOrderItemSuggestions')?.classList.remove('open');
@@ -6197,12 +6268,12 @@ ${description}`))actionCallback();return;}
         const base={name,qty,price,type,product_code:selected?.code||null,category:selected?.category||'',id:index!==null&&proj.project_items[index]?.id?proj.project_items[index].id:`oi_${proj.id}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`};
         if(index===null){ proj.project_items.push(base); }
         else if(proj.project_items[index]){ proj.project_items[index]={...proj.project_items[index],...base}; }
-        recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();closeModal('projectOrderItemModal');renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Order item saved and synced to Deliverables.');
+        recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();scheduleProjectStructureSync(proj,80);closeModal('projectOrderItemModal');renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Order item saved and synced to Deliverables.');
       }
       function requestDeleteProjectOrderItem(index,event){if(event)event.stopPropagation();const proj=state.projects.find(p=>p.id===state.activeProjectId),item=proj?.project_items?.[index];if(!item)return;requestDestructivePin('Remove Order Item',`Remove "${item.name||'this item'}"? Its linked deliverable will also be removed.`,()=>deleteProjectOrderItem(index,true));}
       function deleteProjectOrderItem(index,authorized=false){
         const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||!Array.isArray(proj.project_items)||!proj.project_items[index])return;if(!authorized){requestDeleteProjectOrderItem(index);return;}
-        proj.project_items.splice(index,1);recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Order item removed.');
+        proj.project_items.splice(index,1);recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();scheduleProjectStructureSync(proj,80);renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Order item removed.');
       }
 
       function renderProjectDeliverableSuggestions(query=''){
@@ -6265,8 +6336,8 @@ ${description}`))actionCallback();return;}
         const apply=d=>{d.completed=target;d.progress=target?100:0;d.status=target?'Completed':'Pending';d.completed_at=stamp};apply(del);
         if(del.is_group)ds.filter(c=>String(c.parent_id||'')===String(del.id)).forEach(apply);
         if(del.parent_id){const parent=ds.find(d=>String(d.id)===String(del.parent_id)),children=ds.filter(c=>String(c.parent_id||'')===String(del.parent_id));if(parent&&children.length){parent.completed=children.every(c=>c.completed);parent.progress=Math.round(children.reduce((sum,c)=>sum+(c.completed?100:Number(c.progress||0)),0)/children.length);parent.status=parent.completed?'Completed':'Pending';parent.completed_at=parent.completed?new Date().toISOString():null;}}
-        proj.updated_at=new Date().toISOString();persistProjectsState();renderProjectDeliverablesList(proj);renderOverviewDashboard();
-        if(supabaseClient&&state.isConnected){try{await syncProjectCoreToDatabase(proj);await syncDeliverablesToDatabase(proj);}catch(e){console.warn('Deliverable sync unavailable:',e.message);}}
+        proj.updated_at=new Date().toISOString();persistProjectsState();markProjectDirty(proj,'Deliverable status update');renderProjectDeliverablesList(proj);renderOverviewDashboard();
+        if(cloudAvailable())await flushOfflineSyncQueue();
       }
 
       function openRecordPaymentModal(paymentId=null) {
@@ -6283,7 +6354,7 @@ ${description}`))actionCallback();return;}
         showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,550));let record;if(draft.editingId){record=(proj.payments||[]).find(p=>String(p.id)===String(draft.editingId));if(record){const before={...record};if(supabaseClient&&state.isConnected){try{await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(draft.editingId),project_id:proj.id,action:'EDIT',before_value:before,after_value:{amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}}]);}catch(e){console.warn('Payment audit sync unavailable:',e.message);}}Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()});}}
         if(!record){record={id:'pay_'+Date.now(),project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,created_at:new Date().toISOString()};if(!proj.payments)proj.payments=[];proj.payments.push(record);}
         proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();
-        if(supabaseClient&&state.isConnected){try{if(draft.editingId)await supabaseClient.from('payments').update({amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}).eq('id',draft.editingId);else await supabaseClient.from('payments').insert([{project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}]);}catch(e){console.warn('Payment sync unavailable:',e.message);}}
+        if(supabaseClient&&state.isConnected){try{if(draft.editingId)await supabaseClient.from('payments').update({amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}).eq('id',draft.editingId);else await supabaseClient.from('payments').insert([{project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}]);}catch(e){console.warn('Payment sync unavailable:',e.message);markProjectDirty(proj,'Payment update');}}
         renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Successful',draft.editingId?'Payment changes were saved.':'Payment was recorded successfully.',true);state.editingPaymentId=null;setTimeout(()=>closeModal('actionStatusModal'),950);
       }
 
