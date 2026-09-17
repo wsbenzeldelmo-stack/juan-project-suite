@@ -3014,7 +3014,7 @@
       function syncPendingCount(){return readOfflineSyncQueue().length;}
       function setSyncLastOk(){localStorage.setItem(SYNC_LAST_OK_KEY,new Date().toISOString());}
       function renderSyncCenter(){
-        const queue=readOfflineSyncQueue(),pending=queue.length,failed=queue.filter(x=>Number(x.failures||0)>0).length;
+        const queue=readOfflineSyncQueue(),pending=queue.length,failed=queue.filter(x=>Number(x.failures||0)>0&&x.retry_class!=='auth'&&!syncAuthErrorMessage(x.last_error||'')).length;
         const badge=document.getElementById('syncCenterState'),p=document.getElementById('syncPendingCount'),f=document.getElementById('syncFailedCount'),last=document.getElementById('syncLastSynced'),rt=document.getElementById('syncRealtimeState'),rtHint=document.getElementById('syncRealtimeHint'),notice=document.getElementById('syncQueueNotice'),noticeTitle=document.getElementById('syncQueueTitle'),noticeMessage=document.getElementById('syncQueueMessage'),list=document.getElementById('syncActivityList');
         if(p)p.textContent=String(pending);
         if(f)f.textContent=String(failed);
@@ -3031,7 +3031,7 @@
         if(notice){
           notice.classList.toggle('hidden',pending===0);notice.classList.toggle('failed',failed>0);
           if(pending>0&&noticeTitle)noticeTitle.textContent=`${pending} change${pending===1?'':'s'} waiting to sync`;
-          if(pending>0&&noticeMessage)noticeMessage.textContent=failed>0?'Your changes are safe on this device. Sync will retry automatically, or you can try again now.':'Your changes are safe on this device and will sync automatically when cloud access is available.';
+          if(pending>0&&noticeMessage)noticeMessage.textContent=!state.isConnected?'Your changes are safe on this device. Sign in to Workspace to continue cloud sync.':failed>0?'Your changes are safe on this device. Sync will retry automatically, or you can try again now.':'Your changes are safe on this device and will sync automatically when cloud access is available.';
         }
         if(list){
           const rows=readSyncActivity();
@@ -3046,11 +3046,62 @@
         if(!hadPending)pushSyncActivity('Changes queued','queued');else renderSyncCenter();
         if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),140);}
       }
-      async function syncNowSafe(){if(!cloudAvailable()){showToast('Saved locally. Connect to Supabase to sync.');renderSyncCenter();return false;}return flushOfflineSyncQueue();}
+      function syncAuthErrorMessage(message=''){
+        const text=String(message||'').toLowerCase();
+        return text.includes('sign in to workspace')||text.includes('sign in required')||text.includes('jwt')||text.includes('session expired')||text.includes('invalid refresh token')||text.includes('auth session missing');
+      }
+      async function ensureWorkspaceSyncSession(){
+        if(!supabaseClient||navigator.onLine===false)return false;
+        try{
+          const {data:{session},error}=await supabaseClient.auth.getSession();
+          if(error)throw error;
+          if(session?.user&&session?.access_token){
+            if(!state.isConnected){state.isConnected=true;updateConnectionStatus('connected','● CONNECTED');}
+            return true;
+          }
+        }catch(e){console.warn('Workspace sync session check failed:',e?.message||e);}
+        state.isConnected=false;
+        stopWorkspaceRealtimeSync();
+        updateConnectionStatus('error','○ SIGN IN REQUIRED');
+        updateManualDatabasePanel('Your Workspace session expired. Sign in again to continue cloud sync.');
+        showWorkspaceAuthGate('Your Workspace session expired. Your pending changes are safe locally. Sign in again to continue cloud sync.');
+        renderSyncCenter();
+        return false;
+      }
+      function projectClientReconcileNeeded(project){
+        if(!project||!validProjectClientEmail(project.client_email||''))return false;
+        const client=(state.clients||[]).find(c=>String(c.id)===String(project.client_id));
+        if(!client)return true;
+        const norm=v=>String(v||'').trim().toLowerCase();
+        return norm(client.email)!==norm(project.client_email)||String(client.name||'').trim()!==String(project.client_name||'').trim()||String(client.phone||'').trim()!==String(project.client_phone||'').trim()||String(client.address||'').trim()!==String(project.client_address||'').trim();
+      }
+      async function syncNowSafe(){
+        if(!cloudAvailable()){
+          const sessionReady=await ensureWorkspaceSyncSession();
+          if(!sessionReady){showToast('Saved locally. Sign in to Workspace to continue cloud sync.');renderSyncCenter();return false;}
+        }
+        return flushOfflineSyncQueue();
+      }
       function cloudAvailable(){return !!supabaseClient&&state.isConnected&&navigator.onLine!==false;}
       function readOfflineSyncQueue(){try{const q=JSON.parse(localStorage.getItem(OFFLINE_SYNC_KEY)||'[]');return Array.isArray(q)?q:[]}catch(_){return[]}}
       function writeOfflineSyncQueue(queue){localStorage.setItem(OFFLINE_SYNC_KEY,JSON.stringify(queue||[]));}
       function queuedProjectIds(){return new Set(readOfflineSyncQueue().filter(x=>x.type==='project-upsert'&&x.project?.id).map(x=>String(x.project.id)));}
+      function queuedClientIds(){return new Set(readOfflineSyncQueue().filter(x=>x.type==='client-upsert'&&x.client?.id).map(x=>String(x.client.id)));}
+      function queueOfflineClient(client,reason='Client update'){
+        if(!client?.id)return;
+        const existing=readOfflineSyncQueue();
+        const prior=existing.find(x=>x.type==='client-upsert'&&String(x.client?.id)===String(client.id));
+        const queue=existing.filter(x=>!(x.type==='client-upsert'&&String(x.client?.id)===String(client.id)));
+        queue.push({id:`client-${client.id}`,type:'client-upsert',client:JSON.parse(JSON.stringify(client)),reason,queued_at:new Date().toISOString(),failures:Number(prior?.failures||0)});
+        writeOfflineSyncQueue(queue);
+      }
+      function markClientDirty(client,reason='Client update'){
+        if(!client?.id)return;
+        client.updated_at=new Date().toISOString();
+        queueOfflineClient(client,reason);
+        renderSyncCenter();
+        if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),120);}
+      }
       function queueOfflineProject(project,reason='Project update'){
         if(!project?.id)return;
         const queue=readOfflineSyncQueue().filter(x=>!(x.type==='project-upsert'&&String(x.project?.id)===String(project.id)));
@@ -3061,25 +3112,56 @@
       async function flushOfflineSyncQueue(){
         if(syncFlushInFlight)return false;
         if(!cloudAvailable()){renderSyncCenter();return false;}
+        if(!(await ensureWorkspaceSyncSession()))return false;
         let queue=readOfflineSyncQueue();if(!queue.length){setSyncLastOk();renderSyncCenter();return true;}
         syncFlushInFlight=true;renderSyncCenter();
-        const remaining=[];let syncedProjects=0;
+        const remaining=[];let syncedProjects=0,authBlocked=false;
         for(const item of queue){
-          if(item.type!=='project-upsert'||!item.project?.id)continue;
           try{
-            const snapshot=item.project;
-            const current=state.projects.find(p=>String(p.id)===String(snapshot.id))||snapshot;
-            if(validProjectClientEmail(current.client_email||'')){
-              const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:current.id,name:current.client_name||'',email:current.client_email||'',phone:current.client_phone||'',address:current.client_address||''});
-              applyCloudClientReconcile(current,response,current.client_id);
+            if(item.type==='client-upsert'&&item.client?.id){
+              const snapshot=item.client;
+              const current=state.clients.find(c=>String(c.id)===String(snapshot.id))||snapshot;
+              await syncClientToDatabase(current,{quiet:true});
+              try{
+                await onlinePortalRequest('POST',{action:'reconcile-client-profile',clientId:current.id,name:current.name||'',email:normalizeClientIdentityEmail(current.email||''),phone:current.phone||'',address:current.address||''});
+              }catch(portalError){console.warn('Client synced; portal reconciliation needs attention:',portalError?.message||portalError);}
+              pushSyncActivity(`${item.reason||'Client update'} synced`,'ok');
+              continue;
             }
-            await syncProjectToDatabase(current,{quiet:true});
-            syncedProjects++;
-          }catch(e){console.warn('Sync item remains queued:',e?.message||e);remaining.push({...item,failures:Number(item.failures||0)+1,last_error:String(e?.message||e),last_attempt:new Date().toISOString()});}
+            if(item.type==='project-upsert'&&item.project?.id){
+              const snapshot=item.project;
+              const current=state.projects.find(p=>String(p.id)===String(snapshot.id))||snapshot;
+              await syncProjectToDatabase(current,{quiet:true});
+              if(projectClientReconcileNeeded(current)){
+                try{
+                  const previousClientId=current.client_id;
+                  const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:current.id,name:current.client_name||'',email:current.client_email||'',phone:current.client_phone||'',address:current.client_address||''});
+                  const reconciled=applyCloudClientReconcile(current,response,previousClientId);
+                  if(reconciled){persistClientsState();persistProjectsState();}
+                }catch(portalError){console.warn('Project synced; portal reconciliation needs attention:',portalError?.message||portalError);}
+              }
+              pushSyncActivity(`${item.reason||'Project update'} synced`,'ok');
+              continue;
+            }
+          }catch(e){
+            const message=String(e?.message||e);
+            console.warn('Sync item remains queued:',message);
+            if(syncAuthErrorMessage(message)){
+              authBlocked=true;
+              remaining.push({...item,failures:Number(item.failures||0),last_error:message,last_attempt:new Date().toISOString(),retry_class:'auth'});
+              state.isConnected=false;
+              stopWorkspaceRealtimeSync();
+              updateConnectionStatus('error','○ SIGN IN REQUIRED');
+              showWorkspaceAuthGate('Your Workspace session expired. Your pending changes are safe locally. Sign in again to continue cloud sync.');
+            }else{
+              remaining.push({...item,failures:Number(item.failures||0)+1,last_error:message,last_attempt:new Date().toISOString(),retry_class:'cloud'});
+            }
+          }
         }
         writeOfflineSyncQueue(remaining);syncFlushInFlight=false;
         if(syncedProjects>0)pushSyncActivity('Project synced','ok');
         if(!remaining.length){setSyncLastOk();renderSyncCenter();return true;}
+        if(authBlocked){renderSyncCenter();return false;}
         pushSyncActivity('Sync failed','failed');renderSyncCenter();
         if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>{if(cloudAvailable())flushOfflineSyncQueue();},5000);
         return false;
@@ -3137,7 +3219,13 @@
             return remote;
           });
           for(const localOnly of localById.values())state.projects.push(localOnly);
-          state.clients=(clientsRes.data||[]).filter(c=>!c.archived_at);
+          const pendingClientIds=queuedClientIds();
+          const localClientsById=new Map((state.clients||[]).filter(c=>c?.id).map(c=>[String(c.id),c]));
+          state.clients=(clientsRes.data||[]).filter(c=>!c.archived_at).map(remote=>{
+            const local=localClientsById.get(String(remote.id));
+            return pendingClientIds.has(String(remote.id))&&local?{...remote,...local}:remote;
+          });
+          for(const [id,local] of localClientsById){if(pendingClientIds.has(id)&&!state.clients.some(c=>String(c.id)===id))state.clients.push(local);}
           applyKnownClientIdsLocally();
           persistClientsState();
           persistProjectsState();
@@ -3164,6 +3252,13 @@
           if(workspaceRealtimeRefreshQueued){workspaceRealtimeRefreshQueued=false;scheduleWorkspaceRealtimeRefresh(null,120);}
         }
       }
+
+      document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState==='visible'&&cloudAvailable()&&!syncFlushInFlight&&syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,60);
+      });
+      window.addEventListener('focus',()=>{
+        if(cloudAvailable()&&!syncFlushInFlight&&syncPendingCount()===0)scheduleWorkspaceRealtimeRefresh(null,80);
+      });
 
       async function startWorkspaceRealtimeSync(){
         if(!cloudAvailable())return false;
@@ -3929,19 +4024,23 @@ ${description}`))actionCallback();return;}
           const mergedProjects=remoteProjects.map(remote=>{
             const local=localById.get(String(remote.id));localById.delete(String(remote.id));
             if(!local)return remote;
-            const localTime=Date.parse(local.updated_at||local.created_at||0)||0,remoteTime=Date.parse(remote.updated_at||remote.created_at||0)||0;
-            if(pendingIds.has(String(remote.id))||localTime>remoteTime){
+            // Cloud is canonical while connected. Preserve local fields only for an explicitly queued change.
+            if(pendingIds.has(String(remote.id))){
               return {...remote,...local,payments:Array.isArray(local.payments)?local.payments:remote.payments,deliverables:Array.isArray(local.deliverables)?local.deliverables:remote.deliverables,project_items:Array.isArray(local.project_items)?local.project_items:remote.project_items};
             }
             return remote;
           });
           for(const localOnly of localById.values())mergedProjects.push(localOnly);
 
-          const remoteClientById=new Map(remoteClients.map(c=>[String(c.id),c]));
+          const pendingClientIds=queuedClientIds();
+          const localClientById=new Map(localClients.filter(c=>c?.id).map(c=>[String(c.id),c]));
+          const remoteClientById=new Map(remoteClients.map(c=>{
+            const local=localClientById.get(String(c.id));
+            return [String(c.id),pendingClientIds.has(String(c.id))&&local?{...c,...local}:c];
+          }));
           for(const c of localClients){
-            if(!c?.id)continue;
-            const remote=remoteClientById.get(String(c.id));
-            if(!remote)remoteClientById.set(String(c.id),c);
+            if(!c?.id||remoteClientById.has(String(c.id)))continue;
+            if(pendingClientIds.has(String(c.id)))remoteClientById.set(String(c.id),c);
           }
           state.clients=[...remoteClientById.values()];
           state.projects=mergedProjects;
@@ -5631,21 +5730,31 @@ ${description}`))actionCallback();return;}
         }
       }
 
-      async function syncClientToDatabase(client) {
-        if (!supabaseClient || !state.isConnected || !client) return;
+      async function syncClientToDatabase(client, options = {}) {
+        if (!supabaseClient || !state.isConnected || !client) throw new Error('Database is not connected.');
         try {
-          const { error } = await supabaseClient.from('clients').update({
-            name: client.name,
-            email: client.email,
-            phone: client.phone,
-            address: client.address,
-            notes: client.notes
-          }).eq('id', client.id);
+          const normalizedEmail=normalizeClientIdentityEmail(client.email||'');
+          const payload={name:client.name,email:normalizedEmail,phone:client.phone||null,address:client.address||null,notes:client.notes||''};
+          // Some existing installations do not yet expose clients.updated_at; keep this write schema-safe.
+          const { error } = await supabaseClient.from('clients').update(payload).eq('id', client.id);
           if (error) throw error;
-          showToast("Client synchronized successfully.");
+          const linkedProjects=(state.projects||[]).filter(p=>String(p.client_id)===String(client.id));
+          for(const project of linkedProjects){
+            project.client_name=client.name||'';
+            project.client_email=normalizedEmail;
+            project.client_phone=client.phone||'';
+            project.client_address=client.address||'';
+            project.updated_at=new Date().toISOString();
+            const result=await supabaseClient.from('projects').update({client_name:project.client_name,client_email:project.client_email,client_phone:project.client_phone||null,client_address:project.client_address||null,updated_at:project.updated_at}).eq('id',project.id);
+            if(result.error)throw result.error;
+          }
+          persistProjectsState();
+          if (!options.quiet) showToast("Client synchronized successfully.");
+          return true;
         } catch (e) {
           console.error("Client sync retry failed:", e);
-          showToast(`Client sync failed: ${e.message || e}`);
+          if (!options.quiet) showToast(`Client sync failed: ${e.message || e}`);
+          throw e;
         }
       }
 
@@ -6886,27 +6995,12 @@ ${description}`))actionCallback();return;}
         });
         persistProjectsState();
 
-        if (supabaseClient && state.isConnected) {
-          try {
-            const normalizedEmail = normalizeClientIdentityEmail(email);
-            const { error } = await supabaseClient.from('clients').update({ name, email: normalizedEmail, phone: phone || null, address: address || null, notes }).eq('id', clientId);
-            if (error) throw error;
-            const linkedProjects = state.projects.filter(p => p.client_id === clientId);
-            for (const project of linkedProjects) {
-              const update = await supabaseClient.from('projects').update({client_name:name,client_email:normalizedEmail,client_phone:phone||null,client_address:address||null}).eq('id',project.id);
-              if (update.error) console.warn('Project client snapshot sync failed:', update.error);
-            }
-            try {
-              await onlinePortalRequest('POST',{action:'reconcile-client-profile',clientId,name,email:normalizedEmail,phone:phone||'',address:address||''});
-              state.onlinePortalData = null;
-              if (document.getElementById('view-online-portal')?.classList.contains('active')) loadOnlinePortalData(true);
-            } catch(portalError) {
-              console.warn('Portal client profile refresh failed:', portalError?.message||portalError);
-            }
-          } catch(e) {
-            console.error("Database operation failed while updating client:", e);
-            showToast("Warning: Client changes were saved locally, but could not sync to the database.", "Retry", () => syncClientToDatabase(client));
-          }
+        // Save-through: local immediately, then cloud immediately. If cloud is unavailable, keep an explicit queued copy.
+        markClientDirty(client,'Client details update');
+        if(cloudAvailable()){
+          await flushOfflineSyncQueue();
+          state.onlinePortalData=null;
+          if(document.getElementById('view-online-portal')?.classList.contains('active'))loadOnlinePortalData(true);
         }
 
         closeModal("editClientModal");
