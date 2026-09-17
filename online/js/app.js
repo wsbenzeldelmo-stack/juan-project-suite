@@ -13,7 +13,7 @@ let state={
   route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
   catalog:{categories:[],services:[],packages:[],packageItems:[]},catalogLoaded:false,
   gateOpen:false,onboardingStep:0,orderFilter:'active',shopItem:null,paymentProjectId:null,
-  shopQuery:'',shopSort:'default',shopCategory:'all',shopInclusionsExpanded:false,paymentFlow:'',
+  shopQuery:'',shopSort:'default',shopCategory:'all',paymentFlow:'',
   notificationOpen:false,senderInstitution:'',guestGateContext:'default',receiptPreviewUrl:'',receiptPreviewType:'',receiptPreviewName:'',clientMessage:null
 };
 
@@ -119,7 +119,6 @@ const icons={
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
   bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
   back:'<path d="m15 18-6-6 6-6"/>',
-  close:'<path d="M6 6l12 12M18 6 6 18"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v5h16v-5"/>',
   drive:'<path d="M12 3 4 17h5l3-5 3 5h5L12 3Z"/><path d="M9 17h6"/>',
@@ -239,18 +238,18 @@ function pickClientMessage(){
 function clientMessageOverlay(){
   const m=state.clientMessage;if(!m||!isLoggedIn())return '';
   const p=(state.portal?.projects||[]).find(x=>String(x.id)===String(m.projectId));if(!p||Number(p.balance||0)<=0)return '';
-  return `<div class="overlay client-message-overlay"><div class="payment-reminder-modal compact-modal" role="dialog" aria-modal="true" aria-label="Payment reminder">
-    <button id="messageClose" class="icon-button modal-close-button" aria-label="Close payment reminder">${icon('close',19)}</button>
-    <div class="payment-reminder-icon">${icon('payment',30)}</div>
+  return `<div class="overlay client-message-overlay"><div class="payment-reminder-modal" role="dialog" aria-modal="true" aria-label="Payment reminder">
+    <div class="payment-reminder-icon">${icon('payment',34)}</div>
     <div class="payment-reminder-pill">PAYMENT REMINDER</div>
     <h2>You still have</h2>
     <div class="payment-reminder-amount">${peso(p.balance||0)}</div>
     <div class="payment-reminder-label">remaining balance</div>
-    <p>Review your invoice or send your payment proof whenever you are ready.</p>
-    <div class="payment-reminder-invoice">${icon('receipt',18)}<span>${esc(p.project_code||p.invoice_number||'Project')}</span></div>
+    <p>Whenever you’re ready, you can review the invoice or send your payment proof for ${esc(p.project_code||'your project')}.</p>
+    <div class="payment-reminder-invoice">${icon('receipt',19)}<span>Invoice: <b>${esc(p.project_code||p.invoice_number||'Project')}</b></span></div>
     <div class="payment-reminder-actions">
       <button id="messagePay" class="btn primary full">Make a Payment <span aria-hidden="true">→</span></button>
       <button id="messageInvoice" class="btn full">Review Invoice</button>
+      <button id="messageClose" class="text-button full">Maybe Later</button>
     </div>
   </div></div>`;
 }
@@ -265,13 +264,13 @@ function gateOverlay(){
     default:{title:'Log In Required',body:'This area contains private JUAN PROJECT client information.'}
   };
   const c=contexts[state.guestGateContext]||contexts.default;
-  return `<div class="overlay" id="gateOverlay"><div class="sheet center guest-gate-sheet"><button id="gateX" class="icon-button modal-close-button" aria-label="Close">${icon('close',19)}</button><div class="sheet-icon">${icon('lock',26)}</div><h2>${esc(c.title)}</h2><p>${esc(c.body)}</p><div class="guest-benefits"><span>✓ Secure client access</span><span>✓ Project and payment history</span><span>✓ Official invoices and project files</span></div><div class="sheet-actions"><button id="gateLogIn" class="btn primary full">Log In</button><button id="gateShop" class="btn full">Continue as Guest</button></div></div></div>`;
+  return `<div class="overlay" id="gateOverlay"><div class="sheet center guest-gate-sheet"><button id="gateX" class="icon-button sheet-x" aria-label="Close">×</button><div class="sheet-icon">${icon('lock',26)}</div><h2>${esc(c.title)}</h2><p>${esc(c.body)}</p><div class="guest-benefits"><span>✓ Secure client access</span><span>✓ Project and payment history</span><span>✓ Official invoices and project files</span></div><div class="sheet-actions"><button id="gateLogIn" class="btn primary full">Log In</button><button id="gateShop" class="btn full">Continue as Guest</button></div></div></div>`;
 }
 
 function notificationOverlay(){
   if(!state.notificationOpen||!isLoggedIn())return'';
   const rows=activityFeed();
-  return `<div class="overlay" id="notificationOverlay"><div class="sheet notification-sheet"><button id="notificationX" class="icon-button modal-close-button" aria-label="Close">${icon('close',19)}</button><div class="sheet-header-left"><span class="eyebrow">ACTIVITY</span><h2 class="sheet-title">Notifications</h2><p>Project and payment updates from JUAN PROJECT.</p></div><div class="notification-list">${rows.map(x=>`<div class="notification-row"><span>${icon(x.icon,16)}</span><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No notifications yet.</div>'}</div></div></div>`;
+  return `<div class="overlay" id="notificationOverlay"><div class="sheet notification-sheet"><button id="notificationX" class="icon-button sheet-x" aria-label="Close">×</button><div class="sheet-header-left"><span class="eyebrow">ACTIVITY</span><h2 class="sheet-title">Notifications</h2><p>Project and payment updates from JUAN PROJECT.</p></div><div class="notification-list">${rows.map(x=>`<div class="notification-row"><span>${icon(x.icon,16)}</span><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No notifications yet.</div>'}</div></div></div>`;
 }
 
 function shopArtwork(x,large=false){
@@ -282,8 +281,7 @@ function packageInclusions(x){if(x?.kind!=='Package')return[];return (state.cata
 function shopOverlay(){
   if(!state.shopItem)return'';
   const x=state.shopItem,price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0,incs=packageInclusions(x);
-  const visibleIncs=state.shopInclusionsExpanded?incs:incs.slice(0,6),hiddenCount=Math.max(0,incs.length-visibleIncs.length);
-  return `<div class="overlay shop-detail-overlay" id="shopOverlay"><div class="sheet shop-detail-sheet shop-detail-v2" role="dialog" aria-modal="true" aria-label="Service details"><button id="shopX" class="icon-button modal-close-button" aria-label="Close service details">${icon('close',19)}</button>${shopArtwork(x,true)}<div class="shop-detail-body"><div class="shop-detail-kicker"><span class="shop-kind-pill">${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</span>${old>price?'<span class="shop-value-pill">Best value</span>':''}</div><h2 class="sheet-title">${esc(x.name)}</h2><div class="detail-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div><p class="detail-copy">${esc(x.description||'JUAN PROJECT creative service.')}</p>${incs.length?`<div class="shop-inclusions"><div class="shop-detail-label">WHAT'S INCLUDED <span>${incs.length} items</span></div>${visibleIncs.map(i=>`<div class="shop-inclusion-row"><span class="shop-inclusion-check">${icon('check',13)}</span><div><b>${esc(i.item_name||'Included service')}</b>${Number(i.quantity||1)>1?`<small>Quantity ${Number(i.quantity)}</small>`:''}</div></div>`).join('')}${hiddenCount?`<button id="shopExpandInclusions" class="shop-expand-inclusions">View ${hiddenCount} more included ${hiddenCount===1?'item':'items'} ${icon('chevron',14)}</button>`:state.shopInclusionsExpanded&&incs.length>6?`<button id="shopCollapseInclusions" class="shop-expand-inclusions">Show less</button>`:''}</div>`:''}<div class="service-detail-meta"><div><span>Standard turnaround</span><b>14 days</b></div><div><span>Client access</span><b>${isLoggedIn()?'Ready to request':'Log in when ready'}</b></div></div><div class="shop-detail-actions">${isLoggedIn()?`<button id="detailStartProject" class="btn primary full shop-primary-cta">Start a Project</button>`:`<button id="detailLogIn" class="btn primary full shop-primary-cta">Log In to Start a Project</button>`}<button id="detailClose" class="btn full">Continue Browsing</button></div></div></div></div>`
+  return `<div class="overlay" id="shopOverlay"><div class="sheet shop-detail-sheet shop-detail-v2"><button id="shopX" class="icon-button sheet-x" aria-label="Close">×</button>${shopArtwork(x,true)}<div class="shop-detail-body"><div class="shop-detail-kicker"><span class="shop-kind-pill">${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</span>${old>price?'<span class="shop-value-pill">Best value</span>':''}</div><h2 class="sheet-title">${esc(x.name)}</h2><div class="detail-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div><p class="detail-copy">${esc(x.description||'JUAN PROJECT creative service.')}</p>${incs.length?`<div class="shop-inclusions"><div class="shop-detail-label">WHAT'S INCLUDED</div>${incs.map(i=>`<div class="shop-inclusion-row"><span class="shop-inclusion-check">${icon('check',13)}</span><div><b>${esc(i.item_name||'Included service')}</b>${Number(i.quantity||1)>1?`<small>Quantity ${Number(i.quantity)}</small>`:''}</div></div>`).join('')}</div>`:''}<div class="service-detail-meta"><div><span>Standard turnaround</span><b>14 days</b></div><div><span>Client access</span><b>${isLoggedIn()?'Ready to request':'Log in when ready'}</b></div></div>${isLoggedIn()?`<button id="detailStartProject" class="btn primary full shop-primary-cta">Start a Project</button>`:`<button id="detailLogIn" class="btn primary full shop-primary-cta">Log In to Start a Project</button>`}<button id="detailClose" class="btn full">Continue Browsing</button></div></div></div>`
 }
 
 function pageHead(title,{back=false,more=false}={}){return `<div class="screen-head"><button id="screenBack" class="icon-button ${back?'':'ghost-space'}" ${back?'':'disabled'} aria-label="Back">${back?icon('back'):''}</button><h1>${esc(title)}</h1><button class="icon-button ${more?'':'ghost-space'}" aria-label="More">${more?icon('more'):''}</button></div>`}
@@ -328,7 +326,7 @@ function home(){
   const p=activeProject(),action=nextAction(p),feed=activityFeed(),profile=state.portal?.profile||{};
   const avatar=profile.profile_photo_url?`<img src="${esc(profile.profile_photo_url)}" alt="">`:initials();
   const pStats=p?projectStats(p):null,next=p?nextDeliverable(p):null;
-  return `<div class="dashboard-head"><div><span>Good day,</span><h1>${esc((profile.name||'Client').split(/\s+/)[0])} <em>👋</em></h1><small class="client-id-line">${esc(profile.client_code||'JUAN PROJECT Client')}</small></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">${icon('bell',19)}</button><button id="topAccount" class="avatar top-avatar" aria-label="Account">${avatar}</button></div></div>
+  return `<div class="dashboard-head"><div><span>Welcome back</span><h1>${esc((profile.name||'Client').split(/\s+/)[0])}</h1></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">${icon('bell',19)}</button><button id="topAccount" class="avatar top-avatar" aria-label="Account">${avatar}</button></div></div>
     ${p?`<button class="card active-project project-button" id="homeOrders" data-open="${esc(p.id)}"><div class="card-topline"><span class="project-code">${esc(p.project_code||p.id)}</span><span class="status-dot-label">${Number(p.balance||0)>0?'Balance Pending':esc(effectiveProjectStatus(p))}</span></div><div class="project-name">${esc(p.title||'Untitled Project')}</div><div class="progress"><span style="width:${pStats.pct}%"></span></div><div class="meta"><span>${pStats.done}/${pStats.total} deliverables</span><b>${pStats.pct}%</b></div>${next?`<div class="next-deliverable"><span>NEXT DELIVERABLE</span><b>${esc(next.item_name||next.name||'Deliverable')}</b><small>${esc(fmtDate(next.due_date||p.deadline_date))}</small></div>`:''}<div class="card-action-row"><span>${Number(p.balance||0)>0?`${peso(p.balance)} balance remaining`:'View project details'}</span>${icon('chevron',16)}</div></button>`:`<div class="card empty guided-empty"><b>No active project right now</b><span>Your next JUAN PROJECT order will appear here.</span><button id="homeShop" class="btn primary small">Browse Services</button></div>`}
     <div class="section-head"><h2>Next Action</h2></div>
     <div class="card next-action-card ${esc(action.kind||'none')}"><div class="next-action-icon">${icon(action.kind==='payment'?'payment':action.kind==='pending'?'clock':action.kind==='progress'?'spark':'check',18)}</div><div><b>${esc(action.title)}</b><p>${esc(action.body)}</p></div>${action.cta?`<button id="nextActionBtn" class="btn small">${esc(action.cta)}</button>`:''}</div>
@@ -344,7 +342,7 @@ function orders(){
     const completed=!cancelled&&Number(p.balance||0)<=0&&isProjectDelivered(p);
     return filter==='all'||(filter==='completed'?completed:active);
   });
-  return `${pageHead('My Orders',{back:false,more:false})}<p class="screen-subtitle">Your projects, progress, and completed work in one place.</p><div class="tabs order-tabs"><button data-order-filter="active" class="${filter==='active'?'active':''}">Active</button><button data-order-filter="completed" class="${filter==='completed'?'active':''}">Completed</button><button data-order-filter="all" class="${filter==='all'?'active':''}">All</button></div><div class="project-list">${ps.map(p=>{const s=projectStats(p);return `<button class="card project-list-card project-button" data-open="${esc(p.id)}"><div class="project-list-top"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Untitled Project')}</div><small>${esc(effectiveProjectStatus(p))}</small></div>${icon('chevron',18)}</div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done}/${s.total} deliverables</span><b>${s.pct}%</b></div>${p.deadline_date?`<div class="order-deadline">Estimated completion · ${esc(fmtDate(p.deadline_date))}</div>`:''}</button>`}).join('')||'<div class="card empty guided-empty"><b>No matching orders</b><span>Orders in this status will appear here.</span></div>'}</div>`;
+  return `${pageHead('Orders',{back:false,more:false})}<p class="screen-subtitle">Track each JUAN PROJECT order from confirmation to delivery.</p><div class="tabs order-tabs"><button data-order-filter="active" class="${filter==='active'?'active':''}">Active</button><button data-order-filter="completed" class="${filter==='completed'?'active':''}">Completed</button><button data-order-filter="all" class="${filter==='all'?'active':''}">All</button></div><div class="project-list">${ps.map(p=>{const s=projectStats(p);return `<button class="card project-list-card project-button" data-open="${esc(p.id)}"><div class="project-list-top"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Untitled Project')}</div><small>${esc(effectiveProjectStatus(p))}</small></div>${icon('chevron',18)}</div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done}/${s.total} deliverables</span><b>${s.pct}%</b></div>${p.deadline_date?`<div class="order-deadline">Estimated completion · ${esc(fmtDate(p.deadline_date))}</div>`:''}</button>`}).join('')||'<div class="card empty guided-empty"><b>No matching orders</b><span>Orders in this status will appear here.</span></div>'}</div>`;
 }
 
 function trackingStages(p){
@@ -470,7 +468,7 @@ function bind(){
   document.querySelectorAll('[data-order-filter]').forEach(b=>b.onclick=()=>{state.orderFilter=b.dataset.orderFilter;render()});
   const payProject=document.getElementById('payProject');if(payProject)payProject.onclick=()=>{state.paymentProjectId=state.selected;state.route='payment';render()};
   const invoiceBtn=document.getElementById('projectInvoiceBtn');if(invoiceBtn)invoiceBtn.onclick=()=>{state.route='invoice';render()};
-  document.querySelectorAll('[data-view-shop]').forEach(b=>b.onclick=()=>{state.shopItem=findShopItem(b.dataset.viewShop);state.shopInclusionsExpanded=false;render()});
+  document.querySelectorAll('[data-view-shop]').forEach(b=>b.onclick=()=>{state.shopItem=findShopItem(b.dataset.viewShop);render()});
   const shopSort=document.getElementById('shopSort');if(shopSort)shopSort.onchange=()=>{state.shopSort=shopSort.value;render()};
   document.querySelectorAll('[data-shop-filter]').forEach(b=>b.onclick=()=>{state.shopCategory=b.dataset.shopFilter||'all';render()});
   const shopSearch=document.getElementById('shopSearch');if(shopSearch){shopSearch.oninput=()=>{state.shopQuery=shopSearch.value;const pos=shopSearch.selectionStart;render();const next=document.getElementById('shopSearch');if(next){next.focus();try{next.setSelectionRange(pos,pos)}catch{}}}};
@@ -550,10 +548,8 @@ function bind(){
   const messagePay=document.getElementById('messagePay');if(messagePay)messagePay.onclick=()=>{const m=state.clientMessage;if(m)sessionStorage.setItem(m.key,'1');state.paymentProjectId=m?.projectId||null;state.clientMessage=null;state.route='payment';render()};
   const messageInvoice=document.getElementById('messageInvoice');if(messageInvoice)messageInvoice.onclick=()=>{const m=state.clientMessage;if(m)sessionStorage.setItem(m.key,'1');state.selected=m?.projectId||null;state.clientMessage=null;state.route='invoice';render()};
   const messageFiles=document.getElementById('messageFiles');if(messageFiles)messageFiles.onclick=()=>{const m=state.clientMessage,p=(state.portal?.projects||[]).find(x=>String(x.id)===String(m?.projectId));if(m)localStorage.setItem(m.key,'1');state.clientMessage=null;if(p?.drive_url)window.open(p.drive_url,'_blank','noopener');render()};
-  const shopX=document.getElementById('shopX');if(shopX)shopX.onclick=()=>{state.shopItem=null;state.shopInclusionsExpanded=false;render()};
-  const detailClose=document.getElementById('detailClose');if(detailClose)detailClose.onclick=()=>{state.shopItem=null;state.shopInclusionsExpanded=false;render()};
-  const shopExpandInclusions=document.getElementById('shopExpandInclusions');if(shopExpandInclusions)shopExpandInclusions.onclick=()=>{state.shopInclusionsExpanded=true;render()};
-  const shopCollapseInclusions=document.getElementById('shopCollapseInclusions');if(shopCollapseInclusions)shopCollapseInclusions.onclick=()=>{state.shopInclusionsExpanded=false;render()};
+  const shopX=document.getElementById('shopX');if(shopX)shopX.onclick=()=>{state.shopItem=null;render()};
+  const detailClose=document.getElementById('detailClose');if(detailClose)detailClose.onclick=()=>{state.shopItem=null;render()};
   const detailLogIn=document.getElementById('detailLogIn');if(detailLogIn)detailLogIn.onclick=()=>authScreen();
   const detailStartProject=document.getElementById('detailStartProject');if(detailStartProject)detailStartProject.onclick=()=>{state.shopItem=null;toast('Project request flow will continue from your selected service.');render()};
 }
