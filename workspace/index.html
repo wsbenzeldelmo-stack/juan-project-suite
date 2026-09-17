@@ -1740,33 +1740,10 @@
 
           <!-- Manual Database Connection -->
           <div class="card database-connection-card">
-            <div class="database-connection-head"><div><h2 class="card-title">Database Connection</h2><p class="text-sm text-secondary mt-2">Cloud access is manual. Your deployment credentials stay in Vercel and are never shown in Workspace.</p></div><span id="manualDatabaseStatus" class="database-state-pill offline">Offline / Local</span></div>
-            <div id="manualDatabaseDetail" class="database-connection-detail">Workspace is using local/cache data. Log in with your admin account when you want to load and sync the shared database.</div>
+            <div class="database-connection-head"><div><h2 class="card-title">Database Connection</h2><p class="text-sm text-secondary mt-2">Supabase is the live source of truth for Workspace data. Your deployment credentials stay in Vercel and are never shown in Workspace.</p></div><span id="manualDatabaseStatus" class="database-state-pill offline">Offline / Local</span></div>
+            <div id="manualDatabaseDetail" class="database-connection-detail">Workspace data requires an active Supabase connection. Log in to load and edit shared data.</div>
             <div class="action-buttons-group mt-3"><button id="manualDatabaseConnect" class="btn btn-primary btn-sm" onclick="app.connectDatabaseManually()">Log In &amp; Connect</button><button id="manualDatabaseDisconnect" class="btn btn-secondary btn-sm" onclick="app.disconnectDatabase()" disabled>Disconnect</button></div>
-            <div class="text-sm text-muted mt-3">After a successful manual login, the cloud session stays connected across refreshes and signs out after 30 minutes without activity.</div>
-          </div>
-
-          <!-- Save-first Sync Center -->
-          <div class="card sync-center-card" id="syncCenterCard">
-            <div class="sync-center-head">
-              <div><h2 class="card-title">Sync Center</h2><p class="text-sm text-secondary mt-2">Local-first protection with confirmed cloud synchronization. Pending changes stay safe on this device until cloud sync succeeds.</p></div>
-              <span id="syncCenterState" class="sync-state-badge" aria-live="polite">● Synced</span>
-            </div>
-            <div class="sync-center-grid">
-              <div class="sync-metric"><span>Pending changes</span><b id="syncPendingCount">0</b><small>Saved on this device</small></div>
-              <div class="sync-metric"><span>Needs Retry</span><b id="syncFailedCount">0</b><small>Automatic retry queue</small></div>
-              <div class="sync-metric"><span>Last Synced</span><b id="syncLastSynced">Not synced yet</b><small>Last successful cloud sync</small></div>
-              <div class="sync-metric"><span>Realtime</span><b id="syncRealtimeState">Off</b><small id="syncRealtimeHint">Cloud listener is off</small></div>
-            </div>
-            <div id="syncQueueNotice" class="sync-queue-notice hidden" role="status" aria-live="polite">
-              <div class="sync-queue-copy"><span class="sync-queue-icon">!</span><div><strong id="syncQueueTitle">Changes waiting to sync</strong><p id="syncQueueMessage">Your changes are safe on this device.</p></div></div>
-              <button class="btn btn-primary btn-sm" onclick="app.syncNowSafe()">Sync Now</button>
-            </div>
-            <div class="sync-center-actions"><button class="btn btn-primary btn-sm" onclick="app.syncNowSafe()">Sync Now</button></div>
-            <div class="sync-activity-section">
-              <div class="sync-activity-head"><span class="sync-activity-title">Recent Sync Activity</span><button class="sync-activity-clear" type="button" onclick="app.clearSyncActivity()" aria-label="Clear sync activity history">Clear history</button></div>
-              <div id="syncActivityList" class="sync-activity"></div>
-            </div>
+            <div class="text-sm text-muted mt-3">After login, Workspace reads and writes directly to Supabase. There is no offline business-data mode.</div>
           </div>
 
           <!-- Appearance & Dark Mode Toggle Section -->
@@ -2485,8 +2462,8 @@
         supabaseClient = null;
         state.isConnected = false;
         hideWorkspaceAuthGate();
-        updateConnectionStatus("error", "○ OFFLINE · LOCAL");
-        updateManualDatabasePanel("Cloud session ended after 30 minutes of inactivity. Log in again when you want to reconnect.");
+        updateConnectionStatus("error", "○ SIGN IN REQUIRED");
+        updateManualDatabasePanel("Cloud session ended after 30 minutes of inactivity. Log in again to access Workspace data.");
         renderCurrentView();
         showToast("Cloud session ended after 30 minutes of inactivity.");
       }
@@ -2507,19 +2484,11 @@
       }
 
       function updateManualDatabasePanel(message = "") {
-        const status = document.getElementById("manualDatabaseStatus");
-        const detail = document.getElementById("manualDatabaseDetail");
-        const connect = document.getElementById("manualDatabaseConnect");
-        const disconnect = document.getElementById("manualDatabaseDisconnect");
-        if (status) {
-          status.textContent = state.isConnected ? "Connected to Supabase" : "Offline / Local";
-          status.className = `database-state-pill ${state.isConnected ? "connected" : "offline"}`;
-        }
-        if (detail) detail.textContent = message || (state.isConnected
-          ? "Cloud data is connected. This session remains active across refreshes and expires after 30 minutes without activity."
-          : "Workspace is running from local/cache data. Choose Log In & Connect to load the shared database.");
-        if (connect) connect.disabled = state.isConnected;
-        if (disconnect) disconnect.disabled = !state.isConnected && !supabaseClient;
+        const status=document.getElementById("manualDatabaseStatus"),detail=document.getElementById("manualDatabaseDetail"),connect=document.getElementById("manualDatabaseConnect"),disconnect=document.getElementById("manualDatabaseDisconnect");
+        if(status){status.textContent=state.isConnected?"Connected to Supabase":"Sign in required";status.className=`database-state-pill ${state.isConnected?"connected":"offline"}`;}
+        if(detail)detail.textContent=message||(state.isConnected?"Live database connected. All business-data changes are written directly to Supabase.":"Workspace business data is unavailable until you connect to Supabase.");
+        if(connect)connect.disabled=state.isConnected;
+        if(disconnect)disconnect.disabled=!state.isConnected&&!supabaseClient;
       }
 
       async function initializeEnvironmentVariables() {
@@ -2604,7 +2573,7 @@
           return true;
         } catch(e) {
           state.isConnected = false;
-          updateConnectionStatus("error","○ OFFLINE · LOCAL");
+          updateConnectionStatus("error","○ SIGN IN REQUIRED");
           updateManualDatabasePanel(e?.message || "Could not connect to Supabase.");
           showToast(e?.message || "Could not connect to Supabase.");
           return false;
@@ -2614,27 +2583,15 @@
       }
 
       async function disconnectDatabase() {
-        stopWorkspaceRealtimeSync();
-        try { await supabaseClient?.auth?.signOut(); } catch(_) {}
-        clearWorkspaceCloudMemory();
-        supabaseClient = null;
-        state.isConnected = false;
-        hideWorkspaceAuthGate();
-        updateConnectionStatus("error","○ OFFLINE · LOCAL");
-        updateManualDatabasePanel("Disconnected. Workspace continues using the latest local/cache data.");
-        renderCurrentView();
-        showToast("Database disconnected. Local Workspace remains available.");
+        stopWorkspaceRealtimeSync();try{await supabaseClient?.auth?.signOut();}catch(_){}
+        clearWorkspaceCloudMemory();supabaseClient=null;state.isConnected=false;state.projects=[];state.clients=[];
+        localStorage.removeItem('JUAN_PROJECTS_LOCAL');localStorage.removeItem('JUAN_CLIENTS_LOCAL');localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');
+        updateConnectionStatus('error','○ SIGN IN REQUIRED');updateManualDatabasePanel('Disconnected. Sign in to access Workspace business data.');renderCurrentView();showWorkspaceAuthGate('Sign in to access JUAN PROJECT Workspace data.');
       }
 
       function continueWorkspaceOffline() {
-        stopWorkspaceRealtimeSync();
-        clearWorkspaceCloudMemory();
-        supabaseClient = null;
-        hideWorkspaceAuthGate();
-        state.isConnected = false;
-        updateConnectionStatus("error","○ OFFLINE · LOCAL");
-        updateManualDatabasePanel("Offline mode is active. Workspace is using local/cache data only.");
-        renderCurrentView();
+        state.isConnected=false;state.projects=[];state.clients=[];localStorage.removeItem('JUAN_PROJECTS_LOCAL');localStorage.removeItem('JUAN_CLIENTS_LOCAL');localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');
+        updateConnectionStatus('error','○ SIGN IN REQUIRED');updateManualDatabasePanel('Offline business-data mode has been removed. Connect to Supabase to continue.');renderCurrentView();showWorkspaceAuthGate('Connect to Supabase to use Workspace.');
       }
 
       async function restoreWorkspaceCloudConnectionIfEligible() {
@@ -2702,12 +2659,11 @@
         state.packagesList = normalizeBroadcastPackageNames(state.packagesList);
         localStorage.setItem("JUAN_PACKAGES", JSON.stringify(state.packagesList));
 
-        const savedClients = localStorage.getItem("JUAN_CLIENTS_LOCAL");
-        if (savedClients) {
-          try { state.clients = JSON.parse(savedClients); } catch(e){}
-        }
-        applyKnownClientIdsLocally();
-        persistClientsState();
+        state.clients=[];
+        state.projects=[];
+        localStorage.removeItem("JUAN_CLIENTS_LOCAL");
+        localStorage.removeItem("JUAN_PROJECTS_LOCAL");
+        localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");
 
         const addrInput = document.getElementById("ownerAddressInput");
         const phoneInput = document.getElementById("ownerPhoneInput");
@@ -2724,23 +2680,17 @@
         setDefaultOrderDates();
         loadTasksState();
 
-        // Load the existing browser-local cache so authenticated migration can preserve older Workspace records.
-        seedLegacySheetDataIfNeeded();
-        // One continuous Project ID sequence, starting at JP-001 with no exceptions.
-        renumberProjectSequence();
-        persistProjectsState();
-        // Workspace always paints local/cache data first. Cloud data only resumes if this
-        // browser previously completed an explicit admin login and the 30-minute idle window is valid.
-        supabaseClient = null;
-        state.isConnected = false;
-        updateConnectionStatus("error", "○ OFFLINE · LOCAL");
-        hideWorkspaceAuthGate();
-        hydrateManualDatabaseFields();
-        installWorkspaceActivityTracking();
-        renderTemplatesDropdown();
-        renderCurrentView();
-        setWorkspaceLoading(false);
-        void restoreWorkspaceCloudConnectionIfEligible();
+        // Business records are loaded only from Supabase.
+        state.projects=[];state.clients=[];
+        supabaseClient=null;state.isConnected=false;
+        updateConnectionStatus("connecting","CONNECTING...");
+        hydrateManualDatabaseFields();installWorkspaceActivityTracking();renderTemplatesDropdown();renderCurrentView();setWorkspaceLoading(false);
+        void (async()=>{
+          const ready=await initializeEnvironmentVariables();
+          if(!ready){updateConnectionStatus('error','○ DATABASE UNAVAILABLE');updateManualDatabasePanel('Supabase deployment configuration is unavailable.');showWorkspaceAuthGate('Database connection is required.');return;}
+          const restored=await initSupabase(true);
+          if(!restored){updateConnectionStatus('error','○ SIGN IN REQUIRED');updateManualDatabasePanel('Sign in to load live Workspace data.');showWorkspaceAuthGate('Sign in to load JUAN PROJECT Workspace from Supabase.');}
+        })();
       }
 
 
@@ -2990,186 +2940,69 @@
         if(select&&select.value!==mode)select.value=mode;
       }
 
-      const OFFLINE_SYNC_KEY="JUAN_OFFLINE_SYNC_QUEUE_V133";
-      const SYNC_ACTIVITY_KEY="JUAN_SYNC_ACTIVITY_V135";
-      const SYNC_LAST_OK_KEY="JUAN_SYNC_LAST_OK_V134";
-      const SYNC_ACTIVITY_LABELS=new Set(['Project synced','Payment synced','Changes queued','Sync failed','Connection restored']);
-      let syncRetryTimer=null;
-      let syncFlushInFlight=false;
       let workspaceRealtimeSubscribed=false;
-      function readSyncActivity(){
-        try{
-          const x=JSON.parse(localStorage.getItem(SYNC_ACTIVITY_KEY)||'[]');
-          if(!Array.isArray(x))return[];
-          return x.filter(item=>item&&SYNC_ACTIVITY_LABELS.has(String(item.label||''))).slice(0,12);
-        }catch(_){return[]}
-      }
-      function writeSyncActivity(items){localStorage.setItem(SYNC_ACTIVITY_KEY,JSON.stringify((items||[]).filter(item=>item&&SYNC_ACTIVITY_LABELS.has(String(item.label||''))).slice(0,12)));}
-      function pushSyncActivity(label,status='ok'){
-        if(!SYNC_ACTIVITY_LABELS.has(String(label||'')))return;
-        const items=readSyncActivity(),now=Date.now(),latest=items[0];
-        if(latest&&latest.label===label&&latest.status===status&&now-new Date(latest.at).getTime()<15000){renderSyncCenter();return;}
-        items.unshift({label,status,at:new Date(now).toISOString()});writeSyncActivity(items);renderSyncCenter();
-      }
-      function syncPendingCount(){return readOfflineSyncQueue().length;}
-      function setSyncLastOk(){localStorage.setItem(SYNC_LAST_OK_KEY,new Date().toISOString());}
-      function renderSyncCenter(){
-        const queue=readOfflineSyncQueue(),pending=queue.length,failed=queue.filter(x=>Number(x.failures||0)>0&&x.retry_class!=='auth'&&!syncAuthErrorMessage(x.last_error||'')).length;
-        const badge=document.getElementById('syncCenterState'),p=document.getElementById('syncPendingCount'),f=document.getElementById('syncFailedCount'),last=document.getElementById('syncLastSynced'),rt=document.getElementById('syncRealtimeState'),rtHint=document.getElementById('syncRealtimeHint'),notice=document.getElementById('syncQueueNotice'),noticeTitle=document.getElementById('syncQueueTitle'),noticeMessage=document.getElementById('syncQueueMessage'),list=document.getElementById('syncActivityList');
-        if(p)p.textContent=String(pending);
-        if(f)f.textContent=String(failed);
-        if(last){const v=localStorage.getItem(SYNC_LAST_OK_KEY);last.textContent=v?new Date(v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Not synced yet';}
-        if(rt)rt.textContent=workspaceRealtimeSubscribed?'Active':'Off';
-        if(rtHint)rtHint.textContent=workspaceRealtimeSubscribed?'Listening for cloud updates':'Cloud listener is off';
-        if(badge){
-          badge.className='sync-state-badge';
-          if(syncFlushInFlight){badge.classList.add('saving');badge.textContent='● Saving…';}
-          else if(failed){badge.classList.add('failed');badge.textContent='● Sync failed';}
-          else if(pending||!state.isConnected){badge.classList.add('local');badge.textContent='● Saved locally';}
-          else{badge.textContent='● Synced';}
-        }
-        if(notice){
-          notice.classList.toggle('hidden',pending===0);notice.classList.toggle('failed',failed>0);
-          if(pending>0&&noticeTitle)noticeTitle.textContent=`${pending} change${pending===1?'':'s'} waiting to sync`;
-          if(pending>0&&noticeMessage)noticeMessage.textContent=!state.isConnected?'Your changes are safe on this device. Sign in to Workspace to continue cloud sync.':failed>0?'Your changes are safe on this device. Sync will retry automatically, or you can try again now.':'Your changes are safe on this device and will sync automatically when cloud access is available.';
-        }
-        if(list){
-          const rows=readSyncActivity();
-          list.innerHTML=rows.length?rows.slice(0,5).map(x=>`<div class="sync-activity-row" data-status="${escapeHtml(x.status||'ok')}"><span class="sync-activity-label"><span class="sync-activity-dot"></span><span>${escapeHtml(x.label)}</span></span><span class="text-muted">${new Date(x.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span></div>`).join(''):`<div class="text-sm text-muted" style="padding:10px 0">No sync activity yet.</div>`;
-        }
-      }
-      function clearSyncActivity(){writeSyncActivity([]);renderSyncCenter();}
-      function markProjectDirty(project,reason='Project update',options={}){
-        if(!project?.id)return;
-        const hadPending=syncPendingCount()>0;
-        project.updated_at=new Date().toISOString();queueOfflineProject(project,reason,options);
-        if(!hadPending)pushSyncActivity('Changes queued','queued');else renderSyncCenter();
-        if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),140);}
-      }
+      let syncFlushInFlight=false;
+      let syncRetryTimer=null;
+      function renderSyncCenter(){}
+      function clearSyncActivity(){}
+      function pushSyncActivity(){}
+      function setSyncLastOk(){}
+      function syncPendingCount(){return 0;}
+      function readOfflineSyncQueue(){return [];}
+      function writeOfflineSyncQueue(){localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");}
+      function queuedProjectIds(){return new Set();}
+      function queuedClientIds(){return new Set();}
       function syncAuthErrorMessage(message=''){
         const text=String(message||'').toLowerCase();
-        return text.includes('sign in to workspace')||text.includes('sign in required')||text.includes('jwt')||text.includes('session expired')||text.includes('invalid refresh token')||text.includes('auth session missing');
+        return text.includes('sign in')||text.includes('jwt')||text.includes('session expired')||text.includes('invalid refresh token')||text.includes('auth session missing');
       }
       async function ensureWorkspaceSyncSession(){
         if(!supabaseClient||navigator.onLine===false)return false;
         try{
           const {data:{session},error}=await supabaseClient.auth.getSession();
           if(error)throw error;
-          if(session?.user&&session?.access_token){
-            if(!state.isConnected){state.isConnected=true;updateConnectionStatus('connected','● CONNECTED');}
-            return true;
-          }
-        }catch(e){console.warn('Workspace sync session check failed:',e?.message||e);}
-        state.isConnected=false;
-        stopWorkspaceRealtimeSync();
-        updateConnectionStatus('error','○ SIGN IN REQUIRED');
-        updateManualDatabasePanel('Your Workspace session expired. Sign in again to continue cloud sync.');
-        showWorkspaceAuthGate('Your Workspace session expired. Your pending changes are safe locally. Sign in again to continue cloud sync.');
-        renderSyncCenter();
-        return false;
+          if(session?.user&&session?.access_token){state.isConnected=true;updateConnectionStatus('connected','● CONNECTED · LIVE');return true;}
+        }catch(e){console.warn('Workspace session check failed:',e?.message||e);}
+        state.isConnected=false;stopWorkspaceRealtimeSync();updateConnectionStatus('error','○ SIGN IN REQUIRED');updateManualDatabasePanel('Sign in again to continue editing live data.');showWorkspaceAuthGate('Your Workspace session expired. Sign in again to continue.');return false;
       }
+      function cloudAvailable(){return !!supabaseClient&&state.isConnected&&navigator.onLine!==false;}
       function projectClientReconcileNeeded(project){
         if(!project||!validProjectClientEmail(project.client_email||''))return false;
-        const client=(state.clients||[]).find(c=>String(c.id)===String(project.client_id));
-        if(!client)return true;
+        const client=(state.clients||[]).find(c=>String(c.id)===String(project.client_id));if(!client)return true;
         const norm=v=>String(v||'').trim().toLowerCase();
         return norm(client.email)!==norm(project.client_email)||String(client.name||'').trim()!==String(project.client_name||'').trim()||String(client.phone||'').trim()!==String(project.client_phone||'').trim()||String(client.address||'').trim()!==String(project.client_address||'').trim();
       }
-      async function syncNowSafe(){
-        if(!cloudAvailable()){
-          const sessionReady=await ensureWorkspaceSyncSession();
-          if(!sessionReady){showToast('Saved locally. Sign in to Workspace to continue cloud sync.');renderSyncCenter();return false;}
-        }
-        return flushOfflineSyncQueue();
-      }
-      function cloudAvailable(){return !!supabaseClient&&state.isConnected&&navigator.onLine!==false;}
-      function readOfflineSyncQueue(){try{const q=JSON.parse(localStorage.getItem(OFFLINE_SYNC_KEY)||'[]');return Array.isArray(q)?q:[]}catch(_){return[]}}
-      function writeOfflineSyncQueue(queue){localStorage.setItem(OFFLINE_SYNC_KEY,JSON.stringify(queue||[]));}
-      function queuedProjectIds(){return new Set(readOfflineSyncQueue().filter(x=>x.type==='project-upsert'&&x.project?.id).map(x=>String(x.project.id)));}
-      function queuedClientIds(){return new Set(readOfflineSyncQueue().filter(x=>x.type==='client-upsert'&&x.client?.id).map(x=>String(x.client.id)));}
-      function queueOfflineClient(client,reason='Client update'){
-        if(!client?.id)return;
-        const existing=readOfflineSyncQueue();
-        const prior=existing.find(x=>x.type==='client-upsert'&&String(x.client?.id)===String(client.id));
-        const queue=existing.filter(x=>!(x.type==='client-upsert'&&String(x.client?.id)===String(client.id)));
-        queue.push({id:`client-${client.id}`,type:'client-upsert',client:JSON.parse(JSON.stringify(client)),reason,queued_at:new Date().toISOString(),failures:Number(prior?.failures||0)});
-        writeOfflineSyncQueue(queue);
+      async function directClientWrite(client,reason='Client update'){
+        if(!client?.id)return false;
+        if(!cloudAvailable()||!(await ensureWorkspaceSyncSession())){showToast('Supabase connection required. Changes were not saved.');return false;}
+        client.updated_at=new Date().toISOString();
+        try{
+          await syncClientToDatabase(client,{quiet:true});
+          try{await onlinePortalRequest('POST',{action:'reconcile-client-profile',clientId:client.id,name:client.name||'',email:normalizeClientIdentityEmail(client.email||''),phone:client.phone||'',address:client.address||''});}catch(e){console.warn('Client saved; portal profile refresh needs attention:',e?.message||e);}
+          return true;
+        }catch(e){console.error('Direct client save failed:',e);showToast(`Save failed: ${e?.message||e}`);return false;}
       }
       function markClientDirty(client,reason='Client update'){
         if(!client?.id)return;
-        client.updated_at=new Date().toISOString();
-        queueOfflineClient(client,reason);
-        renderSyncCenter();
-        if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),120);}
+        void directClientWrite(client,reason);
       }
-      function queueOfflineProject(project,reason='Project update',options={}){
-        if(!project?.id)return;
-        const existing=readOfflineSyncQueue();
-        const prior=existing.find(x=>x.type==='project-upsert'&&String(x.project?.id)===String(project.id));
-        const queue=existing.filter(x=>!(x.type==='project-upsert'&&String(x.project?.id)===String(project.id)));
-        const requestedScope=options?.structure===true?'structure':'core';
-        const syncScope=prior?.sync_scope==='structure'||requestedScope==='structure'?'structure':'core';
-        const allowEmptyStructure=Boolean(prior?.allow_empty_structure||options?.allowEmptyStructure===true);
-        queue.push({id:`project-${project.id}`,type:'project-upsert',project:JSON.parse(JSON.stringify(project)),reason,queued_at:new Date().toISOString(),failures:Number(prior?.failures||0),sync_scope:syncScope,allow_empty_structure:allowEmptyStructure});
-        writeOfflineSyncQueue(queue);
-      }
-      async function flushOfflineSyncQueue(){
-        if(syncFlushInFlight)return false;
-        if(!cloudAvailable()){renderSyncCenter();return false;}
-        if(!(await ensureWorkspaceSyncSession()))return false;
-        let queue=readOfflineSyncQueue();if(!queue.length){setSyncLastOk();renderSyncCenter();return true;}
-        syncFlushInFlight=true;renderSyncCenter();
-        const remaining=[];let syncedProjects=0,authBlocked=false;
-        for(const item of queue){
-          try{
-            if(item.type==='client-upsert'&&item.client?.id){
-              const snapshot=item.client;
-              const current=state.clients.find(c=>String(c.id)===String(snapshot.id))||snapshot;
-              await syncClientToDatabase(current,{quiet:true});
-              try{
-                await onlinePortalRequest('POST',{action:'reconcile-client-profile',clientId:current.id,name:current.name||'',email:normalizeClientIdentityEmail(current.email||''),phone:current.phone||'',address:current.address||''});
-              }catch(portalError){console.warn('Client synced; portal reconciliation needs attention:',portalError?.message||portalError);}
-              pushSyncActivity(`${item.reason||'Client update'} synced`,'ok');
-              continue;
-            }
-            if(item.type==='project-upsert'&&item.project?.id){
-              const snapshot=item.project;
-              const current=state.projects.find(p=>String(p.id)===String(snapshot.id))||snapshot;
-              await syncProjectToDatabase(current,{quiet:true,includeStructure:item.sync_scope==='structure',allowEmptyStructure:item.allow_empty_structure===true});
-              if(projectClientReconcileNeeded(current)){
-                try{
-                  const previousClientId=current.client_id;
-                  const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:current.id,name:current.client_name||'',email:current.client_email||'',phone:current.client_phone||'',address:current.client_address||''});
-                  const reconciled=applyCloudClientReconcile(current,response,previousClientId);
-                  if(reconciled){persistClientsState();persistProjectsState();}
-                }catch(portalError){console.warn('Project synced; portal reconciliation needs attention:',portalError?.message||portalError);}
-              }
-              pushSyncActivity(`${item.reason||'Project update'} synced`,'ok');
-              continue;
-            }
-          }catch(e){
-            const message=String(e?.message||e);
-            console.warn('Sync item remains queued:',message);
-            if(syncAuthErrorMessage(message)){
-              authBlocked=true;
-              remaining.push({...item,failures:Number(item.failures||0),last_error:message,last_attempt:new Date().toISOString(),retry_class:'auth'});
-              state.isConnected=false;
-              stopWorkspaceRealtimeSync();
-              updateConnectionStatus('error','○ SIGN IN REQUIRED');
-              showWorkspaceAuthGate('Your Workspace session expired. Your pending changes are safe locally. Sign in again to continue cloud sync.');
-            }else{
-              remaining.push({...item,failures:Number(item.failures||0)+1,last_error:message,last_attempt:new Date().toISOString(),retry_class:'cloud'});
-            }
+      async function directProjectWrite(project,reason='Project update',options={}){
+        if(!project?.id)return false;
+        if(!cloudAvailable()||!(await ensureWorkspaceSyncSession())){showToast('Supabase connection required. Changes were not saved.');return false;}
+        project.updated_at=new Date().toISOString();
+        try{
+          await syncProjectToDatabase(project,{quiet:true,includeStructure:options?.structure===true,allowEmptyStructure:options?.allowEmptyStructure===true});
+          if(projectClientReconcileNeeded(project)){
+            try{const previousClientId=project.client_id;const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:project.id,name:project.client_name||'',email:project.client_email||'',phone:project.client_phone||'',address:project.client_address||''});applyCloudClientReconcile(project,response,previousClientId);}catch(e){console.warn('Project saved; portal profile refresh needs attention:',e?.message||e);}
           }
-        }
-        writeOfflineSyncQueue(remaining);syncFlushInFlight=false;
-        if(syncedProjects>0)pushSyncActivity('Project synced','ok');
-        if(!remaining.length){setSyncLastOk();renderSyncCenter();return true;}
-        if(authBlocked){renderSyncCenter();return false;}
-        pushSyncActivity('Sync failed','failed');renderSyncCenter();
-        if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>{if(cloudAvailable())flushOfflineSyncQueue();},5000);
-        return false;
+          return true;
+        }catch(e){console.error('Direct project save failed:',e);showToast(`Save failed: ${e?.message||e}`);return false;}
       }
+      function markProjectDirty(project,reason='Project update',options={}){if(project?.id)void directProjectWrite(project,reason,options);}
+      function queueOfflineClient(client,reason='Client update'){if(client?.id)void directClientWrite(client,reason);}
+      function queueOfflineProject(project,reason='Project update',options={}){if(project?.id)void directProjectWrite(project,reason,options);}
+      async function flushOfflineSyncQueue(){localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');return true;}
+      async function syncNowSafe(){return cloudAvailable()?true:ensureWorkspaceSyncSession();}
 
       let workspaceRealtimeChannel=null;
       let workspaceRealtimeRefreshTimer=null;
@@ -3182,13 +3015,12 @@
         if(workspaceRealtimeRefreshTimer){clearTimeout(workspaceRealtimeRefreshTimer);workspaceRealtimeRefreshTimer=null;}
         if(workspaceRealtimeFallbackTimer){clearInterval(workspaceRealtimeFallbackTimer);workspaceRealtimeFallbackTimer=null;}
         if(workspaceRealtimeChannel&&supabaseClient){try{supabaseClient.removeChannel(workspaceRealtimeChannel);}catch(_){}}
-        workspaceRealtimeChannel=null;workspaceRealtimeSubscribed=false;renderSyncCenter();
+        workspaceRealtimeChannel=null;workspaceRealtimeSubscribed=false;
       }
 
       function scheduleWorkspaceRealtimeRefresh(eventRow=null,delay=320){
         if(eventRow)workspaceRealtimeLastEvent=eventRow;
         if(!cloudAvailable())return;
-        if(syncFlushInFlight||syncPendingCount()>0){workspaceRealtimeRefreshQueued=true;return;}
         if(workspaceRealtimeRefreshTimer)clearTimeout(workspaceRealtimeRefreshTimer);
         workspaceRealtimeRefreshTimer=setTimeout(()=>{workspaceRealtimeRefreshTimer=null;refreshWorkspaceFromCloudRealtime(workspaceRealtimeLastEvent);workspaceRealtimeLastEvent=null;},delay);
       }
@@ -3366,7 +3198,8 @@
       }
 
       function persistProjectsState() {
-        localStorage.setItem("JUAN_PROJECTS_LOCAL", JSON.stringify(state.projects));
+        // Business records are cloud-only. Keep state in memory; Supabase is canonical.
+        localStorage.removeItem("JUAN_PROJECTS_LOCAL");
       }
 
       function persistCartState() {
@@ -3573,7 +3406,8 @@
       }
 
       function persistClientsState() {
-        localStorage.setItem("JUAN_CLIENTS_LOCAL", JSON.stringify(state.clients));
+        // Business records are cloud-only. Keep state in memory; Supabase is canonical.
+        localStorage.removeItem("JUAN_CLIENTS_LOCAL");
       }
 
       function updateProfileDisplay() {
@@ -3921,9 +3755,9 @@ ${description}`))actionCallback();return;}
         clearWorkspaceCloudMemory();
         state.isConnected = false;
         supabaseClient = null;
-        updateConnectionStatus("error", "○ OFFLINE · LOCAL");
+        updateConnectionStatus("error", "○ SIGN IN REQUIRED");
         hideWorkspaceAuthGate();
-        updateManualDatabasePanel("Signed out from cloud data. Local Workspace remains available.");
+        updateManualDatabasePanel("Signed out from cloud data. Workspace data requires Supabase.");
         renderCurrentView();
       }
 
@@ -3984,16 +3818,9 @@ ${description}`))actionCallback();return;}
           updateConnectionStatus("error", "○ NOT CONNECTED");
           if (!skipGate) showWorkspaceAuthGate(`Cloud connection unavailable. ${err?.message || ""}`.trim());
 
-          const localProjs = localStorage.getItem("JUAN_PROJECTS_LOCAL");
-          if (localProjs) {
-            try { state.projects = JSON.parse(localProjs); }
-            catch (e) { console.error("Invalid local projects data:", e); }
-          }
-          const localClients = localStorage.getItem("JUAN_CLIENTS_LOCAL");
-          if (localClients) {
-            try { state.clients = JSON.parse(localClients); }
-            catch (e) { console.error("Invalid local clients data:", e); }
-          }
+          state.projects=[];state.clients=[];
+          localStorage.removeItem("JUAN_PROJECTS_LOCAL");localStorage.removeItem("JUAN_CLIENTS_LOCAL");localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");
+          renderCurrentView();
           return false;
         }
       }
@@ -4008,102 +3835,30 @@ ${description}`))actionCallback();return;}
       }
 
       async function loadDatabaseData() {
+        if(!supabaseClient||!state.isConnected){state.clients=[];state.projects=[];renderCurrentView();return false;}
         setWorkspaceLoading(true);
-        try {
-          const localClients=(()=>{try{const x=JSON.parse(localStorage.getItem('JUAN_CLIENTS_LOCAL')||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}})();
-          const localProjects=(()=>{try{const x=JSON.parse(localStorage.getItem('JUAN_PROJECTS_LOCAL')||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}})();
-          const [clientsRes, projectsRes, settingsRes, sharedRes] = await Promise.all([
-            supabaseClient ? supabaseClient.from('clients').select('*').order('name') : { data: [], error:null },
-            supabaseClient ? supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at', { ascending: false }) : { data: [], error:null },
-            supabaseClient ? supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle() : { data:null, error:null },
-            supabaseClient ? supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle() : { data:null, error:null }
+        try{
+          const [clientsRes,projectsRes,settingsRes,sharedRes]=await Promise.all([
+            supabaseClient.from('clients').select('*').order('name'),
+            supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at',{ascending:false}),
+            supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle(),
+            supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle()
           ]);
-          if (clientsRes.error) throw clientsRes.error;
-          if (projectsRes.error) throw projectsRes.error;
-          if (settingsRes.error && !/workspace_settings/i.test(String(settingsRes.error.message||''))) console.warn('Workspace settings load:',settingsRes.error);
-          if (sharedRes?.error) console.warn('Shared Workspace state load:',sharedRes.error);
-
-          const remoteClients=(clientsRes.data||[]).filter(c=>!c.archived_at);
-          const remoteProjects=(projectsRes.data||[]).map(p=>({
-            ...p,
-            payments:Array.isArray(p.payments)?p.payments:[],
-            deliverables:Array.isArray(p.deliverables)?p.deliverables:[],
-            project_items:Array.isArray(p.project_items)?p.project_items:[]
-          }));
-          const pendingIds=queuedProjectIds();
-          const localById=new Map(localProjects.filter(p=>p?.id).map(p=>[String(p.id),p]));
-          const mergedProjects=remoteProjects.map(remote=>{
-            const local=localById.get(String(remote.id));localById.delete(String(remote.id));
-            if(!local)return remote;
-            // Cloud is canonical while connected. Preserve local fields only for an explicitly queued change.
-            if(pendingIds.has(String(remote.id))){
-              return {...remote,...local,payments:Array.isArray(local.payments)?local.payments:remote.payments,deliverables:Array.isArray(local.deliverables)?local.deliverables:remote.deliverables,project_items:Array.isArray(local.project_items)?local.project_items:remote.project_items};
-            }
-            const remoteItems=Array.isArray(remote.project_items)?remote.project_items:[],localItems=Array.isArray(local.project_items)?local.project_items:[];
-            const remoteDeliverables=Array.isArray(remote.deliverables)?remote.deliverables:[],localDeliverables=Array.isArray(local.deliverables)?local.deliverables:[];
-            const suspiciousMissingStructure=Number(remote.total_amount||0)>0&&((!remoteItems.length&&localItems.length)||(!remoteDeliverables.length&&localDeliverables.length));
-            if(suspiciousMissingStructure){
-              const recovered={...remote,project_items:remoteItems.length?remoteItems:localItems,deliverables:remoteDeliverables.length?remoteDeliverables:localDeliverables};
-              queueOfflineProject(recovered,'Recovered project structure from local cache',{structure:true});
-              return recovered;
-            }
-            return remote;
-          });
-          for(const localOnly of localById.values())mergedProjects.push(localOnly);
-
-          const pendingClientIds=queuedClientIds();
-          const localClientById=new Map(localClients.filter(c=>c?.id).map(c=>[String(c.id),c]));
-          const remoteClientById=new Map(remoteClients.map(c=>{
-            const local=localClientById.get(String(c.id));
-            return [String(c.id),pendingClientIds.has(String(c.id))&&local?{...c,...local}:c];
-          }));
-          for(const c of localClients){
-            if(!c?.id||remoteClientById.has(String(c.id)))continue;
-            if(pendingClientIds.has(String(c.id)))remoteClientById.set(String(c.id),c);
-          }
-          state.clients=[...remoteClientById.values()];
-          state.projects=mergedProjects;
-          // The cloud Client Directory is the master list. Never prune clients merely
-          // because they do not currently have a project in this browser.
+          if(clientsRes.error)throw clientsRes.error;if(projectsRes.error)throw projectsRes.error;
+          state.clients=(clientsRes.data||[]).filter(c=>!c.archived_at);
+          state.projects=(projectsRes.data||[]).map(p=>({...p,payments:Array.isArray(p.payments)?p.payments:[],deliverables:Array.isArray(p.deliverables)?p.deliverables:[],project_items:Array.isArray(p.project_items)?p.project_items:[]}));
           applyKnownClientIdsLocally();
-          persistClientsState();
-          persistProjectsState();
-
-          const remoteClientIds=new Set(remoteClients.map(c=>String(c.id)));
-          const remoteProjectIds=new Set(remoteProjects.map(p=>String(p.id)));
-
-          // Paint the usable Workspace as soon as primary business data is ready.
-          // Secondary reconciliation/catalog work continues after the skeleton is dismissed.
+          localStorage.removeItem('JUAN_CLIENTS_LOCAL');localStorage.removeItem('JUAN_PROJECTS_LOCAL');localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');
           loadTasksState();
           if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
           const remoteSharedHasData=Boolean(sharedRes?.data&&((Array.isArray(sharedRes.data.tasks)&&sharedRes.data.tasks.length)||(Array.isArray(sharedRes.data.templates)&&sharedRes.data.templates.length)));
-          if(remoteSharedHasData)applyWorkspaceSharedStateRecord(sharedRes.data);
-          else if(!sharedRes?.error)queueWorkspaceSharedStateSync();
-          renderTemplatesDropdown();
-          renderCurrentView();
-          setWorkspaceLoading(false);
-
-          void (async()=>{
-            try{
-              await migrateLocalOnlyBusinessRecords(remoteClientIds,remoteProjectIds);
-              await flushOfflineSyncQueue();
-              if(!settingsRes.data&&supabaseClient&&state.isConnected)await syncWorkspaceSettingsNow();
-              const remoteCatalogLoaded=await loadSharedCatalogFromDatabase();
-              if(!remoteCatalogLoaded&&supabaseClient&&state.isConnected)await syncSharedCatalogToDatabase({silent:true});
-              renderTemplatesDropdown();
-            }catch(backgroundErr){
-              console.warn('Background Workspace reconciliation:',backgroundErr);
-            }
-          })();
-        } catch (err) {
-          console.error('Database error:', err);
-          showToast('Cloud data could not be loaded. Showing the latest local cache.', 'Retry', () => loadDatabaseData());
-          try{const localClients=JSON.parse(localStorage.getItem('JUAN_CLIENTS_LOCAL')||'[]');state.clients=Array.isArray(localClients)?localClients:[]}catch(_){state.clients=[]}
-          try{const localProjects=JSON.parse(localStorage.getItem('JUAN_PROJECTS_LOCAL')||'[]');state.projects=Array.isArray(localProjects)?localProjects:[]}catch(_){state.projects=[]}
-          renderCurrentView();
-        } finally {
-          setWorkspaceLoading(false);
-        }
+          if(remoteSharedHasData)applyWorkspaceSharedStateRecord(sharedRes.data);else if(!sharedRes?.error)queueWorkspaceSharedStateSync();
+          renderTemplatesDropdown();renderCurrentView();
+          void (async()=>{try{if(!settingsRes.data)await syncWorkspaceSettingsNow();const remoteCatalogLoaded=await loadSharedCatalogFromDatabase();if(!remoteCatalogLoaded)await syncSharedCatalogToDatabase({silent:true});renderTemplatesDropdown();}catch(e){console.warn('Background Workspace cloud load:',e);}})();
+          return true;
+        }catch(err){
+          console.error('Database error:',err);state.clients=[];state.projects=[];renderCurrentView();showToast(`Cloud data could not be loaded: ${err?.message||err}`,'Retry',()=>loadDatabaseData());return false;
+        }finally{setWorkspaceLoading(false);}
       }
 
       async function migrateLocalOnlyBusinessRecords(remoteClientIds = new Set(), remoteProjectIds = new Set()) {
@@ -5727,8 +5482,7 @@ ${description}`))actionCallback();return;}
       function scheduleProjectStructureSync(project, delay = 250, options = {}) {
         if(!project)return;
         const key=String(project.id),prior=projectStructureSyncTimers.get(key);if(prior)clearTimeout(prior);
-        markProjectDirty(project,'Project structure update',{structure:true,allowEmptyStructure:options.allowEmptyStructure===true});
-        const timer=setTimeout(()=>{projectStructureSyncTimers.delete(key);if(cloudAvailable())flushOfflineSyncQueue();},delay);
+        const timer=setTimeout(()=>{projectStructureSyncTimers.delete(key);void directProjectWrite(project,'Project structure update',{structure:true,allowEmptyStructure:options.allowEmptyStructure===true});},Math.max(50,Number(delay||0)));
         projectStructureSyncTimers.set(key,timer);
       }
 
@@ -5942,7 +5696,7 @@ ${description}`))actionCallback();return;}
                 }
               } catch (e) {
                 console.error("Database operation failed while creating client:", e);
-                showToast("Warning: Client was saved locally, but could not sync to the database.", "Retry", () => syncNewClientToDatabase(newClient));
+                state.clients=state.clients.filter(c=>c.id!==newClient.id);throw new Error(`Client could not be saved to Supabase: ${e?.message||e}`);
               }
             }
           }
@@ -6308,32 +6062,28 @@ ${description}`))actionCallback();return;}
           const autoPriority=Number(proj.rush_fee||0)>0||Number(proj.rush_days_early||0)>0||!!(start&&due&&Math.ceil((due-start)/86400000)<14);
           proj.priority=autoPriority||!!document.getElementById('projectDataPriority')?.checked;proj.updated_at=new Date().toISOString();
           let client=null,cloudSynced=false;
-          if(cloudAvailable()){
-            try{
-              client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);
-              await syncProjectToDatabase(proj,{quiet:true});
-              cloudSynced=true;
-              try{
-                const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:proj.id,name:proj.client_name,email:proj.client_email,phone:proj.client_phone,address:proj.client_address});
-                const cloudClient=applyCloudClientReconcile(proj,response,previousClientId);
-                if(cloudClient)client=cloudClient;
-              }catch(portalError){console.warn('Project saved; portal reconciliation needs attention:',portalError?.message||portalError);}
-            }catch(e){
-              console.warn('Project autosave queued for retry:',e?.message||e);
-              client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);
-              queueOfflineProject(proj,'Project Data autosave');
-            }
-          }else{
+          if(!cloudAvailable()||!(await ensureWorkspaceSyncSession())){
+            setProjectDataAutosaveStatus('Not saved · connect to Supabase.','error');
+            showToast('Supabase connection required. Project changes were not saved.');
+            return;
+          }
+          try{
             client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);
-            queueOfflineProject(proj,'Project Data autosave');
+            await syncProjectToDatabase(proj,{quiet:true});
+            cloudSynced=true;
+            try{const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:proj.id,name:proj.client_name,email:proj.client_email,phone:proj.client_phone,address:proj.client_address});const cloudClient=applyCloudClientReconcile(proj,response,previousClientId);if(cloudClient)client=cloudClient;}catch(portalError){console.warn('Project saved; portal reconciliation needs attention:',portalError?.message||portalError);}
+          }catch(e){
+            console.error('Project autosave failed:',e);
+            setProjectDataAutosaveStatus('Save failed · database unchanged.','error');
+            showToast(`Project save failed: ${e?.message||e}`);
+            return;
           }
           persistClientsState();persistProjectsState();
           const titleEl=document.getElementById('projDetailTitle'),clientEl=document.getElementById('projDetailClient');
           if(titleEl)titleEl.innerText=proj.title;if(clientEl)clientEl.innerText=[formatProjectId(proj),proj.client_email||'No email'].join('  |  ');
           renderProjects();renderOverviewDashboard();if(state.activeView==='clients')renderClients();
-          if(cloudSynced)setProjectDataAutosaveStatus('Saved','saved');
-          else setProjectDataAutosaveStatus('Saved offline · will sync when connected.','warning');
-          if(!silent)showToast(cloudSynced?'Project data saved.':'Saved offline. We’ll sync it when the connection returns.');
+          setProjectDataAutosaveStatus('Saved to Supabase','saved');
+          if(!silent)showToast('Project data saved to Supabase.');
         }finally{projectDataAutosaveBusy=false;}
       }
 
