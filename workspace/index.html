@@ -3039,10 +3039,10 @@
         }
       }
       function clearSyncActivity(){writeSyncActivity([]);renderSyncCenter();}
-      function markProjectDirty(project,reason='Project update'){
+      function markProjectDirty(project,reason='Project update',options={}){
         if(!project?.id)return;
         const hadPending=syncPendingCount()>0;
-        project.updated_at=new Date().toISOString();queueOfflineProject(project,reason);
+        project.updated_at=new Date().toISOString();queueOfflineProject(project,reason,options);
         if(!hadPending)pushSyncActivity('Changes queued','queued');else renderSyncCenter();
         if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),140);}
       }
@@ -3102,11 +3102,15 @@
         renderSyncCenter();
         if(cloudAvailable()){if(syncRetryTimer)clearTimeout(syncRetryTimer);syncRetryTimer=setTimeout(()=>flushOfflineSyncQueue(),120);}
       }
-      function queueOfflineProject(project,reason='Project update'){
+      function queueOfflineProject(project,reason='Project update',options={}){
         if(!project?.id)return;
-        const queue=readOfflineSyncQueue().filter(x=>!(x.type==='project-upsert'&&String(x.project?.id)===String(project.id)));
-        const prior=readOfflineSyncQueue().find(x=>x.type==='project-upsert'&&String(x.project?.id)===String(project.id));
-        queue.push({id:`project-${project.id}`,type:'project-upsert',project:JSON.parse(JSON.stringify(project)),reason,queued_at:new Date().toISOString(),failures:Number(prior?.failures||0)});
+        const existing=readOfflineSyncQueue();
+        const prior=existing.find(x=>x.type==='project-upsert'&&String(x.project?.id)===String(project.id));
+        const queue=existing.filter(x=>!(x.type==='project-upsert'&&String(x.project?.id)===String(project.id)));
+        const requestedScope=options?.structure===true?'structure':'core';
+        const syncScope=prior?.sync_scope==='structure'||requestedScope==='structure'?'structure':'core';
+        const allowEmptyStructure=Boolean(prior?.allow_empty_structure||options?.allowEmptyStructure===true);
+        queue.push({id:`project-${project.id}`,type:'project-upsert',project:JSON.parse(JSON.stringify(project)),reason,queued_at:new Date().toISOString(),failures:Number(prior?.failures||0),sync_scope:syncScope,allow_empty_structure:allowEmptyStructure});
         writeOfflineSyncQueue(queue);
       }
       async function flushOfflineSyncQueue(){
@@ -3131,7 +3135,7 @@
             if(item.type==='project-upsert'&&item.project?.id){
               const snapshot=item.project;
               const current=state.projects.find(p=>String(p.id)===String(snapshot.id))||snapshot;
-              await syncProjectToDatabase(current,{quiet:true});
+              await syncProjectToDatabase(current,{quiet:true,includeStructure:item.sync_scope==='structure',allowEmptyStructure:item.allow_empty_structure===true});
               if(projectClientReconcileNeeded(current)){
                 try{
                   const previousClientId=current.client_id;
@@ -3216,6 +3220,13 @@
             localById.delete(String(remote.id));
             if(!local)return remote;
             if(pendingIds.has(String(remote.id)))return local;
+            const remoteItems=Array.isArray(remote.project_items)?remote.project_items:[],localItems=Array.isArray(local.project_items)?local.project_items:[];
+            const remoteDeliverables=Array.isArray(remote.deliverables)?remote.deliverables:[],localDeliverables=Array.isArray(local.deliverables)?local.deliverables:[];
+            if(Number(remote.total_amount||0)>0&&((!remoteItems.length&&localItems.length)||(!remoteDeliverables.length&&localDeliverables.length))){
+              const recovered={...remote,project_items:remoteItems.length?remoteItems:localItems,deliverables:remoteDeliverables.length?remoteDeliverables:localDeliverables};
+              queueOfflineProject(recovered,'Recovered project structure from local cache',{structure:true});
+              return recovered;
+            }
             return remote;
           });
           for(const localOnly of localById.values())state.projects.push(localOnly);
@@ -4028,6 +4039,14 @@ ${description}`))actionCallback();return;}
             if(pendingIds.has(String(remote.id))){
               return {...remote,...local,payments:Array.isArray(local.payments)?local.payments:remote.payments,deliverables:Array.isArray(local.deliverables)?local.deliverables:remote.deliverables,project_items:Array.isArray(local.project_items)?local.project_items:remote.project_items};
             }
+            const remoteItems=Array.isArray(remote.project_items)?remote.project_items:[],localItems=Array.isArray(local.project_items)?local.project_items:[];
+            const remoteDeliverables=Array.isArray(remote.deliverables)?remote.deliverables:[],localDeliverables=Array.isArray(local.deliverables)?local.deliverables:[];
+            const suspiciousMissingStructure=Number(remote.total_amount||0)>0&&((!remoteItems.length&&localItems.length)||(!remoteDeliverables.length&&localDeliverables.length));
+            if(suspiciousMissingStructure){
+              const recovered={...remote,project_items:remoteItems.length?remoteItems:localItems,deliverables:remoteDeliverables.length?remoteDeliverables:localDeliverables};
+              queueOfflineProject(recovered,'Recovered project structure from local cache',{structure:true});
+              return recovered;
+            }
             return remote;
           });
           for(const localOnly of localById.values())mergedProjects.push(localOnly);
@@ -4106,7 +4125,7 @@ ${description}`))actionCallback();return;}
             if (result.error) throw result.error;
           }
           for (const project of localOnlyProjects) {
-            await syncProjectToDatabase(project, { quiet: true });
+            await syncProjectToDatabase(project, { quiet: true, includeStructure: true });
             const payments = Array.isArray(project.payments) ? project.payments : [];
             if (payments.length) {
               const rows = payments.map(payment => ({
@@ -5584,9 +5603,16 @@ ${description}`))actionCallback();return;}
 
       const projectStructureSyncTimers = new Map();
 
-      async function syncProjectItemsToDatabase(project) {
+      async function syncProjectItemsToDatabase(project, options = {}) {
         if (!supabaseClient || !state.isConnected || !project) return;
         const items = Array.isArray(project.project_items) ? project.project_items : [];
+        const existingRes = await supabaseClient.from('project_items').select('id,project_id,name,price,qty,type,product_code,included_items').eq('project_id', project.id);
+        if (existingRes.error) throw existingRes.error;
+        const existingRows = existingRes.data || [];
+        if (!items.length && existingRows.length && options.allowEmpty !== true) {
+          console.warn(`Protected ${project.id}: refused to erase ${existingRows.length} cloud order item(s) from an empty local snapshot.`);
+          return;
+        }
         const del = await supabaseClient.from('project_items').delete().eq('project_id', project.id);
         if (del.error) throw del.error;
         if (!items.length) return;
@@ -5613,11 +5639,17 @@ ${description}`))actionCallback();return;}
         if (inserted.error) throw inserted.error;
       }
 
-      async function syncDeliverablesToDatabase(project) {
+      async function syncDeliverablesToDatabase(project, options = {}) {
         if (!supabaseClient || !state.isConnected || !project) return;
         const localRows = (Array.isArray(project.deliverables) ? project.deliverables : []).filter(d => !d.is_group);
         const existingRes = await supabaseClient.from('deliverables').select('id,shared_drive_url,client_visible,due_date,source_type,order_item_id,order_item_occurrence,parent_id,parent_key,package_name,child_index').eq('project_id', project.id);
-        const existing = new Map((existingRes.data || []).map(row => [String(row.id), row]));
+        if (existingRes.error) throw existingRes.error;
+        const existingRows = existingRes.data || [];
+        if (!localRows.length && existingRows.length && options.allowEmpty !== true) {
+          console.warn(`Protected ${project.id}: refused to erase ${existingRows.length} cloud deliverable(s) from an empty local snapshot.`);
+          return;
+        }
+        const existing = new Map(existingRows.map(row => [String(row.id), row]));
         const del = await supabaseClient.from('deliverables').delete().eq('project_id', project.id);
         if (del.error) throw del.error;
         if (!localRows.length) return;
@@ -5651,7 +5683,6 @@ ${description}`))actionCallback();return;}
       async function syncProjectCoreToDatabase(project) {
         if (!supabaseClient || !state.isConnected || !project) return;
         const payload = {
-          id: project.id,
           client_id: project.client_id,
           client_name: project.client_name,
           title: project.title,
@@ -5673,25 +5704,30 @@ ${description}`))actionCallback();return;}
           project_code: formatProjectId(project),
           updated_at: project.updated_at || new Date().toISOString()
         };
-        const result = await supabaseClient.from('projects').upsert([payload]);
+        let result = await supabaseClient.from('projects').update(payload).eq('id', project.id).select('id');
         if (result.error) throw result.error;
-      }
-
-      async function syncProjectStructureToDatabase(project) {
-        if (!supabaseClient || !state.isConnected || !project) return;
-        try {
-          await syncProjectCoreToDatabase(project);
-          await syncProjectItemsToDatabase(project);
-          await syncDeliverablesToDatabase(project);
-        } catch (e) {
-          console.warn('Shared Online project sync needs attention:', e?.message || e);
+        if (!Array.isArray(result.data) || !result.data.length) {
+          result = await supabaseClient.from('projects').insert([{id:project.id,...payload}]);
+          if (result.error) throw result.error;
         }
       }
 
-      function scheduleProjectStructureSync(project, delay = 250) {
+      async function syncProjectStructureToDatabase(project, options = {}) {
+        if (!supabaseClient || !state.isConnected || !project) return;
+        try {
+          await syncProjectCoreToDatabase(project);
+          await syncProjectItemsToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
+          await syncDeliverablesToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
+        } catch (e) {
+          console.warn('Shared Online project sync needs attention:', e?.message || e);
+          throw e;
+        }
+      }
+
+      function scheduleProjectStructureSync(project, delay = 250, options = {}) {
         if(!project)return;
         const key=String(project.id),prior=projectStructureSyncTimers.get(key);if(prior)clearTimeout(prior);
-        markProjectDirty(project,'Project structure update');
+        markProjectDirty(project,'Project structure update',{structure:true,allowEmptyStructure:options.allowEmptyStructure===true});
         const timer=setTimeout(()=>{projectStructureSyncTimers.delete(key);if(cloudAvailable())flushOfflineSyncQueue();},delay);
         projectStructureSyncTimers.set(key,timer);
       }
@@ -5700,8 +5736,10 @@ ${description}`))actionCallback();return;}
         if (!supabaseClient || !state.isConnected || !project) return;
         try {
           await syncProjectCoreToDatabase(project);
-          await syncProjectItemsToDatabase(project);
-          await syncDeliverablesToDatabase(project);
+          if(options.includeStructure===true){
+            await syncProjectItemsToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
+            await syncDeliverablesToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
+          }
           if (!options.quiet) showToast("Project synchronized successfully.");
         } catch (e) {
           console.error("Project sync retry failed:", e);
@@ -5967,7 +6005,7 @@ ${description}`))actionCallback();return;}
 
         if (supabaseClient && state.isConnected) {
           try {
-            await syncProjectToDatabase(newProject, { quiet: true });
+            await syncProjectToDatabase(newProject, { quiet: true, includeStructure: true });
           } catch(e) {
             console.error("Database operation failed while creating project:", e);
             showToast("Warning: Project was saved locally, but could not sync to the shared database.", "Retry", () => syncProjectToDatabase(newProject));
@@ -6272,10 +6310,14 @@ ${description}`))actionCallback();return;}
           let client=null,cloudSynced=false;
           if(cloudAvailable()){
             try{
-              const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:proj.id,name:proj.client_name,email:proj.client_email,phone:proj.client_phone,address:proj.client_address});
-              client=applyCloudClientReconcile(proj,response,previousClientId);
+              client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);
               await syncProjectToDatabase(proj,{quiet:true});
-              cloudSynced=!!client;
+              cloudSynced=true;
+              try{
+                const response=await onlinePortalRequest('POST',{action:'reconcile-project-client',projectId:proj.id,name:proj.client_name,email:proj.client_email,phone:proj.client_phone,address:proj.client_address});
+                const cloudClient=applyCloudClientReconcile(proj,response,previousClientId);
+                if(cloudClient)client=cloudClient;
+              }catch(portalError){console.warn('Project saved; portal reconciliation needs attention:',portalError?.message||portalError);}
             }catch(e){
               console.warn('Project autosave queued for retry:',e?.message||e);
               client=reconcileLocalProjectClient(proj,previousClientId,previousEmail);
@@ -6306,7 +6348,7 @@ ${description}`))actionCallback();return;}
         const ds=Array.isArray(proj.deliverables)?proj.deliverables:[];ds.forEach((d,i)=>{d.id=d.id||`del_${proj.id}_${i}`;d.item_name=d.item_name||d.name||'Deliverable';d.completed=!!d.completed||String(d.status||'').toLowerCase()==='completed';d.progress=d.completed?100:Number(d.progress||0);d.status=d.completed?'Completed':'Pending';});
         ds.filter(d=>d.is_group).forEach(parent=>{const children=ds.filter(c=>String(c.parent_id||'')===String(parent.id));if(children.length){parent.completed=children.every(c=>c.completed);parent.progress=Math.round(children.reduce((s,c)=>s+(c.completed?100:Number(c.progress||0)),0)/children.length);parent.status=parent.completed?'Completed':'Pending';}});
         const countable=ds.filter(d=>!d.is_group),completed=countable.filter(d=>d.completed).length,percent=countable.length?Math.round(completed/countable.length*100):0;const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v};setText('projDetailProgressCount',`${completed} / ${countable.length} completed`);setText('projDetailProgressPercent',`${percent}%`);const bar=document.getElementById('projDetailProgressBar');if(bar)bar.style.width=`${percent}%`;const overallBar=document.getElementById('projectOverallProgressBar'),overallPct=document.getElementById('projectOverallProgressPercent'),overallCount=document.getElementById('projectOverallProgressCount');if(overallBar)overallBar.style.width=`${percent}%`;if(overallPct)overallPct.textContent=`${percent}%`;if(overallCount)overallCount.textContent=`${completed} / ${countable.length}`;
-        if(!ds.length){container.innerHTML=`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;renderProjectFilesAccess(proj);return;}
+        if(!ds.length){const hasValue=Number(proj.total_amount||0)>0,hasItems=Array.isArray(proj.project_items)&&proj.project_items.length>0;container.innerHTML=hasValue&&!hasItems?`<div class="empty-compact-state"><strong>Project structure needs recovery</strong><span>This project has a financial total, but its order items and deliverables are missing from this copy. The system will preserve any structure found in another browser or in Supabase instead of erasing it.</span></div>`:`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;renderProjectFilesAccess(proj);return;}
         const roots=ds.filter(d=>!d.parent_id);const row=(d,child=false)=>{const menuId=`deliverableMenu_${String(d.id).replace(/[^a-zA-Z0-9_-]/g,'')}`,progress=d.is_group?Number(d.progress||0):(d.completed?100:Number(d.progress||0));return `<div class="deliverable-checklist-row ${child?'deliverable-child-row':''} ${d.completed?'is-complete':''}"><button type="button" class="deliverable-check ${d.completed?'checked':''}" aria-pressed="${d.completed?'true':'false'}" onclick="app.toggleDeliverable('${proj.id}','${String(d.id).replace(/'/g,"\'")}')"><svg class="icon-svg sm" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button><div class="deliverable-checklist-copy"><strong>${escapeHtml(d.item_name)}</strong>${d.is_group?`<span>${ds.filter(c=>String(c.parent_id||'')===String(d.id)).filter(c=>c.completed).length}/${ds.filter(c=>String(c.parent_id||'')===String(d.id)).length} included items</span>`:''}</div><div class="deliverable-item-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${Math.round(progress)}%</span></div><div class="popover-wrap" id="${menuId}"><button class="icon-more-button" onclick="event.stopPropagation();app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action text-danger" onclick="event.stopPropagation();app.deleteProjectDeliverable('${String(d.id).replace(/'/g,"\'")}')">Remove Deliverable</button></div></div></div>`};
         container.innerHTML=`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;renderProjectFilesAccess(proj);
       }
@@ -6431,7 +6473,7 @@ ${description}`))actionCallback();return;}
       function requestDeleteProjectOrderItem(index,event){if(event)event.stopPropagation();const proj=state.projects.find(p=>p.id===state.activeProjectId),item=proj?.project_items?.[index];if(!item)return;requestDestructivePin('Remove Order Item',`Remove "${item.name||'this item'}"? Its linked deliverable will also be removed.`,()=>deleteProjectOrderItem(index,true));}
       function deleteProjectOrderItem(index,authorized=false){
         const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||!Array.isArray(proj.project_items)||!proj.project_items[index])return;if(!authorized){requestDeleteProjectOrderItem(index);return;}
-        proj.project_items.splice(index,1);recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();scheduleProjectStructureSync(proj,80);renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Order item removed.');
+        proj.project_items.splice(index,1);recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();scheduleProjectStructureSync(proj,80,{allowEmptyStructure:(proj.project_items||[]).length===0&&(proj.deliverables||[]).filter(d=>!d.is_group).length===0});renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Order item removed.');
       }
 
       function renderProjectDeliverableSuggestions(query=''){
@@ -6447,7 +6489,7 @@ ${description}`))actionCallback();return;}
       }
       function deleteProjectDeliverable(delId){
         const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||!Array.isArray(proj.deliverables))return;const del=proj.deliverables.find(d=>String(d.id)===String(delId));if(!del)return;const linked=del.order_item_id&&Array.isArray(proj.project_items)?proj.project_items.find(i=>String(i.id)===String(del.order_item_id)):null;
-        const remove=()=>{if(del.parent_id){proj.deliverables=proj.deliverables.filter(d=>String(d.id)!==String(delId));}else if(linked){proj.project_items=proj.project_items.filter(i=>String(i.id)!==String(del.order_item_id));recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);}else{const childIds=new Set(proj.deliverables.filter(d=>String(d.parent_id||'')===String(delId)).map(d=>String(d.id)));proj.deliverables=proj.deliverables.filter(d=>String(d.id)!==String(delId)&&!childIds.has(String(d.id)));}proj.updated_at=new Date().toISOString();persistProjectsState();scheduleProjectStructureSync(proj,50);renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Deliverable removed.');};
+        const remove=()=>{if(del.parent_id){proj.deliverables=proj.deliverables.filter(d=>String(d.id)!==String(delId));}else if(linked){proj.project_items=proj.project_items.filter(i=>String(i.id)!==String(del.order_item_id));recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);}else{const childIds=new Set(proj.deliverables.filter(d=>String(d.parent_id||'')===String(delId)).map(d=>String(d.id)));proj.deliverables=proj.deliverables.filter(d=>String(d.id)!==String(delId)&&!childIds.has(String(d.id)));}proj.updated_at=new Date().toISOString();persistProjectsState();scheduleProjectStructureSync(proj,50,{allowEmptyStructure:(proj.project_items||[]).length===0&&(proj.deliverables||[]).filter(d=>!d.is_group).length===0});renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Deliverable removed.');};
         requestDestructivePin('Remove Deliverable',linked?`Remove "${del.item_name||del.name||'this deliverable'}"? Its linked order item will also be removed.`:`Remove "${del.item_name||del.name||'this deliverable'}"?`,remove);
       }
       function toggleAssistant(force){
@@ -6494,7 +6536,7 @@ ${description}`))actionCallback();return;}
         const apply=d=>{d.completed=target;d.progress=target?100:0;d.status=target?'Completed':'Pending';d.completed_at=stamp};apply(del);
         if(del.is_group)ds.filter(c=>String(c.parent_id||'')===String(del.id)).forEach(apply);
         if(del.parent_id){const parent=ds.find(d=>String(d.id)===String(del.parent_id)),children=ds.filter(c=>String(c.parent_id||'')===String(del.parent_id));if(parent&&children.length){parent.completed=children.every(c=>c.completed);parent.progress=Math.round(children.reduce((sum,c)=>sum+(c.completed?100:Number(c.progress||0)),0)/children.length);parent.status=parent.completed?'Completed':'Pending';parent.completed_at=parent.completed?new Date().toISOString():null;}}
-        proj.updated_at=new Date().toISOString();persistProjectsState();markProjectDirty(proj,'Deliverable status update');renderProjectDeliverablesList(proj);renderOverviewDashboard();
+        proj.updated_at=new Date().toISOString();persistProjectsState();markProjectDirty(proj,'Deliverable status update',{structure:true});renderProjectDeliverablesList(proj);renderOverviewDashboard();
         if(cloudAvailable())await flushOfflineSyncQueue();
       }
 
