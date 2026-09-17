@@ -2415,12 +2415,11 @@
       let lastWorkspaceActivityWrite = 0;
 
       function workspaceCloudIntent() {
-        return localStorage.getItem(WORKSPACE_CLOUD_INTENT_KEY) === "1";
+        return true;
       }
 
       function workspaceIdleExpired() {
-        const last = Number(localStorage.getItem(WORKSPACE_LAST_ACTIVITY_KEY) || 0);
-        return !last || Date.now() - last >= WORKSPACE_IDLE_MS;
+        return false;
       }
 
       function clearWorkspaceCloudMemory() {
@@ -2450,27 +2449,15 @@
       function installWorkspaceActivityTracking() {
         if (workspaceActivityBound) return;
         workspaceActivityBound = true;
-        ["pointerdown","keydown","touchstart","scroll"].forEach(eventName => {
-          window.addEventListener(eventName, touchWorkspaceActivity, { passive: true });
-        });
       }
 
       async function expireWorkspaceCloudSession() {
-        if (!workspaceCloudIntent() || !workspaceIdleExpired()) return;
-        try { await supabaseClient?.auth?.signOut(); } catch (_) {}
-        clearWorkspaceCloudMemory();
-        supabaseClient = null;
-        state.isConnected = false;
-        hideWorkspaceAuthGate();
-        updateConnectionStatus("error", "○ SIGN IN REQUIRED");
-        updateManualDatabasePanel("Cloud session ended after 30 minutes of inactivity. Log in again to access Workspace data.");
-        renderCurrentView();
-        showToast("Cloud session ended after 30 minutes of inactivity.");
+        // Database V2: never auto-sign-out because of refresh or idle time.
+        return false;
       }
 
       function startWorkspaceIdleWatch() {
-        if (workspaceIdleTimer) clearInterval(workspaceIdleTimer);
-        workspaceIdleTimer = setInterval(() => { expireWorkspaceCloudSession(); }, 30000);
+        // Disabled. Supabase Auth owns token/session lifetime.
       }
 
       function readManualDatabaseFields() {
@@ -2595,27 +2582,28 @@
       }
 
       async function restoreWorkspaceCloudConnectionIfEligible() {
-        if (!workspaceCloudIntent()) return false;
-        if (workspaceIdleExpired()) {
-          clearWorkspaceCloudMemory();
-          updateManualDatabasePanel("Previous cloud session expired after 30 minutes of inactivity. Log in again to reconnect.");
-          return false;
-        }
         const ready = await initializeEnvironmentVariables();
         if (!ready) {
-          clearWorkspaceCloudMemory();
-          updateManualDatabasePanel("Cloud connection could not be restored because the deployment database configuration is unavailable.");
+          updateManualDatabasePanel("Database configuration is unavailable. Your saved login was not cleared.");
           return false;
         }
-        const restored = await initSupabase(true);
-        if (restored) {
-          rememberWorkspaceCloudConnection();
-          updateManualDatabasePanel();
-          return true;
+
+        try {
+          const restored = await initSupabase(true);
+
+          if (restored) {
+            rememberWorkspaceCloudConnection();
+            updateManualDatabasePanel("Connected. Your Supabase session is restored automatically after refresh.");
+            return true;
+          }
+
+          updateManualDatabasePanel("Database reached. Sign in only if this browser has no valid session.");
+          return false;
+        } catch (error) {
+          console.warn("Workspace session restore failed without signing out:", error);
+          updateManualDatabasePanel("Could not restore the session right now. Your saved login was not cleared.");
+          return false;
         }
-        clearWorkspaceCloudMemory();
-        updateManualDatabasePanel("Saved cloud session could not be restored. Log in again when you want to reconnect.");
-        return false;
       }
 
       async function initWorkspace() {
@@ -3199,6 +3187,7 @@
 
       function persistProjectsState() {
         localStorage.removeItem("JUAN_PROJECTS_LOCAL");
+        localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");
       }
 
       function persistCartState() {
@@ -3696,17 +3685,23 @@ ${description}`))actionCallback();return;}
 
       async function verifyWorkspaceAdmin() {
         if (!supabaseClient) return false;
-        const { data: { session } } = await supabaseClient.auth.getSession();
+
+        const { data: { session }, error: sessionError } =
+          await supabaseClient.auth.getSession();
+
+        if (sessionError) throw sessionError;
         if (!session?.user) return false;
+
         const { data, error } = await supabaseClient
           .from("user_roles")
           .select("role")
           .eq("auth_user_id", session.user.id)
           .maybeSingle();
+
         if (error) {
-          console.error("Admin role check failed:", error);
-          return false;
+          throw new Error(`Workspace authorization check failed: ${error.message || error}`);
         }
+
         return data?.role === "admin";
       }
 
@@ -3833,30 +3828,148 @@ ${description}`))actionCallback();return;}
       }
 
       async function loadDatabaseData() {
-        if(!supabaseClient||!state.isConnected){state.clients=[];state.projects=[];renderCurrentView();return false;}
         setWorkspaceLoading(true);
-        try{
-          const [clientsRes,projectsRes,settingsRes,sharedRes]=await Promise.all([
-            supabaseClient.from('clients').select('*').order('name'),
-            supabaseClient.from('projects').select('*, deliverables(*), payments(*), project_items(*)').order('created_at',{ascending:false}),
-            supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle(),
-            supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle()
+
+        try {
+          if (!supabaseClient || !state.isConnected) {
+            throw new Error("Sign in to load the canonical database.");
+          }
+
+          const [clientsRes, projectsRes, settingsRes, sharedRes] = await Promise.all([
+            supabaseClient
+              .from("clients")
+              .select("*")
+              .is("archived_at", null)
+              .order("name"),
+
+            supabaseClient
+              .from("projects")
+              .select("*, payments(*), project_items(*)")
+              .order("created_at", { ascending:false }),
+
+            supabaseClient
+              .from("workspace_settings")
+              .select("*")
+              .eq("id", 1)
+              .maybeSingle(),
+
+            supabaseClient
+              .from("workspace_shared_state")
+              .select("*")
+              .eq("id", 1)
+              .maybeSingle()
           ]);
-          if(clientsRes.error)throw clientsRes.error;if(projectsRes.error)throw projectsRes.error;
-          state.clients=(clientsRes.data||[]).filter(c=>!c.archived_at);
-          state.projects=(projectsRes.data||[]).map(p=>({...p,payments:Array.isArray(p.payments)?p.payments:[],deliverables:Array.isArray(p.deliverables)?p.deliverables:[],project_items:Array.isArray(p.project_items)?p.project_items:[]}));
-          applyKnownClientIdsLocally();
-          localStorage.removeItem('JUAN_CLIENTS_LOCAL');localStorage.removeItem('JUAN_PROJECTS_LOCAL');localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');
+
+          if (clientsRes.error) throw clientsRes.error;
+          if (projectsRes.error) throw projectsRes.error;
+
+          state.clients = clientsRes.data || [];
+
+          state.projects = (projectsRes.data || []).map(project => {
+            const rows = Array.isArray(project.project_items)
+              ? project.project_items
+              : [];
+
+            const billable = rows.filter(row => row.billable !== false);
+            const parentMap = new Map(
+              billable.map(row => [String(row.id), row])
+            );
+
+            project.project_items = billable.map(row => ({
+              ...row,
+              name: row.name || "Untitled Item",
+              price: Number(row.unit_price ?? row.price ?? 0),
+              qty: Math.max(1, Number(row.quantity ?? row.qty ?? 1)),
+              type: row.item_type === "PACKAGE"
+                ? "PACKAGE"
+                : (row.type || "SOLO"),
+              product_code: row.product_code || null
+            }));
+
+            const deliverables = [];
+
+            for (const parent of billable.filter(row => row.item_type === "PACKAGE")) {
+              deliverables.push({
+                id: `group_${parent.id}`,
+                item_name: parent.name,
+                name: parent.name,
+                is_group: true,
+                completed: false,
+                progress: 0,
+                status: "Pending",
+                order_item_id: parent.id
+              });
+            }
+
+            for (const row of rows.filter(row => row.counts_as_deliverable !== false)) {
+              const packageParent = row.parent_item_id
+                ? parentMap.get(String(row.parent_item_id))
+                : null;
+
+              const completed =
+                String(row.status || "").toLowerCase() === "completed"
+                || Number(row.progress || 0) >= 100
+                || !!row.completed_at;
+
+              deliverables.push({
+                id: row.id,
+                item_name: row.name || "Deliverable",
+                name: row.name || "Deliverable",
+                completed,
+                progress: completed ? 100 : Number(row.progress || 0),
+                status: completed ? "Completed" : (row.status || "Pending"),
+                completed_at: row.completed_at || null,
+                due_date: row.due_date || project.deadline_date || null,
+                shared_drive_url: row.shared_drive_url || null,
+                client_visible: row.client_visible !== false,
+                source_type: "PROJECT_ITEM",
+                order_item_id: row.parent_item_id || row.id,
+                order_item_occurrence: 1,
+                parent_id: packageParent ? `group_${packageParent.id}` : null,
+                parent_key: packageParent ? `package_${packageParent.id}` : null,
+                package_name: packageParent?.name || null
+              });
+            }
+
+            project.deliverables = deliverables;
+            project.payments = Array.isArray(project.payments)
+              ? project.payments
+              : [];
+
+            return project;
+          });
+
+          localStorage.removeItem("JUAN_CLIENTS_LOCAL");
+          localStorage.removeItem("JUAN_PROJECTS_LOCAL");
+          localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");
+
           loadTasksState();
-          if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
-          const remoteSharedHasData=Boolean(sharedRes?.data&&((Array.isArray(sharedRes.data.tasks)&&sharedRes.data.tasks.length)||(Array.isArray(sharedRes.data.templates)&&sharedRes.data.templates.length)));
-          if(remoteSharedHasData)applyWorkspaceSharedStateRecord(sharedRes.data);else if(!sharedRes?.error)queueWorkspaceSharedStateSync();
-          renderTemplatesDropdown();renderCurrentView();
-          void (async()=>{try{if(!settingsRes.data)await syncWorkspaceSettingsNow();const remoteCatalogLoaded=await loadSharedCatalogFromDatabase();if(!remoteCatalogLoaded)await syncSharedCatalogToDatabase({silent:true});renderTemplatesDropdown();}catch(e){console.warn('Background Workspace cloud load:',e);}})();
-          return true;
-        }catch(err){
-          console.error('Database error:',err);state.clients=[];state.projects=[];renderCurrentView();showToast(`Cloud data could not be loaded: ${err?.message||err}`,'Retry',()=>loadDatabaseData());return false;
-        }finally{setWorkspaceLoading(false);}
+
+          if (settingsRes.data) {
+            applyWorkspaceSettingsRecord(settingsRes.data);
+          }
+
+          if (sharedRes.data) {
+            applyWorkspaceSharedStateRecord(sharedRes.data);
+          }
+
+          renderTemplatesDropdown();
+          renderCurrentView();
+
+          void loadSharedCatalogFromDatabase()
+            .catch(error => console.warn("Catalog load:", error));
+
+        } catch (error) {
+          console.error("Database load failed:", error);
+
+          showToast(
+            `Database load failed: ${error.message || error}`,
+            "Retry",
+            () => loadDatabaseData()
+          );
+        } finally {
+          setWorkspaceLoading(false);
+        }
       }
 
       async function migrateLocalOnlyBusinessRecords(remoteClientIds = new Set(), remoteProjectIds = new Set()) {
@@ -5357,7 +5470,144 @@ ${description}`))actionCallback();return;}
 
       const projectStructureSyncTimers = new Map();
 
-      async function syncProjectItemsToDatabase(project, options = {}) {
+      async function syncProjectItemsToDatabase(project) {
+        if (!supabaseClient || !state.isConnected || !project) {
+          throw new Error("Database is not connected.");
+        }
+
+        const commercial = Array.isArray(project.project_items)
+          ? project.project_items
+          : [];
+
+        const deliverables = (
+          Array.isArray(project.deliverables)
+            ? project.deliverables
+            : []
+        ).filter(item => !item.is_group);
+
+        const desired = new Map();
+
+        for (let index = 0; index < commercial.length; index++) {
+          const item = commercial[index];
+
+          if (!item.id) {
+            item.id =
+              `item_${project.id}_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 7)}`;
+          }
+
+          const isPackage =
+            String(item.type || item.item_type || "").toUpperCase() === "PACKAGE";
+
+          const tracking = !isPackage
+            ? deliverables.find(deliverable =>
+                String(deliverable.order_item_id || deliverable.id) === String(item.id)
+                && !deliverable.parent_id
+              )
+            : null;
+
+          desired.set(String(item.id), {
+            id: String(item.id),
+            project_id: project.id,
+            parent_item_id: null,
+            product_code: item.product_code || item.code || null,
+            name: item.name || "Untitled Item",
+            item_type: isPackage ? "PACKAGE" : "SOLO",
+            quantity: Math.max(1, Number(item.qty ?? item.quantity ?? 1)),
+            unit_price: Number(item.price ?? item.unit_price ?? 0),
+            billable: true,
+            counts_as_deliverable: !isPackage,
+            status: tracking?.completed
+              ? "Completed"
+              : (tracking?.status || item.status || "Pending"),
+            progress: Number(
+              tracking?.completed
+                ? 100
+                : (tracking?.progress ?? item.progress ?? 0)
+            ),
+            due_date: tracking?.due_date || project.deadline_date || null,
+            completed_at: tracking?.completed_at || null,
+            shared_drive_url: tracking?.shared_drive_url || null,
+            client_visible: tracking?.client_visible !== false,
+            sort_order: index
+          });
+        }
+
+        let childOrder = 1000;
+
+        for (const deliverable of deliverables) {
+          const parent = commercial.find(
+            item => String(item.id) === String(deliverable.order_item_id)
+          );
+
+          const isPackageChild =
+            parent
+            && String(parent.type || parent.item_type || "").toUpperCase() === "PACKAGE";
+
+          if (!isPackageChild) continue;
+
+          if (!deliverable.id || String(deliverable.id).startsWith("group_")) {
+            deliverable.id =
+              `child_${project.id}_${Date.now()}_${childOrder}_${Math.random().toString(36).slice(2, 7)}`;
+          }
+
+          desired.set(String(deliverable.id), {
+            id: String(deliverable.id),
+            project_id: project.id,
+            parent_item_id: String(parent.id),
+            product_code: null,
+            name: deliverable.item_name || deliverable.name || "Deliverable",
+            item_type: "PACKAGE_COMPONENT",
+            quantity: 1,
+            unit_price: 0,
+            billable: false,
+            counts_as_deliverable: true,
+            status: deliverable.completed
+              ? "Completed"
+              : (deliverable.status || "Pending"),
+            progress: Number(
+              deliverable.completed ? 100 : (deliverable.progress || 0)
+            ),
+            due_date: deliverable.due_date || project.deadline_date || null,
+            completed_at: deliverable.completed_at || null,
+            shared_drive_url: deliverable.shared_drive_url || null,
+            client_visible: deliverable.client_visible !== false,
+            sort_order: childOrder++
+          });
+        }
+
+        const current = await supabaseClient
+          .from("project_items")
+          .select("id")
+          .eq("project_id", project.id);
+
+        if (current.error) throw current.error;
+
+        const rows = [...desired.values()];
+
+        if (rows.length) {
+          const result = await supabaseClient
+            .from("project_items")
+            .upsert(rows, { onConflict: "id" });
+
+          if (result.error) throw result.error;
+        }
+
+        const wanted = new Set(
+          rows.map(row => String(row.id))
+        );
+
+        for (const row of current.data || []) {
+          if (!wanted.has(String(row.id))) {
+            const result = await supabaseClient
+              .from("project_items")
+              .delete()
+              .eq("id", row.id)
+              .eq("project_id", project.id);
+
+            if (result.error) throw result.error;
+          }
+        }
+      }) {
         if (!supabaseClient || !state.isConnected || !project) return;
         const items = Array.isArray(project.project_items) ? project.project_items : [];
         const existingRes = await supabaseClient.from('project_items').select('id,project_id,name,price,qty,type,product_code,included_items').eq('project_id', project.id);
@@ -5393,7 +5643,10 @@ ${description}`))actionCallback();return;}
         if (inserted.error) throw inserted.error;
       }
 
-      async function syncDeliverablesToDatabase(project, options = {}) {
+      async function syncDeliverablesToDatabase(project) {
+        // Database V2: deliverables are rows in project_items.
+        return;
+      }) {
         if (!supabaseClient || !state.isConnected || !project) return;
         const localRows = (Array.isArray(project.deliverables) ? project.deliverables : []).filter(d => !d.is_group);
         const existingRes = await supabaseClient.from('deliverables').select('id,shared_drive_url,client_visible,due_date,source_type,order_item_id,order_item_occurrence,parent_id,parent_key,package_name,child_index').eq('project_id', project.id);
@@ -5444,7 +5697,6 @@ ${description}`))actionCallback();return;}
         if (!supabaseClient || !state.isConnected || !project) return;
         const payload = {
           client_id: project.client_id,
-          client_name: project.client_name,
           title: project.title,
           status: project.status,
           total_amount: Number(project.total_amount || 0),
@@ -5473,7 +5725,14 @@ ${description}`))actionCallback();return;}
         }
       }
 
-      async function syncProjectStructureToDatabase(project, options = {}) {
+      async function syncProjectStructureToDatabase(project) {
+        if (!supabaseClient || !state.isConnected || !project) {
+          throw new Error("Database is not connected.");
+        }
+
+        await syncProjectCoreToDatabase(project);
+        await syncProjectItemsToDatabase(project);
+      }) {
         if (!supabaseClient || !state.isConnected || !project) return;
         try {
           await syncProjectCoreToDatabase(project);
