@@ -1190,6 +1190,232 @@
 @media print{.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){width:86px!important}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3){width:150px!important;padding-left:28px!important}}
 </style>
 
+
+<style id="JUAN_TABLE_PROFILE_PATCH_V1_CSS">
+:root{
+  --jp-table-border:#e8ebef;
+  --jp-table-head:#f7f8fa;
+  --jp-table-muted:#7b8492;
+  --jp-table-text:#1c2430;
+  --jp-green:#19ba75;
+}
+.table-responsive,
+.jp-table-scroll-x{
+  width:100%;
+  overflow-x:visible !important;
+  overflow-y:visible !important;
+  max-height:none !important;
+}
+table.jp-static-table{
+  width:100% !important;
+  table-layout:fixed;
+  border-collapse:separate;
+  border-spacing:0;
+  background:#fff;
+}
+table.jp-static-table thead{display:table-header-group;}
+table.jp-static-table tbody{display:table-row-group;}
+table.jp-static-table tr{display:table-row;}
+table.jp-static-table th,
+table.jp-static-table td{display:table-cell;}
+table.jp-static-table thead th{
+  background:var(--jp-table-head);
+  color:var(--jp-table-muted);
+  font-size:11px;
+  line-height:1.2;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+  font-weight:650;
+  padding:12px 14px;
+  vertical-align:middle;
+  border-bottom:1px solid var(--jp-table-border);
+  white-space:nowrap;
+}
+table.jp-static-table tbody td{
+  color:var(--jp-table-text);
+  font-size:13px;
+  line-height:1.35;
+  padding:12px 14px;
+  vertical-align:middle;
+  border-bottom:1px solid var(--jp-table-border);
+  background:#fff;
+}
+table.jp-static-table tbody tr:last-child td{border-bottom:0;}
+table.jp-static-table tbody tr:hover td{background:#fbfcfd;}
+table.jp-static-table th,
+table.jp-static-table td{
+  border-left:0 !important;
+  border-right:0 !important;
+}
+table.jp-static-table td strong{
+  font-weight:650;
+  color:#161d27;
+}
+table.jp-static-table .jp-secondary-cell{
+  display:block;
+  margin-top:3px;
+  color:var(--jp-table-muted);
+  font-size:11px;
+  font-weight:450;
+  line-height:1.35;
+}
+table.jp-static-table .jp-id-cell,
+table.jp-static-table td:first-child strong,
+table.jp-static-table td:first-child .project-id-cell{
+  color:var(--jp-green);
+  font-weight:650;
+}
+table.jp-static-table .jp-money,
+table.jp-static-table .text-right,
+table.jp-static-table th.jp-money-head{
+  text-align:right !important;
+  white-space:nowrap;
+}
+table.jp-static-table th:last-child,
+table.jp-static-table td:last-child{
+  text-align:right;
+  width:1%;
+  white-space:nowrap;
+}
+table.jp-static-table .icon-more-button,
+table.jp-static-table .vertical-more{
+  width:32px;
+  height:32px;
+  min-width:32px;
+  border-radius:9px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+table.jp-services-table col:nth-child(1){width:11%}
+table.jp-services-table col:nth-child(2){width:27%}
+table.jp-services-table col:nth-child(3){width:20%}
+table.jp-services-table col:nth-child(4){width:24%}
+table.jp-services-table col:nth-child(5){width:13%}
+table.jp-services-table col:nth-child(6){width:5%}
+table.jp-packages-table col:nth-child(1){width:11%}
+table.jp-packages-table col:nth-child(2){width:22%}
+table.jp-packages-table col:nth-child(3){width:31%}
+table.jp-packages-table col:nth-child(4){width:14%}
+table.jp-packages-table col:nth-child(5){width:15%}
+table.jp-packages-table col:nth-child(6){width:7%}
+.jp-table-card,
+.table-card{overflow:visible !important;}
+.jp-table-card{
+  background:#fff;
+  border:1px solid var(--jp-table-border);
+  border-radius:16px;
+  box-shadow:0 1px 2px rgba(16,24,40,.03);
+}
+.jp-package-count{
+  display:block;
+  font-weight:650;
+  color:#1c2430;
+}
+.jp-package-preview{
+  display:block;
+  margin-top:3px;
+  color:var(--jp-table-muted);
+  font-size:11px;
+  line-height:1.35;
+}
+.jp-profile-media{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:18px;
+}
+.jp-profile-avatar{
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  flex:0 0 64px;
+  background:#19ba75;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  font-weight:700;
+  overflow:hidden;
+  position:relative;
+  background-size:cover;
+  background-position:center;
+}
+.jp-profile-avatar.has-photo{color:transparent !important;}
+.jp-profile-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.jp-profile-help{
+  margin-top:7px;
+  font-size:12px;
+  color:var(--jp-table-muted);
+}
+#jpProfileCropModal{
+  position:fixed;
+  inset:0;
+  z-index:1000000;
+  background:rgba(15,23,42,.46);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+#jpProfileCropModal.open{display:flex;}
+.jp-profile-editor-card{
+  width:min(520px,100%);
+  background:#fff;
+  border-radius:18px;
+  box-shadow:0 22px 70px rgba(15,23,42,.22);
+  overflow:hidden;
+}
+.jp-profile-editor-head{padding:18px 20px 12px;}
+.jp-profile-editor-head h3{margin:0;font-size:19px;}
+.jp-profile-editor-head p{margin:5px 0 0;color:#7b8492;font-size:12px;}
+.jp-profile-canvas-wrap{
+  padding:8px 20px 16px;
+  display:flex;
+  justify-content:center;
+}
+#jpProfileCropCanvas{
+  width:min(320px,100%);
+  aspect-ratio:1/1;
+  background:#eef1f4;
+  border-radius:16px;
+  touch-action:none;
+  cursor:grab;
+}
+#jpProfileCropCanvas:active{cursor:grabbing;}
+.jp-profile-editor-controls{padding:0 20px 18px;}
+.jp-profile-editor-controls label{
+  display:block;
+  font-size:12px;
+  color:#6b7280;
+  margin-bottom:7px;
+}
+#jpProfileZoom{width:100%;}
+.jp-profile-editor-foot{
+  padding:14px 20px 18px;
+  border-top:1px solid #eceff2;
+  display:flex;
+  justify-content:flex-end;
+  gap:9px;
+}
+@media (max-width:900px){
+  .table-responsive,
+  .jp-table-scroll-x{
+    overflow-x:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  table.jp-static-table{min-width:760px;}
+  table.jp-services-table,
+  table.jp-packages-table{min-width:900px;}
+}
+</style>
+
 </head>
 <body>
 
@@ -8577,6 +8803,443 @@ ${description}`))actionCallback();return;}
 .invoice-brand-img{display:block;width:220px;max-width:100%;height:auto;object-fit:contain;object-position:left center;overflow:visible}.invoice-header>div:first-child{min-width:0;overflow:visible}
 </style>
 <datalist id="juanEmailDomainSuggestions"></datalist>
+
+
+<script id="JUAN_TABLE_PROFILE_PATCH_V1_JS">
+(() => {
+  const PROFILE_BUCKET = "workspace-avatars";
+  const jp = {
+    sourceFile:null,image:null,offsetX:0,offsetY:0,scale:1,baseScale:1,
+    dragging:false,dragStartX:0,dragStartY:0,signedUrl:"",
+    originalPath:"",croppedPath:""
+  };
+
+  const moneyHeaders = new Set([
+    "PRICE","ORIGINAL PRICE","NEW PRICE","AMOUNT","TOTAL","PAID","BALANCE",
+    "BALANCE DUE","SUBTOTAL","REVENUE","CHARGE"
+  ]);
+
+  const textOf = el => String(el?.textContent || "").trim().replace(/\s+/g," ").toUpperCase();
+
+  function ensureColgroup(table,widths){
+    let cg=table.querySelector(":scope > colgroup.jp-generated-colgroup");
+    if(!cg){
+      cg=document.createElement("colgroup");
+      cg.className="jp-generated-colgroup";
+      table.insertBefore(cg,table.firstChild);
+    }
+    cg.innerHTML=widths.map(w=>`<col style="width:${w}%">`).join("");
+  }
+
+  function enhancePackageInclusions(table){
+    const headers=[...table.querySelectorAll("thead th")].map(textOf);
+    const idx=headers.findIndex(h=>h.includes("PACKAGE INCLUSIONS"));
+    if(idx<0)return;
+    table.querySelectorAll("tbody tr").forEach(row=>{
+      const cell=row.children[idx];
+      if(!cell || cell.dataset.jpEnhanced==="1")return;
+      const raw=String(cell.textContent||"").trim();
+      const m=raw.match(/(\d+)\s*items?/i);
+      if(!m)return;
+      const count=Number(m[1]);
+      let rest=raw.replace(m[0],"").replace(/^[\s·\-–—]+/,"").trim();
+      if(rest){
+        const parts=rest.split(/[·•]/).map(x=>x.trim()).filter(Boolean);
+        const shown=parts.slice(0,4);
+        const more=Math.max(0,count-shown.length);
+        rest=shown.join(" · ")+(more?` · +${more} more`:"");
+      }
+      cell.innerHTML=`<span class="jp-package-count">${count} item${count===1?"":"s"}</span>${rest?`<span class="jp-package-preview">${rest}</span>`:""}`;
+      cell.dataset.jpEnhanced="1";
+    });
+  }
+
+  function applyJuanTableSystem(root=document){
+    [...root.querySelectorAll("table")].forEach(table=>{
+      if(table.classList.contains("invoice-table") || table.closest("#invoicePaperPrintable"))return;
+      const heads=[...table.querySelectorAll("thead th")];
+      if(heads.length<2)return;
+      const headers=heads.map(textOf);
+      table.classList.add("jp-static-table");
+      table.closest(".table-responsive")?.classList.add("jp-table-scroll-x");
+      table.closest(".card,.table-card")?.classList.add("jp-table-card");
+
+      headers.forEach((h,i)=>{
+        if(moneyHeaders.has(h) || /PRICE|AMOUNT|TOTAL|PAID|BALANCE|REVENUE|CHARGE/.test(h)){
+          heads[i].classList.add("jp-money-head");
+          table.querySelectorAll("tbody tr").forEach(r=>r.children[i]?.classList.add("jp-money"));
+        }
+      });
+
+      const services=headers.length===6 &&
+        headers[0].includes("SERVICE ID") && headers[1]==="NAME" &&
+        headers[2].includes("CATEGORY") && headers[3].includes("DESCRIPTION") &&
+        headers[4].includes("PRICE");
+
+      const packages=headers.length===6 &&
+        headers[0].includes("SERVICE ID") && headers[1].includes("PACKAGE NAME") &&
+        headers[2].includes("PACKAGE INCLUSIONS") &&
+        headers[3].includes("ORIGINAL PRICE") && headers[4].includes("NEW PRICE");
+
+      if(services){
+        table.classList.add("jp-services-table");
+        ensureColgroup(table,[11,27,20,24,13,5]);
+      }
+      if(packages){
+        table.classList.add("jp-packages-table");
+        ensureColgroup(table,[11,22,31,14,15,7]);
+        enhancePackageInclusions(table);
+      }
+    });
+  }
+
+  function initials(){
+    const name=document.getElementById("ownerNameInput")?.value ||
+      window.state?.ownerName || window.state?.settings?.ownerName || "JUAN PROJECT";
+    const parts=String(name).trim().split(/\s+/).filter(Boolean);
+    return (parts.slice(0,2).map(x=>x[0]).join("") || "JP").toUpperCase();
+  }
+
+  function avatarHosts(){
+    return [...new Set([
+      document.getElementById("settingsAvatarPreview"),
+      ...document.querySelectorAll(".user-avatar")
+    ].filter(Boolean))];
+  }
+
+  function paintAvatar(url=""){
+    avatarHosts().forEach(el=>{
+      if(el.tagName==="IMG"){
+        if(url){
+          el.src=url;
+          el.style.objectFit="cover";
+          el.style.borderRadius="50%";
+        }else{
+          const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="#19ba75"/><text x="32" y="37" text-anchor="middle" font-family="Arial,sans-serif" font-size="21" font-weight="700" fill="white">${initials()}</text></svg>`;
+          el.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+        }
+      }else{
+        el.classList.add("jp-profile-avatar");
+        el.textContent=initials();
+        if(url){
+          el.classList.add("has-photo");
+          el.style.backgroundImage=`url("${url}")`;
+        }else{
+          el.classList.remove("has-photo");
+          el.style.backgroundImage="";
+        }
+      }
+    });
+  }
+
+  function ensureProfileUI(){
+    const avatar=document.getElementById("settingsAvatarPreview");
+    if(!avatar)return;
+
+    avatar.classList.add("jp-profile-avatar");
+    let container=avatar.closest(".jp-profile-media");
+    if(!container){
+      const parent=avatar.parentElement;
+      container=document.createElement("div");
+      container.className="jp-profile-media";
+      parent.insertBefore(container,avatar);
+      container.appendChild(avatar);
+    }
+
+    let controls=container.querySelector(".jp-profile-controls");
+    if(!controls){
+      controls=document.createElement("div");
+      controls.className="jp-profile-controls";
+      controls.innerHTML=`
+        <div class="jp-profile-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="jpChooseProfilePhoto">Choose Photo</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="jpEditProfilePhoto">Edit Photo</button>
+          <button type="button" class="btn btn-text text-danger" id="jpRemoveProfilePhoto">Remove</button>
+        </div>
+        <div class="jp-profile-help">JPG, PNG, or WEBP up to 5 MB. Reposition and zoom before saving.</div>
+        <input type="file" id="jpProfileFileInput" accept="image/jpeg,image/png,image/webp" hidden>
+      `;
+      container.appendChild(controls);
+    }
+
+    if(!controls.dataset.bound){
+      controls.dataset.bound="1";
+      document.getElementById("jpChooseProfilePhoto")?.addEventListener("click",()=>document.getElementById("jpProfileFileInput")?.click());
+      document.getElementById("jpEditProfilePhoto")?.addEventListener("click",editCurrentPhoto);
+      document.getElementById("jpRemoveProfilePhoto")?.addEventListener("click",removeProfilePhotoCloud);
+      document.getElementById("jpProfileFileInput")?.addEventListener("change",onProfileFile);
+    }
+
+    ensureCropModal();
+    paintAvatar(jp.signedUrl);
+  }
+
+  function ensureCropModal(){
+    if(document.getElementById("jpProfileCropModal"))return;
+    const modal=document.createElement("div");
+    modal.id="jpProfileCropModal";
+    modal.innerHTML=`
+      <div class="jp-profile-editor-card" role="dialog" aria-modal="true">
+        <div class="jp-profile-editor-head">
+          <h3>Adjust Profile Photo</h3>
+          <p>Drag to reposition and use the slider to zoom. Nothing uploads until you choose Use Photo.</p>
+        </div>
+        <div class="jp-profile-canvas-wrap">
+          <canvas id="jpProfileCropCanvas" width="640" height="640"></canvas>
+        </div>
+        <div class="jp-profile-editor-controls">
+          <label for="jpProfileZoom">Zoom</label>
+          <input id="jpProfileZoom" type="range" min="1" max="3" value="1" step="0.01">
+        </div>
+        <div class="jp-profile-editor-foot">
+          <button type="button" class="btn btn-secondary" id="jpCancelProfileCrop">Cancel</button>
+          <button type="button" class="btn btn-primary" id="jpUseProfilePhoto">Use Photo</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    const canvas=document.getElementById("jpProfileCropCanvas");
+    const zoom=document.getElementById("jpProfileZoom");
+    zoom.addEventListener("input",()=>{
+      jp.scale=jp.baseScale*Number(zoom.value||1);
+      drawCrop();
+    });
+    canvas.addEventListener("pointerdown",e=>{
+      jp.dragging=true;
+      canvas.setPointerCapture(e.pointerId);
+      jp.dragStartX=e.clientX-jp.offsetX;
+      jp.dragStartY=e.clientY-jp.offsetY;
+    });
+    canvas.addEventListener("pointermove",e=>{
+      if(!jp.dragging)return;
+      jp.offsetX=e.clientX-jp.dragStartX;
+      jp.offsetY=e.clientY-jp.dragStartY;
+      drawCrop();
+    });
+    const stop=()=>jp.dragging=false;
+    canvas.addEventListener("pointerup",stop);
+    canvas.addEventListener("pointercancel",stop);
+    canvas.addEventListener("wheel",e=>{
+      e.preventDefault();
+      const z=Number(zoom.value||1);
+      zoom.value=String(Math.min(3,Math.max(1,z+(e.deltaY<0?.08:-.08))));
+      zoom.dispatchEvent(new Event("input"));
+    },{passive:false});
+    document.getElementById("jpCancelProfileCrop").addEventListener("click",closeCrop);
+    document.getElementById("jpUseProfilePhoto").addEventListener("click",saveProfilePhotoCloud);
+  }
+
+  function onProfileFile(e){
+    const file=e.target.files?.[0];
+    if(!file)return;
+    if(file.size>5*1024*1024){
+      window.showToast?.("Profile photo must be 5 MB or smaller.");
+      e.target.value="";
+      return;
+    }
+    jp.sourceFile=file;
+    const reader=new FileReader();
+    reader.onload=()=>openEditor(reader.result);
+    reader.readAsDataURL(file);
+  }
+
+  function openEditor(src){
+    const img=new Image();
+    img.onload=()=>{
+      jp.image=img;
+      jp.offsetX=0;
+      jp.offsetY=0;
+      const canvas=document.getElementById("jpProfileCropCanvas");
+      jp.baseScale=Math.min(canvas.width/img.width,canvas.height/img.height);
+      jp.scale=jp.baseScale;
+      document.getElementById("jpProfileZoom").value="1";
+      document.getElementById("jpProfileCropModal").classList.add("open");
+      drawCrop();
+    };
+    img.src=src;
+  }
+
+  function drawCrop(){
+    const canvas=document.getElementById("jpProfileCropCanvas");
+    const ctx=canvas?.getContext("2d");
+    if(!ctx||!jp.image)return;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#eef1f4";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    const w=jp.image.width*jp.scale;
+    const h=jp.image.height*jp.scale;
+    const x=(canvas.width-w)/2+jp.offsetX*2;
+    const y=(canvas.height-h)/2+jp.offsetY*2;
+    ctx.drawImage(jp.image,x,y,w,h);
+    ctx.save();
+    ctx.strokeStyle="rgba(255,255,255,.96)";
+    ctx.lineWidth=6;
+    ctx.beginPath();
+    ctx.arc(canvas.width/2,canvas.height/2,canvas.width*.43,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const closeCrop=()=>document.getElementById("jpProfileCropModal")?.classList.remove("open");
+
+  function cropBlob(){
+    return new Promise(resolve=>{
+      document.getElementById("jpProfileCropCanvas").toBlob(resolve,"image/webp",.9);
+    });
+  }
+
+  async function currentUser(){
+    if(!window.supabaseClient)throw new Error("Database is not connected.");
+    const {data,error}=await window.supabaseClient.auth.getUser();
+    if(error)throw error;
+    if(!data?.user)throw new Error("Sign in to save your profile photo.");
+    return data.user;
+  }
+
+  async function signedUrl(path){
+    if(!path)return "";
+    const {data,error}=await window.supabaseClient.storage.from(PROFILE_BUCKET).createSignedUrl(path,43200);
+    if(error)throw error;
+    return data?.signedUrl||"";
+  }
+
+  async function saveProfilePhotoCloud(){
+    try{
+      const user=await currentUser();
+      const blob=await cropBlob();
+      if(!blob)throw new Error("Could not prepare the cropped photo.");
+
+      const stamp=Date.now();
+      let originalPath=jp.originalPath;
+
+      if(jp.sourceFile){
+        const ext=(jp.sourceFile.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+        originalPath=`${user.id}/profile-${stamp}-original.${ext}`;
+        const original=await window.supabaseClient.storage.from(PROFILE_BUCKET)
+          .upload(originalPath,jp.sourceFile,{upsert:true,contentType:jp.sourceFile.type||"image/jpeg"});
+        if(original.error)throw original.error;
+      }
+
+      const croppedPath=`${user.id}/profile-${stamp}-cropped.webp`;
+      const cropped=await window.supabaseClient.storage.from(PROFILE_BUCKET)
+        .upload(croppedPath,blob,{upsert:true,contentType:"image/webp"});
+      if(cropped.error)throw cropped.error;
+
+      const saved=await window.supabaseClient.from("workspace_profiles").upsert({
+        user_id:user.id,
+        avatar_original_path:originalPath||null,
+        avatar_cropped_path:croppedPath,
+        avatar_crop:{
+          offset_x:jp.offsetX,
+          offset_y:jp.offsetY,
+          zoom:Number(document.getElementById("jpProfileZoom")?.value||1),
+          saved_at:new Date().toISOString()
+        },
+        updated_at:new Date().toISOString()
+      },{onConflict:"user_id"});
+      if(saved.error)throw saved.error;
+
+      jp.originalPath=originalPath||"";
+      jp.croppedPath=croppedPath;
+      jp.sourceFile=null;
+      await loadProfilePhotoCloud();
+      closeCrop();
+      const input=document.getElementById("jpProfileFileInput");
+      if(input)input.value="";
+      window.showToast?.("Profile photo updated.");
+    }catch(err){
+      console.error("Profile photo save failed:",err);
+      window.showToast?.(`Profile photo could not be saved: ${err.message||err}`);
+    }
+  }
+
+  async function loadProfilePhotoCloud(){
+    try{
+      const user=await currentUser();
+      const res=await window.supabaseClient.from("workspace_profiles")
+        .select("avatar_original_path,avatar_cropped_path,avatar_crop")
+        .eq("user_id",user.id).maybeSingle();
+      if(res.error)throw res.error;
+      jp.originalPath=res.data?.avatar_original_path||"";
+      jp.croppedPath=res.data?.avatar_cropped_path||"";
+      jp.signedUrl=jp.croppedPath?await signedUrl(jp.croppedPath):"";
+      paintAvatar(jp.signedUrl);
+      const edit=document.getElementById("jpEditProfilePhoto");
+      const remove=document.getElementById("jpRemoveProfilePhoto");
+      if(edit)edit.style.display=jp.croppedPath?"":"none";
+      if(remove)remove.style.display=jp.croppedPath?"":"none";
+    }catch(err){
+      console.warn("Profile photo load unavailable:",err?.message||err);
+      paintAvatar("");
+    }
+  }
+
+  async function editCurrentPhoto(){
+    try{
+      if(!jp.originalPath){
+        document.getElementById("jpProfileFileInput")?.click();
+        return;
+      }
+      openEditor(await signedUrl(jp.originalPath));
+    }catch(err){
+      document.getElementById("jpProfileFileInput")?.click();
+    }
+  }
+
+  async function removeProfilePhotoCloud(){
+    try{
+      const user=await currentUser();
+      const paths=[jp.originalPath,jp.croppedPath].filter(Boolean);
+      if(paths.length){
+        const rm=await window.supabaseClient.storage.from(PROFILE_BUCKET).remove(paths);
+        if(rm.error)console.warn(rm.error.message);
+      }
+      const saved=await window.supabaseClient.from("workspace_profiles").upsert({
+        user_id:user.id,
+        avatar_original_path:null,
+        avatar_cropped_path:null,
+        avatar_crop:null,
+        updated_at:new Date().toISOString()
+      },{onConflict:"user_id"});
+      if(saved.error)throw saved.error;
+      jp.originalPath="";
+      jp.croppedPath="";
+      jp.signedUrl="";
+      paintAvatar("");
+      ensureProfileUI();
+      window.showToast?.("Profile photo removed.");
+    }catch(err){
+      console.error(err);
+      window.showToast?.(`Profile photo could not be removed: ${err.message||err}`);
+    }
+  }
+
+  function refresh(){
+    applyJuanTableSystem(document);
+    ensureProfileUI();
+  }
+
+  let refreshQueued=false;
+  const observer=new MutationObserver(()=>{
+    if(refreshQueued)return;
+    refreshQueued=true;
+    requestAnimationFrame(()=>{
+      refreshQueued=false;
+      refresh();
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    refresh();
+    observer.observe(document.body,{childList:true,subtree:true});
+    setTimeout(loadProfilePhotoCloud,900);
+    setTimeout(loadProfilePhotoCloud,2400);
+  });
+
+  window.jpApplyTableSystem=applyJuanTableSystem;
+  window.jpReloadProfilePhoto=loadProfilePhotoCloud;
+})();
+</script>
 
 </body>
 </html>
