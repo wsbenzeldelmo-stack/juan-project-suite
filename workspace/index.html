@@ -1164,6 +1164,32 @@
 }
 </style>
 
+
+<style id="jp-master-stability-v2">
+/* Action menus always float above tables/cards and extend to the left. */
+.jp-floating-action-menu{display:block!important;position:fixed!important;z-index:2147483000!important;min-width:190px!important;max-width:260px!important;background:#fff!important;border:1px solid var(--border-subtle,#e5e7eb)!important;border-radius:14px!important;padding:6px!important;box-shadow:0 18px 48px rgba(0,0,0,.18)!important;overflow:hidden!important}
+.jp-floating-action-menu .popover-action{display:flex!important;width:100%!important;align-items:center!important;min-height:42px!important;padding:10px 12px!important;border-radius:9px!important;white-space:nowrap!important;text-align:left!important}
+.table-actions-col,.table-row-actions{width:58px!important;min-width:58px!important;text-align:center!important}
+.vertical-more{font-size:22px!important;line-height:1!important}
+/* Six-box masked PIN. type=password + text-security keeps every typed digit hidden. */
+.secure-pin-grid{display:grid;grid-template-columns:repeat(6,minmax(42px,1fr));gap:8px;margin-top:8px}
+.secure-pin-digit{height:54px;min-width:0;text-align:center;font-size:23px;font-weight:700;border:1px solid var(--border-medium,#d7d7d7);border-radius:12px;background:#fff;outline:none;-webkit-text-security:disc}
+.secure-pin-digit:focus{border-color:var(--primary-mint-dark,#19ba75);box-shadow:0 0 0 3px rgba(25,186,117,.12)}
+.secure-pin-digit.is-invalid{border-color:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.10)}
+/* Latest avatar rule: initials only. */
+#profilePhotoFileInput,.profile-photo-edit-actions{display:none!important}
+/* Invoice: explicit spacing between QTY and AMOUNT, including print/export. */
+.invoice-table{width:100%!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important}
+.invoice-table th:first-child,.invoice-table td:first-child{width:auto!important;text-align:left!important;padding-right:20px!important}
+.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){width:86px!important;min-width:86px!important;text-align:center!important;padding-left:18px!important;padding-right:18px!important}
+.invoice-table th:nth-child(3),.invoice-table td:nth-child(3){width:150px!important;min-width:150px!important;text-align:right!important;padding-left:28px!important;padding-right:8px!important}
+/* Recent/Payment history table shells keep rounded corners. */
+#reportsContent .table-responsive,#reportsContent .report-table-wrap,.payment-history-table,.payment-history-table-wrap,.payment-transaction-list{border-radius:16px!important;overflow:hidden!important}
+#reportsContent .data-table{border-collapse:separate!important;border-spacing:0!important}
+@media(max-width:640px){.secure-pin-grid{gap:5px}.secure-pin-digit{height:46px;font-size:18px;border-radius:10px}.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){width:64px!important;min-width:64px!important;padding-left:8px!important;padding-right:8px!important}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3){width:118px!important;min-width:118px!important;padding-left:16px!important}}
+@media print{.invoice-table th:nth-child(2),.invoice-table td:nth-child(2){width:86px!important}.invoice-table th:nth-child(3),.invoice-table td:nth-child(3){width:150px!important;padding-left:28px!important}}
+</style>
+
 </head>
 <body>
 
@@ -1391,7 +1417,7 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label>
-                    <input type="text" class="form-control" id="newClientPhone" placeholder="+63 900 000 0000">
+                    <input type="text" class="form-control" id="newClientPhone" placeholder="+63 900 000 0000" onblur="app.formatPhoneField(this)">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Location <span class="text-muted">(Optional)</span></label>
@@ -1569,7 +1595,7 @@
               <div class="project-data-form-grid">
                 <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="projectDataClientName"></div>
                 <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-control" id="projectDataClientEmail" list="juanEmailDomainSuggestions"></div>
-                <div class="form-group"><label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientPhone"></div>
+                <div class="form-group"><label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientPhone" onblur="app.formatPhoneField(this)"></div>
                 <div class="form-group"><label class="form-label">Location <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientAddress"></div>
               </div>
             </div>
@@ -1747,7 +1773,7 @@
           <div class="view-toolbar unified-toolbar portal-toolbar">
             <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
           </div>
-          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table portal-client-access-table"><thead><tr><th>Client ID</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th>Actions</th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table portal-client-access-table"><thead><tr><th>Client ID</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th class="table-actions-col" aria-label="Row actions"></th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
         <div id="onlinePortalPaymentsPanel" class="portal-panel hidden">
           <div class="card portal-note"><strong>Payment Reviews</strong><span>Open a review to see the full payment details, receipt, verification results, and decision controls.</span></div>
@@ -1778,13 +1804,7 @@
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
               <img id="settingsAvatarPreview" class="user-avatar" style="width: 64px; height: 64px; font-size: 20px;" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64' role="button" tabindex="0" title="Edit profile photo" onclick="app.editExistingProfilePhoto()"><rect width='64' height='64' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='22' font-weight='bold'>BD</text></svg>" alt="Profile Photo">
               <div>
-                <input type="file" id="profilePhotoFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="app.handleProfilePhotoUpload(event)">
-                <div class="action-buttons-group">
-                  <button class="btn btn-secondary btn-sm" onclick="document.getElementById('profilePhotoFileInput').click()">Change Photo</button>
-<button class="btn btn-secondary btn-sm" type="button" onclick="app.editExistingProfilePhoto()">Edit Photo</button>
-                  <button class="btn btn-text text-danger" onclick="app.removeProfilePhoto()">Remove</button>
-                </div>
-                <div class="text-sm text-muted mt-2">JPG, PNG, or WEBP up to 5MB</div>
+                <div class="text-sm text-muted mt-2">Avatar initials are generated automatically from the Account Owner Name.</div>
               </div>
             </div>
             
@@ -1976,7 +1996,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label>
-          <input type="text" class="form-control" id="editClientPhone" placeholder="+63 900 000 0000">
+          <input type="text" class="form-control" id="editClientPhone" placeholder="+63 900 000 0000" onblur="app.formatPhoneField(this)">
           <span id="editClientPhoneError" class="inline-error"></span>
         </div>
         <div class="form-group">
@@ -2174,7 +2194,14 @@
   <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 5">
   <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 6">
 </div>
-<input id="destructivePinInput" type="hidden"><span class="inline-error hidden" id="destructivePinError">Incorrect PIN.</span></div>
+<div class="secure-pin-grid" id="destructivePinDigits" aria-label="6-digit secure PIN">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 1">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 2">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 3">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 4">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 5">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 6">
+</div><input type="hidden" id="destructivePinInput"><span class="inline-error hidden" id="destructivePinError">Incorrect PIN.</span></div>
       <div class="modal-footer validation-actions"><button class="btn btn-secondary" onclick="app.closeModal('destructivePinModal')">Cancel</button><button class="btn btn-danger" onclick="app.confirmDestructivePin()">Continue</button></div>
     </div>
   </div>
@@ -2191,7 +2218,14 @@
       </div>
       <div class="form-group reset-pin-field">
         <label class="form-label" for="resetDataPinInput">PIN Code</label>
-        <input class="form-control reset-pin-input" id="resetDataPinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" placeholder="••••••" onkeydown="if(event.key==='Enter') app.confirmResetDataPin()">
+        <div class="secure-pin-grid" id="resetDataPinDigits" aria-label="6-digit secure PIN">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 1">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 2">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 3">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 4">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 5">
+<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 6">
+</div><input type="hidden" id="resetDataPinInput">
         <div class="inline-error hidden" id="resetDataPinError">Incorrect PIN. Please try again.</div>
       </div>
       <div class="modal-footer validation-actions">
@@ -2879,6 +2913,7 @@
         state.cart.clientMode = "existing";
         state.cart.selectedClientId = "";
         state.cart.projectName = "";
+        // Reset only after the shared database confirms the project.
         state.cart.items = [];
         state.cart.discountVal = 0;
         state.cart.startDate = "";
@@ -3155,6 +3190,7 @@
           persistClientsState();
           persistProjectsState();
           if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
+          await loadWorkspaceProfileSettingsFallback();
           if(sharedRes?.data)applyWorkspaceSharedStateRecord(sharedRes.data);
 
           const entity=String(eventRow?.entity||'');
@@ -3529,78 +3565,87 @@
       }
 
       function updateProfileDisplay() {
-        const ownerName = state.ownerName || "Workspace Owner";
-        const sidebarName = document.getElementById("sidebarUserName");
-        if (sidebarName) sidebarName.innerText = ownerName;
+        const ownerName=String(state.ownerName||'Workspace Owner').trim()||'Workspace Owner';
+        const sidebarName=document.getElementById('sidebarUserName');
+        if(sidebarName)sidebarName.innerText=ownerName;
+        const ownerNameInput=document.getElementById('ownerNameInput');
+        if(ownerNameInput)ownerNameInput.value=ownerName;
+        const address=document.getElementById('ownerAddressInput');if(address)address.value=state.ownerAddress||'';
+        const phone=document.getElementById('ownerPhoneInput');if(phone)phone.value=state.ownerPhone||'';
+        const email=document.getElementById('ownerEmailInput');if(email)email.value=state.ownerEmail||'';
 
-        const ownerNameInput = document.getElementById("ownerNameInput");
-        const addressInput = document.getElementById("ownerAddressInput");
-        const phoneInput = document.getElementById("ownerPhoneInput");
-        const emailInput = document.getElementById("ownerEmailInput");
-
-        if (ownerNameInput) ownerNameInput.value = state.ownerName || "";
-        if (addressInput) addressInput.value = state.ownerAddress || "";
-        if (phoneInput) phoneInput.value = state.ownerPhone || "";
-        if (emailInput) emailInput.value = state.ownerEmail || "";
-
-        const sidebarAvatar = document.getElementById("sidebarAvatar");
-        const settingsAvatar = document.getElementById("settingsAvatarPreview");
-
-        // Never generate initials from the owner's name.
-        // If no real photo exists, show a neutral user silhouette.
-        const neutralAvatar =
-          "data:image/svg+xml;utf8," +
-          encodeURIComponent(
-            "<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'>" +
-            "<rect width='128' height='128' rx='64' fill='#EAF8F1'/>" +
-            "<circle cx='64' cy='48' r='24' fill='#4FC88A'/>" +
-            "<path d='M24 112c4-25 20-38 40-38s36 13 40 38' fill='#4FC88A'/>" +
-            "</svg>"
-          );
-
-        const avatarSrc = state.profilePhoto || neutralAvatar;
-
-        if (sidebarAvatar) sidebarAvatar.src = avatarSrc;
-        if (settingsAvatar) settingsAvatar.src = avatarSrc;
+        // Latest Workspace rule: profile avatar is initials only.
+        state.profilePhoto='';
+        localStorage.removeItem('JUAN_PROFILE_PHOTO');
+        const initials=ownerName.split(/\s+/).filter(Boolean).map(n=>n[0]).join('').slice(0,2).toUpperCase()||'JP';
+        const avatar=`data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect width='128' height='128' rx='64' fill='%2319ba75'/><text x='50%' y='53%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-size='44' font-weight='700'>${encodeURIComponent(initials)}</text></svg>`;
+        const sidebarAvatar=document.getElementById('sidebarAvatar');
+        const settingsAvatar=document.getElementById('settingsAvatarPreview');
+        if(sidebarAvatar)sidebarAvatar.src=avatar;
+        if(settingsAvatar)settingsAvatar.src=avatar;
       }
 
 
       function applyWorkspaceSettingsRecord(row) {
         if (!row) return;
-        state.ownerName = row.owner_name || state.ownerName || 'Your Business Name';
-        state.ownerAddress = row.owner_address || '';
-        state.ownerPhone = row.owner_phone || '';
-        state.ownerEmail = row.owner_email || '';
-        state.profilePhoto = row.profile_photo || '';
-        state.themeMode = row.theme_mode || 'light';
-        state.settings.businessName = row.business_name || 'JUAN PROJECT';
-        state.settings.ownerName = state.ownerName;
-        state.settings.address = state.ownerAddress;
-        state.settings.email = state.ownerEmail;
-        localStorage.setItem('JUAN_OWNER_NAME', state.ownerName);
-        localStorage.setItem('JUAN_OWNER_ADDRESS', state.ownerAddress);
-        localStorage.setItem('JUAN_OWNER_PHONE', state.ownerPhone);
-        localStorage.setItem('JUAN_OWNER_EMAIL', state.ownerEmail);
-        localStorage.setItem('JUAN_THEME_MODE', state.themeMode);
-        if (state.profilePhoto) localStorage.setItem('JUAN_PROFILE_PHOTO', state.profilePhoto); else localStorage.removeItem('JUAN_PROFILE_PHOTO');
+        state.ownerName=row.owner_name||state.ownerName||'Your Business Name';
+        state.ownerAddress=row.owner_address||'';
+        state.ownerPhone=formatPhilippinePhone(row.owner_phone||'');
+        state.ownerEmail=row.owner_email||'';
+        state.profilePhoto='';
+        state.themeMode=row.theme_mode||'light';
+        state.settings.businessName=row.business_name||'JUAN PROJECT';
+        state.settings.ownerName=state.ownerName;
+        state.settings.address=state.ownerAddress;
+        state.settings.email=state.ownerEmail;
+        localStorage.setItem('JUAN_OWNER_NAME',state.ownerName);
+        localStorage.setItem('JUAN_OWNER_ADDRESS',state.ownerAddress);
+        localStorage.setItem('JUAN_OWNER_PHONE',state.ownerPhone);
+        localStorage.setItem('JUAN_OWNER_EMAIL',state.ownerEmail);
+        localStorage.setItem('JUAN_THEME_MODE',state.themeMode);
+        localStorage.removeItem('JUAN_PROFILE_PHOTO');
         applyTheme(state.themeMode);
         updateProfileDisplay();
-        const address=document.getElementById('ownerAddressInput');if(address)address.value=state.ownerAddress;
-        const phone=document.getElementById('ownerPhoneInput');if(phone)phone.value=state.ownerPhone;
-        const email=document.getElementById('ownerEmailInput');if(email)email.value=state.ownerEmail;
         const theme=document.getElementById('themeModeSelect');if(theme)theme.value=state.themeMode;
       }
 
       async function syncWorkspaceSettingsNow() {
-        if (!supabaseClient || !state.isConnected) return false;
-        const payload={id:1,business_name:state.settings.businessName||'JUAN PROJECT',owner_name:state.ownerName||null,owner_address:state.ownerAddress||null,owner_phone:state.ownerPhone||null,owner_email:state.ownerEmail||null,profile_photo:state.profilePhoto||null,theme_mode:state.themeMode||'light',updated_at:new Date().toISOString()};
-        const {error}=await supabaseClient.from('workspace_settings').upsert(payload,{onConflict:'id'});
-        if(error){console.warn('Workspace settings cloud sync failed:',error);return false}
+        if(!supabaseClient||!state.isConnected)return false;
+        const settingsPayload={id:1,business_name:state.settings.businessName||'JUAN PROJECT',owner_name:state.ownerName||null,owner_address:state.ownerAddress||null,owner_phone:state.ownerPhone||null,owner_email:state.ownerEmail||null,profile_photo:null,theme_mode:state.themeMode||'light',updated_at:new Date().toISOString()};
+        const settingsResult=await supabaseClient.from('workspace_settings').upsert(settingsPayload,{onConflict:'id'});
+        if(settingsResult.error){console.warn('Workspace settings cloud sync failed:',settingsResult.error);throw settingsResult.error;}
+        try{
+          const session=await supabaseClient.auth.getSession();
+          const user=session?.data?.session?.user;
+          if(user){
+            const profileResult=await supabaseClient.from('workspace_profiles').upsert({user_id:user.id,display_name:state.ownerName||null,business_name:state.settings.businessName||'JUAN PROJECT',contact_email:state.ownerEmail||null,contact_phone:state.ownerPhone||null,billing_address:state.ownerAddress||null,avatar_original_path:null,avatar_cropped_path:null,avatar_crop:{}},{onConflict:'user_id'});
+            if(profileResult.error)console.warn('Workspace profile mirror failed:',profileResult.error);
+          }
+        }catch(e){console.warn('Workspace profile mirror unavailable:',e?.message||e);}
         return true;
       }
       function queueWorkspaceSettingsSync(){
         clearTimeout(queueWorkspaceSettingsSync.timer);
         queueWorkspaceSettingsSync.timer=setTimeout(()=>syncWorkspaceSettingsNow(),220);
+      }
+
+
+      async function loadWorkspaceProfileSettingsFallback(){
+        if(!supabaseClient||!state.isConnected)return;
+        try{
+          const session=await supabaseClient.auth.getSession();
+          const user=session?.data?.session?.user;if(!user)return;
+          const {data,error}=await supabaseClient.from('workspace_profiles').select('display_name,business_name,contact_email,contact_phone,billing_address').eq('user_id',user.id).maybeSingle();
+          if(error)throw error;if(!data)return;
+          if(data.display_name)state.ownerName=data.display_name;
+          if(data.business_name)state.settings.businessName=data.business_name;
+          if(data.contact_email!==null&&data.contact_email!==undefined)state.ownerEmail=data.contact_email||'';
+          if(data.contact_phone!==null&&data.contact_phone!==undefined)state.ownerPhone=formatPhilippinePhone(data.contact_phone||'');
+          if(data.billing_address!==null&&data.billing_address!==undefined)state.ownerAddress=data.billing_address||'';
+          state.settings.ownerName=state.ownerName;state.settings.email=state.ownerEmail;state.settings.address=state.ownerAddress;
+          localStorage.setItem('JUAN_OWNER_NAME',state.ownerName||'');localStorage.setItem('JUAN_OWNER_ADDRESS',state.ownerAddress||'');localStorage.setItem('JUAN_OWNER_PHONE',state.ownerPhone||'');localStorage.setItem('JUAN_OWNER_EMAIL',state.ownerEmail||'');
+          updateProfileDisplay();
+        }catch(e){console.warn('Workspace profile fallback load unavailable:',e?.message||e);}
       }
 
       function setWorkspaceLoading(loading) {
@@ -4103,24 +4148,33 @@
         }
       }
 
-      async function updateOwnerPhone(val) {
-        const phone=String(val||"").trim();
-        if(phone && !/^[\+\d\s\-\(\)]+$/.test(phone)){
-          showToast("Please enter a valid phone number.");
-          updateProfileDisplay();
-          return;
-        }
 
-        state.ownerPhone=phone;
-        updateProfileDisplay();
+      function normalizePhilippinePhone(value){
+        let digits=String(value||'').replace(/\D/g,'');
+        if(digits.startsWith('63')&&digits.length===12)digits='0'+digits.slice(2);
+        if(digits.length===10&&digits.startsWith('9'))digits='0'+digits;
+        return digits;
+      }
+      function formatPhilippinePhone(value){
+        const digits=normalizePhilippinePhone(value);
+        if(/^09\d{9}$/.test(digits))return `${digits.slice(0,4)} ${digits.slice(4,7)} ${digits.slice(7)}`;
+        return String(value||'').trim();
+      }
+      function formatPhoneField(input){
+        if(!input)return;const raw=String(input.value||'').trim();if(!raw)return;
+        const normalized=normalizePhilippinePhone(raw);
+        if(!/^09\d{9}$/.test(normalized)){showToast('Enter a valid Philippine mobile number, e.g. 09637050477.');return;}
+        input.value=formatPhilippinePhone(normalized);
+      }
 
-        try{
-          const cloudSaved=await saveWorkspaceProfileSettings({contact_phone:phone});
-          showToast(cloudSaved ? "Phone number saved." : "Phone number saved on this browser.");
-        }catch(error){
-          console.error("Phone save failed:",error);
-          showToast(`Phone save failed: ${error.message||error}`);
-        }
+      function updateOwnerPhone(val) {
+        const raw=String(val||'').trim();
+        if(!raw){state.ownerPhone='';localStorage.setItem('JUAN_OWNER_PHONE','');queueWorkspaceSettingsSync();updateProfileDisplay();showToast('Contact phone updated.');return;}
+        const normalized=normalizePhilippinePhone(raw);
+        if(!/^09\d{9}$/.test(normalized)){showToast('Please enter a valid Philippine mobile number.');updateProfileDisplay();return;}
+        state.ownerPhone=formatPhilippinePhone(normalized);
+        localStorage.setItem('JUAN_OWNER_PHONE',state.ownerPhone);
+        updateProfileDisplay();queueWorkspaceSettingsSync();showToast('Contact phone updated.');
       }
 
       async function updateOwnerEmail(val) {
@@ -4156,46 +4210,28 @@ ${description}`))actionCallback();return;}
 
 
       const WORKSPACE_RESET_PIN = "729333";
+
+      function setupSecurePinBoxes(groupId,hiddenId,submitFn){
+        const group=document.getElementById(groupId),hidden=document.getElementById(hiddenId);if(!group||!hidden)return;
+        const boxes=[...group.querySelectorAll('.secure-pin-digit')];
+        const sync=()=>{hidden.value=boxes.map(b=>String(b.value||'').replace(/\D/g,'').slice(0,1)).join('');};
+        boxes.forEach((box,index)=>{
+          box.value='';box.classList.remove('is-invalid');
+          box.oninput=e=>{e.target.value=String(e.target.value||'').replace(/\D/g,'').slice(-1);sync();if(e.target.value&&index<boxes.length-1)boxes[index+1].focus();};
+          box.onkeydown=e=>{if(e.key==='Backspace'&&!box.value&&index>0){boxes[index-1].value='';boxes[index-1].focus();sync();}if(e.key==='ArrowLeft'&&index>0)boxes[index-1].focus();if(e.key==='ArrowRight'&&index<boxes.length-1)boxes[index+1].focus();if(e.key==='Enter'){e.preventDefault();submitFn();}};
+          box.onpaste=e=>{const digits=(e.clipboardData?.getData('text')||'').replace(/\D/g,'').slice(0,6);if(!digits)return;e.preventDefault();digits.split('').forEach((d,i)=>{if(boxes[i])boxes[i].value=d;});sync();boxes[Math.min(digits.length,boxes.length)-1]?.focus();};
+        });
+        hidden.value='';setTimeout(()=>boxes[0]?.focus(),70);
+      }
+      function markSecurePinInvalid(groupId,invalid=true){document.querySelectorAll(`#${groupId} .secure-pin-digit`).forEach(x=>x.classList.toggle('is-invalid',invalid));}
+
       function requestDestructivePin(title,description,callback){
         state.pendingDestructiveAction=typeof callback==='function'?callback:null;
-
-        const titleEl=document.getElementById('destructivePinTitle');
-        const desc=document.getElementById('destructivePinDescription');
-        const hidden=document.getElementById('destructivePinInput');
-        const error=document.getElementById('destructivePinError');
-        const grid=document.getElementById('destructivePinDigits');
-
+        const titleEl=document.getElementById('destructivePinTitle'),desc=document.getElementById('destructivePinDescription'),error=document.getElementById('destructivePinError');
         if(titleEl)titleEl.textContent=title||'Confirm deletion';
-        if(desc)desc.textContent=description||'Enter your 6-digit PIN to continue.';
-        if(hidden)hidden.value='';
-        if(error)error.classList.add('hidden');
-
-        if(grid){
-          const inputs=[...grid.querySelectorAll('.destructive-pin-digit')];
-          inputs.forEach((input,index)=>{
-            input.value='';
-            input.classList.remove('is-invalid');
-            input.oninput=(event)=>{
-              const value=String(event.target.value||'').replace(/\D/g,'').slice(-1);
-              event.target.value=value;
-              syncDestructivePinDigits();
-              if(value&&index<5)inputs[index+1]?.focus();
-            };
-            input.onkeydown=(event)=>{
-              if(event.key==='Backspace'&&!event.target.value&&index>0){
-                inputs[index-1].value='';
-                inputs[index-1].focus();
-                syncDestructivePinDigits();
-              }
-              if(event.key==='ArrowLeft'&&index>0)inputs[index-1]?.focus();
-              if(event.key==='ArrowRight'&&index<5)inputs[index+1]?.focus();
-              if(event.key==='Enter')confirmDestructivePin();
-            };
-          });
-        }
-
-        openModal('destructivePinModal');
-        setTimeout(()=>grid?.querySelector('.destructive-pin-digit')?.focus(),80);
+        if(desc)desc.textContent=(description||'This action changes or removes saved data.')+' Enter your 6-digit PIN to continue.';
+        if(error)error.classList.add('hidden');markSecurePinInvalid('destructivePinDigits',false);openModal('destructivePinModal');
+        setupSecurePinBoxes('destructivePinDigits','destructivePinInput',confirmDestructivePin);
       }
 
       function syncDestructivePinDigits(){
@@ -4207,54 +4243,19 @@ ${description}`))actionCallback();return;}
           .join('');
       }
       function confirmDestructivePin(){
-        syncDestructivePinDigits();
-
-        const input=document.getElementById('destructivePinInput');
-        const error=document.getElementById('destructivePinError');
-        const pin=String(input?.value||'').replace(/\D/g,'').slice(0,6);
-
-        if(pin.length!==6||pin!==WORKSPACE_RESET_PIN){
-          if(error)error.classList.remove('hidden');
-          const grid=document.getElementById('destructivePinDigits');
-          grid?.querySelectorAll('.destructive-pin-digit').forEach(el=>el.classList.add('is-invalid'));
-          grid?.querySelector('.destructive-pin-digit')?.focus();
-          return;
-        }
-
-        if(error)error.classList.add('hidden');
-        document.querySelectorAll('#destructivePinDigits .destructive-pin-digit')
-          .forEach(el=>el.classList.remove('is-invalid'));
-
-        const action=state.pendingDestructiveAction;
-        state.pendingDestructiveAction=null;
-        closeModal('destructivePinModal');
-        if(action)action();
+        const hidden=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError');
+        const pin=String(hidden?.value||'').replace(/\D/g,'').slice(0,6);
+        if(pin!==WORKSPACE_RESET_PIN){markSecurePinInvalid('destructivePinDigits',true);if(error)error.classList.remove('hidden');document.querySelector('#destructivePinDigits .secure-pin-digit')?.focus();return;}
+        markSecurePinInvalid('destructivePinDigits',false);if(error)error.classList.add('hidden');const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;closeModal('destructivePinModal');if(action)action();
       }
 
       function openResetDataModal(){
-        const input=document.getElementById('resetDataPinInput'),error=document.getElementById('resetDataPinError');
-        if(input){input.value='';input.classList.remove('is-invalid');}
-        if(error)error.classList.add('hidden');
-        openModal('resetDataPinModal');
-        setTimeout(()=>input?.focus(),80);
+        const error=document.getElementById('resetDataPinError');if(error)error.classList.add('hidden');markSecurePinInvalid('resetDataPinDigits',false);openModal('resetDataPinModal');setupSecurePinBoxes('resetDataPinDigits','resetDataPinInput',confirmResetDataPin);
       }
       function confirmResetDataPin(){
-        const input=document.getElementById('resetDataPinInput'),error=document.getElementById('resetDataPinError');
-        const pin=String(input?.value||'').replace(/\D/g,'').slice(0,6);
-        if(pin!==WORKSPACE_RESET_PIN){
-          if(input){input.classList.add('is-invalid');input.select();}
-          if(error)error.classList.remove('hidden');
-          return;
-        }
-        if(input)input.classList.remove('is-invalid');
-        if(error)error.classList.add('hidden');
-        closeModal('resetDataPinModal');
-        showConfirmationDialog(
-          'Reset all workspace data?',
-          'This will remove your current projects, clients, payments, catalog changes, templates, tasks, and cart data, then restore the preloaded workspace dataset. This action cannot be undone unless you exported a backup.',
-          'Reset Data',
-          performResetWorkspaceData
-        );
+        const input=document.getElementById('resetDataPinInput'),error=document.getElementById('resetDataPinError');const pin=String(input?.value||'').replace(/\D/g,'').slice(0,6);
+        if(pin!==WORKSPACE_RESET_PIN){markSecurePinInvalid('resetDataPinDigits',true);if(error)error.classList.remove('hidden');document.querySelector('#resetDataPinDigits .secure-pin-digit')?.focus();return;}
+        markSecurePinInvalid('resetDataPinDigits',false);if(error)error.classList.add('hidden');closeModal('resetDataPinModal');showConfirmationDialog('Reset all workspace data?','This will remove your current projects, clients, payments, catalog changes, templates, tasks, and cart data, then restore the preloaded workspace dataset. This action cannot be undone unless you exported a backup.','Reset Data',performResetWorkspaceData);
       }
       function performResetWorkspaceData(){
         const operationalKeys=[
@@ -4442,6 +4443,7 @@ ${description}`))actionCallback();return;}
           localStorage.removeItem('JUAN_CLIENTS_LOCAL');localStorage.removeItem('JUAN_PROJECTS_LOCAL');localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');
           loadTasksState();
           if(settingsRes.data)applyWorkspaceSettingsRecord(settingsRes.data);
+          await loadWorkspaceProfileSettingsFallback();
           const remoteSharedHasData=Boolean(sharedRes?.data&&((Array.isArray(sharedRes.data.tasks)&&sharedRes.data.tasks.length)||(Array.isArray(sharedRes.data.templates)&&sharedRes.data.templates.length)));
           if(remoteSharedHasData)applyWorkspaceSharedStateRecord(sharedRes.data);else if(!sharedRes?.error)queueWorkspaceSharedStateSync();
           renderTemplatesDropdown();renderCurrentView();
@@ -4528,9 +4530,7 @@ ${description}`))actionCallback();return;}
         return String(value ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       }
 
-      function getProjectPaid(proj) {
-        return (proj.payments || []).reduce((sum,p) => sum + Number(p.amount_paid || p.amount || 0), 0);
-      }
+      function getProjectPaid(proj) {return (proj.payments||[]).filter(p=>!p.deleted_at).reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);}
 
       function getProjectBalance(proj) {
         const stored = Number(proj.pending_amount);
@@ -4567,12 +4567,7 @@ ${description}`))actionCallback();return;}
         return getProjectBalance(proj) > 0 && proj.payment_due_date && new Date(proj.payment_due_date + "T23:59:59") < new Date();
       }
 
-      function getAllPayments() {
-        return (Array.isArray(state.projects)?state.projects:[]).flatMap(p => {
-          const rows=Array.isArray(p?.payments)?p.payments:[];
-          return rows.filter(Boolean).map(pay => ({...pay, project: p}));
-        });
-      }
+      function getAllPayments(){return state.projects.flatMap(p=>(p.payments||[]).filter(pay=>!pay.deleted_at).map(pay=>({...pay,project:p})));}
 
 
       function parseDateSafe(value){ if(!value) return null; const d=new Date(String(value).length===10?value+"T12:00:00":value); return isNaN(d)?null:d; }
@@ -4582,53 +4577,36 @@ ${description}`))actionCallback();return;}
         const diff=Math.round((due-now)/86400000); let label=""; if(diff<0) label=`${Math.abs(diff)}d overdue`; else if(diff===0) label="Due today"; else if(diff===1) label="Due tomorrow"; else label=`${diff} days left`;
         return {label,sub:due.toLocaleDateString("en-PH",{month:"short",day:"numeric",year:due.getFullYear()!==now.getFullYear()?"numeric":undefined}),cls:diff<0?"urgent":diff<=3?"soon":""};
       }
-      function togglePopover(id,event){
-        if(event) event.stopPropagation();
 
-        document.querySelectorAll('.popover-wrap.open').forEach(el=>{
-          if(el.id!==id){
-            el.classList.remove('open');
-            const old=el.querySelector('.popover-panel');
-            if(old){
-              old.style.position='';
-              old.style.left='';
-              old.style.top='';
-              old.style.right='';
-              old.style.bottom='';
-              old.style.zIndex='';
-            }
-          }
+      function closeFloatingActionMenus(exceptId=null){
+        document.querySelectorAll('.popover-wrap[data-floating-open="1"]').forEach(wrap=>{
+          if(exceptId&&wrap.id===exceptId)return;
+          const panel=document.querySelector(`.jp-floating-action-menu[data-owner="${CSS.escape(wrap.id)}"]`);
+          if(panel){panel.style.display='';panel.style.position='';panel.style.left='';panel.style.top='';panel.style.zIndex='';panel.classList.remove('jp-floating-action-menu');panel.removeAttribute('data-owner');wrap.appendChild(panel);}
+          wrap.classList.remove('open');wrap.removeAttribute('data-floating-open');
         });
-
-        const wrap=document.getElementById(id);
-        if(!wrap)return;
-
-        const panel=wrap.querySelector('.popover-panel');
-        const button=wrap.querySelector('.icon-more-button,button');
-        const opening=!wrap.classList.contains('open');
-        wrap.classList.toggle('open',opening);
-
-        if(!opening||!panel||!button)return;
-
-        const rect=button.getBoundingClientRect();
-        panel.style.position='fixed';
-        panel.style.zIndex='99999';
-        panel.style.right='auto';
-
-        const width=Math.max(180,panel.offsetWidth||200);
-        let left=rect.right-width;
-        left=Math.max(12,Math.min(left,window.innerWidth-width-12));
-        panel.style.left=`${left}px`;
-
-        const estimatedHeight=Math.max(96,panel.scrollHeight||120);
-        const spaceBelow=window.innerHeight-rect.bottom;
-        const top=spaceBelow>=estimatedHeight+12
-          ? rect.bottom+8
-          : Math.max(12,rect.top-estimatedHeight-8);
-
-        panel.style.top=`${top}px`;
       }
-      document.addEventListener('click',()=>document.querySelectorAll('.popover-wrap.open').forEach(el=>el.classList.remove('open')));
+
+      function togglePopover(id,event){
+        if(event)event.stopPropagation();
+        const wrap=document.getElementById(id);if(!wrap)return;
+        const wasOpen=wrap.getAttribute('data-floating-open')==='1';
+        closeFloatingActionMenus();
+        if(wasOpen)return;
+        const button=wrap.querySelector('.icon-more-button,button');const panel=wrap.querySelector('.popover-panel');if(!button||!panel)return;
+        const rect=button.getBoundingClientRect();
+        document.body.appendChild(panel);panel.classList.add('jp-floating-action-menu');panel.dataset.owner=id;panel.style.display='block';panel.style.position='fixed';panel.style.zIndex='2147483000';
+        const width=Math.max(190,Math.min(260,panel.getBoundingClientRect().width||210));panel.style.width=`${width}px`;
+        const height=Math.max(70,panel.getBoundingClientRect().height||120);
+        // Align the menu's right edge with the ellipsis, so it expands to the LEFT.
+        const left=Math.max(10,Math.min(window.innerWidth-width-10,rect.right-width));
+        const below=window.innerHeight-rect.bottom;const top=below>=height+12?rect.bottom+6:Math.max(10,rect.top-height-6);
+        panel.style.left=`${left}px`;panel.style.top=`${top}px`;
+        wrap.classList.add('open');wrap.dataset.floatingOpen='1';
+      }
+      document.addEventListener('click',()=>closeFloatingActionMenus());
+      window.addEventListener('resize',()=>closeFloatingActionMenus());
+      window.addEventListener('scroll',()=>closeFloatingActionMenus(),true);
       function renderOverviewCurrentProjects(){
         const box=document.getElementById('overviewCurrentProjects'); if(!box)return;
         const active=state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.delivery_status!=="Delivered"&&!p.archived_at).sort(compareProjectPriority);
@@ -4950,7 +4928,7 @@ ${description}`))actionCallback();return;}
         const sortEl=document.getElementById('projectsSort');if(sortEl)sortEl.value=state.listSorts?.projects||'default';
         body.innerHTML=rows.map(p=>{
           const bal=getProjectBalance(p),prog=getProjectProgress(p),category=displayCategory(p.project_type||getProjectType(p)||'—'),priority=projectIsPriority(p),active=projectIsActiveByPayment(p),status=active?'ACTIVE':'COMPLETED',menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
-          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${active?'badge-orange':'badge-green'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','deliverables')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${active?'badge-orange':'badge-green'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`;
         }).join('')||`<tr><td colspan="10" class="text-center text-muted py-4">No projects found.</td></tr>`;
       }
 
@@ -5012,7 +4990,7 @@ ${description}`))actionCallback();return;}
           const statusKey=displayStatus.toLowerCase();
           const badgeClass=isProjectOverdue(p)?'badge-red':statusKey.includes('completed')?'badge-green':'badge-orange';
           const label=isProjectOverdue(p)&&bal>0?'Overdue':displayStatus;
-          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td>${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td></tr>`;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','payment-tracker')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td>${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td></tr>`;
         }).join("")||`<tr><td colspan="8" class="text-center text-muted py-4">No matching invoice or payment records.</td></tr>`;
       }
       function setPaymentFilter(filter){ state.paymentFilter=filter; renderPaymentsView(); }
@@ -5033,7 +5011,7 @@ ${description}`))actionCallback();return;}
           const payments=[];
           const seenPaymentIds=new Set();
           projects.forEach(project=>{
-            (project.payments||[]).forEach(pay=>{
+            (project.payments||[]).filter(pay=>pay&&!pay.deleted_at).forEach(pay=>{
               const id=String(pay?.id||'');
               if(id)seenPaymentIds.add(id);
               payments.push({...pay,project_id:pay?.project_id||project.id});
@@ -5054,7 +5032,7 @@ ${description}`))actionCallback();return;}
           const projectPaid=p=>{
             const mapped=paidByProject.get(String(p.id));
             if(mapped!==undefined)return mapped;
-            return (p.payments||[]).reduce((sum,pay)=>sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)),0);
+            return (p.payments||[]).filter(pay=>!pay.deleted_at).reduce((sum,pay)=>sum+Math.max(0,safeNumber(pay.amount_paid??pay.amount)),0);
           };
           const projectBalance=p=>Math.max(0,Math.max(0,safeNumber(p.total_amount))-projectPaid(p));
 
@@ -5648,6 +5626,7 @@ ${description}`))actionCallback();return;}
         }
         persistCartState();
         renderCartUI();
+        refreshAutomaticOrderDeadline();
         showToast(`Added ${name} to cart.`);
       }
       function addPackageToCart(pkgCode) {
@@ -5669,6 +5648,7 @@ ${description}`))actionCallback();return;}
 
         persistCartState();
         renderCartUI();
+        refreshAutomaticOrderDeadline();
         showToast(`${pkg.name} package added to cart.`);
       }
 
@@ -5805,43 +5785,19 @@ ${description}`))actionCallback();return;}
         return getLocalDateString(d);
       }
 
-      function setDefaultOrderDates(forceDeadline = false) {
-        const startInput = document.getElementById("orderStartDate");
-        const deadlineInput = document.getElementById("orderDeadlineDate");
-        if (!startInput || !deadlineInput) return;
 
-        const today = getLocalDateString(new Date());
-        if (!state.cart.startDate || forceDeadline === true) {
-          state.cart.startDate = today;
-        }
+      function standardProductionDaysForItems(items=[]){return projectHasPackageItems(items)?14:10;}
+      function standardProductionDaysForCart(){return standardProductionDaysForItems(state.cart?.items||[]);}
+      function refreshAutomaticOrderDeadline(){if(state.cart.deadlineManuallySet)return;const start=state.cart.startDate||getLocalDateString(new Date());state.cart.deadlineDate=addDaysToDateString(start,standardProductionDaysForCart());const el=document.getElementById('orderDeadlineDate');if(el)el.value=state.cart.deadlineDate;updateRushCalculations();persistCartState();}
 
-        startInput.value = state.cart.startDate || today;
-
-        if (!state.cart.deadlineDate || forceDeadline === true || state.cart.deadlineManuallySet === false) {
-          state.cart.deadlineDate = addDaysToDateString(startInput.value, pricingStandardDays(state.cart.items,nextProjectNumber()));
-        }
-
-        deadlineInput.value = state.cart.deadlineDate;
-        updateRushCalculations();
+      function setDefaultOrderDates(forceDeadline=false){
+        const startInput=document.getElementById('orderStartDate'),deadlineInput=document.getElementById('orderDeadlineDate');if(!startInput||!deadlineInput)return;
+        const today=getLocalDateString(new Date());if(!state.cart.startDate||forceDeadline===true)state.cart.startDate=today;startInput.value=state.cart.startDate||today;
+        if(!state.cart.deadlineDate||forceDeadline===true||state.cart.deadlineManuallySet===false)state.cart.deadlineDate=addDaysToDateString(startInput.value,standardProductionDaysForCart());
+        deadlineInput.value=state.cart.deadlineDate;updateRushCalculations();
       }
 
-      function handleStartDateChange() {
-        const startInput = document.getElementById("orderStartDate");
-        if (!startInput?.value) return;
-
-        state.cart.startDate = startInput.value;
-
-        // Keep the predicted deadline at exactly 14 days unless the user has
-        // intentionally changed the deadline. This makes the default timeline
-        // predictable without overriding an intentional rush request.
-        if (!state.cart.deadlineManuallySet) {
-          state.cart.deadlineDate = addDaysToDateString(startInput.value, pricingStandardDays(state.cart.items,nextProjectNumber()));
-          const deadlineInput = document.getElementById("orderDeadlineDate");
-          if (deadlineInput) deadlineInput.value = state.cart.deadlineDate;
-        }
-
-        updateRushCalculations();
-      }
+      function handleStartDateChange(){const startInput=document.getElementById('orderStartDate');if(!startInput?.value)return;state.cart.startDate=startInput.value;if(!state.cart.deadlineManuallySet){state.cart.deadlineDate=addDaysToDateString(startInput.value,standardProductionDaysForCart());const deadline=document.getElementById('orderDeadlineDate');if(deadline)deadline.value=state.cart.deadlineDate;}updateRushCalculations();persistCartState();}
 
       function handleDeadlineDateChange() {
         const deadlineInput = document.getElementById("orderDeadlineDate");
@@ -5850,169 +5806,18 @@ ${description}`))actionCallback();return;}
         updateRushCalculations();
       }
 
-      function updateRushCalculations() {
-        const startInput = document.getElementById("orderStartDate");
-        const deadlineInput = document.getElementById("orderDeadlineDate");
-
-        const startVal = startInput?.value || state.cart.startDate || "";
-        const deadVal = deadlineInput?.value || state.cart.deadlineDate || "";
-
-        const rushDisplay = document.getElementById("rushFeeDisplayBox");
-        const durationEl = document.getElementById("orderDurationDays");
-        const badgeEl = document.getElementById("rushFeeBadge");
-        const rushTextEl = document.getElementById("orderRushFeeText");
-        const deadlineErr = document.getElementById("orderDeadlineError");
-
-        if (!startVal || !deadVal) {
-          state.cart.rushDaysEarly = 0;
-          state.cart.rushFee = 0;
-          state.cart.rushCategory = "STANDARD";
-
-          if (rushDisplay) rushDisplay.style.display = "none";
-          if (durationEl) durationEl.innerText = "—";
-          if (badgeEl) {
-            badgeEl.className = "rush-simple-label";
-            badgeEl.innerText = "STANDARD";
-          }
-          if (rushTextEl) rushTextEl.innerText = formatCurrency(0);
-          if (deadlineErr) deadlineErr.innerText = "";
-
-          const rushRow = document.getElementById("summaryRushRow");
-          const rushSummary = document.getElementById("summaryRushFee");
-          if (rushRow) rushRow.style.display = "none";
-          if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(0)}`;
-
-          updateCartCalculations();
-          return;
-        }
-
-        state.cart.startDate = startVal;
-        state.cart.deadlineDate = deadVal;
-
-        const start = new Date(`${startVal}T00:00:00`);
-        const deadline = new Date(`${deadVal}T00:00:00`);
-
-        if (Number.isNaN(start.getTime()) || Number.isNaN(deadline.getTime())) {
-          state.cart.rushDaysEarly = 0;
-          state.cart.rushFee = 0;
-          state.cart.rushCategory = "STANDARD";
-          if (deadlineErr) deadlineErr.innerText = "Please enter valid dates.";
-          if (rushDisplay) rushDisplay.style.display = "none";
-          updateCartCalculations();
-          return;
-        }
-
-        const durationDays = Math.round(
-          (deadline.getTime() - start.getTime()) / 86400000
-        );
-
-        if (durationDays <= 0) {
-          state.cart.rushDaysEarly = 0;
-          state.cart.rushFee = 0;
-          state.cart.rushCategory = "INVALID";
-
-          if (deadlineErr) {
-            deadlineErr.innerText = "Deadline date must be after the start date.";
-          }
-          if (durationEl) durationEl.innerText = `${Math.max(0, durationDays)} days`;
-          if (badgeEl) {
-            badgeEl.className = "rush-simple-label";
-            badgeEl.innerText = "INVALID DATE";
-          }
-          if (rushTextEl) rushTextEl.innerText = formatCurrency(0);
-          if (rushDisplay) rushDisplay.style.display = "block";
-
-          const rushRow = document.getElementById("summaryRushRow");
-          const rushSummary = document.getElementById("summaryRushFee");
-          if (rushRow) rushRow.style.display = "none";
-          if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(0)}`;
-
-          updateCartCalculations();
-          return;
-        }
-
-        if (deadlineErr) deadlineErr.innerText = "";
-
-        const cartItems = Array.isArray(state.cart.items) ? state.cart.items : [];
-        const hasPackage = cartItems.some(item =>
-          String(item.type || item.item_type || "").toUpperCase() === "PACKAGE"
-        );
-
-        // V2 standard timelines.
-        const standardDays = hasPackage ? 14 : 10;
-
-        // Determine production workload for the rush rate.
-        let deliverableCount = 0;
-        for (const item of cartItems) {
-          const type = String(item.type || item.item_type || "SOLO").toUpperCase();
-          const qty = Math.max(1, Number(item.qty ?? item.quantity ?? 1));
-
-          if (type === "PACKAGE") {
-            const inclusions = Array.isArray(item.includedItems)
-              ? item.includedItems.filter(Boolean)
-              : [];
-            deliverableCount += inclusions.length || 1;
-          } else {
-            deliverableCount += qty;
-          }
-        }
-
-        const daysEarly = Math.max(0, standardDays - durationDays);
-
-        // Rush category is based on how far the chosen deadline is ahead
-        // of the applicable standard timeline.
-        let rushCategory = "STANDARD";
-        if (daysEarly >= 1 && daysEarly <= 4) rushCategory = "SLIGHT RUSH";
-        else if (daysEarly >= 5 && daysEarly <= 8) rushCategory = "RUSH";
-        else if (daysEarly >= 9 && daysEarly <= 12) rushCategory = "EXPRESS RUSH";
-        else if (daysEarly >= 13) rushCategory = "CUSTOM RUSH";
-
-        let ratePerBlock = 0;
-        if (daysEarly > 0) {
-          if (deliverableCount >= 9) ratePerBlock = 1200;
-          else if (deliverableCount >= 4) ratePerBlock = 800;
-          else ratePerBlock = 500;
-        }
-
-        const fourDayBlocks = daysEarly > 0
-          ? Math.ceil(daysEarly / 4)
-          : 0;
-
-        const rushFee = fourDayBlocks * ratePerBlock;
-
-        state.cart.rushDaysEarly = daysEarly;
-        state.cart.rushFee = rushFee;
-        state.cart.rushCategory = rushCategory;
-
-        if (durationEl) {
-          durationEl.innerText = `${durationDays} day${durationDays === 1 ? "" : "s"}`;
-        }
-
-        if (badgeEl) {
-          badgeEl.className = rushCategory === "STANDARD"
-            ? "rush-simple-label"
-            : "rush-simple-label rush";
-          badgeEl.innerText = rushCategory;
-        }
-
-        if (rushTextEl) {
-          rushTextEl.innerText = formatCurrency(rushFee);
-        }
-
-        // Keep the Rush/Timeline box visible for every valid date range.
-        // STANDARD therefore remains visible with a ₱0 rush fee.
-        if (rushDisplay) {
-          rushDisplay.style.display = "block";
-        }
-
-        const rushRow = document.getElementById("summaryRushRow");
-        const rushSummary = document.getElementById("summaryRushFee");
-
-        // The summary only needs a Rush Fee line when there is an actual fee.
-        if (rushRow) rushRow.style.display = rushFee > 0 ? "flex" : "none";
-        if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(rushFee)}`;
-
-        updateCartCalculations();
+      function updateRushCalculations(){
+        const startVal=document.getElementById('orderStartDate')?.value,deadVal=document.getElementById('orderDeadlineDate')?.value,rushDisplay=document.getElementById('rushFeeDisplayBox'),durationEl=document.getElementById('orderDurationDays'),badgeEl=document.getElementById('rushFeeBadge'),rushTextEl=document.getElementById('orderRushFeeText');
+        if(!startVal||!deadVal){state.cart.rushDaysEarly=0;state.cart.rushFee=0;if(rushDisplay)rushDisplay.style.display='none';const rushRow=document.getElementById('summaryRushRow');if(rushRow)rushRow.style.display='none';updateCartCalculations();return;}
+        state.cart.startDate=startVal;state.cart.deadlineDate=deadVal;
+        const start=new Date(`${startVal}T00:00:00`),dead=new Date(`${deadVal}T00:00:00`),diffDays=Math.round((dead-start)/86400000),durationDays=Math.max(0,diffDays),STANDARD_DAYS=standardProductionDaysForCart(),RUSH_BLOCK_DAYS=4,RUSH_BLOCK_FEE=500,daysEarly=Math.max(0,STANDARD_DAYS-durationDays),rushFee=daysEarly>0?Math.ceil(daysEarly/RUSH_BLOCK_DAYS)*RUSH_BLOCK_FEE:0;
+        state.cart.rushDaysEarly=daysEarly;state.cart.rushFee=rushFee;
+        if(durationEl)durationEl.innerText=`${durationDays} day${durationDays===1?'':'s'} · standard ${STANDARD_DAYS} days`;
+        const rushLevel=daysEarly<=0?0:Math.min(4,Math.ceil(daysEarly/RUSH_BLOCK_DAYS));const levelNames=['STANDARD','SLIGHT RUSH','RUSH','EXPRESS RUSH','CUSTOM RUSH'];
+        if(badgeEl){badgeEl.className=rushLevel===0?'rush-simple-label':'rush-simple-label rush';badgeEl.innerText=levelNames[rushLevel];}
+        if(rushTextEl)rushTextEl.innerText=formatCurrency(rushFee);if(rushDisplay)rushDisplay.style.display=diffDays>=0?'block':'none';
+        const rushSummary=document.getElementById('summaryRushFee'),rushRow=document.getElementById('summaryRushRow');if(rushSummary)rushSummary.innerText=`+ ${formatCurrency(rushFee)}`;if(rushRow)rushRow.style.display=rushFee>0?'flex':'none';
+        const deadlineErr=document.getElementById('orderDeadlineError');if(deadlineErr)deadlineErr.innerText=diffDays<0?'Deadline date cannot be earlier than start date.':'';updateCartCalculations();
       }
 
       /* VALIDATION FOR NEW ORDER */
@@ -6214,40 +6019,34 @@ ${description}`))actionCallback();return;}
 
       const projectStructureSyncTimers = new Map();
 
-      async function syncProjectItemsToDatabase(project, options = {}) {
-        if (!supabaseClient || !state.isConnected || !project) return;
-        const items = Array.isArray(project.project_items) ? project.project_items : [];
-        const existingRes = await supabaseClient.from('project_items').select('id,project_id,name,price,qty,type,product_code,included_items').eq('project_id', project.id);
-        if (existingRes.error) throw existingRes.error;
-        const existingRows = existingRes.data || [];
-        if (!items.length && existingRows.length && options.allowEmpty !== true) {
-          console.warn(`Protected ${project.id}: refused to erase ${existingRows.length} cloud order item(s) from an empty local snapshot.`);
-          return;
+      async function syncProjectItemsToDatabase(project,options={}){
+        if(!supabaseClient||!state.isConnected||!project)return;
+        const source=Array.isArray(project.project_items)?project.project_items:[];
+        const existingRes=await supabaseClient.from('project_items').select('id,project_id,parent_item_id,name,item_type,quantity,unit_price,billable,counts_as_deliverable,status,progress,due_date,completed_at,shared_drive_url,client_visible,sort_order,product_code').eq('project_id',project.id);
+        if(existingRes.error)throw existingRes.error;const existing=existingRes.data||[];
+        if(!source.length&&existing.length&&options.allowEmpty!==true){console.warn(`Protected ${project.id}: refused to erase ${existing.length} cloud order item(s) from an empty local snapshot.`);return;}
+        const idFor=(item,index,prefix='pi')=>String(item.id||`${prefix}_${String(project.id).replace(/[^a-zA-Z0-9_-]/g,'_')}_${index}`);
+        const roots=source.filter(i=>!i.parent_item_id&&!i.parent_id);const explicitChildren=source.filter(i=>i.parent_item_id||i.parent_id);
+        const parentIdMap=new Map();roots.forEach((i,index)=>parentIdMap.set(String(i.id||i.product_code||i.name||index),idFor(i,index,'pi')));
+        const rows=[];
+        roots.forEach((item,index)=>{
+          const id=parentIdMap.get(String(item.id||item.product_code||item.name||index));const rawType=String(item.item_type||item.type||'SOLO').toUpperCase();const itemType=rawType==='PACKAGE'?'PACKAGE':rawType==='CUSTOM'?'CUSTOM':'SOLO';
+          rows.push({id,project_id:project.id,parent_item_id:null,product_code:item.product_code||item.code||null,name:item.name||item.item_name||'Untitled Item',item_type:itemType,quantity:Math.max(1,Number(item.quantity||item.qty||1)),unit_price:Math.max(0,Number(item.unit_price??item.price??0)),billable:true,counts_as_deliverable:itemType!=='PACKAGE',status:item.status||'Pending',progress:Number(item.progress||0),due_date:item.due_date||null,completed_at:item.completed_at||null,shared_drive_url:item.shared_drive_url||null,client_visible:item.client_visible!==false,sort_order:Number(item.sort_order??index)});
+          if(itemType==='PACKAGE'&&!explicitChildren.some(c=>String(c.parent_item_id||c.parent_id)===String(item.id))){
+            const names=(Array.isArray(item.includedItems)?item.includedItems:Array.isArray(item.included_items)?item.included_items:getPackageIncludedServiceNames(item.product_code,item)).filter(Boolean);
+            names.forEach((name,childIndex)=>rows.push({id:`${id}_component_${childIndex+1}`,project_id:project.id,parent_item_id:id,product_code:null,name:String(name),item_type:'PACKAGE_COMPONENT',quantity:1,unit_price:0,billable:false,counts_as_deliverable:true,status:'Pending',progress:0,due_date:item.due_date||project.deadline_date||null,completed_at:null,shared_drive_url:null,client_visible:true,sort_order:childIndex}));
+          }
+        });
+        explicitChildren.forEach((item,index)=>{const rawParent=String(item.parent_item_id||item.parent_id||'');const parentId=parentIdMap.get(rawParent)||rawParent;rows.push({id:idFor(item,index,'pic'),project_id:project.id,parent_item_id:parentId,product_code:item.product_code||null,name:item.name||item.item_name||'Package Component',item_type:'PACKAGE_COMPONENT',quantity:Math.max(1,Number(item.quantity||item.qty||1)),unit_price:0,billable:false,counts_as_deliverable:true,status:item.status||'Pending',progress:Number(item.progress||0),due_date:item.due_date||project.deadline_date||null,completed_at:item.completed_at||null,shared_drive_url:item.shared_drive_url||null,client_visible:item.client_visible!==false,sort_order:Number(item.sort_order??index)});});
+        const rpc=await supabaseClient.rpc('jp_replace_project_items',{p_project_id:String(project.id),p_items:rows});
+        if(rpc.error){
+          console.warn('Transactional project item RPC unavailable; using parent-first fallback:',rpc.error.message);
+          const parents=rows.filter(r=>!r.parent_item_id),children=rows.filter(r=>r.parent_item_id);
+          if(parents.length){const r=await supabaseClient.from('project_items').upsert(parents,{onConflict:'id'});if(r.error)throw r.error;}
+          if(children.length){const r=await supabaseClient.from('project_items').upsert(children,{onConflict:'id'});if(r.error)throw r.error;}
+          if(options.allowDelete!==false){const keep=new Set(rows.map(r=>String(r.id)));const stale=existing.filter(r=>!keep.has(String(r.id)));const staleChildren=stale.filter(r=>r.parent_item_id),staleParents=stale.filter(r=>!r.parent_item_id);if(staleChildren.length){const d=await supabaseClient.from('project_items').delete().in('id',staleChildren.map(r=>r.id));if(d.error)throw d.error;}if(staleParents.length){const d=await supabaseClient.from('project_items').delete().in('id',staleParents.map(r=>r.id));if(d.error)throw d.error;}}
         }
-        const del = await supabaseClient.from('project_items').delete().eq('project_id', project.id);
-        if (del.error) throw del.error;
-        if (!items.length) return;
-        const richRows = items.map(i => ({
-          project_id: project.id,
-          name: i.name || 'Untitled Item',
-          price: Number(i.price || 0),
-          qty: Math.max(1, Number(i.qty || 1)),
-          type: i.type || 'SOLO',
-          product_code: i.product_code || i.code || null,
-          included_items: Array.isArray(i.includedItems) ? i.includedItems : null
-        }));
-        let inserted = await supabaseClient.from('project_items').insert(richRows);
-        if (inserted.error) {
-          const fallbackRows = items.map(i => ({
-            project_id: project.id,
-            name: i.name || 'Untitled Item',
-            price: Number(i.price || 0),
-            qty: Math.max(1, Number(i.qty || 1)),
-            type: i.type || 'SOLO'
-          }));
-          inserted = await supabaseClient.from('project_items').insert(fallbackRows);
-        }
-        if (inserted.error) throw inserted.error;
+        project.project_items=rows.map(r=>({...r,qty:r.quantity,price:r.unit_price,type:r.item_type}));
       }
 
       async function syncDeliverablesToDatabase(project, options = {}) {
@@ -6523,14 +6322,23 @@ ${description}`))actionCallback();return;}
           let client = null;
 
           if (state.cart.clientMode === "new") {
+            const rawPhone = document.getElementById("newClientPhone")?.value?.trim() || "";
+            const normalizedPhone = rawPhone ? normalizePhilippinePhone(rawPhone) : "";
+
+            if (rawPhone && !/^09\d{9}$/.test(normalizedPhone)) {
+              throw new Error("Enter a valid Philippine mobile number.");
+            }
+
             const payload = {
               name: document.getElementById("newClientName")?.value?.trim() || "",
               email: document.getElementById("newClientEmail")?.value?.trim() || "",
-              phone: document.getElementById("newClientPhone")?.value?.trim() || null,
+              phone: normalizedPhone || null,
               address: document.getElementById("newClientAddress")?.value?.trim() || null
             };
 
-            if (!payload.name || !payload.email) throw new Error("Client name and email are required.");
+            if (!payload.name || !payload.email) {
+              throw new Error("Client name and email are required.");
+            }
 
             const existingClient = await supabaseClient
               .from("clients")
@@ -6553,43 +6361,68 @@ ${description}`))actionCallback();return;}
               client = createdClient.data;
             }
           } else {
-            client = state.clients.find(c => String(c.id) === String(state.cart.selectedClientId));
+            client = state.clients.find(c =>
+              String(c.id) === String(state.cart.selectedClientId)
+            );
+
             if (!client) throw new Error("Please select a client.");
           }
 
+          if (!Array.isArray(state.cart.items) || !state.cart.items.length) {
+            throw new Error("Add at least one order item.");
+          }
+
           const subtotal = state.cart.items.reduce(
-            (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0
+            (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1),
+            0
           );
+
           const discountRaw = Number(state.cart.discountVal || 0);
           const discountAmount = Math.min(
             subtotal,
-            Math.max(0, state.cart.discountType === "percent"
-              ? subtotal * (discountRaw / 100)
-              : discountRaw)
+            Math.max(
+              0,
+              state.cart.discountType === "percent"
+                ? subtotal * (discountRaw / 100)
+                : discountRaw
+            )
           );
+
           const rushFee = Number(state.cart.rushFee || 0);
           const totalAmount = Math.max(0, subtotal - discountAmount + rushFee);
+
           const isPackage = state.cart.items.some(item =>
             String(item.type || "").toUpperCase() === "PACKAGE"
           );
+
+          const standardDays = isPackage ? 14 : 10;
+          const start = parseDateSafe(state.cart.startDate);
+          const due = parseDateSafe(state.cart.deadlineDate);
+          const durationDays = start && due
+            ? Math.max(0, Math.round((due - start) / 86400000))
+            : standardDays;
 
           const projectPayload = {
             client_id: client.id,
             title: String(state.cart.projectName || "").trim(),
             status: "In Progress",
             delivery_status: "Pending",
-            priority: rushFee > 0,
+            priority: rushFee > 0 || durationDays < standardDays,
             project_type: isPackage ? "PACKAGE" : "SOLO",
             pricing_version: "v2",
             start_date: state.cart.startDate || null,
             deadline_date: state.cart.deadlineDate || null,
             discount_amount: discountAmount,
             rush_fee: rushFee,
-            rush_days_early: Number(state.cart.rushDaysEarly || 0),
+            rush_days_early: Math.max(0, standardDays - durationDays),
             subtotal_amount: subtotal,
             total_amount: totalAmount,
             notes: ""
           };
+
+          if (!projectPayload.title) {
+            throw new Error("Project name is required.");
+          }
 
           const projectResult = await supabaseClient
             .from("projects")
@@ -6598,62 +6431,133 @@ ${description}`))actionCallback();return;}
             .single();
 
           if (projectResult.error) throw projectResult.error;
+
           const project = projectResult.data;
 
-          for (const item of state.cart.items) {
+          const makeId = prefix => {
+            if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
+            return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,10)}`;
+          };
+
+          const resolvePackageInclusions = item => {
+            const direct =
+              (Array.isArray(item.includedItems) && item.includedItems) ||
+              (Array.isArray(item.included_items) && item.included_items) ||
+              (Array.isArray(item.inclusions) && item.inclusions) ||
+              null;
+
+            if (direct) {
+              return direct
+                .map(value => typeof value === "string" ? value : (value?.name || value?.item_name || ""))
+                .filter(Boolean)
+                .map(String);
+            }
+
+            if (typeof getPackageInclusionNames === "function") {
+              const resolved = getPackageInclusionNames(item.product_code, item);
+              if (Array.isArray(resolved) && resolved.length) return resolved;
+            }
+
+            const normalize = value => String(value || "").trim().toLowerCase();
+            const pkg = (state.packagesList || []).find(p =>
+              (item.product_code && String(p.product_code || "") === String(item.product_code)) ||
+              normalize(p.name) === normalize(item.name)
+            );
+
+            return Array.isArray(pkg?.includedServiceNames)
+              ? pkg.includedServiceNames.filter(Boolean).map(String)
+              : [];
+          };
+
+          const itemRows = [];
+
+          state.cart.items.forEach((item, itemIndex) => {
             const type = String(item.type || "SOLO").toUpperCase();
-            const qty = Math.max(1, Number(item.qty || 1));
+            const quantity = Math.max(1, Number(item.qty || 1));
+            const parentId = makeId(type === "PACKAGE" ? "pkg" : "item");
 
-            const parentResult = await supabaseClient
-              .from("project_items")
-              .insert({
-                project_id: project.id,
-                parent_item_id: null,
-                product_code: item.product_code || null,
-                name: item.name || "Untitled Item",
-                item_type: type === "PACKAGE" ? "PACKAGE" : "SOLO",
-                quantity: qty,
-                unit_price: Number(item.price || 0),
-                billable: true,
-                counts_as_deliverable: type !== "PACKAGE",
-                status: "Pending",
-                progress: 0,
-                due_date: state.cart.deadlineDate || null,
-                client_visible: true
-              })
-              .select("*")
-              .single();
-
-            if (parentResult.error) throw parentResult.error;
-            const parent = parentResult.data;
+            itemRows.push({
+              id: parentId,
+              project_id: project.id,
+              parent_item_id: null,
+              product_code: item.product_code || item.code || null,
+              name: item.name || "Untitled Item",
+              item_type: type === "PACKAGE" ? "PACKAGE" : "SOLO",
+              quantity,
+              unit_price: Number(item.price || 0),
+              billable: true,
+              counts_as_deliverable: type !== "PACKAGE",
+              status: "Pending",
+              progress: 0,
+              due_date: state.cart.deadlineDate || null,
+              completed_at: null,
+              shared_drive_url: null,
+              client_visible: true,
+              sort_order: itemIndex
+            });
 
             if (type === "PACKAGE") {
-              const inclusions = Array.isArray(item.includedItems)
-                ? item.includedItems.filter(Boolean)
-                : [];
+              const inclusions = resolvePackageInclusions(item);
 
-              for (const inclusion of inclusions) {
-                const childResult = await supabaseClient
-                  .from("project_items")
-                  .insert({
-                    project_id: project.id,
-                    parent_item_id: parent.id,
-                    product_code: null,
-                    name: String(inclusion),
-                    item_type: "PACKAGE_COMPONENT",
-                    quantity: 1,
-                    unit_price: 0,
-                    billable: false,
-                    counts_as_deliverable: true,
-                    status: "Pending",
-                    progress: 0,
-                    due_date: state.cart.deadlineDate || null,
-                    client_visible: true
-                  })
-                  .select("*")
-                  .single();
+              inclusions.forEach((name, childIndex) => {
+                itemRows.push({
+                  id: makeId("component"),
+                  project_id: project.id,
+                  parent_item_id: parentId,
+                  product_code: null,
+                  name: String(name),
+                  item_type: "PACKAGE_COMPONENT",
+                  quantity: 1,
+                  unit_price: 0,
+                  billable: false,
+                  counts_as_deliverable: true,
+                  status: "Pending",
+                  progress: 0,
+                  due_date: state.cart.deadlineDate || null,
+                  completed_at: null,
+                  shared_drive_url: null,
+                  client_visible: true,
+                  sort_order: childIndex
+                });
+              });
+            }
+          });
 
-                if (childResult.error) throw childResult.error;
+          try {
+            const itemSync = await supabaseClient.rpc("jp_replace_project_items", {
+              p_project_id: String(project.id),
+              p_items: itemRows
+            });
+
+            if (itemSync.error) throw itemSync.error;
+          } catch (itemError) {
+            console.warn(
+              "Transactional project-item RPC failed; trying parent-first fallback:",
+              itemError
+            );
+
+            const parentRows = itemRows.filter(row => !row.parent_item_id);
+            const childRows = itemRows.filter(row => row.parent_item_id);
+
+            if (parentRows.length) {
+              const parentsResult = await supabaseClient
+                .from("project_items")
+                .insert(parentRows);
+
+              if (parentsResult.error) {
+                await supabaseClient.from("projects").delete().eq("id", project.id);
+                throw parentsResult.error;
+              }
+            }
+
+            if (childRows.length) {
+              const childrenResult = await supabaseClient
+                .from("project_items")
+                .insert(childRows);
+
+              if (childrenResult.error) {
+                await supabaseClient.from("projects").delete().eq("id", project.id);
+                throw childrenResult.error;
               }
             }
           }
@@ -6667,8 +6571,11 @@ ${description}`))actionCallback();return;}
           if (refreshed.error) throw refreshed.error;
 
           const allRows = refreshed.data.project_items || [];
+          const activePayments = (refreshed.data.payments || []).filter(p => !p.deleted_at);
           const billableRows = allRows.filter(row => row.billable !== false);
-          const billableById = new Map(billableRows.map(row => [String(row.id), row]));
+          const billableById = new Map(
+            billableRows.map(row => [String(row.id), row])
+          );
 
           const hydratedProject = {
             ...refreshed.data,
@@ -6678,7 +6585,12 @@ ${description}`))actionCallback();return;}
               ...row,
               price: Number(row.unit_price || 0),
               qty: Number(row.quantity || 1),
-              type: row.item_type === "PACKAGE" ? "PACKAGE" : "SOLO"
+              type: row.item_type === "PACKAGE" ? "PACKAGE" : "SOLO",
+              includedItems: row.item_type === "PACKAGE"
+                ? allRows
+                    .filter(child => String(child.parent_item_id || "") === String(row.id))
+                    .map(child => child.name)
+                : []
             })),
             deliverables: allRows
               .filter(row => row.counts_as_deliverable !== false)
@@ -6686,11 +6598,15 @@ ${description}`))actionCallback();return;}
                 const parent = row.parent_item_id
                   ? billableById.get(String(row.parent_item_id))
                   : null;
+
                 return {
                   id: row.id,
                   item_name: row.name,
                   name: row.name,
-                  completed: false,
+                  completed:
+                    String(row.status || "").toLowerCase() === "completed" ||
+                    Number(row.progress || 0) >= 100 ||
+                    !!row.completed_at,
                   progress: Number(row.progress || 0),
                   status: row.status || "Pending",
                   completed_at: row.completed_at || null,
@@ -6701,27 +6617,58 @@ ${description}`))actionCallback();return;}
                   package_name: parent?.name || null
                 };
               }),
-            payments: refreshed.data.payments || []
+            payments: activePayments
           };
 
-          state.clients = state.clients.filter(c => String(c.id) !== String(client.id));
-          state.clients.push(client);
+          state.clients = state.clients.filter(c =>
+            String(c.id) !== String(client.id)
+          );
+          state.clients.push({
+            ...client,
+            phone: formatPhilippinePhone(client.phone || "")
+          });
 
-          state.projects = state.projects.filter(p => String(p.id) !== String(hydratedProject.id));
+          state.projects = state.projects.filter(p =>
+            String(p.id) !== String(hydratedProject.id)
+          );
           state.projects.unshift(hydratedProject);
+
+          // Reset only after the database confirms the complete project structure.
+          const today = getLocalDateString(new Date());
 
           state.cart.items = [];
           state.cart.discountVal = 0;
+          state.cart.discountType = "fixed";
           state.cart.projectName = "";
           state.cart.selectedClientId = "";
+          state.cart.rushFee = 0;
+          state.cart.rushDaysEarly = 0;
+          state.cart.deadlineManuallySet = false;
+          state.cart.startDate = today;
+          state.cart.deadlineDate = addDaysToDateString(today, 10);
+
+          const projectNameInput = document.getElementById("orderProjectName");
+          if (projectNameInput) projectNameInput.value = "";
+
+          const discountInput = document.getElementById("cartDiscountVal");
+          if (discountInput) discountInput.value = "0";
+
+          const startInput = document.getElementById("orderStartDate");
+          if (startInput) startInput.value = state.cart.startDate;
+
+          const deadlineInput = document.getElementById("orderDeadlineDate");
+          if (deadlineInput) deadlineInput.value = state.cart.deadlineDate;
 
           localStorage.removeItem("JUAN_PROJECTS_LOCAL");
           localStorage.removeItem("JUAN_CLIENTS_LOCAL");
+
           persistCartState();
+          renderCartUI();
+          setDefaultOrderDates(true);
 
           closeModal("orderSummaryModal");
           showToast("Order created successfully!");
-          openProjectDetails(hydratedProject.id);
+          openProjectDetails(hydratedProject.id, "deliverables");
 
         } catch (error) {
           console.error("Create order failed:", error);
@@ -6884,19 +6831,12 @@ ${description}`))actionCallback();return;}
         }else{queueOfflineProject(proj,'Edit Project');}
         closeModal("editProjectModal"); openProjectDetails(proj.id); renderOverviewDashboard(); renderProjects(); showToast(cloudAvailable()?"Project record updated.":"Project updated offline.");
       }
-      function openProjectDetails(projId) {
-        state.activeProjectId=projId;
-        const proj=state.projects.find(p=>p.id===projId);if(!proj)return;
+      function openProjectDetails(projId,initialTab='deliverables'){
+        state.activeProjectId=projId;const proj=state.projects.find(p=>p.id===projId);if(!proj)return;
         if(Array.isArray(proj.project_items)&&proj.project_items.some(i=>String(i.type||'').toUpperCase()==='HISTORY')&&Array.isArray(proj.deliverables)&&proj.deliverables.length===1&&String(proj.deliverables[0].item_name||proj.deliverables[0].name||'')===String(proj.project_type||'')){proj.deliverables=[];persistProjectsState();}
         const hasOldAutoDeliverables=Array.isArray(proj.deliverables)&&proj.deliverables.some(d=>d.order_item_id&&String(d.source_type||'').toUpperCase()!=='ORDER_ITEM');
         if(hasOldAutoDeliverables&&Array.isArray(proj.project_items)&&!proj.project_items.some(i=>String(i.type||'').toUpperCase()==='HISTORY')){syncProjectDeliverablesFromOrderItems(proj);persistProjectsState();}
-        document.getElementById('projDetailTitle').innerText=proj.title||'Untitled Project';
-        document.getElementById('projDetailClient').innerText=[formatProjectId(proj),proj.client_email||'No email'].join('  |  ');
-        populateProjectData(proj);
-        renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);
-        document.getElementById('projectNotesTextarea').value=proj.notes||'';
-        navigateTo('project-details');
-        switchProjectTab('deliverables');
+        document.getElementById('projDetailTitle').innerText=proj.title||'Untitled Project';document.getElementById('projDetailClient').innerText=[formatProjectId(proj),proj.client_email||'No email'].join('  |  ');populateProjectData(proj);renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);document.getElementById('projectNotesTextarea').value=proj.notes||'';navigateTo('project-details');switchProjectTab(initialTab||'deliverables');
       }
 
       let projectDataAutosaveTimer=null;
@@ -7261,21 +7201,34 @@ ${description}`))actionCallback();return;}
         closeModal('recordPaymentModal');showConfirmationDialog(draft.editingId?'Confirm Payment Changes':'Confirm Payment',`${formatCurrency(draft.amount)} · ${formatProjectDate(draft.payment_date)} · ${draft.payment_method}`,'Confirm',()=>finalizePaymentRecord(proj,draft));
       }
       async function finalizePaymentRecord(proj,draft){
-        showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,550));let record;if(draft.editingId){record=(proj.payments||[]).find(p=>String(p.id)===String(draft.editingId));if(record){const before={...record};if(supabaseClient&&state.isConnected){try{await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(draft.editingId),project_id:proj.id,action:'EDIT',before_value:before,after_value:{amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}}]);}catch(e){console.warn('Payment audit sync unavailable:',e.message);}}Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()});}}
-        if(!record){record={id:'pay_'+Date.now(),project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,created_at:new Date().toISOString()};if(!proj.payments)proj.payments=[];proj.payments.push(record);}
-        proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();
-        if(supabaseClient&&state.isConnected){try{if(draft.editingId)await supabaseClient.from('payments').update({amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}).eq('id',draft.editingId);else await supabaseClient.from('payments').insert([{project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no}]);}catch(e){console.warn('Payment sync unavailable:',e.message);markProjectDirty(proj,'Payment update');}}
-        renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Successful',draft.editingId?'Payment changes were saved.':'Payment was recorded successfully.',true);state.editingPaymentId=null;setTimeout(()=>closeModal('actionStatusModal'),950);
+        showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,250));
+        try{
+          let record;
+          if(draft.editingId){
+            record=(proj.payments||[]).find(p=>String(p.id)===String(draft.editingId)&&!p.deleted_at);if(!record)throw new Error('Payment record was not found.');
+            const before={...record};
+            if(supabaseClient&&state.isConnected){
+              const audit=await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(draft.editingId),project_id:String(proj.id),action:'EDIT',before_value:before,after_value:{amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}}]);if(audit.error)console.warn('Payment audit sync unavailable:',audit.error.message);
+              const updated=await supabaseClient.from('payments').update({amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()}).eq('id',draft.editingId).is('deleted_at',null).select('*').single();if(updated.error)throw updated.error;Object.assign(record,updated.data,{amount:updated.data.amount_paid});
+            }else Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()});
+          }else{
+            if(!supabaseClient||!state.isConnected)throw new Error('Connect to the database before recording a confirmed payment.');
+            const inserted=await supabaseClient.from('payments').insert([{project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}]).select('*').single();if(inserted.error)throw inserted.error;record={...inserted.data,amount:inserted.data.amount_paid};if(!proj.payments)proj.payments=[];proj.payments.push(record);
+          }
+          proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Successful',draft.editingId?'Payment changes were saved.':'Payment was recorded successfully.',true);state.editingPaymentId=null;setTimeout(()=>closeModal('actionStatusModal'),850);
+        }catch(e){console.error('Payment save failed:',e);closeModal('actionStatusModal');showToast(`Payment could not be saved: ${e?.message||e}`);}
       }
 
-      function deletePaymentRecord(paymentId) {
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
-        const payment=(proj.payments||[]).find(p=>String(p.id)===String(paymentId));if(!payment)return;
-        showConfirmationDialog('Delete Payment',`This will remove ${formatCurrency(Number(payment.amount_paid||payment.amount||0))} from payment history and recalculate the project balance.`,'Delete Payment',async()=>{
-          const before={...payment};proj.payments=(proj.payments||[]).filter(p=>String(p.id)!==String(paymentId));
-          proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);proj.updated_at=new Date().toISOString();persistProjectsState();
-          if(supabaseClient&&state.isConnected){try{await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(paymentId),project_id:proj.id,action:'DELETE',before_value:before}]);await supabaseClient.from('payments').delete().eq('id',paymentId);}catch(e){console.warn('Payment delete sync unavailable:',e.message);}}
-          renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Deleted','The payment was removed and the project balance was recalculated.',true);setTimeout(()=>closeModal('actionStatusModal'),950);
+      function deletePaymentRecord(paymentId){
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const payment=(proj.payments||[]).find(p=>String(p.id)===String(paymentId)&&!p.deleted_at);if(!payment)return;
+        requestDestructivePin('Delete Payment',`Delete ${formatCurrency(Number(payment.amount_paid||payment.amount||0))} from active payment history? This will recalculate Amount Paid and Balance Due. The audit record will be retained.`,async()=>{
+          try{
+            if(!supabaseClient||!state.isConnected)throw new Error('Database is not connected.');
+            const before={...payment},deletedAt=new Date().toISOString(),session=await supabaseClient.auth.getSession(),userId=session?.data?.session?.user?.id||null;
+            const audit=await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(paymentId),project_id:String(proj.id),action:'DELETE',before_value:before,after_value:{deleted_at:deletedAt}}]);if(audit.error)console.warn('Payment audit sync unavailable:',audit.error.message);
+            const result=await supabaseClient.from('payments').update({deleted_at:deletedAt,deleted_by:userId,deletion_reason:'Deleted from Workspace payment history',updated_at:deletedAt}).eq('id',paymentId).select('id,deleted_at').single();if(result.error)throw result.error;
+            payment.deleted_at=deletedAt;payment.deleted_by=userId;proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showToast('Payment deleted. Financial totals were recalculated.');
+          }catch(e){console.error('Payment delete failed:',e);showToast(`Delete payment failed: ${e?.message||e}`);}
         });
       }
 
@@ -7293,7 +7246,7 @@ ${description}`))actionCallback();return;}
         const additionalCharges=Math.max(knownAdditional,storedAdditional);
         const total=Math.max(0,itemsSubtotal+additionalCharges-discounts);
         if(total>Number(proj.total_amount||0)+0.005){proj.total_amount=total;proj.pending_amount=Math.max(0,total-getProjectPaid(proj));persistProjectsState();scheduleProjectStructureSync(proj,120);}
-        const payments=(proj.payments||[]).slice();
+        const payments=(proj.payments||[]).filter(p=>!p.deleted_at).slice();
         const totalPaid=payments.reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
         const remaining=Math.max(0,total-totalPaid);
         const rawStatus=getInvoiceStatus(proj,remaining);
@@ -7352,7 +7305,7 @@ ${description}`))actionCallback();return;}
         const additionalFeesTotal=extraFees.reduce((sum,f)=>sum+f.amount,0);
         const total=Math.max(0,subtotal+additionalFeesTotal-discount);
         if(Math.abs(Number(proj.total_amount||0)-total)>0.005){proj.total_amount=total;proj.pending_amount=Math.max(0,total-getProjectPaid(proj));persistProjectsState();scheduleProjectStructureSync(proj,120);}
-        const paid=(proj.payments||[]).reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
+        const paid=(proj.payments||[]).filter(p=>!p.deleted_at).reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
         const balance=Math.max(0,total-paid); const status=getInvoiceStatus(proj,balance);
         const issue=new Date().toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'});
         const due=proj.invoice_due_date||proj.payment_due_date||proj.deadline_date||'';
@@ -7618,100 +7571,16 @@ ${description}`))actionCallback();return;}
       /* ==========================================================================
          CLIENTS DIRECTORY & EDIT CLIENT WORKFLOW
          ========================================================================== */
-      function renderClients() {
-        const grid=document.getElementById("clientsListGrid");
-        if(!grid)return;
-
-        const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase();
-        const pref=state.listSorts?.clients||'az';
-        const normalize=v=>String(v||'').trim().toLowerCase();
-
-        const projectBelongsToClient=(project,client)=>{
-          if(project?.deleted) return false;
-
-          if(project?.client_id){
-            return String(project.client_id)===String(client.id);
-          }
-
-          const pEmail=normalize(project?.client_email);
-          const cEmail=normalize(client?.email);
-          if(pEmail && cEmail && pEmail===cEmail) return true;
-
-          const pName=normalize(project?.client_name);
-          const cName=normalize(client?.name);
-          return !!(pName && cName && pName===cName);
-        };
-
-        let clients=state.clients
-          .slice()
-          .filter(c=>!c.archived_at)
-          .filter(c=>`${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
-
-        clients.sort(
-          pref==='za'
-            ?(a,b)=>String(b.name||'').localeCompare(String(a.name||''))
-            :(a,b)=>String(a.name||'').localeCompare(String(b.name||''))
-        );
-
-        const sortEl=document.getElementById('clientsSort');
-        if(sortEl)sortEl.value=pref;
-
-        if(!clients.length){
-          grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients registered yet.'}</div>`;
-          return;
-        }
-
-        const rows=clients.map((c,idx)=>{
-          const count=state.projects.filter(p=>projectBelongsToClient(p,c)).length;
-
-          return `
-            <tr class="clickable-row" onclick="app.openClientProfile('${c.id}')">
-              <td><strong>${escapeHtml(c.name||'—')}</strong></td>
-              <td>${escapeHtml(c.email||'—')}</td>
-              <td>${escapeHtml(c.phone||'—')}</td>
-              <td class="client-address-cell">${escapeHtml(c.address||'—')}</td>
-              <td>${count}</td>
-              <td class="text-right table-action-cell" onclick="event.stopPropagation()">
-                <div class="popover-wrap" id="clientMenu${idx}">
-                  <button
-                    class="icon-more-button"
-                    title="Client actions"
-                    aria-label="Client actions"
-                    onclick="app.togglePopover('clientMenu${idx}',event)"
-                  >⋮</button>
-                  <div class="popover-panel table-action-menu client-row-menu">
-                    <button class="popover-action table-action-item" onclick="app.openEditClientModal('${c.id}')">
-                      <span class="table-action-icon">✎</span>
-                      <span>Edit Client</span>
-                    </button>
-                    <button class="popover-action table-action-item text-danger" onclick="app.removeClient('${c.id}')">
-                      <span class="table-action-icon">⌫</span>
-                      <span>Delete Client</span>
-                    </button>
-                  </div>
-                </div>
-              </td>
-            </tr>`;
-        }).join('');
-
-        grid.innerHTML=`
-          <div class="card table-card clients-directory-card">
-            <div class="table-responsive">
-              <table class="data-table unified-table">
-                <thead>
-                  <tr>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Number</th>
-                    <th>Address</th>
-                    <th>No. of Projects</th>
-                    <th class="table-action-heading" aria-label="Row actions"></th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>
-            </div>
-          </div>`;
+      function renderClients(){
+        pruneClientDirectoryToProjects();const grid=document.getElementById('clientsListGrid'),filters=document.getElementById('clientFilters');if(!grid)return;
+        const names=['All','Pending','Completed'],current=state.clientFilter||'All';if(filters)filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setClientFilter('${n}')">${n}</button>`).join('');
+        const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'default',norm=v=>String(v||'').trim().toLowerCase();
+        const projectsFor=c=>state.projects.filter(p=>{if(p.deleted)return false;if(p.client_id)return String(p.client_id)===String(c.id);const pe=norm(p.client_email),ce=norm(c.email);if(pe&&ce&&pe===ce)return true;const pn=norm(p.client_name),cn=norm(c.name);return !!(pn&&cn&&pn===cn);});
+        let clients=state.clients.slice().filter(c=>!c.archived_at).filter(c=>`${c.client_code||''} ${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
+        clients=clients.filter(c=>{const ps=projectsFor(c),pending=ps.some(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);if(current==='Pending')return pending;if(current==='Completed')return ps.length>0&&!pending;return true;});
+        const codeNo=c=>Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||999999);if(pref==='date')clients.sort((a,b)=>(parseDateSafe(b.created_at)?.getTime()||0)-(parseDateSafe(a.created_at)?.getTime()||0)||codeNo(a)-codeNo(b));else if(pref==='payment')clients.sort((a,b)=>projectsFor(b).reduce((x,p)=>x+getProjectPaid(p),0)-projectsFor(a).reduce((x,p)=>x+getProjectPaid(p),0)||codeNo(a)-codeNo(b));else clients.sort((a,b)=>codeNo(a)-codeNo(b));
+        const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;if(!clients.length){grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients in this filter.'}</div>`;return;}
+        grid.innerHTML=`<div class="card table-card"><div class="table-responsive"><table class="data-table unified-table clients-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Phone</th><th>Projects</th><th>Payments</th><th class="table-actions-col" aria-label="Row actions"></th></tr></thead><tbody>${clients.map(c=>{const ps=projectsFor(c),paid=ps.reduce((x,p)=>x+getProjectPaid(p),0),menuId=`clientMenu_${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(c.client_code||'—')}</strong></td><td><strong>${escapeHtml(c.name||'Client')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(formatPhilippinePhone(c.phone||'—'))}</td><td>${ps.length}</td><td><strong>${formatCurrency(paid)}</strong></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Client actions">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit Client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Delete Client</button></div></div></td></tr>`}).join('')}</tbody></table></div></div>`;
       }
 
       function setClientFilter(filter){state.clientFilter=filter;renderClients();}
@@ -8157,6 +8026,9 @@ ${description}`))actionCallback();return;}
         }finally{state.onlinePortalLoading=false;loading?.classList.add("hidden");}
       }
 
+
+      async function copyPortalLoginEmail(email){try{await navigator.clipboard.writeText(String(email||''));showToast('Login email copied.');}catch(e){showToast('Could not copy the login email.');}}
+
       function renderOnlinePortalData(){
         const data=state.onlinePortalData||{clientAccounts:[],clients:[],projects:[],submissions:[],settings:null};
         const accounts=data.clientAccounts||[];
@@ -8172,10 +8044,12 @@ ${description}`))actionCallback();return;}
         if(accountRows)accountRows.innerHTML=filtered.map(x=>{
           const [label,cls]=portalStatusMeta(x.status),menuId=`portalClientMenu_${String(x.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
           const actions=[];
-          if(["needs_account","auth_unlinked"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="provision-client-account" data-client="${escapeHtml(x.id)}">Create / Link Account</button>`);
-          if(["temporary_password","active"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="force-password-change" data-client="${escapeHtml(x.id)}">Force Password Change</button>`);
-          if(["temporary_password","active","disabled"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="reset-client-temporary-password" data-client="${escapeHtml(x.id)}">Reset Temporary Password</button>`);
+          actions.push(`<button class="popover-action" onclick="app.openClientProfile('${escapeHtml(x.id)}')">View Client</button>`);
+          if(["needs_account","auth_unlinked"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="provision-client-account" data-client="${escapeHtml(x.id)}">Enable / Send Access</button>`);
+          if(["temporary_password","active","disabled"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="reset-client-temporary-password" data-client="${escapeHtml(x.id)}">Resend / Reset Access</button>`);
+          if(["temporary_password","active"].includes(x.status))actions.push(`<button class="popover-action portal-account-action" data-action="force-password-change" data-client="${escapeHtml(x.id)}">Require Password Change</button>`);
           if(x.auth_user_id&&x.status!=="archived")actions.push(`<button class="popover-action portal-account-action ${x.status==="disabled"?"":"text-danger"}" data-action="set-client-access" data-enabled="${x.status==="disabled"?"true":"false"}" data-client="${escapeHtml(x.id)}">${x.status==="disabled"?"Enable Access":"Disable Access"}</button>`);
+          if(x.email)actions.push(`<button class="popover-action" onclick="app.copyPortalLoginEmail('${escapeHtml(String(x.email).replace(/'/g,"\'"))}')">Copy Login Email</button>`);
           return `<tr><td><strong>${escapeHtml(x.client_code||"—")}</strong></td><td><span class="portal-responsive-text">${escapeHtml(x.email||"—")}</span></td><td><span class="portal-status ${cls}">${escapeHtml(label)}</span></td><td>${x.password_set?"Changed":"Temporary"}</td><td>${escapeHtml(portalDate(x.last_sign_in_at))}</td><td class="table-row-actions"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Client access actions">⋮</button><div class="popover-panel client-row-menu">${actions.join("")||'<span class="popover-empty">No actions</span>'}</div></div></td></tr>`;
         }).join("")||`<tr><td colspan="6" class="text-center text-muted">No matching clients.</td></tr>`;
 
@@ -8291,6 +8165,8 @@ ${description}`))actionCallback();return;}
       }
 
       return {
+        copyPortalLoginEmail,
+        formatPhoneField,
         initWorkspace,
         navigateTo,
         setThemeMode,
