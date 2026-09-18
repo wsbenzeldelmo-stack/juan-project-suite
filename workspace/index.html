@@ -1091,6 +1091,32 @@
 #catalogServicesCard .catalog-services-table th,#catalogServicesCard .catalog-services-table td{box-sizing:border-box!important;min-width:0!important;max-width:none!important}
 </style>
 </style>
+<style id="jp-stability-ui-patch">
+.table-action-cell{width:84px;min-width:84px;text-align:right;overflow:visible!important}
+.table-action-heading{text-align:right!important;width:84px}
+.icon-more-button{width:34px;height:34px;border:0;background:transparent;border-radius:10px;cursor:pointer;font-size:18px;line-height:1;color:var(--text-secondary);display:inline-flex;align-items:center;justify-content:center}
+.icon-more-button:hover{background:var(--bg-subtle);color:var(--text-primary)}
+.table-action-menu{width:210px!important;padding:6px!important;border-radius:14px!important;box-shadow:0 18px 45px rgba(0,0,0,.16)!important;background:var(--bg-card,#fff)!important;border:1px solid var(--border-subtle,#e7e7e7)!important;overflow:hidden!important}
+.table-action-item{display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;padding:11px 12px!important;border-radius:9px!important;white-space:nowrap!important}
+.table-action-item:hover{background:var(--bg-subtle,#f6f7f8)!important}
+.table-action-icon{width:18px;display:inline-flex;justify-content:center;font-size:15px;opacity:.8}
+.popover-panel{max-width:calc(100vw - 24px)}
+.table-responsive,.table-card,.clients-directory-card{overflow:visible!important}
+.pin-code-grid.destructive-pin-grid{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));gap:10px;margin-top:8px}
+.destructive-pin-digit{height:52px;text-align:center;font-size:22px;font-weight:700;border:1px solid var(--border-medium,#d7d7d7);border-radius:12px;background:var(--bg-card,#fff);color:var(--text-primary,#222);outline:none}
+.destructive-pin-digit:focus{border-color:var(--primary-mint-dark,#17b978);box-shadow:0 0 0 3px rgba(23,185,120,.12)}
+.destructive-pin-digit.is-invalid{border-color:#ef4444}
+.profile-crop-modal{max-width:620px!important}
+.crop-stage{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:18px;background:#111;max-width:480px;margin:0 auto}
+#cropCanvas{display:block;width:min(480px,100%);height:auto;touch-action:none;cursor:grab}
+#cropCanvas:active{cursor:grabbing}
+.crop-zoom-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-top:18px}
+.crop-help{text-align:center;margin-top:8px;color:var(--text-tertiary);font-size:12px}
+@media(max-width:640px){
+  .pin-code-grid.destructive-pin-grid{gap:6px}
+  .destructive-pin-digit{height:46px;font-size:19px;border-radius:10px}
+}
+</style>
 </head>
 <body>
 
@@ -2092,7 +2118,15 @@
     <div class="modal-card compact-validation-modal reset-pin-modal">
       <div class="validation-graphic reset-lock-graphic"><svg class="icon-svg lg" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg></div>
       <div class="validation-copy"><h3 class="modal-title" id="destructivePinTitle">Confirm deletion</h3><p id="destructivePinDescription">Enter your 6-digit PIN to continue.</p></div>
-      <div class="form-group reset-pin-field"><label class="form-label" for="destructivePinInput">PIN Code</label><input type="password" inputmode="numeric" maxlength="6" autocomplete="off" class="form-control reset-pin-input" id="destructivePinInput" placeholder="••••••" onkeydown="if(event.key==='Enter'){event.preventDefault();app.confirmDestructivePin();}"><span class="inline-error hidden" id="destructivePinError">Incorrect PIN.</span></div>
+      <div class="form-group reset-pin-field"><label class="form-label" for="destructivePinInput">PIN Code</label><div class="pin-code-grid destructive-pin-grid" id="destructivePinDigits" aria-label="6-digit PIN">
+  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 1">
+  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 2">
+  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 3">
+  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 4">
+  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 5">
+  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 6">
+</div>
+<input id="destructivePinInput" type="hidden"><span class="inline-error hidden" id="destructivePinError">Incorrect PIN.</span></div>
       <div class="modal-footer validation-actions"><button class="btn btn-secondary" onclick="app.closeModal('destructivePinModal')">Cancel</button><button class="btn btn-danger" onclick="app.confirmDestructivePin()">Continue</button></div>
     </div>
   </div>
@@ -3514,33 +3548,34 @@
 
       // PROFILE PICTURE CROPPING WORKFLOW
       function handleProfilePhotoUpload(e) {
-        const file = e?.target?.files?.[0];
-        if (!file) return;
+        const file=e?.target?.files?.[0];
+        if(!file)return;
 
-        const validTypes = ["image/jpeg","image/jpg","image/png","image/webp"];
-        if (!validTypes.includes(file.type)) {
+        const validTypes=["image/jpeg","image/jpg","image/png","image/webp"];
+        if(!validTypes.includes(file.type)){
           showToast("Please choose a JPG, PNG, or WEBP image.");
           return;
         }
-        if (file.size > 5 * 1024 * 1024) {
+
+        if(file.size>5*1024*1024){
           showToast("Profile photo must be 5 MB or smaller.");
           return;
         }
 
-        window.__jpProfileOriginalFile = file;
+        window.__jpProfileOriginalFile=file;
 
-        const reader = new FileReader();
-        reader.onload = () => {
-          cropImageObj = new Image();
-          cropImageObj.onload = () => {
-            cropScale = 1;
-            cropOffset = { x: 0, y: 0 };
-            const zoom = document.getElementById("cropZoomRange");
-            if (zoom) zoom.value = "1";
+        const reader=new FileReader();
+        reader.onload=()=>{
+          cropImageObj=new Image();
+          cropImageObj.onload=()=>{
+            cropScale=1;
+            cropOffset={x:0,y:0};
+            const zoom=document.getElementById("cropZoomRange");
+            if(zoom)zoom.value="1";
             drawCropCanvas();
             openModal("cropModal");
           };
-          cropImageObj.src = reader.result;
+          cropImageObj.src=reader.result;
         };
         reader.readAsDataURL(file);
       }
@@ -3582,137 +3617,162 @@
       }
 
       function drawCropCanvas() {
-        if (!cropCanvasCtx || !cropImageObj) return;
-        const canvas = document.getElementById("cropCanvas");
-        cropCanvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        if(!cropCanvasCtx||!cropImageObj)return;
+
+        const canvas=document.getElementById("cropCanvas");
+        cropCanvasCtx.clearRect(0,0,canvas.width,canvas.height);
+        cropCanvasCtx.fillStyle="#111";
+        cropCanvasCtx.fillRect(0,0,canvas.width,canvas.height);
+
+        const fitScale=Math.min(
+          canvas.width/cropImageObj.width,
+          canvas.height/cropImageObj.height
+        );
+        const baseW=cropImageObj.width*fitScale;
+        const baseH=cropImageObj.height*fitScale;
 
         cropCanvasCtx.save();
-        cropCanvasCtx.translate(canvas.width / 2 + cropOffset.x, canvas.height / 2 + cropOffset.y);
-        cropCanvasCtx.scale(cropScale, cropScale);
-
-        const imgWidth = cropImageObj.width;
-        const imgHeight = cropImageObj.height;
-        const size = Math.min(imgWidth, imgHeight);
-        
-        cropCanvasCtx.drawImage(
-          cropImageObj,
-          (imgWidth - size) / 2, (imgHeight - size) / 2, size, size,
-          -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height
+        cropCanvasCtx.translate(
+          canvas.width/2+Number(cropOffset?.x||0),
+          canvas.height/2+Number(cropOffset?.y||0)
         );
+        cropCanvasCtx.scale(Number(cropScale||1),Number(cropScale||1));
+        cropCanvasCtx.drawImage(cropImageObj,-baseW/2,-baseH/2,baseW,baseH);
+        cropCanvasCtx.restore();
+
+        const cropSize=Math.min(canvas.width,canvas.height)-28;
+        const cx=canvas.width/2;
+        const cy=canvas.height/2;
+
+        cropCanvasCtx.save();
+        cropCanvasCtx.fillStyle="rgba(0,0,0,.42)";
+        cropCanvasCtx.fillRect(0,0,canvas.width,canvas.height);
+        cropCanvasCtx.globalCompositeOperation="destination-out";
+        cropCanvasCtx.beginPath();
+        cropCanvasCtx.arc(cx,cy,cropSize/2,0,Math.PI*2);
+        cropCanvasCtx.fill();
+        cropCanvasCtx.globalCompositeOperation="source-over";
+        cropCanvasCtx.beginPath();
+        cropCanvasCtx.arc(cx,cy,cropSize/2,0,Math.PI*2);
+        cropCanvasCtx.strokeStyle="rgba(255,255,255,.95)";
+        cropCanvasCtx.lineWidth=2;
+        cropCanvasCtx.stroke();
         cropCanvasCtx.restore();
       }
 
 
       async function confirmCroppedImage() {
-        if (!cropImageObj) {
+        if(!cropImageObj){
           showToast("Choose a photo first.");
           return;
         }
 
-        const preview = document.getElementById("cropCanvas");
-        if (!preview) throw new Error("Crop canvas is missing.");
+        const preview=document.getElementById("cropCanvas");
+        const out=document.createElement("canvas");
+        const outputSize=600;
+        out.width=outputSize;
+        out.height=outputSize;
+        const ctx=out.getContext("2d");
 
-        const out = document.createElement("canvas");
-        const outputSize = 600;
-        out.width = outputSize;
-        out.height = outputSize;
-        const ctx = out.getContext("2d");
-
-        const fitScale = Math.min(preview.width / cropImageObj.width, preview.height / cropImageObj.height);
-        const baseW = cropImageObj.width * fitScale;
-        const baseH = cropImageObj.height * fitScale;
-        const cropSize = Math.min(preview.width, preview.height) - 28;
-        const scaleOut = outputSize / cropSize;
+        const fitScale=Math.min(preview.width/cropImageObj.width,preview.height/cropImageObj.height);
+        const baseW=cropImageObj.width*fitScale;
+        const baseH=cropImageObj.height*fitScale;
+        const cropSize=Math.min(preview.width,preview.height)-28;
+        const scaleOut=outputSize/cropSize;
 
         ctx.save();
         ctx.translate(
-          outputSize / 2 + Number(cropOffset?.x || 0) * scaleOut,
-          outputSize / 2 + Number(cropOffset?.y || 0) * scaleOut
+          outputSize/2+Number(cropOffset?.x||0)*scaleOut,
+          outputSize/2+Number(cropOffset?.y||0)*scaleOut
         );
-        ctx.scale(Number(cropScale || 1) * scaleOut, Number(cropScale || 1) * scaleOut);
-        ctx.drawImage(cropImageObj, -baseW/2, -baseH/2, baseW, baseH);
+        ctx.scale(Number(cropScale||1)*scaleOut,Number(cropScale||1)*scaleOut);
+        ctx.drawImage(cropImageObj,-baseW/2,-baseH/2,baseW,baseH);
         ctx.restore();
 
-        const croppedBlob = await new Promise((resolve, reject) => {
+        const croppedBlob=await new Promise((resolve,reject)=>{
           out.toBlob(
-            blob => blob ? resolve(blob) : reject(new Error("Could not export cropped photo.")),
+            blob=>blob?resolve(blob):reject(new Error("Could not export cropped photo.")),
             "image/webp",
-            0.9
+            .9
           );
         });
 
-        const previewUrl = URL.createObjectURL(croppedBlob);
-        state.profilePhoto = previewUrl;
+        const localPreview=URL.createObjectURL(croppedBlob);
+        state.profilePhoto=localPreview;
         updateProfileDisplay();
 
-        try {
-          if (!supabaseClient || !state.isConnected) {
+        try{
+          if(!supabaseClient||!state.isConnected){
             throw new Error("Workspace is not connected to Supabase.");
           }
 
-          const sessionResult = await supabaseClient.auth.getSession();
-          const user = sessionResult?.data?.session?.user;
-          if (!user) throw new Error("Your Workspace session is not available.");
+          const sessionResult=await supabaseClient.auth.getSession();
+          const user=sessionResult?.data?.session?.user;
+          if(!user)throw new Error("Workspace session is unavailable.");
 
-          const originalFile = window.__jpProfileOriginalFile;
-          let originalPath = null;
+          const originalFile=window.__jpProfileOriginalFile;
+          let originalPath=null;
 
-          if (originalFile) {
-            const ext = (originalFile.name?.split(".").pop() || originalFile.type?.split("/").pop() || "jpg")
-              .toLowerCase().replace("jpeg","jpg");
-            originalPath = `${user.id}/original.${ext}`;
+          if(originalFile){
+            const ext=(originalFile.name?.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
+            originalPath=`${user.id}/original.${ext}`;
 
-            const originalUpload = await supabaseClient.storage
+            const originalUpload=await supabaseClient.storage
               .from("workspace-avatars")
-              .upload(originalPath, originalFile, {
-                contentType: originalFile.type || "image/jpeg",
-                upsert: true,
-                cacheControl: "3600"
+              .upload(originalPath,originalFile,{
+                contentType:originalFile.type||"image/jpeg",
+                upsert:true,
+                cacheControl:"3600"
               });
-            if (originalUpload.error) throw originalUpload.error;
+
+            if(originalUpload.error)throw originalUpload.error;
           }
 
-          const croppedPath = `${user.id}/avatar.webp`;
-          const croppedUpload = await supabaseClient.storage
-            .from("workspace-avatars")
-            .upload(croppedPath, croppedBlob, {
-              contentType: "image/webp",
-              upsert: true,
-              cacheControl: "3600"
-            });
-          if (croppedUpload.error) throw croppedUpload.error;
+          const croppedPath=`${user.id}/avatar.webp`;
 
-          const profileSave = await supabaseClient
+          const croppedUpload=await supabaseClient.storage
+            .from("workspace-avatars")
+            .upload(croppedPath,croppedBlob,{
+              contentType:"image/webp",
+              upsert:true,
+              cacheControl:"3600"
+            });
+
+          if(croppedUpload.error)throw croppedUpload.error;
+
+          const profileSave=await supabaseClient
             .from("workspace_profiles")
             .upsert({
-              user_id: user.id,
-              avatar_original_path: originalPath,
-              avatar_cropped_path: croppedPath,
-              avatar_crop: {
-                zoom: Number(cropScale || 1),
-                x: Number(cropOffset?.x || 0),
-                y: Number(cropOffset?.y || 0),
-                aspect: 1
+              user_id:user.id,
+              avatar_original_path:originalPath,
+              avatar_cropped_path:croppedPath,
+              avatar_crop:{
+                zoom:Number(cropScale||1),
+                x:Number(cropOffset?.x||0),
+                y:Number(cropOffset?.y||0),
+                aspect:1
               }
-            }, { onConflict: "user_id" });
-          if (profileSave.error) throw profileSave.error;
+            },{onConflict:"user_id"});
 
-          const signed = await supabaseClient.storage
+          if(profileSave.error)throw profileSave.error;
+
+          const signed=await supabaseClient.storage
             .from("workspace-avatars")
-            .createSignedUrl(croppedPath, 60 * 60 * 6);
-          if (signed.error) throw signed.error;
+            .createSignedUrl(croppedPath,60*60*6);
 
-          state.profilePhoto = signed.data.signedUrl;
+          if(signed.error)throw signed.error;
+
+          state.profilePhoto=signed.data.signedUrl;
           localStorage.removeItem("JUAN_PROFILE_PHOTO");
           updateProfileDisplay();
 
-          window.__jpProfileOriginalFile = null;
+          window.__jpProfileOriginalFile=null;
           closeModal("cropModal");
-          showToast("Profile photo uploaded.");
-        } catch (error) {
-          console.error("Profile photo upload failed:", error);
+          showToast("Profile photo updated.");
+        }catch(error){
+          console.error("Profile photo update failed:",error);
           closeModal("cropModal");
-          showToast(`Photo upload failed: ${error.message || error}`);
+          showToast(`Profile photo update failed: ${error.message||error}`);
         }
       }
 
@@ -3778,9 +3838,79 @@ ${description}`))actionCallback();return;}
 
       const WORKSPACE_RESET_PIN = "729333";
       function requestDestructivePin(title,description,callback){
-        state.pendingDestructiveAction=typeof callback==='function'?callback:null;const titleEl=document.getElementById('destructivePinTitle'),desc=document.getElementById('destructivePinDescription'),input=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError');if(titleEl)titleEl.textContent=title||'Confirm deletion';if(desc)desc.textContent=(description||'This action changes or removes saved data.')+' Enter your 6-digit PIN to continue.';if(input){input.value='';input.classList.remove('is-invalid');}if(error)error.classList.add('hidden');openModal('destructivePinModal');setTimeout(()=>input?.focus(),70);
+        state.pendingDestructiveAction=typeof callback==='function'?callback:null;
+
+        const titleEl=document.getElementById('destructivePinTitle');
+        const desc=document.getElementById('destructivePinDescription');
+        const hidden=document.getElementById('destructivePinInput');
+        const error=document.getElementById('destructivePinError');
+        const grid=document.getElementById('destructivePinDigits');
+
+        if(titleEl)titleEl.textContent=title||'Confirm deletion';
+        if(desc)desc.textContent=description||'Enter your 6-digit PIN to continue.';
+        if(hidden)hidden.value='';
+        if(error)error.classList.add('hidden');
+
+        if(grid){
+          const inputs=[...grid.querySelectorAll('.destructive-pin-digit')];
+          inputs.forEach((input,index)=>{
+            input.value='';
+            input.classList.remove('is-invalid');
+            input.oninput=(event)=>{
+              const value=String(event.target.value||'').replace(/\D/g,'').slice(-1);
+              event.target.value=value;
+              syncDestructivePinDigits();
+              if(value&&index<5)inputs[index+1]?.focus();
+            };
+            input.onkeydown=(event)=>{
+              if(event.key==='Backspace'&&!event.target.value&&index>0){
+                inputs[index-1].value='';
+                inputs[index-1].focus();
+                syncDestructivePinDigits();
+              }
+              if(event.key==='ArrowLeft'&&index>0)inputs[index-1]?.focus();
+              if(event.key==='ArrowRight'&&index<5)inputs[index+1]?.focus();
+              if(event.key==='Enter')confirmDestructivePin();
+            };
+          });
+        }
+
+        openModal('destructivePinModal');
+        setTimeout(()=>grid?.querySelector('.destructive-pin-digit')?.focus(),80);
       }
-      function confirmDestructivePin(){const input=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError'),pin=String(input?.value||'').replace(/\D/g,'').slice(0,6);if(pin!==WORKSPACE_RESET_PIN){if(input){input.classList.add('is-invalid');input.select();}if(error)error.classList.remove('hidden');return;}if(error)error.classList.add('hidden');if(input)input.classList.remove('is-invalid');const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;closeModal('destructivePinModal');if(action)action();}
+
+      function syncDestructivePinDigits(){
+        const grid=document.getElementById('destructivePinDigits');
+        const hidden=document.getElementById('destructivePinInput');
+        if(!grid||!hidden)return;
+        hidden.value=[...grid.querySelectorAll('.destructive-pin-digit')]
+          .map(input=>String(input.value||'').replace(/\D/g,'').slice(0,1))
+          .join('');
+      }
+      function confirmDestructivePin(){
+        syncDestructivePinDigits();
+
+        const input=document.getElementById('destructivePinInput');
+        const error=document.getElementById('destructivePinError');
+        const pin=String(input?.value||'').replace(/\D/g,'').slice(0,6);
+
+        if(pin.length!==6||pin!==WORKSPACE_RESET_PIN){
+          if(error)error.classList.remove('hidden');
+          const grid=document.getElementById('destructivePinDigits');
+          grid?.querySelectorAll('.destructive-pin-digit').forEach(el=>el.classList.add('is-invalid'));
+          grid?.querySelector('.destructive-pin-digit')?.focus();
+          return;
+        }
+
+        if(error)error.classList.add('hidden');
+        document.querySelectorAll('#destructivePinDigits .destructive-pin-digit')
+          .forEach(el=>el.classList.remove('is-invalid'));
+
+        const action=state.pendingDestructiveAction;
+        state.pendingDestructiveAction=null;
+        closeModal('destructivePinModal');
+        if(action)action();
+      }
 
       function openResetDataModal(){
         const input=document.getElementById('resetDataPinInput'),error=document.getElementById('resetDataPinError');
@@ -4132,7 +4262,52 @@ ${description}`))actionCallback();return;}
         const diff=Math.round((due-now)/86400000); let label=""; if(diff<0) label=`${Math.abs(diff)}d overdue`; else if(diff===0) label="Due today"; else if(diff===1) label="Due tomorrow"; else label=`${diff} days left`;
         return {label,sub:due.toLocaleDateString("en-PH",{month:"short",day:"numeric",year:due.getFullYear()!==now.getFullYear()?"numeric":undefined}),cls:diff<0?"urgent":diff<=3?"soon":""};
       }
-      function togglePopover(id,event){ if(event) event.stopPropagation(); document.querySelectorAll('.popover-wrap.open').forEach(el=>{if(el.id!==id)el.classList.remove('open')}); document.getElementById(id)?.classList.toggle('open'); }
+      function togglePopover(id,event){
+        if(event) event.stopPropagation();
+
+        document.querySelectorAll('.popover-wrap.open').forEach(el=>{
+          if(el.id!==id){
+            el.classList.remove('open');
+            const old=el.querySelector('.popover-panel');
+            if(old){
+              old.style.position='';
+              old.style.left='';
+              old.style.top='';
+              old.style.right='';
+              old.style.bottom='';
+              old.style.zIndex='';
+            }
+          }
+        });
+
+        const wrap=document.getElementById(id);
+        if(!wrap)return;
+
+        const panel=wrap.querySelector('.popover-panel');
+        const button=wrap.querySelector('.icon-more-button,button');
+        const opening=!wrap.classList.contains('open');
+        wrap.classList.toggle('open',opening);
+
+        if(!opening||!panel||!button)return;
+
+        const rect=button.getBoundingClientRect();
+        panel.style.position='fixed';
+        panel.style.zIndex='99999';
+        panel.style.right='auto';
+
+        const width=Math.max(180,panel.offsetWidth||200);
+        let left=rect.right-width;
+        left=Math.max(12,Math.min(left,window.innerWidth-width-12));
+        panel.style.left=`${left}px`;
+
+        const estimatedHeight=Math.max(96,panel.scrollHeight||120);
+        const spaceBelow=window.innerHeight-rect.bottom;
+        const top=spaceBelow>=estimatedHeight+12
+          ? rect.bottom+8
+          : Math.max(12,rect.top-estimatedHeight-8);
+
+        panel.style.top=`${top}px`;
+      }
       document.addEventListener('click',()=>document.querySelectorAll('.popover-wrap.open').forEach(el=>el.classList.remove('open')));
       function renderOverviewCurrentProjects(){
         const box=document.getElementById('overviewCurrentProjects'); if(!box)return;
@@ -7124,27 +7299,126 @@ ${description}`))actionCallback();return;}
          CLIENTS DIRECTORY & EDIT CLIENT WORKFLOW
          ========================================================================== */
       function renderClients() {
-        pruneClientDirectoryToProjects();
-        const grid=document.getElementById("clientsListGrid"),filters=document.getElementById("clientFilters");if(!grid)return;
-        const names=["All","Pending","Completed"],current=state.clientFilter||"All";if(filters)filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setClientFilter('${n}')">${n}</button>`).join('');
-        const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'default';
-        const projectsFor=c=>state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(c.id));
-        let clients=state.clients.slice().filter(c=>`${c.client_code||''} ${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
-        clients=clients.filter(c=>{const ps=projectsFor(c),pending=ps.some(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);if(current==='Pending')return pending;if(current==='Completed')return ps.length>0&&!pending;return true;});
-        const codeNo=c=>Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||999999);
-        if(pref==='date')clients.sort((a,b)=>(parseDateSafe(b.created_at)?.getTime()||0)-(parseDateSafe(a.created_at)?.getTime()||0)||codeNo(a)-codeNo(b));
-        else if(pref==='payment')clients.sort((a,b)=>projectsFor(b).reduce((x,p)=>x+getProjectPaid(p),0)-projectsFor(a).reduce((x,p)=>x+getProjectPaid(p),0)||codeNo(a)-codeNo(b));
-        else clients.sort((a,b)=>codeNo(a)-codeNo(b));
-        const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;
-        if(!clients.length){grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients in this filter.'}</div>`;return}
-        grid.innerHTML=`<div class="card table-card"><div class="table-responsive"><table class="data-table unified-table clients-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Phone</th><th>Projects</th><th>Payments</th><th class="table-actions-col"></th></tr></thead><tbody>${clients.map(c=>{const ps=projectsFor(c),paid=ps.reduce((x,p)=>x+getProjectPaid(p),0),menuId=`clientMenu_${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(c.client_code||'—')}</strong></td><td><strong>${escapeHtml(c.name||'Client')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(c.phone||'—')}</td><td>${ps.length}</td><td><strong>${formatCurrency(paid)}</strong></td><td onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit Client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Archive Client</button></div></div></td></tr>`}).join('')}</tbody></table></div></div>`;
+        const grid=document.getElementById("clientsListGrid");
+        if(!grid)return;
+
+        const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase();
+        const pref=state.listSorts?.clients||'az';
+
+        let clients=state.clients
+          .slice()
+          .filter(c=>!c.archived_at)
+          .filter(c=>`${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`
+            .toLowerCase().includes(q));
+
+        clients.sort(
+          pref==='za'
+            ?(a,b)=>String(b.name||'').localeCompare(String(a.name||''))
+            :(a,b)=>String(a.name||'').localeCompare(String(b.name||''))
+        );
+
+        const sortEl=document.getElementById('clientsSort');
+        if(sortEl)sortEl.value=pref;
+
+        if(!clients.length){
+          grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients registered yet.'}</div>`;
+          return;
+        }
+
+        const rows=clients.map((c,idx)=>{
+          const count=state.projects.filter(
+            p=>!p.deleted&&!p.archived_at&&(p.client_id===c.id||p.client_name===c.name)
+          ).length;
+
+          return `
+            <tr class="clickable-row" onclick="app.openClientProfile('${c.id}')">
+              <td><strong>${escapeHtml(c.name||'—')}</strong></td>
+              <td>${escapeHtml(c.email||'—')}</td>
+              <td>${escapeHtml(c.phone||'—')}</td>
+              <td class="client-address-cell">${escapeHtml(c.address||'—')}</td>
+              <td>${count}</td>
+              <td class="text-right table-action-cell" onclick="event.stopPropagation()">
+                <div class="popover-wrap" id="clientMenu${idx}">
+                  <button class="icon-more-button" title="Client actions"
+                    aria-label="Actions for ${escapeHtml(c.name||'client')}"
+                    onclick="app.togglePopover('clientMenu${idx}',event)">•••</button>
+                  <div class="popover-panel table-action-menu client-row-menu">
+                    <button class="popover-action table-action-item" onclick="app.openEditClientModal('${c.id}')">
+                      <span class="table-action-icon">✎</span><span>Edit Client</span>
+                    </button>
+                    <button class="popover-action table-action-item text-danger" onclick="app.removeClient('${c.id}')">
+                      <span class="table-action-icon">⌫</span><span>Delete Client</span>
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>`;
+        }).join('');
+
+        grid.innerHTML=`
+          <div class="card table-card clients-directory-card">
+            <div class="table-responsive">
+              <table class="data-table unified-table">
+                <thead>
+                  <tr>
+                    <th>Full Name</th><th>Email</th><th>Number</th><th>Address</th>
+                    <th>No. of Projects</th><th class="table-action-heading">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            </div>
+          </div>`;
       }
 
       function setClientFilter(filter){state.clientFilter=filter;renderClients();}
 
       function removeClient(clientId){
-        const client=state.clients.find(c=>c.id===clientId);if(!client)return;const projectCount=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(clientId)).length;
-        requestDestructivePin('Archive Client',`Archive "${client.name}" from the active directory? ${projectCount?`${projectCount} saved project record${projectCount===1?'':'s'} will remain linked to this client.`:'No project records will be removed.'} Client IDs are never reused.`,async()=>{const archivedAt=new Date().toISOString();client.archived_at=archivedAt;state.clients=state.clients.filter(c=>c.id!==clientId);if(state.cart.selectedClientId===clientId){state.cart.selectedClientId='';persistCartState();}persistClientsState();if(supabaseClient&&state.isConnected){try{const {error}=await supabaseClient.from('clients').update({archived_at:archivedAt}).eq('id',clientId);if(error)throw error;}catch(e){console.warn('Client archive database sync failed:',e);showToast('Client archived locally, but cloud sync needs attention.');}}renderClients();showToast('Client archived. Client ID preserved.');});
+        const client=state.clients.find(c=>c.id===clientId);
+        if(!client)return;
+
+        const projectCount=state.projects.filter(
+          p=>!p.deleted&&!p.archived_at&&(p.client_id===clientId||p.client_name===client.name)
+        ).length;
+
+        const message=projectCount
+          ? `Delete "${client.name}" from the active Client Directory? ${projectCount} linked project record${projectCount===1?'':'s'} will remain intact. The client will be archived rather than physically erased.`
+          : `Delete "${client.name}" from the active Client Directory? The client will be archived so the record can still be recovered if needed.`;
+
+        requestDestructivePin(
+          'Delete Client',
+          message,
+          async()=>{
+            try{
+              if(!supabaseClient||!state.isConnected){
+                throw new Error('Database is not connected.');
+              }
+
+              const archivedAt=new Date().toISOString();
+              const result=await supabaseClient
+                .from('clients')
+                .update({archived_at:archivedAt})
+                .eq('id',clientId)
+                .select('id')
+                .single();
+
+              if(result.error)throw result.error;
+
+              client.archived_at=archivedAt;
+
+              if(state.cart.selectedClientId===clientId){
+                state.cart.selectedClientId='';
+                persistCartState();
+              }
+
+              renderClients();
+              showToast('Client deleted from the active directory.');
+            }catch(error){
+              console.error('Delete client failed:',error);
+              showToast(`Delete client failed: ${error.message||error}`);
+            }
+          }
+        );
       }
 
       function openEditClientModal(clientId) {
