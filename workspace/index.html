@@ -5278,81 +5278,114 @@ ${description}`))actionCallback();return;}
 
       /* VALIDATION FOR NEW ORDER */
       function showOrderConfirmation() {
-        updateRushCalculations();
-        const deadlineErr = document.getElementById("orderDeadlineError");
-        if (deadlineErr) deadlineErr.innerText = "";
+        try {
+          setDefaultOrderDates();
+          updateRushCalculations();
 
-        if (new Date(`${state.cart.deadlineDate}T00:00:00`) <= new Date(`${state.cart.startDate}T00:00:00`)) {
-          if (deadlineErr) deadlineErr.innerText = "Deadline date must be after the start date.";
-          showToast("Deadline date must be after the start date.");
-          return;
-        }
+          const deadlineErr = document.getElementById("orderDeadlineError");
+          if (deadlineErr) deadlineErr.innerText = "";
 
-        if (state.cart.items.length === 0) {
-          showToast("Please add items to your cart before proceeding.");
-          return;
-        }
+          const startDate = document.getElementById("orderStartDate")?.value || state.cart.startDate || "";
+          const deadlineDate = document.getElementById("orderDeadlineDate")?.value || state.cart.deadlineDate || "";
 
-        const projectNameInput = document.getElementById("orderProjectName");
-        const projectNameError = document.getElementById("orderProjectNameError");
-        const projectName = projectNameInput ? projectNameInput.value.trim() : "";
-        if (projectNameError) projectNameError.innerText = "";
-        if (!projectName) {
-          if (projectNameError) projectNameError.innerText = "Project name is required.";
-          showToast("Project name is required.");
-          if (projectNameInput) projectNameInput.focus();
-          return;
-        }
-        state.cart.projectName = projectName;
-        persistCartState();
-
-        let clientName = "";
-        const clientSelErr = document.getElementById("orderClientSelectError");
-        if (clientSelErr) clientSelErr.innerText = "";
-
-        if (state.cart.clientMode === 'existing') {
-          const client = state.clients.find(c => c.id === state.cart.selectedClientId);
-          if (!client) {
-            if (clientSelErr) clientSelErr.innerText = "Please select a client.";
-            showToast("Please select a client.");
+          if (!startDate || !deadlineDate) {
+            showToast("Please select both a start date and deadline.");
             return;
           }
-          clientName = client.name;
-        } else {
-          clientName = document.getElementById("newClientName").value.trim();
-          const email = document.getElementById("newClientEmail").value.trim();
-          const emailErr = document.getElementById("newClientEmailError");
-          if (emailErr) emailErr.innerText = "";
 
-          if (!clientName) {
-            document.getElementById("newClientNameError").innerText = "Client name is required.";
-            showToast("Client name is required.");
+          if (new Date(`${deadlineDate}T00:00:00`) <= new Date(`${startDate}T00:00:00`)) {
+            if (deadlineErr) deadlineErr.innerText = "Deadline date must be after the start date.";
+            showToast("Deadline date must be after the start date.");
             return;
           }
-          if (!email || !email.includes("@")) {
-            if (emailErr) emailErr.innerText = "Please enter a valid email address.";
-            showToast("Please enter a valid email address.");
+
+          state.cart.startDate = startDate;
+          state.cart.deadlineDate = deadlineDate;
+
+          if (!Array.isArray(state.cart.items) || state.cart.items.length === 0) {
+            showToast("Please add at least one service or package.");
             return;
           }
+
+          const projectNameInput = document.getElementById("orderProjectName");
+          const projectNameError = document.getElementById("orderProjectNameError");
+          const projectName = projectNameInput?.value?.trim() || "";
+
+          if (projectNameError) projectNameError.innerText = "";
+          if (!projectName) {
+            if (projectNameError) projectNameError.innerText = "Project name is required.";
+            showToast("Project name is required.");
+            projectNameInput?.focus();
+            return;
+          }
+
+          state.cart.projectName = projectName;
+
+          let clientName = "";
+          if (state.cart.clientMode === "existing") {
+            const client = state.clients.find(c => String(c.id) === String(state.cart.selectedClientId));
+            if (!client) {
+              const error = document.getElementById("orderClientSelectError");
+              if (error) error.innerText = "Please select a client.";
+              showToast("Please select a client.");
+              return;
+            }
+            clientName = client.name || "Client";
+          } else {
+            const name = document.getElementById("newClientName")?.value?.trim() || "";
+            const email = document.getElementById("newClientEmail")?.value?.trim() || "";
+
+            if (!name) {
+              const error = document.getElementById("newClientNameError");
+              if (error) error.innerText = "Client name is required.";
+              showToast("Client name is required.");
+              return;
+            }
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+              const error = document.getElementById("newClientEmailError");
+              if (error) error.innerText = "Please enter a valid email address.";
+              showToast("Please enter a valid email address.");
+              return;
+            }
+            clientName = name;
+          }
+
+          const subtotal = state.cart.items.reduce(
+            (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0
+          );
+          const discountRaw = Number(state.cart.discountVal || 0);
+          const discount = state.cart.discountType === "percent"
+            ? subtotal * (discountRaw / 100)
+            : discountRaw;
+          const rushFee = Number(state.cart.rushFee || 0);
+          const total = Math.max(0, subtotal - Math.min(subtotal, Math.max(0, discount)) + rushFee);
+
+          const body = document.getElementById("orderSummaryModalBody");
+          if (!body) throw new Error("Order summary modal body is missing.");
+
+          body.innerHTML = `
+            <div class="mb-4"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
+            <div class="mb-4"><strong>Client:</strong> ${escapeHtml(clientName)}</div>
+            <div class="mb-4"><strong>Start Date:</strong> ${escapeHtml(startDate)}</div>
+            <div class="mb-4"><strong>Deadline Date:</strong> ${escapeHtml(deadlineDate)}</div>
+            <div class="divider"></div>
+            <div class="font-bold mb-2">Order Items:</div>
+            ${state.cart.items.map(item => `
+              <div class="summary-row">
+                <span>${escapeHtml(item.name)} (x${Number(item.qty || 1)})</span>
+                <span>${formatCurrency(Number(item.price || 0) * Number(item.qty || 1))}</span>
+              </div>
+            `).join("")}
+            <div class="divider"></div>
+            <div class="summary-row"><span>Rush Fee</span><span>${formatCurrency(rushFee)}</span></div>
+            <div class="summary-row summary-total"><span>Total Amount</span><span>${formatCurrency(total)}</span></div>
+          `;
+
+          openModal("orderSummaryModal");
+        } catch (error) {
+          console.error("Review order failed:", error);
+          showToast(`Could not review order: ${error.message || error}`);
         }
-
-        const body = document.getElementById("orderSummaryModalBody");
-        body.innerHTML = `
-          <div class="mb-4"><strong>Project Name:</strong> ${projectName}</div>
-          <div class="mb-4"><strong>Client:</strong> ${clientName}</div>
-          <div class="mb-4"><strong>Start Date:</strong> ${state.cart.startDate}</div>
-          <div class="mb-4"><strong>Deadline Date:</strong> ${state.cart.deadlineDate}</div>
-          <div class="divider"></div>
-          <div class="font-bold mb-2">Order Items:</div>
-          ${state.cart.items.map(i => `<div class="summary-row"><span>${i.name} (x${i.qty})</span><span>${formatCurrency(i.price * i.qty)}</span></div>`).join("")}
-          <div class="divider"></div>
-          <div class="summary-row"><span>Rush Fee</span><span>${formatCurrency(Number(state.cart.rushFee || 0))}</span></div>
-          <div class="summary-row"><span>Included Revisions</span><span>1</span></div>
-          <div class="summary-row"><span>Additional Revisions</span><span>From ${formatCurrency(500)} / revision</span></div>
-          <div class="summary-row summary-total"><span>Total Amount</span><span>${document.getElementById("summaryTotal").innerText}</span></div>
-        `;
-
-        openModal("orderSummaryModal");
       }
 
       const projectStructureSyncTimers = new Map();
@@ -5650,136 +5683,231 @@ ${description}`))actionCallback();return;}
         return result;
       }
       async function confirmAndCreateOrder() {
-        let clientId = state.cart.selectedClientId;
-        let clientName = "";
-        let clientEmail = "";
+        const confirmButton = document.querySelector('#orderSummaryModal .modal-footer .btn-primary');
+        const originalLabel = confirmButton?.innerHTML || "Confirm";
 
-        if (state.cart.clientMode === 'new') {
-          clientName = document.getElementById("newClientName").value.trim();
-          clientEmail = document.getElementById("newClientEmail").value.trim();
-          const phone = document.getElementById("newClientPhone").value.trim();
-          const address = document.getElementById("newClientAddress").value.trim();
-          const normalizedEmail = normalizeClientIdentityEmail(clientEmail);
-          let matchedClient = normalizedEmail ? findLocalClientByEmail(normalizedEmail) : null;
-          if (!matchedClient && normalizedEmail && supabaseClient && state.isConnected) {
-            try {
-              const cloudMatch = await supabaseClient.from('clients').select('id,name,email,phone,address,client_code,archived_at').ilike('email', normalizedEmail).limit(1).maybeSingle();
-              if (cloudMatch.error) throw cloudMatch.error;
-              if (cloudMatch.data) {
-                if (cloudMatch.data.archived_at) {
-                  const restored = await supabaseClient.from('clients').update({archived_at:null}).eq('id',cloudMatch.data.id).select('id,name,email,phone,address,client_code,archived_at').single();
-                  if (restored.error) throw restored.error;
-                  cloudMatch.data = restored.data;
-                }
-                matchedClient = state.clients.find(c=>String(c.id)===String(cloudMatch.data.id)) || {...cloudMatch.data};
-                if (!state.clients.some(c=>String(c.id)===String(matchedClient.id))) state.clients.push(matchedClient);
-                persistClientsState();
-              }
-            } catch (e) { console.warn('Cloud client identity lookup failed:', e?.message||e); }
+        try {
+          if (!supabaseClient || !state.isConnected) {
+            throw new Error("Database is not connected. Connect Workspace to Supabase before creating an order.");
           }
 
-          if (matchedClient) {
-            clientId = matchedClient.id;
-            clientName = matchedClient.name || clientName;
-            clientEmail = matchedClient.email || clientEmail;
-            state.cart.selectedClientId = matchedClient.id;
-            showToast(`Existing client ${formatClientId(matchedClient)} matched by email. Reusing the same Client ID.`);
-          } else {
-            const newClient = { id: 'client_' + Date.now(), client_code: nextLocalClientCode(), name: clientName, email: clientEmail, phone, address };
-            state.clients.push(newClient);
-            clientId = newClient.id;
-            persistClientsState();
+          if (confirmButton) {
+            confirmButton.disabled = true;
+            confirmButton.innerHTML = "Creating…";
+          }
 
-            if (supabaseClient && state.isConnected) {
-              try {
-                const { data, error } = await supabaseClient.from('clients').upsert([{ id: clientId, name: clientName, email: clientEmail, phone, address }]).select('id,name,email,phone,address,client_code').single();
-                if (error) throw error;
-                if (data?.client_code) newClient.client_code = data.client_code;
-                persistClientsState();
-                if (data?.id) {
-                  const portalResult = await provisionOnlineAccountForClient(data.id);
-                  if (portalResult?.initial_password) showToast(`Client Online account created. Temporary password: ${portalResult.initial_password}`);
-                }
-              } catch (e) {
-                console.error("Database operation failed while creating client:", e);
-                state.clients=state.clients.filter(c=>c.id!==newClient.id);throw new Error(`Client could not be saved to Supabase: ${e?.message||e}`);
+          let client = null;
+
+          if (state.cart.clientMode === "new") {
+            const payload = {
+              name: document.getElementById("newClientName")?.value?.trim() || "",
+              email: document.getElementById("newClientEmail")?.value?.trim() || "",
+              phone: document.getElementById("newClientPhone")?.value?.trim() || null,
+              address: document.getElementById("newClientAddress")?.value?.trim() || null
+            };
+
+            if (!payload.name || !payload.email) throw new Error("Client name and email are required.");
+
+            const existingClient = await supabaseClient
+              .from("clients")
+              .select("*")
+              .ilike("email", payload.email)
+              .maybeSingle();
+
+            if (existingClient.error) throw existingClient.error;
+
+            if (existingClient.data) {
+              client = existingClient.data;
+            } else {
+              const createdClient = await supabaseClient
+                .from("clients")
+                .insert(payload)
+                .select("*")
+                .single();
+
+              if (createdClient.error) throw createdClient.error;
+              client = createdClient.data;
+            }
+          } else {
+            client = state.clients.find(c => String(c.id) === String(state.cart.selectedClientId));
+            if (!client) throw new Error("Please select a client.");
+          }
+
+          const subtotal = state.cart.items.reduce(
+            (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0
+          );
+          const discountRaw = Number(state.cart.discountVal || 0);
+          const discountAmount = Math.min(
+            subtotal,
+            Math.max(0, state.cart.discountType === "percent"
+              ? subtotal * (discountRaw / 100)
+              : discountRaw)
+          );
+          const rushFee = Number(state.cart.rushFee || 0);
+          const totalAmount = Math.max(0, subtotal - discountAmount + rushFee);
+          const isPackage = state.cart.items.some(item =>
+            String(item.type || "").toUpperCase() === "PACKAGE"
+          );
+
+          const projectPayload = {
+            client_id: client.id,
+            title: String(state.cart.projectName || "").trim(),
+            status: "In Progress",
+            delivery_status: "Pending",
+            priority: rushFee > 0 ? "Priority" : "Regular",
+            project_type: isPackage ? "PACKAGE" : "SOLO",
+            pricing_version: "v2",
+            start_date: state.cart.startDate || null,
+            deadline_date: state.cart.deadlineDate || null,
+            discount_amount: discountAmount,
+            rush_fee: rushFee,
+            rush_days_early: Number(state.cart.rushDaysEarly || 0),
+            subtotal_amount: subtotal,
+            total_amount: totalAmount,
+            notes: ""
+          };
+
+          const projectResult = await supabaseClient
+            .from("projects")
+            .insert(projectPayload)
+            .select("*")
+            .single();
+
+          if (projectResult.error) throw projectResult.error;
+          const project = projectResult.data;
+
+          for (const item of state.cart.items) {
+            const type = String(item.type || "SOLO").toUpperCase();
+            const qty = Math.max(1, Number(item.qty || 1));
+
+            const parentResult = await supabaseClient
+              .from("project_items")
+              .insert({
+                project_id: project.id,
+                parent_item_id: null,
+                product_code: item.product_code || null,
+                name: item.name || "Untitled Item",
+                item_type: type === "PACKAGE" ? "PACKAGE" : "SOLO",
+                quantity: qty,
+                unit_price: Number(item.price || 0),
+                billable: true,
+                counts_as_deliverable: type !== "PACKAGE",
+                status: "Pending",
+                progress: 0,
+                due_date: state.cart.deadlineDate || null,
+                client_visible: true
+              })
+              .select("*")
+              .single();
+
+            if (parentResult.error) throw parentResult.error;
+            const parent = parentResult.data;
+
+            if (type === "PACKAGE") {
+              const inclusions = Array.isArray(item.includedItems)
+                ? item.includedItems.filter(Boolean)
+                : [];
+
+              for (const inclusion of inclusions) {
+                const childResult = await supabaseClient
+                  .from("project_items")
+                  .insert({
+                    project_id: project.id,
+                    parent_item_id: parent.id,
+                    product_code: null,
+                    name: String(inclusion),
+                    item_type: "PACKAGE_COMPONENT",
+                    quantity: 1,
+                    unit_price: 0,
+                    billable: false,
+                    counts_as_deliverable: true,
+                    status: "Pending",
+                    progress: 0,
+                    due_date: state.cart.deadlineDate || null,
+                    client_visible: true
+                  })
+                  .select("*")
+                  .single();
+
+                if (childResult.error) throw childResult.error;
               }
             }
           }
-        } else {
-          const existing = state.clients.find(c => c.id === clientId);
-          if (!existing) throw new Error("Select an existing client before creating the order.");
-          clientName = existing.name;
-          clientEmail = existing.email;
-        }
 
-        let subtotal = 0;
-        state.cart.items.forEach(i => { subtotal += i.price * i.qty; });
-        let discount = state.cart.discountType === 'percent' ? subtotal * (state.cart.discountVal / 100) : state.cart.discountVal;
-        const rushFee = Number(state.cart.rushFee || 0);
-        const projectedNo=nextProjectNumber();
-        const maintenanceFee=automaticMaintenanceFee(state.cart.items,projectedNo);
-        const workload=workloadContext(state.cart.startDate,state.cart.deadlineDate);
-        const totalAmount = Math.max(0, subtotal - discount + rushFee + maintenanceFee);
+          const refreshed = await supabaseClient
+            .from("projects")
+            .select("*, payments(*), project_items(*)")
+            .eq("id", project.id)
+            .single();
 
-        const projectTitle = state.cart.projectName.trim();
+          if (refreshed.error) throw refreshed.error;
 
-        const newProject = {
-          id: 'proj_' + Date.now(),
-          project_number: (()=>{ const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite); return used.length?Math.max(...used)+1:1; })(),
-          client_id: clientId,
-          client_name: clientName,
-          client_email: clientEmail,
-          title: projectTitle,
-          status: "In Progress",
-          delivery_status: "Pending",
-          start_date: state.cart.startDate,
-          deadline_date: state.cart.deadlineDate,
-          payment_due_date: state.cart.deadlineDate,
-          total_amount: totalAmount,
-          subtotal_amount: subtotal,
-          discount_amount: discount,
-          rush_fee: rushFee,
-          rush_days_early: Number(state.cart.rushDaysEarly || 0),
-          system_maintenance_fee: maintenanceFee,
-          workload_surcharge: 0,
-          workload_snapshot: workload.active,
-          workload_surcharge_recommended: projectedNo>=52 && workload.high,
-          project_type: "",
-          priority: (()=>{const start=parseDateSafe(state.cart.startDate),due=parseDateSafe(state.cart.deadlineDate),days=start&&due?Math.ceil((due-start)/86400000):14;return rushFee>0||days<14;})(),
-          project_items: state.cart.items.map((i,index) => ({ id:i.id||`oi_new_${Date.now()}_${index}`, name: i.name, price: i.price, qty: i.qty, type: i.type, product_code:i.product_code||i.code||null, category:i.category||"" })),
-          included_revisions: 1,
-          additional_revision_fee: 500,
-          notes: "",
-          created_at: new Date().toISOString(),
-          invoice_number: null,
-          invoice_issue_date: new Date().toISOString().split("T")[0],
-          invoice_due_date: state.cart.deadlineDate || "",
-          deleted: false,
-          deliverables: buildOrderedDeliverables(),
-          payments: []
-        };
+          const allRows = refreshed.data.project_items || [];
+          const billableRows = allRows.filter(row => row.billable !== false);
+          const billableById = new Map(billableRows.map(row => [String(row.id), row]));
 
-        state.projects.unshift(newProject);
-        persistProjectsState();
+          const hydratedProject = {
+            ...refreshed.data,
+            client_name: client.name || "",
+            client_email: client.email || "",
+            project_items: billableRows.map(row => ({
+              ...row,
+              price: Number(row.unit_price || 0),
+              qty: Number(row.quantity || 1),
+              type: row.item_type === "PACKAGE" ? "PACKAGE" : "SOLO"
+            })),
+            deliverables: allRows
+              .filter(row => row.counts_as_deliverable !== false)
+              .map(row => {
+                const parent = row.parent_item_id
+                  ? billableById.get(String(row.parent_item_id))
+                  : null;
+                return {
+                  id: row.id,
+                  item_name: row.name,
+                  name: row.name,
+                  completed: false,
+                  progress: Number(row.progress || 0),
+                  status: row.status || "Pending",
+                  completed_at: row.completed_at || null,
+                  due_date: row.due_date || project.deadline_date || null,
+                  client_visible: row.client_visible !== false,
+                  order_item_id: row.parent_item_id || row.id,
+                  parent_id: parent ? `group_${parent.id}` : null,
+                  package_name: parent?.name || null
+                };
+              }),
+            payments: refreshed.data.payments || []
+          };
 
-        if (supabaseClient && state.isConnected) {
-          try {
-            await syncProjectToDatabase(newProject, { quiet: true, includeStructure: true });
-          } catch(e) {
-            console.error("Database operation failed while creating project:", e);
-            showToast("Warning: Project was saved locally, but could not sync to the shared database.", "Retry", () => syncProjectToDatabase(newProject));
+          state.clients = state.clients.filter(c => String(c.id) !== String(client.id));
+          state.clients.push(client);
+
+          state.projects = state.projects.filter(p => String(p.id) !== String(hydratedProject.id));
+          state.projects.unshift(hydratedProject);
+
+          state.cart.items = [];
+          state.cart.discountVal = 0;
+          state.cart.projectName = "";
+          state.cart.selectedClientId = "";
+
+          localStorage.removeItem("JUAN_PROJECTS_LOCAL");
+          localStorage.removeItem("JUAN_CLIENTS_LOCAL");
+          persistCartState();
+
+          closeModal("orderSummaryModal");
+          showToast("Order created successfully!");
+          openProjectDetails(hydratedProject.id);
+
+        } catch (error) {
+          console.error("Create order failed:", error);
+          showToast(`Create order failed: ${error.message || error}`);
+        } finally {
+          if (confirmButton) {
+            confirmButton.disabled = false;
+            confirmButton.innerHTML = originalLabel;
           }
         }
-
-        // Reset cart state
-        state.cart.items = [];
-        state.cart.discountVal = 0;
-        persistCartState();
-
-        closeModal("orderSummaryModal");
-        showToast("Order created successfully!");
-        openProjectDetails(newProject.id);
       }
 
       /* ==========================================================================
