@@ -3084,6 +3084,7 @@
             if(state.activeView==='online-portal'){try{await loadOnlinePortalData(true);}catch(_){}}
           }
           renderTemplatesDropdown();
+          void loadWorkspaceProfilePhoto();
           renderCurrentView();
           try{window.dispatchEvent(new CustomEvent('juan:realtime-sync',{detail:eventRow||{}}));}catch(_){}
           return true;
@@ -3408,6 +3409,38 @@
         localStorage.removeItem("JUAN_CLIENTS_LOCAL");
       }
 
+
+      async function loadWorkspaceProfilePhoto() {
+        try {
+          if (!supabaseClient || !state.isConnected) return;
+
+          const sessionResult = await supabaseClient.auth.getSession();
+          const user = sessionResult?.data?.session?.user;
+          if (!user) return;
+
+          const result = await supabaseClient
+            .from("workspace_profiles")
+            .select("avatar_cropped_path")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (result.error) throw result.error;
+          const path = result.data?.avatar_cropped_path;
+          if (!path) return;
+
+          const signed = await supabaseClient.storage
+            .from("workspace-avatars")
+            .createSignedUrl(path, 60 * 60 * 6);
+
+          if (signed.error) throw signed.error;
+
+          state.profilePhoto = signed.data.signedUrl;
+          updateProfileDisplay();
+        } catch (error) {
+          console.warn("Workspace profile photo could not be loaded:", error);
+        }
+      }
+
       function updateProfileDisplay() {
         const ownerName = state.ownerName;
         document.getElementById("sidebarUserName").innerText = ownerName;
@@ -3563,14 +3596,82 @@
         cropCanvasCtx.restore();
       }
 
-      function confirmCroppedImage() {
+
+      async function confirmCroppedImage() {
         const canvas = document.getElementById("cropCanvas");
-        state.profilePhoto = canvas.toDataURL("image/png");
-        localStorage.setItem("JUAN_PROFILE_PHOTO", state.profilePhoto);
-        queueWorkspaceSettingsSync();
-        closeModal("cropModal");
+        if (!canvas) {
+          showToast("Profile photo editor is unavailable.");
+          return;
+        }
+
+        const previewDataUrl = canvas.toDataURL("image/webp", 0.9);
+        state.profilePhoto = previewDataUrl;
         updateProfileDisplay();
-        showToast("Profile photo updated.");
+
+        try {
+          if (!supabaseClient || !state.isConnected) {
+            localStorage.setItem("JUAN_PROFILE_PHOTO", previewDataUrl);
+            closeModal("cropModal");
+            showToast("Photo kept on this browser. Connect to Supabase to save it to your Workspace profile.");
+            return;
+          }
+
+          const sessionResult = await supabaseClient.auth.getSession();
+          const user = sessionResult?.data?.session?.user;
+          if (!user) throw new Error("Your Workspace session is not available.");
+
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(
+              value => value ? resolve(value) : reject(new Error("Could not prepare cropped image.")),
+              "image/webp",
+              0.9
+            );
+          });
+
+          const croppedPath = `${user.id}/avatar.webp`;
+
+          const upload = await supabaseClient.storage
+            .from("workspace-avatars")
+            .upload(croppedPath, blob, {
+              contentType: "image/webp",
+              upsert: true,
+              cacheControl: "3600"
+            });
+
+          if (upload.error) throw upload.error;
+
+          const profileSave = await supabaseClient
+            .from("workspace_profiles")
+            .upsert({
+              user_id: user.id,
+              avatar_cropped_path: croppedPath,
+              avatar_crop: {
+                zoom: typeof cropScale !== "undefined" ? Number(cropScale || 1) : 1,
+                x: typeof cropOffset !== "undefined" ? Number(cropOffset?.x || 0) : 0,
+                y: typeof cropOffset !== "undefined" ? Number(cropOffset?.y || 0) : 0,
+                aspect: 1
+              }
+            }, { onConflict: "user_id" });
+
+          if (profileSave.error) throw profileSave.error;
+
+          const signed = await supabaseClient.storage
+            .from("workspace-avatars")
+            .createSignedUrl(croppedPath, 60 * 60 * 6);
+
+          if (signed.error) throw signed.error;
+
+          state.profilePhoto = signed.data.signedUrl;
+          localStorage.removeItem("JUAN_PROFILE_PHOTO");
+          updateProfileDisplay();
+          closeModal("cropModal");
+          showToast("Profile photo saved.");
+        } catch (error) {
+          console.error("Profile photo save failed:", error);
+          localStorage.setItem("JUAN_PROFILE_PHOTO", previewDataUrl);
+          closeModal("cropModal");
+          showToast(`Photo preview saved locally, but cloud save failed: ${error.message || error}`);
+        }
       }
 
       function removeProfilePhoto() {requestDestructivePin('Remove Profile Photo','Remove the saved workspace profile photo?',()=>{localStorage.removeItem("JUAN_PROFILE_PHOTO");state.profilePhoto="";updateProfileDisplay();queueWorkspaceSettingsSync();showToast("Profile photo removed.");});}
@@ -5378,6 +5479,91 @@ ${description}`))actionCallback();return;}
       }
 
       /* VALIDATION FOR NEW ORDER */
+
+      // Database V2:
+      // `projects.priority` is BOOLEAN only.
+      // true = Rush/Priority, false = Regular.
+      // Deadline urgency is derived separately.
+      function getProjectPriorityBand(project, now = new Date()) {
+        const isRush = project?.priority === true || Number(project?.rush_fee || 0) > 0;
+        const rawDeadline = project?.deadline_date || project?.deadline || "";
+        if (!rawDeadline) {
+          return { rank: 7, key: "REGULAR", label: "REGULAR", isRush, daysUntil: null };
+        }
+
+        const today = new Date(now);
+        today.setHours(0,0,0,0);
+        const deadline = new Date(`${rawDeadline}T00:00:00`);
+        const daysUntil = Math.round((deadline - today) / 86400000);
+
+        if (daysUntil <= 0) {
+          return {
+            rank: 1,
+            key: isRush ? "RUSH_DUE_TODAY" : "REGULAR_DUE_TODAY",
+            label: isRush ? "PRIORITY · TODAY" : "TODAY",
+            isRush,
+            daysUntil
+          };
+        }
+
+        if (daysUntil <= 2) {
+          return {
+            rank: isRush ? 2 : 3,
+            key: isRush ? "RUSH_NEAR" : "REGULAR_NEAR",
+            label: isRush ? "PRIORITY · DUE SOON" : "DUE SOON",
+            isRush,
+            daysUntil
+          };
+        }
+
+        if (isRush) {
+          return {
+            rank: 4,
+            key: "RUSH_LATER",
+            label: "PRIORITY",
+            isRush,
+            daysUntil
+          };
+        }
+
+        if (daysUntil <= 7) {
+          return {
+            rank: 5,
+            key: "REGULAR_UPCOMING",
+            label: "UPCOMING",
+            isRush,
+            daysUntil
+          };
+        }
+
+        return {
+          rank: 6,
+          key: "REGULAR_FAR",
+          label: "LATER",
+          isRush,
+          daysUntil
+        };
+      }
+
+      function compareProjectPriority(a, b) {
+        const pa = getProjectPriorityBand(a);
+        const pb = getProjectPriorityBand(b);
+
+        if (pa.rank !== pb.rank) return pa.rank - pb.rank;
+
+        if (pa.rank === 1 && pa.isRush !== pb.isRush) {
+          return pa.isRush ? -1 : 1;
+        }
+
+        const da = pa.daysUntil ?? Number.POSITIVE_INFINITY;
+        const db = pb.daysUntil ?? Number.POSITIVE_INFINITY;
+        if (da !== db) return da - db;
+
+        const codeNum = p => Number(String(p?.project_code || p?.projectCode || "")
+          .replace(/\D/g, "")) || Number.POSITIVE_INFINITY;
+        return codeNum(a) - codeNum(b);
+      }
+
       function showOrderConfirmation() {
         try {
           setDefaultOrderDates();
@@ -5855,7 +6041,7 @@ ${description}`))actionCallback();return;}
             title: String(state.cart.projectName || "").trim(),
             status: "In Progress",
             delivery_status: "Pending",
-            priority: rushFee > 0 ? "Priority" : "Regular",
+            priority: rushFee > 0,
             project_type: isPackage ? "PACKAGE" : "SOLO",
             pricing_version: "v2",
             start_date: state.cart.startDate || null,
