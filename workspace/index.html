@@ -1129,6 +1129,41 @@
 .table-action-cell .icon-more-button:hover{background:var(--bg-subtle,#f1f3f5);color:var(--text-primary,#202124)}
 </style>
 
+
+<style id="jp-profile-photo-editor-fix">
+#settingsAvatarPreview{cursor:pointer;object-fit:cover}
+.profile-crop-modal{width:min(620px,calc(100vw - 32px))!important}
+.crop-stage{
+  width:min(480px,100%);
+  aspect-ratio:1/1;
+  margin:0 auto;
+  border-radius:18px;
+  overflow:hidden;
+  background:#111;
+  position:relative
+}
+#cropCanvas{
+  display:block;
+  width:100%;
+  height:100%;
+  cursor:grab;
+  touch-action:none
+}
+.crop-zoom-row{
+  display:grid;
+  grid-template-columns:24px 1fr 24px;
+  gap:12px;
+  align-items:center;
+  margin-top:18px
+}
+.crop-help{
+  text-align:center;
+  margin-top:8px;
+  color:var(--text-tertiary,#858a90);
+  font-size:12px
+}
+</style>
+
 </head>
 <body>
 
@@ -1741,11 +1776,12 @@
           <div class="card">
             <h2 class="card-title mb-4">Profile</h2>
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-              <img id="settingsAvatarPreview" class="user-avatar" style="width: 64px; height: 64px; font-size: 20px;" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><rect width='64' height='64' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='22' font-weight='bold'>BD</text></svg>" alt="Profile Photo">
+              <img id="settingsAvatarPreview" class="user-avatar" style="width: 64px; height: 64px; font-size: 20px;" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64' role="button" tabindex="0" title="Edit profile photo" onclick="app.editExistingProfilePhoto()"><rect width='64' height='64' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='22' font-weight='bold'>BD</text></svg>" alt="Profile Photo">
               <div>
                 <input type="file" id="profilePhotoFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="app.handleProfilePhotoUpload(event)">
                 <div class="action-buttons-group">
                   <button class="btn btn-secondary btn-sm" onclick="document.getElementById('profilePhotoFileInput').click()">Change Photo</button>
+<button class="btn btn-secondary btn-sm" type="button" onclick="app.editExistingProfilePhoto()">Edit Photo</button>
                   <button class="btn btn-text text-danger" onclick="app.removeProfilePhoto()">Remove</button>
                 </div>
                 <div class="text-sm text-muted mt-2">JPG, PNG, or WEBP up to 5MB</div>
@@ -3575,37 +3611,112 @@
       }
 
       // PROFILE PICTURE CROPPING WORKFLOW
-      function handleProfilePhotoUpload(e) {
-        const file=e?.target?.files?.[0];
-        if(!file)return;
+      async function editExistingProfilePhoto() {
+        try {
+          if (!supabaseClient || !state.isConnected) {
+            if (!state.profilePhoto) {
+              document.getElementById("profilePhotoFileInput")?.click();
+              return;
+            }
 
-        const validTypes=["image/jpeg","image/jpg","image/png","image/webp"];
-        if(!validTypes.includes(file.type)){
-          showToast("Please choose a JPG, PNG, or WEBP image.");
-          return;
-        }
+            const image = new Image();
+            image.onload = () => {
+              cropImageObj = image;
+              cropScale = 1;
+              cropOffset = { x:0, y:0 };
+              const zoom = document.getElementById("cropZoomRange");
+              if (zoom) zoom.value = "1";
+              initProfileCropInteractions();
+              drawCropCanvas();
+              openModal("cropModal");
+            };
+            image.src = state.profilePhoto;
+            return;
+          }
 
-        if(file.size>5*1024*1024){
-          showToast("Profile photo must be 5 MB or smaller.");
-          return;
-        }
+          const session = await supabaseClient.auth.getSession();
+          const user = session?.data?.session?.user;
+          if (!user) throw new Error("Workspace session is unavailable.");
 
-        window.__jpProfileOriginalFile=file;
+          const profile = await supabaseClient
+            .from("workspace_profiles")
+            .select("avatar_original_path,avatar_cropped_path")
+            .eq("user_id", user.id)
+            .maybeSingle();
 
-        const reader=new FileReader();
-        reader.onload=()=>{
-          cropImageObj=new Image();
-          cropImageObj.onload=()=>{
-            cropScale=1;
-            cropOffset={x:0,y:0};
-            const zoom=document.getElementById("cropZoomRange");
-            if(zoom)zoom.value="1";
+          if (profile.error) throw profile.error;
+
+          const storagePath = profile.data?.avatar_original_path || profile.data?.avatar_cropped_path;
+          if (!storagePath) {
+            document.getElementById("profilePhotoFileInput")?.click();
+            return;
+          }
+
+          const download = await supabaseClient.storage
+            .from("workspace-avatars")
+            .download(storagePath);
+
+          if (download.error) throw download.error;
+
+          const objectUrl = URL.createObjectURL(download.data);
+          const image = new Image();
+
+          image.onload = () => {
+            cropImageObj = image;
+            cropScale = 1;
+            cropOffset = { x:0, y:0 };
+            const zoom = document.getElementById("cropZoomRange");
+            if (zoom) zoom.value = "1";
+            initProfileCropInteractions();
             drawCropCanvas();
             openModal("cropModal");
           };
-          cropImageObj.src=reader.result;
+
+          image.src = objectUrl;
+        } catch (error) {
+          console.error("Edit existing photo failed:", error);
+          showToast(`Could not edit photo: ${error.message || error}`);
+        }
+      }
+
+      function handleProfilePhotoUpload(event) {
+        const file = event?.target?.files?.[0];
+        if (!file) return;
+
+        const validTypes = ["image/jpeg","image/jpg","image/png","image/webp"];
+        if (!validTypes.includes(file.type)) {
+          showToast("Please choose a JPG, PNG, or WEBP image.");
+          event.target.value = "";
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          showToast("Profile photo must be 5 MB or smaller.");
+          event.target.value = "";
+          return;
+        }
+
+        window.__jpProfileOriginalFile = file;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const image = new Image();
+          image.onload = () => {
+            cropImageObj = image;
+            cropScale = 1;
+            cropOffset = { x: 0, y: 0 };
+
+            const zoom = document.getElementById("cropZoomRange");
+            if (zoom) zoom.value = "1";
+
+            initProfileCropInteractions();
+            drawCropCanvas();
+            openModal("cropModal");
+          };
+          image.onerror = () => showToast("Could not open that image.");
+          image.src = reader.result;
         };
         reader.readAsDataURL(file);
+        event.target.value = "";
       }
 
       function initCropCanvasInteractions() {
@@ -3639,126 +3750,197 @@
         canvas.ontouchend = () => { isDragging = false; };
       }
 
-      function onCropZoomChange(val) {
-        cropScale = Number(val);
+      function initProfileCropInteractions() {
+        const canvas = document.getElementById("cropCanvas");
+        if (!canvas) return;
+
+        cropCanvasCtx = canvas.getContext("2d");
+        if (canvas.dataset.profileCropReady === "1") return;
+        canvas.dataset.profileCropReady = "1";
+
+        let pointerStart = null;
+
+        canvas.addEventListener("pointerdown", event => {
+          event.preventDefault();
+          canvas.setPointerCapture?.(event.pointerId);
+          pointerStart = {
+            x: event.clientX,
+            y: event.clientY,
+            offsetX: Number(cropOffset?.x || 0),
+            offsetY: Number(cropOffset?.y || 0)
+          };
+          canvas.style.cursor = "grabbing";
+        });
+
+        canvas.addEventListener("pointermove", event => {
+          if (!pointerStart) return;
+          event.preventDefault();
+
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / Math.max(rect.width, 1);
+          const scaleY = canvas.height / Math.max(rect.height, 1);
+
+          cropOffset.x = pointerStart.offsetX + (event.clientX - pointerStart.x) * scaleX;
+          cropOffset.y = pointerStart.offsetY + (event.clientY - pointerStart.y) * scaleY;
+          drawCropCanvas();
+        });
+
+        const finish = event => {
+          pointerStart = null;
+          canvas.releasePointerCapture?.(event.pointerId);
+          canvas.style.cursor = "grab";
+        };
+
+        canvas.addEventListener("pointerup", finish);
+        canvas.addEventListener("pointercancel", finish);
+
+        canvas.addEventListener("wheel", event => {
+          event.preventDefault();
+          const next = Math.max(1, Math.min(3, Number(cropScale || 1) + (event.deltaY < 0 ? 0.08 : -0.08)));
+          cropScale = next;
+          const zoom = document.getElementById("cropZoomRange");
+          if (zoom) zoom.value = String(next);
+          drawCropCanvas();
+        }, { passive:false });
+      }
+
+      function onCropZoomChange(value) {
+        cropScale = Math.max(1, Math.min(3, Number(value || 1)));
         drawCropCanvas();
       }
 
       function drawCropCanvas() {
-        if(!cropCanvasCtx||!cropImageObj)return;
+        const canvas = document.getElementById("cropCanvas");
+        if (!canvas || !cropImageObj) return;
 
-        const canvas=document.getElementById("cropCanvas");
-        cropCanvasCtx.clearRect(0,0,canvas.width,canvas.height);
-        cropCanvasCtx.fillStyle="#111";
-        cropCanvasCtx.fillRect(0,0,canvas.width,canvas.height);
+        cropCanvasCtx = cropCanvasCtx || canvas.getContext("2d");
+        const ctx = cropCanvasCtx;
 
-        const fitScale=Math.min(
-          canvas.width/cropImageObj.width,
-          canvas.height/cropImageObj.height
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "#111";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        const cropDiameter = Math.min(canvas.width,canvas.height) - 36;
+        const coverScale = Math.max(
+          cropDiameter / cropImageObj.width,
+          cropDiameter / cropImageObj.height
         );
-        const baseW=cropImageObj.width*fitScale;
-        const baseH=cropImageObj.height*fitScale;
+        const drawW = cropImageObj.width * coverScale;
+        const drawH = cropImageObj.height * coverScale;
 
-        cropCanvasCtx.save();
-        cropCanvasCtx.translate(
-          canvas.width/2+Number(cropOffset?.x||0),
-          canvas.height/2+Number(cropOffset?.y||0)
+        ctx.save();
+        ctx.translate(
+          canvas.width/2 + Number(cropOffset?.x || 0),
+          canvas.height/2 + Number(cropOffset?.y || 0)
         );
-        cropCanvasCtx.scale(Number(cropScale||1),Number(cropScale||1));
-        cropCanvasCtx.drawImage(cropImageObj,-baseW/2,-baseH/2,baseW,baseH);
-        cropCanvasCtx.restore();
+        ctx.scale(Number(cropScale || 1), Number(cropScale || 1));
+        ctx.drawImage(cropImageObj, -drawW/2, -drawH/2, drawW, drawH);
+        ctx.restore();
 
-        const cropSize=Math.min(canvas.width,canvas.height)-28;
-        const cx=canvas.width/2;
-        const cy=canvas.height/2;
-
-        cropCanvasCtx.save();
-        cropCanvasCtx.fillStyle="rgba(0,0,0,.42)";
-        cropCanvasCtx.fillRect(0,0,canvas.width,canvas.height);
-        cropCanvasCtx.globalCompositeOperation="destination-out";
-        cropCanvasCtx.beginPath();
-        cropCanvasCtx.arc(cx,cy,cropSize/2,0,Math.PI*2);
-        cropCanvasCtx.fill();
-        cropCanvasCtx.globalCompositeOperation="source-over";
-        cropCanvasCtx.beginPath();
-        cropCanvasCtx.arc(cx,cy,cropSize/2,0,Math.PI*2);
-        cropCanvasCtx.strokeStyle="rgba(255,255,255,.95)";
-        cropCanvasCtx.lineWidth=2;
-        cropCanvasCtx.stroke();
-        cropCanvasCtx.restore();
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,.50)";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(canvas.width/2,canvas.height/2,cropDiameter/2,0,Math.PI*2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.beginPath();
+        ctx.arc(canvas.width/2,canvas.height/2,cropDiameter/2,0,Math.PI*2);
+        ctx.strokeStyle = "rgba(255,255,255,.96)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
       }
 
 
       async function confirmCroppedImage() {
-        if(!cropImageObj){
-          showToast("Choose a photo first.");
+        if (!cropImageObj) {
+          showToast("Choose a profile photo first.");
           return;
         }
 
-        const preview=document.getElementById("cropCanvas");
-        const out=document.createElement("canvas");
-        const outputSize=600;
-        out.width=outputSize;
-        out.height=outputSize;
-        const ctx=out.getContext("2d");
+        const preview = document.getElementById("cropCanvas");
+        const outputSize = 600;
+        const out = document.createElement("canvas");
+        out.width = outputSize;
+        out.height = outputSize;
+        const ctx = out.getContext("2d");
 
-        const fitScale=Math.min(preview.width/cropImageObj.width,preview.height/cropImageObj.height);
-        const baseW=cropImageObj.width*fitScale;
-        const baseH=cropImageObj.height*fitScale;
-        const cropSize=Math.min(preview.width,preview.height)-28;
-        const scaleOut=outputSize/cropSize;
+        const previewCropDiameter = Math.min(preview.width,preview.height) - 36;
+        const coverScale = Math.max(
+          previewCropDiameter / cropImageObj.width,
+          previewCropDiameter / cropImageObj.height
+        );
+        const drawW = cropImageObj.width * coverScale;
+        const drawH = cropImageObj.height * coverScale;
+        const exportScale = outputSize / previewCropDiameter;
 
         ctx.save();
+        ctx.beginPath();
+        ctx.arc(outputSize/2,outputSize/2,outputSize/2,0,Math.PI*2);
+        ctx.clip();
         ctx.translate(
-          outputSize/2+Number(cropOffset?.x||0)*scaleOut,
-          outputSize/2+Number(cropOffset?.y||0)*scaleOut
+          outputSize/2 + Number(cropOffset?.x || 0) * exportScale,
+          outputSize/2 + Number(cropOffset?.y || 0) * exportScale
         );
-        ctx.scale(Number(cropScale||1)*scaleOut,Number(cropScale||1)*scaleOut);
-        ctx.drawImage(cropImageObj,-baseW/2,-baseH/2,baseW,baseH);
+        ctx.scale(
+          Number(cropScale || 1) * exportScale,
+          Number(cropScale || 1) * exportScale
+        );
+        ctx.drawImage(cropImageObj,-drawW/2,-drawH/2,drawW,drawH);
         ctx.restore();
 
-        const croppedBlob=await new Promise((resolve,reject)=>{
+        const croppedBlob = await new Promise((resolve,reject)=>{
           out.toBlob(
-            blob=>blob?resolve(blob):reject(new Error("Could not export cropped photo.")),
+            blob=>blob ? resolve(blob) : reject(new Error("Could not export cropped image.")),
             "image/webp",
-            .9
+            .90
           );
         });
 
-        const localPreview=URL.createObjectURL(croppedBlob);
-        state.profilePhoto=localPreview;
+        const localPreview = URL.createObjectURL(croppedBlob);
+        state.profilePhoto = localPreview;
         updateProfileDisplay();
 
-        try{
-          if(!supabaseClient||!state.isConnected){
+        try {
+          if (!supabaseClient || !state.isConnected) {
             throw new Error("Workspace is not connected to Supabase.");
           }
 
-          const sessionResult=await supabaseClient.auth.getSession();
-          const user=sessionResult?.data?.session?.user;
-          if(!user)throw new Error("Workspace session is unavailable.");
+          const session = await supabaseClient.auth.getSession();
+          const user = session?.data?.session?.user;
+          if (!user) throw new Error("Workspace session is unavailable.");
 
-          const originalFile=window.__jpProfileOriginalFile;
-          let originalPath=null;
+          const originalFile = window.__jpProfileOriginalFile || null;
+          let originalPath = null;
 
-          if(originalFile){
-            const ext=(originalFile.name?.split(".").pop()||"jpg").toLowerCase().replace("jpeg","jpg");
-            originalPath=`${user.id}/original.${ext}`;
+          if (originalFile) {
+            const ext = (originalFile.name?.split(".").pop() || "jpg").toLowerCase().replace("jpeg","jpg");
+            originalPath = `${user.id}/original.${ext}`;
 
-            const originalUpload=await supabaseClient.storage
+            const originalUpload = await supabaseClient.storage
               .from("workspace-avatars")
-              .upload(originalPath,originalFile,{
-                contentType:originalFile.type||"image/jpeg",
+              .upload(originalPath, originalFile, {
+                contentType: originalFile.type || "image/jpeg",
                 upsert:true,
                 cacheControl:"3600"
               });
 
-            if(originalUpload.error)throw originalUpload.error;
+            if (originalUpload.error) throw originalUpload.error;
+          } else {
+            const current = await supabaseClient
+              .from("workspace_profiles")
+              .select("avatar_original_path")
+              .eq("user_id",user.id)
+              .maybeSingle();
+
+            if (!current.error) originalPath = current.data?.avatar_original_path || null;
           }
 
-          const croppedPath=`${user.id}/avatar.webp`;
+          const croppedPath = `${user.id}/avatar.webp`;
 
-          const croppedUpload=await supabaseClient.storage
+          const upload = await supabaseClient.storage
             .from("workspace-avatars")
             .upload(croppedPath,croppedBlob,{
               contentType:"image/webp",
@@ -3766,41 +3948,40 @@
               cacheControl:"3600"
             });
 
-          if(croppedUpload.error)throw croppedUpload.error;
+          if (upload.error) throw upload.error;
 
-          const profileSave=await supabaseClient
+          const saved = await supabaseClient
             .from("workspace_profiles")
             .upsert({
               user_id:user.id,
               avatar_original_path:originalPath,
               avatar_cropped_path:croppedPath,
               avatar_crop:{
-                zoom:Number(cropScale||1),
-                x:Number(cropOffset?.x||0),
-                y:Number(cropOffset?.y||0),
+                zoom:Number(cropScale || 1),
+                x:Number(cropOffset?.x || 0),
+                y:Number(cropOffset?.y || 0),
                 aspect:1
               }
             },{onConflict:"user_id"});
 
-          if(profileSave.error)throw profileSave.error;
+          if (saved.error) throw saved.error;
 
-          const signed=await supabaseClient.storage
+          const signed = await supabaseClient.storage
             .from("workspace-avatars")
             .createSignedUrl(croppedPath,60*60*6);
 
-          if(signed.error)throw signed.error;
+          if (signed.error) throw signed.error;
 
-          state.profilePhoto=signed.data.signedUrl;
-          localStorage.removeItem("JUAN_PROFILE_PHOTO");
+          state.profilePhoto = signed.data.signedUrl;
           updateProfileDisplay();
 
-          window.__jpProfileOriginalFile=null;
+          window.__jpProfileOriginalFile = null;
           closeModal("cropModal");
-          showToast("Profile photo updated.");
-        }catch(error){
-          console.error("Profile photo update failed:",error);
+          showToast("Profile photo saved.");
+        } catch (error) {
+          console.error("Profile photo save failed:", error);
           closeModal("cropModal");
-          showToast(`Profile photo update failed: ${error.message||error}`);
+          showToast(`Profile photo save failed: ${error.message || error}`);
         }
       }
 
@@ -8186,7 +8367,9 @@ ${description}`))actionCallback();return;}
         savePricelistItem,
         openEditClientModal,
         submitEditClient,
+        editExistingProfilePhoto,
         handleProfilePhotoUpload,
+        initProfileCropInteractions,
         onCropZoomChange,
         confirmCroppedImage,
         removeProfilePhoto,
