@@ -5213,20 +5213,37 @@ ${description}`))actionCallback();return;}
       }
 
       function updateRushCalculations() {
-        const startVal = document.getElementById("orderStartDate")?.value;
-        const deadVal = document.getElementById("orderDeadlineDate")?.value;
+        const startInput = document.getElementById("orderStartDate");
+        const deadlineInput = document.getElementById("orderDeadlineDate");
+
+        const startVal = startInput?.value || state.cart.startDate || "";
+        const deadVal = deadlineInput?.value || state.cart.deadlineDate || "";
+
         const rushDisplay = document.getElementById("rushFeeDisplayBox");
         const durationEl = document.getElementById("orderDurationDays");
         const badgeEl = document.getElementById("rushFeeBadge");
         const rushTextEl = document.getElementById("orderRushFeeText");
+        const deadlineErr = document.getElementById("orderDeadlineError");
 
-        // Do not show rush information until both dates exist.
         if (!startVal || !deadVal) {
           state.cart.rushDaysEarly = 0;
           state.cart.rushFee = 0;
+          state.cart.rushCategory = "STANDARD";
+
           if (rushDisplay) rushDisplay.style.display = "none";
+          if (durationEl) durationEl.innerText = "—";
+          if (badgeEl) {
+            badgeEl.className = "rush-simple-label";
+            badgeEl.innerText = "STANDARD";
+          }
+          if (rushTextEl) rushTextEl.innerText = formatCurrency(0);
+          if (deadlineErr) deadlineErr.innerText = "";
+
           const rushRow = document.getElementById("summaryRushRow");
+          const rushSummary = document.getElementById("summaryRushFee");
           if (rushRow) rushRow.style.display = "none";
+          if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(0)}`;
+
           updateCartCalculations();
           return;
         }
@@ -5235,43 +5252,127 @@ ${description}`))actionCallback();return;}
         state.cart.deadlineDate = deadVal;
 
         const start = new Date(`${startVal}T00:00:00`);
-        const dead = new Date(`${deadVal}T00:00:00`);
-        const calc=calculateRushForProject(state.cart.items,startVal,deadVal,nextProjectNumber());
-        const diffDays=calc.duration;
-        const daysEarly=calc.daysEarly;
-        const rushFee=calc.fee;
-        state.cart.rushDaysEarly=daysEarly;
-        state.cart.rushFee=rushFee;
+        const deadline = new Date(`${deadVal}T00:00:00`);
+
+        if (Number.isNaN(start.getTime()) || Number.isNaN(deadline.getTime())) {
+          state.cart.rushDaysEarly = 0;
+          state.cart.rushFee = 0;
+          state.cart.rushCategory = "STANDARD";
+          if (deadlineErr) deadlineErr.innerText = "Please enter valid dates.";
+          if (rushDisplay) rushDisplay.style.display = "none";
+          updateCartCalculations();
+          return;
+        }
+
+        const durationDays = Math.round(
+          (deadline.getTime() - start.getTime()) / 86400000
+        );
+
+        if (durationDays <= 0) {
+          state.cart.rushDaysEarly = 0;
+          state.cart.rushFee = 0;
+          state.cart.rushCategory = "INVALID";
+
+          if (deadlineErr) {
+            deadlineErr.innerText = "Deadline date must be after the start date.";
+          }
+          if (durationEl) durationEl.innerText = `${Math.max(0, durationDays)} days`;
+          if (badgeEl) {
+            badgeEl.className = "rush-simple-label";
+            badgeEl.innerText = "INVALID DATE";
+          }
+          if (rushTextEl) rushTextEl.innerText = formatCurrency(0);
+          if (rushDisplay) rushDisplay.style.display = "block";
+
+          const rushRow = document.getElementById("summaryRushRow");
+          const rushSummary = document.getElementById("summaryRushFee");
+          if (rushRow) rushRow.style.display = "none";
+          if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(0)}`;
+
+          updateCartCalculations();
+          return;
+        }
+
+        if (deadlineErr) deadlineErr.innerText = "";
+
+        const cartItems = Array.isArray(state.cart.items) ? state.cart.items : [];
+        const hasPackage = cartItems.some(item =>
+          String(item.type || item.item_type || "").toUpperCase() === "PACKAGE"
+        );
+
+        // V2 standard timelines.
+        const standardDays = hasPackage ? 14 : 10;
+
+        // Determine production workload for the rush rate.
+        let deliverableCount = 0;
+        for (const item of cartItems) {
+          const type = String(item.type || item.item_type || "SOLO").toUpperCase();
+          const qty = Math.max(1, Number(item.qty ?? item.quantity ?? 1));
+
+          if (type === "PACKAGE") {
+            const inclusions = Array.isArray(item.includedItems)
+              ? item.includedItems.filter(Boolean)
+              : [];
+            deliverableCount += inclusions.length || 1;
+          } else {
+            deliverableCount += qty;
+          }
+        }
+
+        const daysEarly = Math.max(0, standardDays - durationDays);
+
+        // Rush category is based on how far the chosen deadline is ahead
+        // of the applicable standard timeline.
+        let rushCategory = "STANDARD";
+        if (daysEarly >= 1 && daysEarly <= 4) rushCategory = "SLIGHT RUSH";
+        else if (daysEarly >= 5 && daysEarly <= 8) rushCategory = "RUSH";
+        else if (daysEarly >= 9 && daysEarly <= 12) rushCategory = "EXPRESS RUSH";
+        else if (daysEarly >= 13) rushCategory = "CUSTOM RUSH";
+
+        let ratePerBlock = 0;
+        if (daysEarly > 0) {
+          if (deliverableCount >= 9) ratePerBlock = 1200;
+          else if (deliverableCount >= 4) ratePerBlock = 800;
+          else ratePerBlock = 500;
+        }
+
+        const fourDayBlocks = daysEarly > 0
+          ? Math.ceil(daysEarly / 4)
+          : 0;
+
+        const rushFee = fourDayBlocks * ratePerBlock;
+
+        state.cart.rushDaysEarly = daysEarly;
+        state.cart.rushFee = rushFee;
+        state.cart.rushCategory = rushCategory;
 
         if (durationEl) {
-          durationEl.innerText = `${durationDays} day${durationDays === 1 ? '' : 's'}`;
+          durationEl.innerText = `${durationDays} day${durationDays === 1 ? "" : "s"}`;
         }
-
-        const rushLevel =
-          diffDays >= 14 ? 0 :
-          diffDays >= 10 ? 1 :
-          diffDays >= 6 ? 2 :
-          diffDays >= 2 ? 3 : 4;
-        const levelNames = ["STANDARD", "SLIGHT RUSH", "RUSH", "EXPRESS RUSH", "CUSTOM RUSH"];
 
         if (badgeEl) {
-          badgeEl.className = rushLevel === 0 ? "rush-simple-label" : "rush-simple-label rush";
-          badgeEl.innerText = levelNames[rushLevel];
+          badgeEl.className = rushCategory === "STANDARD"
+            ? "rush-simple-label"
+            : "rush-simple-label rush";
+          badgeEl.innerText = rushCategory;
         }
-        if (rushTextEl) rushTextEl.innerText = formatCurrency(rushFee);
 
-        // A valid deadline is required before showing the card.
-        if (rushDisplay) rushDisplay.style.display = diffDays >= 0 ? "block" : "none";
+        if (rushTextEl) {
+          rushTextEl.innerText = formatCurrency(rushFee);
+        }
 
-        const rushSummary = document.getElementById("summaryRushFee");
+        // Keep the Rush/Timeline box visible for every valid date range.
+        // STANDARD therefore remains visible with a ₱0 rush fee.
+        if (rushDisplay) {
+          rushDisplay.style.display = "block";
+        }
+
         const rushRow = document.getElementById("summaryRushRow");
-        if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(rushFee)}`;
-        if (rushRow) rushRow.style.display = rushFee > 0 ? "flex" : "none";
+        const rushSummary = document.getElementById("summaryRushFee");
 
-        const deadlineErr = document.getElementById("orderDeadlineError");
-        if (deadlineErr) {
-          deadlineErr.innerText = diffDays < 0 ? "Deadline date cannot be earlier than start date." : "";
-        }
+        // The summary only needs a Rush Fee line when there is an actual fee.
+        if (rushRow) rushRow.style.display = rushFee > 0 ? "flex" : "none";
+        if (rushSummary) rushSummary.innerText = `+ ${formatCurrency(rushFee)}`;
 
         updateCartCalculations();
       }
