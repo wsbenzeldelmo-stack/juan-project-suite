@@ -3418,26 +3418,31 @@
           const user = sessionResult?.data?.session?.user;
           if (!user) return;
 
-          const result = await supabaseClient
+          const profile = await supabaseClient
             .from("workspace_profiles")
             .select("avatar_cropped_path")
             .eq("user_id", user.id)
             .maybeSingle();
 
-          if (result.error) throw result.error;
-          const path = result.data?.avatar_cropped_path;
-          if (!path) return;
+          if (profile.error) throw profile.error;
+
+          const avatarPath = profile.data?.avatar_cropped_path;
+          if (!avatarPath) {
+            state.profilePhoto = "";
+            updateProfileDisplay();
+            return;
+          }
 
           const signed = await supabaseClient.storage
             .from("workspace-avatars")
-            .createSignedUrl(path, 60 * 60 * 6);
+            .createSignedUrl(avatarPath, 60 * 60 * 6);
 
           if (signed.error) throw signed.error;
 
           state.profilePhoto = signed.data.signedUrl;
           updateProfileDisplay();
         } catch (error) {
-          console.warn("Workspace profile photo could not be loaded:", error);
+          console.warn("Profile photo could not be loaded:", error);
         }
       }
 
@@ -3509,32 +3514,33 @@
 
       // PROFILE PICTURE CROPPING WORKFLOW
       function handleProfilePhotoUpload(e) {
-        const file = e.target.files[0];
+        const file = e?.target?.files?.[0];
         if (!file) return;
 
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        const validTypes = ["image/jpeg","image/jpg","image/png","image/webp"];
         if (!validTypes.includes(file.type)) {
-          showToast("That image couldn't be uploaded. Please choose a valid image file.");
+          showToast("Please choose a JPG, PNG, or WEBP image.");
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          showToast("Profile photo must be 5 MB or smaller.");
           return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          showToast("That image couldn't be uploaded. File size must be under 5MB.");
-          return;
-        }
+        window.__jpProfileOriginalFile = file;
 
         const reader = new FileReader();
-        reader.onload = function(evt) {
+        reader.onload = () => {
           cropImageObj = new Image();
-          cropImageObj.onload = function() {
+          cropImageObj.onload = () => {
             cropScale = 1;
             cropOffset = { x: 0, y: 0 };
-            document.getElementById("cropZoomRange").value = 1;
-            initCropCanvasInteractions();
+            const zoom = document.getElementById("cropZoomRange");
+            if (zoom) zoom.value = "1";
             drawCropCanvas();
             openModal("cropModal");
           };
-          cropImageObj.src = evt.target.result;
+          cropImageObj.src = reader.result;
         };
         reader.readAsDataURL(file);
       }
@@ -3598,79 +3604,115 @@
 
 
       async function confirmCroppedImage() {
-        const canvas = document.getElementById("cropCanvas");
-        if (!canvas) {
-          showToast("Profile photo editor is unavailable.");
+        if (!cropImageObj) {
+          showToast("Choose a photo first.");
           return;
         }
 
-        const previewDataUrl = canvas.toDataURL("image/webp", 0.9);
-        state.profilePhoto = previewDataUrl;
+        const preview = document.getElementById("cropCanvas");
+        if (!preview) throw new Error("Crop canvas is missing.");
+
+        const out = document.createElement("canvas");
+        const outputSize = 600;
+        out.width = outputSize;
+        out.height = outputSize;
+        const ctx = out.getContext("2d");
+
+        const fitScale = Math.min(preview.width / cropImageObj.width, preview.height / cropImageObj.height);
+        const baseW = cropImageObj.width * fitScale;
+        const baseH = cropImageObj.height * fitScale;
+        const cropSize = Math.min(preview.width, preview.height) - 28;
+        const scaleOut = outputSize / cropSize;
+
+        ctx.save();
+        ctx.translate(
+          outputSize / 2 + Number(cropOffset?.x || 0) * scaleOut,
+          outputSize / 2 + Number(cropOffset?.y || 0) * scaleOut
+        );
+        ctx.scale(Number(cropScale || 1) * scaleOut, Number(cropScale || 1) * scaleOut);
+        ctx.drawImage(cropImageObj, -baseW/2, -baseH/2, baseW, baseH);
+        ctx.restore();
+
+        const croppedBlob = await new Promise((resolve, reject) => {
+          out.toBlob(
+            blob => blob ? resolve(blob) : reject(new Error("Could not export cropped photo.")),
+            "image/webp",
+            0.9
+          );
+        });
+
+        const previewUrl = URL.createObjectURL(croppedBlob);
+        state.profilePhoto = previewUrl;
         updateProfileDisplay();
 
         try {
           if (!supabaseClient || !state.isConnected) {
-            localStorage.setItem("JUAN_PROFILE_PHOTO", previewDataUrl);
-            closeModal("cropModal");
-            showToast("Photo kept on this browser. Connect to Supabase to save it to your Workspace profile.");
-            return;
+            throw new Error("Workspace is not connected to Supabase.");
           }
 
           const sessionResult = await supabaseClient.auth.getSession();
           const user = sessionResult?.data?.session?.user;
           if (!user) throw new Error("Your Workspace session is not available.");
 
-          const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob(
-              value => value ? resolve(value) : reject(new Error("Could not prepare cropped image.")),
-              "image/webp",
-              0.9
-            );
-          });
+          const originalFile = window.__jpProfileOriginalFile;
+          let originalPath = null;
+
+          if (originalFile) {
+            const ext = (originalFile.name?.split(".").pop() || originalFile.type?.split("/").pop() || "jpg")
+              .toLowerCase().replace("jpeg","jpg");
+            originalPath = `${user.id}/original.${ext}`;
+
+            const originalUpload = await supabaseClient.storage
+              .from("workspace-avatars")
+              .upload(originalPath, originalFile, {
+                contentType: originalFile.type || "image/jpeg",
+                upsert: true,
+                cacheControl: "3600"
+              });
+            if (originalUpload.error) throw originalUpload.error;
+          }
 
           const croppedPath = `${user.id}/avatar.webp`;
-
-          const upload = await supabaseClient.storage
+          const croppedUpload = await supabaseClient.storage
             .from("workspace-avatars")
-            .upload(croppedPath, blob, {
+            .upload(croppedPath, croppedBlob, {
               contentType: "image/webp",
               upsert: true,
               cacheControl: "3600"
             });
-
-          if (upload.error) throw upload.error;
+          if (croppedUpload.error) throw croppedUpload.error;
 
           const profileSave = await supabaseClient
             .from("workspace_profiles")
             .upsert({
               user_id: user.id,
+              avatar_original_path: originalPath,
               avatar_cropped_path: croppedPath,
               avatar_crop: {
-                zoom: typeof cropScale !== "undefined" ? Number(cropScale || 1) : 1,
-                x: typeof cropOffset !== "undefined" ? Number(cropOffset?.x || 0) : 0,
-                y: typeof cropOffset !== "undefined" ? Number(cropOffset?.y || 0) : 0,
+                zoom: Number(cropScale || 1),
+                x: Number(cropOffset?.x || 0),
+                y: Number(cropOffset?.y || 0),
                 aspect: 1
               }
             }, { onConflict: "user_id" });
-
           if (profileSave.error) throw profileSave.error;
 
           const signed = await supabaseClient.storage
             .from("workspace-avatars")
             .createSignedUrl(croppedPath, 60 * 60 * 6);
-
           if (signed.error) throw signed.error;
 
           state.profilePhoto = signed.data.signedUrl;
           localStorage.removeItem("JUAN_PROFILE_PHOTO");
           updateProfileDisplay();
+
+          window.__jpProfileOriginalFile = null;
           closeModal("cropModal");
-          showToast("Profile photo saved.");
+          showToast("Profile photo uploaded.");
         } catch (error) {
-          console.error("Profile photo save failed:", error);
-          localStorage.setItem("JUAN_PROFILE_PHOTO", previewDataUrl);
+          console.error("Profile photo upload failed:", error);
           closeModal("cropModal");
-          showToast(`Photo preview saved locally, but cloud save failed: ${error.message || error}`);
+          showToast(`Photo upload failed: ${error.message || error}`);
         }
       }
 
