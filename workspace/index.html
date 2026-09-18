@@ -1117,6 +1117,18 @@
   .destructive-pin-digit{height:46px;font-size:19px;border-radius:10px}
 }
 </style>
+
+<style id="jp-client-profile-persistence-patch">
+.table-action-heading{width:56px!important;min-width:56px!important;padding-left:0!important;padding-right:0!important}
+.table-action-cell{width:56px!important;min-width:56px!important;text-align:center!important}
+.table-action-cell .icon-more-button{
+  width:34px;height:34px;border:0;background:transparent;border-radius:10px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:22px;line-height:1;cursor:pointer;color:var(--text-secondary,#72777f)
+}
+.table-action-cell .icon-more-button:hover{background:var(--bg-subtle,#f1f3f5);color:var(--text-primary,#202124)}
+</style>
+
 </head>
 <body>
 
@@ -3481,23 +3493,39 @@
       }
 
       function updateProfileDisplay() {
-        const ownerName = state.ownerName;
-        document.getElementById("sidebarUserName").innerText = ownerName;
+        const ownerName = state.ownerName || "Workspace Owner";
+        const sidebarName = document.getElementById("sidebarUserName");
+        if (sidebarName) sidebarName.innerText = ownerName;
+
         const ownerNameInput = document.getElementById("ownerNameInput");
-        if (ownerNameInput) ownerNameInput.value = ownerName;
+        const addressInput = document.getElementById("ownerAddressInput");
+        const phoneInput = document.getElementById("ownerPhoneInput");
+        const emailInput = document.getElementById("ownerEmailInput");
+
+        if (ownerNameInput) ownerNameInput.value = state.ownerName || "";
+        if (addressInput) addressInput.value = state.ownerAddress || "";
+        if (phoneInput) phoneInput.value = state.ownerPhone || "";
+        if (emailInput) emailInput.value = state.ownerEmail || "";
 
         const sidebarAvatar = document.getElementById("sidebarAvatar");
         const settingsAvatar = document.getElementById("settingsAvatarPreview");
 
-        if (state.profilePhoto) {
-          sidebarAvatar.src = state.profilePhoto;
-          if (settingsAvatar) settingsAvatar.src = state.profilePhoto;
-        } else {
-          const initials = ownerName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "BD";
-          const defaultAvatar = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><rect width='64' height='64' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='22' font-weight='bold'>${initials}</text></svg>`;
-          sidebarAvatar.src = defaultAvatar;
-          if (settingsAvatar) settingsAvatar.src = defaultAvatar;
-        }
+        // Never generate initials from the owner's name.
+        // If no real photo exists, show a neutral user silhouette.
+        const neutralAvatar =
+          "data:image/svg+xml;utf8," +
+          encodeURIComponent(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'>" +
+            "<rect width='128' height='128' rx='64' fill='#EAF8F1'/>" +
+            "<circle cx='64' cy='48' r='24' fill='#4FC88A'/>" +
+            "<path d='M24 112c4-25 20-38 40-38s36 13 40 38' fill='#4FC88A'/>" +
+            "</svg>"
+          );
+
+        const avatarSrc = state.profilePhoto || neutralAvatar;
+
+        if (sidebarAvatar) sidebarAvatar.src = avatarSrc;
+        if (settingsAvatar) settingsAvatar.src = avatarSrc;
       }
 
 
@@ -3778,51 +3806,161 @@
 
       function removeProfilePhoto() {requestDestructivePin('Remove Profile Photo','Remove the saved workspace profile photo?',()=>{localStorage.removeItem("JUAN_PROFILE_PHOTO");state.profilePhoto="";updateProfileDisplay();queueWorkspaceSettingsSync();showToast("Profile photo removed.");});}
 
-      function updateOwnerName(val) {
-        const name = val.trim();
-        if (!name) {
-          showToast("Owner name cannot be empty.");
-          return;
+      async function saveWorkspaceProfileSettings(partial = {}) {
+        if (Object.prototype.hasOwnProperty.call(partial, "display_name")) {
+          localStorage.setItem("JUAN_OWNER_NAME", partial.display_name || "");
         }
-        state.ownerName = name;
-        state.settings.ownerName = name;
-        localStorage.setItem("JUAN_OWNER_NAME", name);
+        if (Object.prototype.hasOwnProperty.call(partial, "billing_address")) {
+          localStorage.setItem("JUAN_OWNER_ADDRESS", partial.billing_address || "");
+        }
+        if (Object.prototype.hasOwnProperty.call(partial, "contact_phone")) {
+          localStorage.setItem("JUAN_OWNER_PHONE", partial.contact_phone || "");
+        }
+        if (Object.prototype.hasOwnProperty.call(partial, "contact_email")) {
+          localStorage.setItem("JUAN_OWNER_EMAIL", partial.contact_email || "");
+        }
+
+        if (!supabaseClient || !state.isConnected) return false;
+
+        const sessionResult = await supabaseClient.auth.getSession();
+        const user = sessionResult?.data?.session?.user;
+        if (!user) throw new Error("Workspace session is unavailable.");
+
+        const result = await supabaseClient
+          .from("workspace_profiles")
+          .upsert({ user_id: user.id, ...partial }, { onConflict: "user_id" });
+
+        if (result.error) throw result.error;
+        return true;
+      }
+
+      async function loadWorkspaceProfileSettings() {
+        state.ownerName = localStorage.getItem("JUAN_OWNER_NAME") || state.ownerName || "";
+        state.ownerAddress = localStorage.getItem("JUAN_OWNER_ADDRESS") || state.ownerAddress || "";
+        state.ownerPhone = localStorage.getItem("JUAN_OWNER_PHONE") || state.ownerPhone || "";
+        state.ownerEmail = localStorage.getItem("JUAN_OWNER_EMAIL") || state.ownerEmail || "";
         updateProfileDisplay();
-        queueWorkspaceSettingsSync();
-        showToast("Profile updated successfully.");
+
+        if (!supabaseClient || !state.isConnected) return;
+
+        try {
+          const sessionResult = await supabaseClient.auth.getSession();
+          const user = sessionResult?.data?.session?.user;
+          if (!user) return;
+
+          const result = await supabaseClient
+            .from("workspace_profiles")
+            .select("display_name,billing_address,contact_phone,contact_email,avatar_cropped_path")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (result.error) throw result.error;
+          const profile = result.data;
+          if (!profile) return;
+
+          state.ownerName = profile.display_name ?? state.ownerName ?? "";
+          state.ownerAddress = profile.billing_address ?? state.ownerAddress ?? "";
+          state.ownerPhone = profile.contact_phone ?? state.ownerPhone ?? "";
+          state.ownerEmail = profile.contact_email ?? state.ownerEmail ?? "";
+
+          localStorage.setItem("JUAN_OWNER_NAME", state.ownerName || "");
+          localStorage.setItem("JUAN_OWNER_ADDRESS", state.ownerAddress || "");
+          localStorage.setItem("JUAN_OWNER_PHONE", state.ownerPhone || "");
+          localStorage.setItem("JUAN_OWNER_EMAIL", state.ownerEmail || "");
+
+          if (profile.avatar_cropped_path) {
+            const signed = await supabaseClient.storage
+              .from("workspace-avatars")
+              .createSignedUrl(profile.avatar_cropped_path, 60 * 60 * 6);
+
+            if (!signed.error && signed.data?.signedUrl) {
+              state.profilePhoto = signed.data.signedUrl;
+            }
+          } else {
+            state.profilePhoto = "";
+          }
+
+          updateProfileDisplay();
+        } catch (error) {
+          console.warn("Workspace profile settings could not be loaded:", error);
+          updateProfileDisplay();
+        }
       }
 
-      function updateOwnerAddress(val) {
-        state.ownerAddress = val.trim();
-        state.settings.address = state.ownerAddress;
-        localStorage.setItem("JUAN_OWNER_ADDRESS", state.ownerAddress);
-        queueWorkspaceSettingsSync();
-        showToast("Billing address updated.");
+      async function updateOwnerName(val) {
+        const name=String(val||"").trim();
+        if(!name){
+          showToast("Owner name cannot be empty.");
+          updateProfileDisplay();
+          return;
+        }
+
+        state.ownerName=name;
+        state.settings.ownerName=name;
+        updateProfileDisplay();
+
+        try{
+          const cloudSaved=await saveWorkspaceProfileSettings({display_name:name});
+          showToast(cloudSaved ? "Profile saved." : "Profile saved on this browser.");
+        }catch(error){
+          console.error("Profile save failed:",error);
+          showToast(`Profile save failed: ${error.message||error}`);
+        }
       }
 
-      function updateOwnerPhone(val) {
-        const phone = val.trim();
-        if (phone && !/^[\+\d\s\-\(\)]+$/.test(phone)) {
+      async function updateOwnerAddress(val) {
+        state.ownerAddress=String(val||"").trim();
+        state.settings.address=state.ownerAddress;
+        updateProfileDisplay();
+
+        try{
+          const cloudSaved=await saveWorkspaceProfileSettings({billing_address:state.ownerAddress});
+          showToast(cloudSaved ? "Billing address saved." : "Billing address saved on this browser.");
+        }catch(error){
+          console.error("Billing address save failed:",error);
+          showToast(`Billing address save failed: ${error.message||error}`);
+        }
+      }
+
+      async function updateOwnerPhone(val) {
+        const phone=String(val||"").trim();
+        if(phone && !/^[\+\d\s\-\(\)]+$/.test(phone)){
           showToast("Please enter a valid phone number.");
+          updateProfileDisplay();
           return;
         }
-        state.ownerPhone = phone;
-        localStorage.setItem("JUAN_OWNER_PHONE", phone);
-        queueWorkspaceSettingsSync();
-        showToast("Contact phone updated.");
+
+        state.ownerPhone=phone;
+        updateProfileDisplay();
+
+        try{
+          const cloudSaved=await saveWorkspaceProfileSettings({contact_phone:phone});
+          showToast(cloudSaved ? "Phone number saved." : "Phone number saved on this browser.");
+        }catch(error){
+          console.error("Phone save failed:",error);
+          showToast(`Phone save failed: ${error.message||error}`);
+        }
       }
 
-      function updateOwnerEmail(val) {
-        const email = val.trim();
-        if (email && !email.includes("@")) {
+      async function updateOwnerEmail(val) {
+        const email=String(val||"").trim();
+        if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
           showToast("Please enter a valid email address.");
+          updateProfileDisplay();
           return;
         }
-        state.ownerEmail = email;
-        state.settings.email = email;
-        localStorage.setItem("JUAN_OWNER_EMAIL", email);
-        queueWorkspaceSettingsSync();
-        showToast("Email updated successfully.");
+
+        state.ownerEmail=email;
+        state.settings.email=email;
+        updateProfileDisplay();
+
+        try{
+          const cloudSaved=await saveWorkspaceProfileSettings({contact_email:email});
+          showToast(cloudSaved ? "Email saved." : "Email saved on this browser.");
+        }catch(error){
+          console.error("Email save failed:",error);
+          showToast(`Email save failed: ${error.message||error}`);
+        }
       }
 
       function showConfirmationDialog(title, description, actionBtnLabel, actionCallback) {
@@ -4106,7 +4244,8 @@ ${description}`))actionCallback();return;}
       }
 
       async function loadDatabaseData() {
-        if(!supabaseClient||!state.isConnected){state.clients=[];state.projects=[];renderCurrentView();return false;}
+        if(!supabaseClient||!state.isConnected){state.clients=[];state.projects=[];await loadWorkspaceProfileSettings();
+          renderCurrentView();return false;}
         setWorkspaceLoading(true);
         try{
           const [clientsRes,projectsRes,settingsRes,sharedRes]=await Promise.all([
@@ -7304,12 +7443,28 @@ ${description}`))actionCallback();return;}
 
         const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase();
         const pref=state.listSorts?.clients||'az';
+        const normalize=v=>String(v||'').trim().toLowerCase();
+
+        const projectBelongsToClient=(project,client)=>{
+          if(project?.deleted) return false;
+
+          if(project?.client_id){
+            return String(project.client_id)===String(client.id);
+          }
+
+          const pEmail=normalize(project?.client_email);
+          const cEmail=normalize(client?.email);
+          if(pEmail && cEmail && pEmail===cEmail) return true;
+
+          const pName=normalize(project?.client_name);
+          const cName=normalize(client?.name);
+          return !!(pName && cName && pName===cName);
+        };
 
         let clients=state.clients
           .slice()
           .filter(c=>!c.archived_at)
-          .filter(c=>`${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`
-            .toLowerCase().includes(q));
+          .filter(c=>`${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
 
         clients.sort(
           pref==='za'
@@ -7326,9 +7481,7 @@ ${description}`))actionCallback();return;}
         }
 
         const rows=clients.map((c,idx)=>{
-          const count=state.projects.filter(
-            p=>!p.deleted&&!p.archived_at&&(p.client_id===c.id||p.client_name===c.name)
-          ).length;
+          const count=state.projects.filter(p=>projectBelongsToClient(p,c)).length;
 
           return `
             <tr class="clickable-row" onclick="app.openClientProfile('${c.id}')">
@@ -7339,15 +7492,20 @@ ${description}`))actionCallback();return;}
               <td>${count}</td>
               <td class="text-right table-action-cell" onclick="event.stopPropagation()">
                 <div class="popover-wrap" id="clientMenu${idx}">
-                  <button class="icon-more-button" title="Client actions"
-                    aria-label="Actions for ${escapeHtml(c.name||'client')}"
-                    onclick="app.togglePopover('clientMenu${idx}',event)">•••</button>
+                  <button
+                    class="icon-more-button"
+                    title="Client actions"
+                    aria-label="Client actions"
+                    onclick="app.togglePopover('clientMenu${idx}',event)"
+                  >⋮</button>
                   <div class="popover-panel table-action-menu client-row-menu">
                     <button class="popover-action table-action-item" onclick="app.openEditClientModal('${c.id}')">
-                      <span class="table-action-icon">✎</span><span>Edit Client</span>
+                      <span class="table-action-icon">✎</span>
+                      <span>Edit Client</span>
                     </button>
                     <button class="popover-action table-action-item text-danger" onclick="app.removeClient('${c.id}')">
-                      <span class="table-action-icon">⌫</span><span>Delete Client</span>
+                      <span class="table-action-icon">⌫</span>
+                      <span>Delete Client</span>
                     </button>
                   </div>
                 </div>
@@ -7361,8 +7519,12 @@ ${description}`))actionCallback();return;}
               <table class="data-table unified-table">
                 <thead>
                   <tr>
-                    <th>Full Name</th><th>Email</th><th>Number</th><th>Address</th>
-                    <th>No. of Projects</th><th class="table-action-heading">Actions</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Number</th>
+                    <th>Address</th>
+                    <th>No. of Projects</th>
+                    <th class="table-action-heading" aria-label="Row actions"></th>
                   </tr>
                 </thead>
                 <tbody>${rows}</tbody>
