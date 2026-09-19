@@ -98,7 +98,15 @@ async function dashboard(svc){
   const projects=(pr.data||[]).map(p=>({...p,deliverables:nestDeliverables(dels.filter(d=>String(d.project_id)===String(p.id)))}));
   const promotions=(ads.data||[]).map(a=>({...a,start:a.start_date,end:a.end_date}));
   const activity=(act.data||[]).map(a=>({...a,at:a.created_at}));
-  return {incoming_orders:io.data||[],clients:cl.data||[],projects,payment_submissions:ps.data||[],portal_accounts:pa.data||[],invitations:inv.data||[],portal_activity:activity,promotions,suite_config:cfg.data||[]};
+  const paymentSubmissions=await Promise.all((ps.data||[]).map(async submission=>{
+    let receipt_url=null;
+    if(submission.receipt_path){
+      const signed=await svc.storage.from('payment-receipts').createSignedUrl(submission.receipt_path,300);
+      if(!signed.error)receipt_url=signed.data?.signedUrl||null;
+    }
+    return {...submission,receipt_url};
+  }));
+  return {incoming_orders:io.data||[],clients:cl.data||[],projects,payment_submissions:paymentSubmissions,portal_accounts:pa.data||[],invitations:inv.data||[],portal_activity:activity,promotions,suite_config:cfg.data||[]};
 }
 async function publicAds(req,svc){
   const user=await optionalUser(req,svc);
@@ -135,11 +143,13 @@ async function submitOrder(b,svc){
     return {id:randomUUID(),catalog_id:p.id,name:p.name,type:kind,price,qty,includedItems:kind==='package'?(inc.get(String(p.id))||[]):[]};
   });
   const subtotal=Math.round(items.reduce((s,i)=>s+i.price*i.qty,0)*100)/100;
+  const hasPackage=items.some(i=>i.type==='package');
+  const standardDays=hasPackage?14:10;
   let rush=0;
   if(b.deadline){
     const deadline=new Date(String(b.deadline)+'T00:00:00');if(Number.isNaN(deadline.getTime()))fail('Invalid requested date.');
     const start=new Date(today()+'T00:00:00'),days=Math.round((deadline-start)/86400000);if(days<0)fail('Requested date cannot be in the past.');
-    rush=Math.ceil(Math.max(0,14-days)/4)*500;
+    rush=Math.ceil(Math.max(0,standardDays-days)/4)*500;
   }
   const raw=guestTokenForKey(key);
   const {data,error}=await svc.from('incoming_orders').insert({
@@ -159,17 +169,41 @@ async function convertOrder(id,svc,adminUser){
     const created=await svc.from('clients').insert({id:randomUUID(),name:o.name,email:o.email,phone:o.phone||null}).select('*').single();if(created.error)throw created.error;client=created.data;
   }
   const pId=randomUUID();
+  const items=Array.isArray(o.items)?o.items:[];
+  const hasPackage=items.some(i=>String(i.type||'').toLowerCase()==='package');
   const createdProject=await svc.from('projects').insert({
     id:pId,client_id:client.id,client_name:client.name,client_email:client.email,client_phone:client.phone,
-    title:o.title,status:'In Progress',delivery_status:'Pending',priority:Number(o.rush_fee||0)>0,project_type:'Guest Order',
+    title:o.title,status:'In Progress',delivery_status:'Pending',priority:Number(o.rush_fee||0)>0,
+    project_type:hasPackage?'PACKAGE':'SOLO',pricing_version:'v2',
     start_date:today(),deadline_date:o.deadline||null,subtotal_amount:o.subtotal||0,rush_fee:o.rush_fee||0,total_amount:o.total||0,
-    tracker_stage:0,milestones:[{stage:0,at:now()}]
+    notes:`Guest order ${o.code||''}`.trim(),tracker_stage:0,milestones:[{stage:0,at:now()}]
   }).select('*').single();
   if(createdProject.error)throw createdProject.error;
   const project=createdProject.data;
-  const items=Array.isArray(o.items)?o.items:[];
   if(items.length){
-    const rows=items.map((i,n)=>({id:randomUUID(),project_id:project.id,name:i.name,price:i.price,qty:i.qty,type:String(i.type||'service').toUpperCase(),product_code:null,sort_order:n,included_items:i.includedItems||[]}));
+    const rows=[];
+    items.forEach((i,n)=>{
+      const kind=String(i.type||'service').toLowerCase()==='package'?'package':'service';
+      const parentId=randomUUID();
+      rows.push({
+        id:parentId,project_id:project.id,parent_item_id:null,
+        catalog_service_id:kind==='service'?(i.catalog_id||null):null,
+        catalog_package_id:kind==='package'?(i.catalog_id||null):null,
+        product_code:null,name:i.name,item_type:kind==='package'?'PACKAGE':'SOLO',
+        quantity:Math.max(1,Number(i.qty||1)),unit_price:Number(i.price||0),
+        billable:true,counts_as_deliverable:kind!=='package',status:'Pending',progress:0,
+        due_date:o.deadline||null,completed_at:null,shared_drive_url:null,client_visible:true,sort_order:n,
+        included_items:i.includedItems||[]
+      });
+      if(kind==='package'){
+        (i.includedItems||[]).forEach((name,j)=>rows.push({
+          id:randomUUID(),project_id:project.id,parent_item_id:parentId,product_code:null,
+          name:String(name),item_type:'PACKAGE_COMPONENT',quantity:1,unit_price:0,
+          billable:false,counts_as_deliverable:true,status:'Pending',progress:0,
+          due_date:o.deadline||null,completed_at:null,shared_drive_url:null,client_visible:true,sort_order:j
+        }));
+      }
+    });
     const ins=await svc.from('project_items').insert(rows);if(ins.error)throw ins.error;
   }
   const deliverables=[];

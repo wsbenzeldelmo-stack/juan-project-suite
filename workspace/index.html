@@ -1842,7 +1842,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
                     </span>
                     <div class="rush-status-copy">
                       <strong id="orderDurationDays" class="rush-duration-value">14 days</strong>
-                      <span id="rushFeeBadge" class="rush-duration-meta">Standard • Standard timeline</span>
+                      <span id="rushFeeBadge" class="rush-duration-meta">Standard</span>
                     </div>
                   </div>
                   <div class="rush-status-fee">
@@ -6190,7 +6190,7 @@ ${description}`))actionCallback();return;}
         state.cart.rushDaysEarly=daysEarly;state.cart.rushFee=rushFee;
         if(durationEl)durationEl.innerText=`${durationDays} day${durationDays===1?'':'s'}`;
         const rushLevel=daysEarly<=0?0:Math.min(4,Math.ceil(daysEarly/RUSH_BLOCK_DAYS));const levelNames=['Standard','Slight Rush','Rush','Express Rush','Custom Rush'];
-        if(badgeEl){badgeEl.className='rush-duration-meta';badgeEl.innerText=daysEarly>0?`${levelNames[rushLevel]} • ${daysEarly} day${daysEarly===1?'':'s'} faster`:`Standard • Standard timeline`;}
+        if(badgeEl){badgeEl.className='rush-duration-meta';badgeEl.innerText=daysEarly>0?`${levelNames[rushLevel]} • ${daysEarly} day${daysEarly===1?'':'s'} faster`:`Standard`;}
         if(rushTextEl)rushTextEl.innerText=formatCurrency(rushFee);if(rushDisplay)rushDisplay.style.display=diffDays>=0?'grid':'none';
         const rushSummary=document.getElementById('summaryRushFee'),rushRow=document.getElementById('summaryRushRow');if(rushSummary)rushSummary.innerText=`+ ${formatCurrency(rushFee)}`;if(rushRow)rushRow.style.display=rushFee>0?'flex':'none';
         const deadlineErr=document.getElementById('orderDeadlineError');if(deadlineErr)deadlineErr.innerText=diffDays<0?'Deadline date cannot be earlier than start date.':'';updateCartCalculations();
