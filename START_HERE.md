@@ -1,5 +1,7 @@
 # JUAN PROJECT — shared test build
 
+> **Production status — September 19, 2026:** Guest ordering, incoming orders, QR/client-card tools, tracking/file controls, promotions, invitations, client classification, and portal tools have now been migrated to the Supabase/Vercel production apps. The local Python preview remains a development/test harness only.
+
 Workspace and Online now use **one shared, persistent test database**. They do not keep separate business-data copies in each browser. No Supabase project or admin login is needed for this test build.
 
 ## Start on your Mac

@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { bearer, requireAdmin, serviceClient, sendError } from './_lib.js';
 
 const STAGES=['Order Confirmed','Payment Confirmed','Production Started','In Production','Quality Check','Ready for Delivery','Completed'];
@@ -6,6 +6,7 @@ const now=()=>new Date().toISOString();
 const today=()=>new Date().toISOString().slice(0,10);
 const hash=v=>createHash('sha256').update(String(v||'')).digest('hex');
 const token=()=>randomBytes(32).toString('base64url');
+const guestTokenForKey=key=>{const secret=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;if(!secret)throw new Error('Server Supabase credentials are not configured.');return createHmac('sha256',secret).update('juan-guest-order:'+String(key)).digest('base64url')};
 const money=v=>{const n=Number(v||0);if(!Number.isFinite(n)||n<0)throw Object.assign(new Error('Enter a valid non-negative amount.'),{status:400});return Math.round(n*100)/100};
 const bodyOf=req=>typeof req.body==='string'?JSON.parse(req.body||'{}'):(req.body||{});
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status})};
@@ -115,7 +116,7 @@ async function submitOrder(b,svc){
   if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!title||!key)fail('Name, valid email and project title are required.');
   if(name.length>160||title.length>160||email.length>254||String(b.notes||'').length>3000)fail('Please shorten the submitted details.');
   const {data:existing,error:ee}=await svc.from('incoming_orders').select('*').eq('submission_key',key).maybeSingle();if(ee)throw ee;
-  if(existing)return {order:safeOrder(existing),token:null,duplicate:true};
+  if(existing)return {order:safeOrder(existing),token:guestTokenForKey(key),duplicate:true};
   const requested=Array.isArray(b.items)?b.items:[];if(!requested.length)fail('Choose at least one service or package.');
   const serviceIds=[],packageIds=[];
   requested.forEach(i=>{const kind=String(i.type||i.kind||'service').toLowerCase();(kind==='package'?packageIds:serviceIds).push(String(i.id))});
@@ -140,7 +141,7 @@ async function submitOrder(b,svc){
     const start=new Date(today()+'T00:00:00'),days=Math.round((deadline-start)/86400000);if(days<0)fail('Requested date cannot be in the past.');
     rush=Math.ceil(Math.max(0,14-days)/4)*500;
   }
-  const raw=token();
+  const raw=guestTokenForKey(key);
   const {data,error}=await svc.from('incoming_orders').insert({
     name,email,phone:String(b.phone||''),title,notes:String(b.notes||''),deadline:b.deadline||null,items,
     subtotal,rush_fee:rush,total:subtotal+rush,status:'Order Received',submission_key:key,token_hash:hash(raw)
