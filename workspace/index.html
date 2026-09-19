@@ -2872,6 +2872,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
       }
 
       async function connectDatabaseManually() {
+        if(window.JuanTest){await loadDatabaseData();showToast('Connected to the shared test server.');return true;}
         const btn = document.getElementById("manualDatabaseConnect");
         if (btn) { btn.disabled = true; btn.textContent = "Connecting…"; }
         try {
@@ -3022,6 +3023,13 @@ table.jp-packages-table col:nth-child(6){width:7%}
         setDefaultOrderDates();
         loadTasksState();
 
+        // Shared preview is injected only by preview/server.py on localhost.
+        if (window.JuanTest) {
+          supabaseClient=window.JuanTest.client; window.supabaseClient=supabaseClient; state.isConnected=true;
+          hideWorkspaceAuthGate(); updateConnectionStatus('connected','● SHARED TEST DATA');
+          updateManualDatabasePanel('Both apps are connected to one shared test server. Supabase will be configured at redeployment.');
+          await loadDatabaseData(); await startWorkspaceRealtimeSync(); setWorkspaceLoading(false); return;
+        }
         // Business records are loaded only from Supabase.
         state.projects=[];state.clients=[];
         supabaseClient=null;state.isConnected=false;
@@ -3423,7 +3431,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           if(entity.startsWith('catalog_')){
             try{await loadSharedCatalogFromDatabase();}catch(e){console.warn('Realtime catalog refresh:',e?.message||e);}
           }
-          if(['payment_submissions','portal_accounts','payment_settings','clients','projects','payments'].includes(entity)){
+          if(window.JuanTest||['payment_submissions','portal_accounts','payment_settings','clients','projects','payments'].includes(entity)){
             state.onlinePortalData=null;
             if(state.activeView==='online-portal'){try{await loadOnlinePortalData(true);}catch(_){}}
           }
@@ -5495,7 +5503,7 @@ ${description}`))actionCallback();return;}
         <div class="card mt-6"><div class="card-header"><h2 class="card-title">Messages</h2></div><div class="text-muted">Message interface placeholder. Client communication can be connected here later.</div></div>`;
       }
 
-      function openClientProfile(id){state.activeClientId=id;navigateTo("client-profile");}
+      function openClientProfile(id){state.activeClientId=id;navigateTo("client-profile");if(window.JuanTest)window.dispatchEvent(new CustomEvent('juan-client-profile',{detail:{id}}));}
 
       function getFriendlyDeadlineLabel(deadlineDateStr) {
         if (!deadlineDateStr) return "--";
@@ -8391,6 +8399,8 @@ ${description}`))actionCallback();return;}
       }
 
       return {
+        refreshSharedTest: () => window.JuanTest ? refreshWorkspaceFromCloudRealtime() : Promise.resolve(false),
+        bindEmailDomainSuggestions,
         copyPortalLoginEmail,
         formatPhoneField,
         initWorkspace,
@@ -8562,7 +8572,7 @@ ${description}`))actionCallback();return;}
     document.addEventListener("DOMContentLoaded", () => {
       app.initWorkspace();
       if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(err=>console.warn('Workspace offline cache unavailable:',err?.message||err)));}
-      setTimeout(()=>{refreshSearchableSelects(document);bindEmailDomainSuggestions();if(location.hash==="#online-portal")app.navigateTo("online-portal");},60);
+      setTimeout(()=>{refreshSearchableSelects(document);app.bindEmailDomainSuggestions();if(location.hash==="#online-portal")app.navigateTo("online-portal");},60);
       
       document.addEventListener("click", (e) => {
         if (!e.target.closest("#orderClientTypeahead")) app.hideClientSuggestions();

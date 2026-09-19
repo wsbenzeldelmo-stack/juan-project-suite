@@ -10,7 +10,7 @@ export default async function handler(req,res){
     const projectId=String(b.projectId||''),receiptPath=String(b.receiptPath||''),amount=Number(b.amount||0),senderInstitution=String(b.senderInstitution||'').trim().toLowerCase(),referenceNumber=sanitizePaymentReference(b.referenceNumber),paymentDate=String(b.paymentDate||'').trim(),transferFee=Math.max(0,Number(b.transferFee||0));
     const institution=getPaymentInstitution(senderInstitution);
     if(!projectId)return res.status(400).json({error:'Select the project for this payment.'});
-    if(!(amount>0))return res.status(400).json({error:'Amount paid must be greater than 0.'});
+    if(!Number.isFinite(amount)||!(amount>0)||!Number.isFinite(transferFee))return res.status(400).json({error:'Amount paid must be greater than 0.'});
     if(!institution)return res.status(400).json({error:'Select a supported sending bank or e-wallet.'});
     const referenceCheck=validatePaymentReference(senderInstitution,referenceNumber);
     if(!referenceCheck.ok)return res.status(400).json({error:referenceCheck.message,field:'referenceNumber'});
@@ -26,7 +26,7 @@ export default async function handler(req,res){
 
     const existing=await svc.from('payments').select('amount_paid').eq('project_id',projectId);
     if(existing.error)throw existing.error;
-    const paid=(existing.data||[]).reduce((s,p)=>s+Number(p.amount_paid||0),0),balance=Math.max(0,Number(pr.data.total_amount||0)-paid),netAmount=Math.max(0,amount-transferFee);
+    const paid=(existing.data||[]).reduce((s,p)=>s+Number(p.amount_paid||0),0),balance=Math.max(0,Number(pr.data.total_amount||0)-paid),netAmount=amount;
     if(amount>balance+0.01)return res.status(400).json({error:`Amount is greater than the current balance (${balance.toFixed(2)}).`});
 
     const duplicateSubmission=await svc.from('payment_submissions').select('id').ilike('reference_number',referenceNumber).in('status',['pending','accepted','approved']).limit(1);

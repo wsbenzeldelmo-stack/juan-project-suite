@@ -12,7 +12,7 @@ const RULES={
   'others':{name:'Other InstaPay Bank / E-Wallet',patterns:[/^\d{14,15}$/],message:'Other InstaPay references must contain 14 to 15 continuous numeric digits.'},
   /* Legacy-only sender codes retained so old pending submissions can still be reviewed. */
   'gotyme':{name:'GoTyme Bank',patterns:[/^[A-Za-z0-9]{12,15}$/],message:'GoTyme references must contain 12 to 15 letters or numbers.'},
-  'maribank':{name:'MariBank',patterns:[/^\d{12,15}$/],message:'MariBank references must contain 12 to 15 numeric digits.'},
+  'maribank':{name:'MariBank',patterns:[/^\d{6,12}$/],message:'MariBank references must contain 6 to 12 numeric digits.'},
   'maribank-seabank':{name:'MariBank / SeaBank (legacy)',patterns:[/^\d{12,15}$/],message:'MariBank / SeaBank references must contain 12 to 15 numeric digits.'}
 };
 export function sanitizeReference(value){return String(value||'').replace(/\s+/g,'').trim()}

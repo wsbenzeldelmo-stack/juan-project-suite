@@ -1,6 +1,7 @@
 import {getConfig} from './config.js';
 let client;
 export async function getSupabase(){
+  if(window.JuanTest)return window.JuanTest.client;
   if(client)return client;
   const c=await getConfig();
   const started=Date.now();while(!window.supabase?.createClient&&Date.now()-started<5000)await new Promise(r=>setTimeout(r,40));

@@ -1,3 +1,9 @@
+# Shared test build — start here
+
+See [START_HERE.md](START_HERE.md) for the shared Workspace + Online test server. New test features require this launcher; they are not yet a production Supabase release.
+
+---
+
 # JUAN PROJECT Platform V1.3.3.2
 
 JUAN PROJECT Platform combines **JUAN PROJECT Workspace** (admin/seller) and **JUAN PROJECT Online** (client portal) on one shared Supabase database.

@@ -59,7 +59,8 @@ export default async function handler(req,res){
         ...p,status:delivered?'Delivered':p.status,delivery_status:delivered?'Delivered':(p.delivery_status||'Pending'),
         system_maintenance_fee:maintenance,total_amount:total,
         items:its,deliverables:ds,payments:pays,amount_paid:amountPaid,balance,
-        drive_url:p.drive_url||null,
+        files_locked:balance>0&&!p.files_override,
+        drive_url:(balance<=0||p.files_override)?(p.drive_url||null):null,
         payment_status:balance<=0?'PAID':amountPaid>0?'PARTIALLY PAID':(p.deadline_date&&new Date(p.deadline_date)<new Date()?'OVERDUE':'UNPAID')
       };
     });
