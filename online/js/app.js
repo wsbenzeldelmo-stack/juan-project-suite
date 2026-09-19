@@ -144,9 +144,10 @@ const nav=()=>`<nav class="nav" aria-label="Primary navigation">
 </nav>`;
 
 function welcomeScreen(){
-  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card"><div class="welcome-hero">${brand()}<div class="welcome-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Your projects.<br><strong>In one place.</strong></h1><p>Track progress, manage payments, and receive your files with less friction.</p></div></div><div class="welcome-actions"><button id="getStarted" class="btn primary full">Get Started</button><button id="welcomeLogIn" class="btn full">Log In</button></div><div class="version">JUAN PROJECT Online · V1.3.3.2</div></div></div>`;
-  document.getElementById('getStarted').onclick=()=>{state.onboardingStep=0;onboardingScreen()};
+  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome"><div class="welcome-hero">${brand()}<div class="welcome-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Shop JUAN PROJECT services, submit an order request, and track it before it becomes an official project.</p></div></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeLogIn" class="btn full">Already a Client? Log In</button><button id="welcomeTrack" class="text-button full">Track an Order Request</button></div><div class="welcome-note">${icon('receipt',18)}<span>Shopping does not create a Project ID. Your request becomes a project only after JUAN PROJECT reviews and approves it.</span></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
+  document.getElementById('welcomeShop').onclick=()=>{localStorage.setItem(ONBOARDING_KEY,'1');state.route='shop';render();setTimeout(()=>window.JuanSuite?.shop?.(),0)};
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
+  document.getElementById('welcomeTrack').onclick=()=>window.JuanSuite?.track?.();
 }
 
 const onboardingSlides=[
@@ -309,7 +310,7 @@ function home(){
     return `<div class="guest-home">
       <div class="guest-brand">${brand()}</div>
       <div class="guest-copy"><span class="eyebrow">WELCOME TO JUAN PROJECT</span><h1>Browse first.<br><strong>Log in when it’s yours.</strong></h1><p>Explore JUAN PROJECT services in Guest Mode. If you already have a project with us, use your client account to open your private portal.</p></div>
-      <div class="guest-actions"><button id="homeShop" class="btn primary full">Browse Services</button><button id="homeLogIn" class="btn full">Already a Client? Log In</button></div>
+      <div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track Order Request</button><button id="homeLogIn" class="text-button full">Already a Client? Log In</button></div>
       <div class="guest-access"><div class="mini-icon">${icon('lock',17)}</div><div><b>Client access is private</b><p>Your orders, invoices, payments, and project files only appear after you log in.</p></div></div>
     </div>`;
   }
@@ -417,11 +418,36 @@ function invoice(){
   return `${pageHead('Invoice',{back:true,more:false})}<div id="clientInvoicePrintable" class="invoice workspace-document"><div class="invoice-h workspace-invoice-head"><div>${invoiceBrand()}</div><div class="invoice-id"><span>INVOICE</span><b>${esc(p.invoice_number||('#'+(p.project_code||p.id)+'-2026'))}</b><i class="badge">${esc(p.payment_status||'UNPAID')}</i></div></div><div class="invoice-grid"><div><span>BILL TO</span><b>${esc(state.portal.profile.name||state.portal.profile.email)}</b><small>${esc(state.portal.profile.email||'')}</small></div><div><span>PROJECT</span><b>${esc(p.title)}</b><small>Issued ${esc(issued)}${due?' · Due '+esc(fmtDate(due)):''}</small></div></div><table><thead><tr><th>ORDER ITEM</th><th>QTY</th><th>AMOUNT</th></tr></thead><tbody>${items.map(i=>`<tr><td>${esc(i.name||'Order Item')}</td><td>${Math.max(1,Number(i.qty||1))}</td><td>${peso(Math.max(0,Number(i.price||0))*Math.max(1,Number(i.qty||1)))}</td></tr>`).join('')||`<tr><td>${esc(p.title)}</td><td>1</td><td>${peso(subtotal)}</td></tr>`}</tbody></table><div class="invoice-summary-client"><div><span>Subtotal</span><b>${peso(subtotal)}</b></div>${feeBlock}${discount>0?`<div><span>Discount</span><b>-${peso(discount)}</b></div>`:''}<div class="invoice-total-client"><span>Total</span><b>${peso(total)}</b></div><div><span>Amount Paid</span><b>${peso(p.amount_paid)}</b></div><div class="invoice-balance ${String(p.payment_status||"UNPAID").toLowerCase().replace(/\s+/g,"-")}"><span>Balance Due</span><b>${peso(Math.max(0,total-Number(p.amount_paid||0)))}</b></div></div><div class="invoice-footer"><strong>JUAN PROJECT</strong><br>Thank you for choosing JUAN PROJECT.</div></div><div class="invoice-export-actions"><button id="saveClientInvoiceImage" class="btn primary full invoice-save-btn">Save as Image</button><button id="saveClientInvoice" class="btn full invoice-save-btn">Save / Print PDF</button></div>`;
 }
 
+function membershipProgress(){
+  const projects=state.portal?.projects||[];
+  const completed=projects.filter(p=>Number(p.balance||0)<=0&&isProjectDelivered(p)).length;
+  const tiers=[{name:'BRONZE',min:0,next:3},{name:'SILVER',min:3,next:6},{name:'GOLD',min:6,next:10},{name:'PLATINUM',min:10,next:null}];
+  let tier=tiers[0];for(const t of tiers)if(completed>=t.min)tier=t;
+  const span=tier.next===null?1:Math.max(1,tier.next-tier.min);
+  const progress=tier.next===null?100:Math.max(0,Math.min(100,Math.round(((completed-tier.min)/span)*100)));
+  return {completed,tier:tier.name,next:tier.next,progress,remaining:tier.next===null?0:Math.max(0,tier.next-completed)};
+}
+
 function account(){
-  if(!isLoggedIn())return `${pageHead('Help & About',{back:false,more:false})}<div class="guest-help-hero"><span class="eyebrow">GUEST MODE</span><h2>Browse freely. Log in when you need your project.</h2><p>Shop and support stay available without an account.</p></div><div class="settings-group"><div class="settings-label">HELP</div><div class="card settings-list"><div class="settings-row"><div><b>Frequently Asked Questions</b><small>Payments, timelines, revisions, and delivery</small></div>${icon('chevron',17)}</div><div class="settings-row"><div><b>Contact JUAN PROJECT</b><small>Get help before or during your project</small></div>${icon('chevron',17)}</div></div></div><div class="card guest-login-card"><div class="sheet-icon">${icon('lock',22)}</div><div><b>Unlock your client portal</b><small>Orders, payments, invoices, and files are available after Log In.</small></div><button id="guestAccountLogin" class="btn primary full">Log In</button></div><div class="jp-online-version">JUAN PROJECT Online · V1.3.3.2<br><span>Developed by BENZEL DELMO · JUAN PROJECT Management System</span></div>`;
-  const p=state.portal.profile;
+  if(!isLoggedIn())return `${pageHead('Help & About',{back:false,more:false})}<div class="guest-help-hero"><span class="eyebrow">GUEST MODE</span><h2>Browse freely. Log in when you need your project.</h2><p>Shop and support stay available without an account.</p></div><div class="settings-group"><div class="settings-label">HELP</div><div class="card settings-list"><div class="settings-row"><div><b>Frequently Asked Questions</b><small>Payments, timelines, revisions, and delivery</small></div>${icon('chevron',17)}</div><div class="settings-row"><div><b>Contact JUAN PROJECT</b><small>Get help before or during your project</small></div>${icon('chevron',17)}</div></div></div><div class="card guest-login-card"><div class="sheet-icon">${icon('lock',22)}</div><div><b>Unlock your client portal</b><small>Orders, payments, invoices, and files are available after Log In.</small></div><button id="guestAccountLogin" class="btn primary full">Log In</button></div><div class="jp-online-version">JUAN PROJECT Online · Order Request Update<br><span>Developed by BENZEL DELMO · JUAN PROJECT Management System</span></div>`;
+  const p=state.portal.profile,member=membershipProgress();
   const avatar=p.profile_photo_url?`<img src="${esc(p.profile_photo_url)}" alt="Profile photo">`:initials();
-  return `${pageHead('Account',{back:false,more:false})}<div class="card profile-card"><div class="avatar large profile-avatar">${avatar}</div><div class="profile-copy"><b>${esc(p.name||'Client')}</b><small>${esc(p.email||'')}</small><small>${esc(p.client_code||'')}</small><label class="profile-photo-action">Change Photo<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><span id="profilePhotoStatus" class="profile-photo-status"></span></div></div><div class="card account-status-card"><div><b>Account Status</b><small>Connected to JUAN PROJECT · ${esc(p.client_code||'Client')}</small></div><span class="account-status-pill">Synced</span></div><div class="settings-group"><div class="settings-label">ACCOUNT</div><div class="card settings-list"><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><div class="password-input-wrap"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="newPass">${icon('eye',18)}</button></div><div class="password-input-wrap"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button type="button" class="password-eye" data-toggle-pass="newPass2">${icon('eye',18)}</button></div><button id="changePass" class="btn full">Update Password</button></div></div><div class="settings-row"><div><b>Notifications</b><small>Project, payment, invoice, and file updates</small></div>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">SUPPORT</div><div class="card settings-list"><div class="settings-row"><div><b>Help & Support</b><small>Contact JUAN PROJECT</small></div>${icon('chevron',17)}</div><div class="settings-row"><b>Terms & Privacy</b>${icon('chevron',17)}</div><div class="settings-row danger" id="logout"><b>Log Out</b>${icon('chevron',17)}</div></div></div><div class="settings-group"><div class="settings-label">ABOUT</div><div class="card settings-list"><div class="settings-row jp-about-row"><div><b>JUAN PROJECT Online</b><small>Version V1.3.3.2</small><small>Developed by BENZEL DELMO</small><small>JUAN PROJECT Management System</small></div></div></div></div>`;
+  const joined=p.created_at?fmtDate(p.created_at):'—';
+  const nextTier=member.tier==='BRONZE'?'Silver':member.tier==='SILVER'?'Gold':'Platinum';
+  const tierMessage=member.next===null?'Highest membership tier reached':`${member.remaining} more completed project${member.remaining===1?'':'s'} to ${nextTier}`;
+  return `${pageHead('Account',{back:false,more:false})}
+    <div class="membership-card membership-${member.tier.toLowerCase()}">
+      <div class="membership-card-top"><div class="membership-brand">JUAN PROJECT</div><span>${member.tier} MEMBER</span></div>
+      <div class="membership-profile"><div class="avatar large profile-avatar">${avatar}</div><div><h2>${esc(p.name||'Client')}</h2><p>${esc(p.client_code||'Client')}</p><small>${esc(p.email||'')}</small></div></div>
+      <div class="membership-details"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Completed Projects</span><b>${member.completed}</b></div></div>
+      <div class="membership-progress"><div><span>Membership Progress</span><b>${esc(member.tier)}</b></div><div class="membership-track"><i style="width:${member.progress}%"></i></div><small>${esc(tierMessage)}</small></div>
+      <div class="membership-actions"><label class="profile-photo-action">Change Photo<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><button id="membershipQr" class="text-button">Show Client QR</button></div><span id="profilePhotoStatus" class="profile-photo-status"></span>
+    </div>
+    <div class="card account-status-card"><div><b>Account Status</b><small>Connected to JUAN PROJECT · ${esc(p.client_code||'Client')}</small></div><span class="account-status-pill">Synced</span></div>
+    <div class="settings-group"><div class="settings-label">MEMBER BENEFITS</div><div class="card settings-list"><div class="settings-row"><div><b>Tier Benefits & Promos</b><small>Available JUAN PROJECT promotions can be offered based on your membership tier.</small></div>${icon('spark',17)}</div><div class="settings-row"><div><b>Loyalty Rule</b><small>Only completed and fully settled projects count toward membership progress.</small></div>${icon('check',17)}</div></div></div>
+    <div class="settings-group"><div class="settings-label">ACCOUNT</div><div class="card settings-list"><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><div class="password-input-wrap"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="newPass">${icon('eye',18)}</button></div><div class="password-input-wrap"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button type="button" class="password-eye" data-toggle-pass="newPass2">${icon('eye',18)}</button></div><button id="changePass" class="btn full">Update Password</button></div></div><div class="settings-row"><div><b>Notifications</b><small>Project, payment, invoice, and file updates</small></div>${icon('chevron',17)}</div></div></div>
+    <div class="settings-group"><div class="settings-label">SUPPORT</div><div class="card settings-list"><div class="settings-row"><div><b>Help & Support</b><small>Contact JUAN PROJECT</small></div>${icon('chevron',17)}</div><div class="settings-row"><b>Terms & Privacy</b>${icon('chevron',17)}</div><div class="settings-row danger" id="logout"><b>Log Out</b>${icon('chevron',17)}</div></div></div>
+    <div class="settings-group"><div class="settings-label">ABOUT</div><div class="card settings-list"><div class="settings-row jp-about-row"><div><b>JUAN PROJECT Online</b><small>Order Request Update</small><small>Developed by BENZEL DELMO</small><small>JUAN PROJECT Management System</small></div></div></div></div>`;
 }
 
 function categoryName(id){return state.catalog.categories.find(c=>c.id===id)?.name||'Service'}
@@ -443,9 +469,11 @@ function bind(){
   document.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>{if(!isLoggedIn())return gate('orders');state.selected=x.dataset.open;state.route='project';render()});
   document.querySelectorAll('[data-drive]').forEach(x=>x.onclick=()=>window.open(x.dataset.drive,'_blank','noopener'));
   const topAccount=document.getElementById('topAccount');if(topAccount)topAccount.onclick=()=>{state.route='account';render()};
-  const homeShop=document.getElementById('homeShop');if(homeShop)homeShop.onclick=()=>{state.route='shop';render()};
+  const homeShop=document.getElementById('homeShop');if(homeShop)homeShop.onclick=()=>{state.route='shop';render();setTimeout(()=>window.JuanSuite?.shop?.(),0)};
+  const homeTrack=document.getElementById('homeTrack');if(homeTrack)homeTrack.onclick=()=>window.JuanSuite?.track?.();
   const homeLogIn=document.getElementById('homeLogIn');if(homeLogIn)homeLogIn.onclick=()=>authScreen();
   const guestAccountLogin=document.getElementById('guestAccountLogin');if(guestAccountLogin)guestAccountLogin.onclick=()=>authScreen();
+  const membershipQr=document.getElementById('membershipQr');if(membershipQr)membershipQr.onclick=()=>window.JuanSuite?.card?.();
   const notificationBtn=document.getElementById('notificationBtn');if(notificationBtn)notificationBtn.onclick=()=>{state.notificationOpen=true;render()};
   const nextActionBtn=document.getElementById('nextActionBtn');if(nextActionBtn)nextActionBtn.onclick=()=>{const p=activeProject(),a=nextAction(p);if(a.route==='project'&&p)state.selected=p.id;if(a.route==='payment'&&p)state.paymentProjectId=p.id;if(a.route)state.route=a.route;render()};
   const back=document.getElementById('screenBack');if(back&&!back.disabled)back.onclick=()=>{if(state.route==='invoice'){state.route='project'}else if(state.route==='project'){state.route='orders'}else{state.route='home'}render()};
@@ -522,7 +550,7 @@ function bind(){
     await setProfilePhoto(path);state.portal=await getPortal();if(status)status.textContent='Photo updated.';toast('Profile photo updated.');render();
   }catch(e){if(status)status.textContent=e.message||'Could not update photo.';toast(e.message||'Could not update photo.')}};
   const changeBtn=document.getElementById('changePass');if(changeBtn)changeBtn.onclick=async()=>{try{const p1=document.getElementById('newPass'),p2=document.getElementById('newPass2');if((p1?.value||'').length<8)throw Error('Use at least 8 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');changeBtn.disabled=true;changeBtn.textContent='Updating…';await setPassword(p1.value);await markPasswordSet();toast('Password updated.');p1.value=p2.value=''}catch(e){toast(e.message)}finally{if(document.body.contains(changeBtn)){changeBtn.disabled=false;changeBtn.textContent='Update Password'}}};
-  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{stopPortalRealtimeSync();await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';state.onboardingStep=0;onboardingScreen()};
+  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{stopPortalRealtimeSync();await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';state.onboardingStep=0;welcomeScreen()};
   const gateX=document.getElementById('gateX');if(gateX)gateX.onclick=()=>{state.gateOpen=false;render()};
   const gateLogIn=document.getElementById('gateLogIn');if(gateLogIn)gateLogIn.onclick=()=>authScreen();
   const gateShop=document.getElementById('gateShop');if(gateShop)gateShop.onclick=()=>{state.gateOpen=false;state.route='shop';render()};
@@ -543,9 +571,9 @@ function bind(){
   // New/no-remembered visitors always see onboarding first, then Guest Mode.
   const remembered=localStorage.getItem(REMEMBERED_CLIENT_KEY)==='1';
   if(!remembered){
-    // First opening OR no remembered client: onboarding → Guest Mode → optional client login.
+    // First opening OR no remembered client: storefront → Shop / Track / Client Login.
     state.onboardingStep=0;
-    onboardingScreen();
+    welcomeScreen();
   } else {
     // Returning client: keep the branded loading state visible while the persisted
     // Supabase session restores. Do not flash an empty portal or login screen.
