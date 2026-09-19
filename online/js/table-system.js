@@ -53,10 +53,12 @@
       heads[action].textContent='';
       heads[action].setAttribute('aria-label','Actions');
       heads[action].classList.add('jp-action-column');
+      for(const [prop,val] of [['width','5%'],['min-width','5%'],['max-width','5%'],['text-align','center'],['padding-left','8px'],['padding-right','8px']])heads[action].style.setProperty(prop,val,'important');
       table.querySelectorAll('tbody tr').forEach(row=>{
         const cell=row.children[action];
         if(!cell)return;
         cell.classList.add('jp-action-column');
+        for(const [prop,val] of [['width','5%'],['min-width','5%'],['max-width','5%'],['text-align','center'],['padding-left','8px'],['padding-right','8px']])cell.style.setProperty(prop,val,'important');
         cell.querySelectorAll('button').forEach(upgradeButton);
       });
     }

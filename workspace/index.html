@@ -8971,10 +8971,12 @@ ${description}`))actionCallback();return;}
         head.textContent="";
         head.setAttribute("aria-label","Actions");
         head.classList.add("jp-action-column");
+        for(const [prop,val] of [["width","5%"],["min-width","5%"],["max-width","5%"],["text-align","center"],["padding-left","8px"],["padding-right","8px"]])head.style.setProperty(prop,val,"important");
         table.querySelectorAll("tbody tr").forEach(row=>{
           const cell=row.children[actionIndex];
           if(!cell)return;
           cell.classList.add("jp-action-column");
+          for(const [prop,val] of [["width","5%"],["min-width","5%"],["max-width","5%"],["text-align","center"],["padding-left","8px"],["padding-right","8px"]])cell.style.setProperty(prop,val,"important");
           cell.querySelectorAll("button").forEach(upgradeTableActionButton);
         });
       }
@@ -9498,13 +9500,11 @@ ${description}`))actionCallback();return;}
   box-sizing:border-box!important;
 }
 .jp-system-table-card .jp-system-table{
-  border-left:0!important;
-  border-right:0!important;
-  border-bottom:0!important;
-  border-radius:0 0 14px 14px!important;
+  border:1px solid #e5e7eb!important;
+  border-radius:14px!important;
 }
-.jp-system-table-card .jp-system-table thead th:first-child{border-top-left-radius:0!important}
-.jp-system-table-card .jp-system-table thead th:last-child{border-top-right-radius:0!important}
+.jp-system-table-card .jp-system-table thead th:first-child{border-top-left-radius:13px!important}
+.jp-system-table-card .jp-system-table thead th:last-child{border-top-right-radius:13px!important}
 .catalog-manager-simple{
   width:100%!important;
   display:block!important;
