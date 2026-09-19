@@ -9,6 +9,8 @@
       if(!button)return;
       button.classList.add('table-action-button');
       if(!button.getAttribute('aria-label'))button.setAttribute('aria-label','Open actions');
+      if(button.dataset.jpActionUpgraded==='1' && button.querySelector('.jp-action-icon'))return;
+      button.dataset.jpActionUpgraded='1';
       button.innerHTML=icon();
     }
   };

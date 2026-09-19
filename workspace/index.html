@@ -1461,6 +1461,92 @@ table.jp-packages-table col:nth-child(6){width:7%}
   text-align:left!important;
 }
 </style>
+
+<style id="jp-rush-status-card-v2">
+.rush-fee-simple.rush-status-card{
+  display:none;
+  grid-template-columns:minmax(0,64%) minmax(0,36%);
+  align-items:stretch;
+  padding:0!important;
+  overflow:hidden;
+  background:#fff!important;
+  border:1px solid #e5e7eb!important;
+  border-radius:14px!important;
+  box-shadow:0 1px 2px rgba(15,23,42,.03);
+  color:var(--text-primary);
+}
+.rush-status-duration{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:18px 18px;
+}
+.rush-status-clock{
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background:#f5f7f8;
+  color:#68707c;
+}
+.rush-status-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
+.rush-duration-value{
+  display:block;
+  font-size:22px!important;
+  line-height:1.15!important;
+  font-weight:700!important;
+  letter-spacing:-.02em;
+  color:#15191f!important;
+}
+.rush-duration-meta{
+  display:block;
+  padding:0!important;
+  min-height:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#7b8492!important;
+  font-size:11px!important;
+  line-height:1.35!important;
+  font-weight:500!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+  white-space:normal!important;
+}
+.rush-status-fee{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+  padding:18px 18px 18px 22px;
+  border-left:1px solid #e5e7eb;
+}
+.rush-fee-label{
+  color:#8a929d;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  line-height:1.2;
+}
+.rush-fee-value{
+  display:block;
+  margin-top:5px;
+  color:#15191f!important;
+  font-size:17px!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+@media(max-width:520px){
+  .rush-fee-simple.rush-status-card{grid-template-columns:1fr}
+  .rush-status-fee{border-left:0;border-top:1px solid #e5e7eb;padding:14px 18px}
+}
+</style>
 </head>
 <body>
 
@@ -1746,12 +1832,23 @@ table.jp-packages-table col:nth-child(6){width:7%}
                   <span id="orderDeadlineError" class="inline-error"></span>
                 </div>
 
-                <div class="rush-fee-simple mt-3" id="rushFeeDisplayBox" style="display:none;">
-                  <div class="rush-summary-top">
-                    <span class="rush-duration">Duration: <strong id="orderDurationDays">14 days</strong></span>
-                    <span id="rushFeeBadge" class="rush-simple-label">STANDARD</span>
+                <div class="rush-fee-simple rush-status-card mt-3" id="rushFeeDisplayBox" style="display:none;">
+                  <div class="rush-status-duration">
+                    <span class="rush-status-clock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <path d="M12 7v5l3 2"></path>
+                      </svg>
+                    </span>
+                    <div class="rush-status-copy">
+                      <strong id="orderDurationDays" class="rush-duration-value">14 days</strong>
+                      <span id="rushFeeBadge" class="rush-duration-meta">Standard • Standard timeline</span>
+                    </div>
                   </div>
-                  <div class="rush-fee-amount">Rush Fee: <strong id="orderRushFeeText">₱0.00</strong></div>
+                  <div class="rush-status-fee">
+                    <span class="rush-fee-label">Rush Fee</span>
+                    <strong id="orderRushFeeText" class="rush-fee-value">₱ 0.00</strong>
+                  </div>
                 </div>
 
               <div class="divider"></div>
@@ -6091,10 +6188,10 @@ ${description}`))actionCallback();return;}
         state.cart.startDate=startVal;state.cart.deadlineDate=deadVal;
         const start=new Date(`${startVal}T00:00:00`),dead=new Date(`${deadVal}T00:00:00`),diffDays=Math.round((dead-start)/86400000),durationDays=Math.max(0,diffDays),STANDARD_DAYS=standardProductionDaysForCart(),RUSH_BLOCK_DAYS=4,RUSH_BLOCK_FEE=500,daysEarly=Math.max(0,STANDARD_DAYS-durationDays),rushFee=daysEarly>0?Math.ceil(daysEarly/RUSH_BLOCK_DAYS)*RUSH_BLOCK_FEE:0;
         state.cart.rushDaysEarly=daysEarly;state.cart.rushFee=rushFee;
-        if(durationEl)durationEl.innerText=`${durationDays} day${durationDays===1?'':'s'} · standard ${STANDARD_DAYS} days`;
-        const rushLevel=daysEarly<=0?0:Math.min(4,Math.ceil(daysEarly/RUSH_BLOCK_DAYS));const levelNames=['STANDARD','SLIGHT RUSH','RUSH','EXPRESS RUSH','CUSTOM RUSH'];
-        if(badgeEl){badgeEl.className=rushLevel===0?'rush-simple-label':'rush-simple-label rush';badgeEl.innerText=levelNames[rushLevel];}
-        if(rushTextEl)rushTextEl.innerText=formatCurrency(rushFee);if(rushDisplay)rushDisplay.style.display=diffDays>=0?'block':'none';
+        if(durationEl)durationEl.innerText=`${durationDays} day${durationDays===1?'':'s'}`;
+        const rushLevel=daysEarly<=0?0:Math.min(4,Math.ceil(daysEarly/RUSH_BLOCK_DAYS));const levelNames=['Standard','Slight Rush','Rush','Express Rush','Custom Rush'];
+        if(badgeEl){badgeEl.className='rush-duration-meta';badgeEl.innerText=daysEarly>0?`${levelNames[rushLevel]} • ${daysEarly} day${daysEarly===1?'':'s'} faster`:`Standard • Standard timeline`;}
+        if(rushTextEl)rushTextEl.innerText=formatCurrency(rushFee);if(rushDisplay)rushDisplay.style.display=diffDays>=0?'grid':'none';
         const rushSummary=document.getElementById('summaryRushFee'),rushRow=document.getElementById('summaryRushRow');if(rushSummary)rushSummary.innerText=`+ ${formatCurrency(rushFee)}`;if(rushRow)rushRow.style.display=rushFee>0?'flex':'none';
         const deadlineErr=document.getElementById('orderDeadlineError');if(deadlineErr)deadlineErr.innerText=diffDays<0?'Deadline date cannot be earlier than start date.':'';updateCartCalculations();
       }
@@ -8916,6 +9013,8 @@ ${description}`))actionCallback();return;}
       if(!button)return;
       button.classList.add("table-action-button");
       if(!button.getAttribute("aria-label"))button.setAttribute("aria-label","Open actions");
+      if(button.dataset.jpActionUpgraded==="1" && button.querySelector(".jp-action-icon"))return;
+      button.dataset.jpActionUpgraded="1";
       button.innerHTML=jpActionIcon();
     }
   };
@@ -9438,10 +9537,12 @@ ${description}`))actionCallback();return;}
   white-space:nowrap!important;
 }
 .jp-system-table td{
-  height:40px;
-  min-height:40px;
+  height:56px!important;
+  min-height:56px!important;
+  padding-top:8px!important;
+  padding-bottom:8px!important;
   font-size:12px!important;
-  line-height:1.35!important;
+  line-height:1.4!important;
 }
 .jp-system-table thead th:first-child{border-top-left-radius:13px!important}
 .jp-system-table thead th:last-child{border-top-right-radius:13px!important}
@@ -9472,6 +9573,9 @@ ${description}`))actionCallback();return;}
 .jp-system-table .table-action-button,
 .jp-system-table .icon-more-button.table-action-button,
 .jp-system-table .vertical-more.table-action-button{
+  position:relative!important;
+  z-index:3!important;
+  pointer-events:auto!important;
   width:32px!important;
   height:32px!important;
   min-width:32px!important;
@@ -9491,7 +9595,7 @@ ${description}`))actionCallback();return;}
 .jp-system-table .table-action-button:hover{
   background:rgba(15,23,42,.05)!important;
 }
-.jp-system-table .jp-action-icon{width:16px!important;height:16px!important;display:block!important}
+.jp-system-table .jp-action-icon{width:16px!important;height:16px!important;display:block!important;pointer-events:none!important}
 .jp-system-table-card{
   width:100%!important;
   border:1px solid #e5e7eb!important;
