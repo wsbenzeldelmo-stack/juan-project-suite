@@ -19,7 +19,7 @@ window.JuanSuiteRuntime={app:__JUAN_APP,session:()=>__JUAN_SESSION,getSession:as
 const T=window.JuanSuiteRuntime;if(!T)return;const admin=T.app==='workspace';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const peso=v=>new Intl.NumberFormat('en-PH',{style:'currency',currency:'PHP'}).format(Number(v||0));
-const url=(app,path='')=>{const base=app===T.app?location.origin:(app==='workspace'?T.workspaceUrl:T.onlineUrl);return base.replace(/\\/$/,'')+'/'+String(path||'').replace(/^\\//,'')};
+const url=(app,path='')=>{const base=app===T.app?location.origin:(app==='workspace'?T.workspaceUrl:T.onlineUrl);return base.replace(/\/$/,'')+'/'+String(path||'').replace(/^\//,'')};
 const api=b=>T.request('/api/suite',b);const by=id=>document.getElementById(id);const stages=['Order Confirmed','Payment Confirmed','Production Started','In Production','Quality Check','Ready for Delivery','Completed'];
 const CART_KEY='JUAN_ORDER_REQUEST_CART_V1';
 function loadCart(){try{const x=JSON.parse(localStorage.getItem(CART_KEY)||'[]');return Array.isArray(x)?x:[]}catch{return []}}
