@@ -33,6 +33,15 @@ const safeOrder=o=>({
   review_note:o.review_note||'',revised_at:o.revised_at||null,client_accepted_at:o.client_accepted_at||null,approved_at:o.approved_at||null,
   project_code:o.project_code||null,project_id:o.project_id||null,client_id:o.client_id||null
 });
+async function orderView(svc,o){
+  const view=safeOrder(o);
+  if(o?.project_id){
+    const {data:p,error}=await svc.from('projects').select('project_code').eq('id',o.project_id).maybeSingle();
+    if(error)throw error;
+    if(p?.project_code)view.project_code=p.project_code;
+  }
+  return view;
+}
 async function orderByToken(svc,t){
   if(!t)fail('Tracking token is required.');
   const {data,error}=await svc.from('incoming_orders').select('*').eq('token_hash',hash(t)).maybeSingle();
@@ -230,14 +239,14 @@ export default async function handler(req,res){
     const b=bodyOf(req),action=String(b.action||'dashboard'),svc=serviceClient();
 
     if(action==='submit-order'){if(String(b.website||'').trim())fail('Request blocked.',400);await enforceRateLimit(req,svc,'guest-order-ip','',8,3600);return res.status(200).json(await submitOrder(b,svc));}
-    if(action==='track'){await enforceRateLimit(req,svc,'guest-track-ip','',60,900);return res.status(200).json({order:safeOrder(await orderByToken(svc,b.token))});}
+    if(action==='track'){await enforceRateLimit(req,svc,'guest-track-ip','',60,900);return res.status(200).json({order:await orderView(svc,await orderByToken(svc,b.token))});}
     if(action==='track-public'){
       await enforceRateLimit(req,svc,'guest-track-public-ip','',30,900);
       const code=String(b.code||'').trim().toUpperCase(),email=String(b.email||'').trim().toLowerCase();
       if(!code||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail('Enter your Order Request ID and email address.');
       const {data:o,error}=await svc.from('incoming_orders').select('*').eq('code',code).ilike('email',email).maybeSingle();
       if(error)throw error;if(!o)fail('No order request matched those details.',404);
-      return res.status(200).json({order:safeOrder(o)});
+      return res.status(200).json({order:await orderView(svc,o)});
     }
     if(action==='accept-revision'){
       await enforceRateLimit(req,svc,'guest-accept-revision-ip','',20,3600);
@@ -263,7 +272,17 @@ export default async function handler(req,res){
       const {user,account}=await clientContext(req,svc);await enforceRateLimit(req,svc,'client-card-user',user.id,40,900);
       let {data:c,error}=await svc.from('clients').select('*').eq('id',account.client_id).single();if(error)throw error;
       if(!c.qr_token){const q=token().slice(0,32);const up=await svc.from('clients').update({qr_token:q}).eq('id',c.id).select('*').single();if(up.error)throw up.error;c=up.data}
-      return res.status(200).json({client:{name:c.name,client_code:c.client_code,qr_token:c.qr_token,classification:c.classification||'New'}});
+      const {data:projects,error:pe}=await svc.from('projects').select('id,total_amount,status,delivery_status').eq('client_id',c.id);if(pe)throw pe;
+      const ids=(projects||[]).map(p=>p.id);
+      let pays=[];
+      if(ids.length){const pr=await svc.from('payments').select('project_id,amount_paid,deleted_at').in('project_id',ids);if(pr.error)throw pr.error;pays=pr.data||[]}
+      const completed=(projects||[]).filter(p=>{
+        const delivered=['completed','delivered'].includes(String(p.status||'').toLowerCase())||String(p.delivery_status||'').toLowerCase()==='delivered';
+        const paid=pays.filter(x=>String(x.project_id)===String(p.id)&&!x.deleted_at).reduce((sum,x)=>sum+Number(x.amount_paid||0),0);
+        return delivered&&paid+0.005>=Number(p.total_amount||0);
+      }).length;
+      const loyalty=completed>=10?'PLATINUM':completed>=6?'GOLD':completed>=3?'SILVER':'BRONZE';
+      return res.status(200).json({client:{name:c.name,client_code:c.client_code,qr_token:c.qr_token,classification:c.classification||'New',loyalty_tier:loyalty,completed_projects:completed,member_since:c.created_at}});
     }
 
     const {user}=await requireAdmin(req);await enforceRateLimit(req,svc,'suite-admin-user',user.id,120,900);
