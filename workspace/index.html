@@ -189,7 +189,6 @@
     .nav-item.active { background-color: var(--mint-light-bg); color: var(--primary-mint-dark); font-weight: 600; }
     .nav-item .icon { display: flex; align-items: center; justify-content: center; width: 20px; }
     .nav-divider { height: 1px; background-color: var(--border-subtle); margin: 12px 8px; }
-    .workspace-new-pill{margin-left:auto;padding:2px 6px;border-radius:999px;background:var(--mint-light-bg);color:var(--primary-mint-dark);font-size:8px;font-weight:800;letter-spacing:.05em;}
 
     .user-profile {
       display: flex; align-items: center; gap: 12px;
@@ -1586,8 +1585,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         <a href="#" class="nav-item" data-view="projects"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h7M7 16h5"/></svg></span>Projects</a>
         <a href="#" class="nav-item" data-view="clients"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Clients</a>
         <a href="#" class="nav-item" data-view="new-order"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>New Order</a>
-        <a href="#" class="nav-item" id="workspaceOrderRequestsNav" onclick="window.jpOpenOrderRequests?.(); return false;"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Order Requests <span class="workspace-new-pill">NEW</span></a>
-        <a href="#" class="nav-item" id="workspaceQrScannerNav" onclick="window.jpOpenQrScanner?.(); return false;"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path d="M9 9h2v2H9zM13 9h2v2h-2zM9 13h2v2H9zM13 13h2v2h-2z"/></svg></span>QR Scanner</a>
+        <a href="#" class="nav-item" id="workspaceOrdersNav" onclick="window.jpOpenOrders?.(); return false;"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Orders</a>
         <div class="nav-divider"></div>
         <div class="nav-section-label">FINANCE</div>
         <a href="#" class="nav-item" data-view="payments"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>Invoices & Payments</a>
@@ -1628,20 +1626,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
             <div class="greeting-subtitle">Project Command Center</div>
             <h1 class="page-title">Overview</h1>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap:wrap;">
-            <button type="button" class="btn btn-secondary" id="workspaceOverviewOrderRequests" onclick="window.jpOpenOrderRequests?.()">
-              <svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-              Order Requests
-            </button>
-            <button type="button" class="btn btn-secondary" id="workspaceOverviewQrScanner" onclick="window.jpOpenQrScanner?.()">
-              <svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path d="M9 9h2v2H9zM13 9h2v2h-2zM9 13h2v2H9zM13 13h2v2h-2z"/></svg>
-              Scan QR
-            </button>
-            <button class="btn btn-primary" onclick="app.navigateTo('new-order')">
-              <svg class="icon-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              New Order
-            </button>
-          </div>
+
         </header>
 
 
@@ -1751,8 +1736,6 @@ table.jp-packages-table col:nth-child(6){width:7%}
             <h1 class="page-title">New Order Entry</h1>
           </div>
           <div class="order-header-actions">
-            <button type="button" class="btn btn-secondary" id="workspaceNewOrderRequests" onclick="window.jpOpenOrderRequests?.()">Order Requests</button>
-            <button type="button" class="btn btn-secondary" id="workspaceNewOrderQrScanner" onclick="window.jpOpenQrScanner?.()">Scan QR</button>
             <button type="button" class="btn btn-secondary" id="openDraftsBtn">Drafts</button>
             <button type="button" class="btn btn-secondary" id="saveDraftBtn">Save Draft</button>
           </div>
@@ -2631,27 +2614,33 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <div class="modal-backdrop" id="catalogServiceModal"><div class="modal-card"><div class="modal-header"><div><div class="section-kicker">CATALOG</div><h3 class="modal-title" id="catalogServiceModalTitle">Add Service</h3></div><button class="modal-close" onclick="app.closeModal('catalogServiceModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogServiceCode"><div class="form-group"><label class="form-label">Service Name</label><input class="form-control" id="catalogServiceName" placeholder="Service name"></div><div class="form-group"><label class="form-label">Category</label><select class="form-control" id="catalogServiceCategory"></select></div><div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="catalogServiceDescription" rows="3" placeholder="What is included or produced"></textarea></div><div class="form-grid"><div class="form-group"><label class="form-label">Price (₱)</label><input class="form-control" id="catalogServicePrice" type="number" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Status</label><select class="form-control" id="catalogServiceActive"><option value="true">Active</option><option value="false">Inactive</option></select></div></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogServiceDeleteBtn" onclick="app.deleteCatalogService()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogServiceModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogService()">Save Service</button></div></div></div>
   <div class="modal-backdrop" id="catalogPackageModal"><div class="modal-card modal-wide"><div class="modal-header"><div><div class="section-kicker">PACKAGE BUILDER</div><h3 class="modal-title" id="catalogPackageModalTitle">Create Package</h3></div><button class="modal-close" onclick="app.closeModal('catalogPackageModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogPackageCode"><div class="form-grid"><div class="form-group"><label class="form-label">Package Name</label><input class="form-control" id="catalogPackageName" placeholder="Package name"></div><div class="form-group"><label class="form-label">Category</label><select class="form-control" id="catalogPackageCategory" onchange="app.renderPackageServiceChoices(document.getElementById('catalogPackageServiceSearch').value)"></select></div></div><div class="form-group"><label class="form-label">Find Services</label><input class="form-control" id="catalogPackageServiceSearch" placeholder="Type to search available services..." oninput="app.renderPackageServiceChoices(this.value)"></div><div class="package-service-picker" id="catalogPackageServiceChoices"></div><div class="package-builder-summary"><div><span>Original service total</span><strong id="catalogPackageOriginalTotal">₱0.00</strong></div><div class="form-group" style="margin:0"><label class="form-label">Offer / Discounted Price (₱)</label><input class="form-control" id="catalogPackageSellingPrice" type="number" min="0" step="0.01"></div></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogPackageDeleteBtn" onclick="app.deleteCatalogPackage()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogPackageModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogPackage()">Save Package</button></div></div></div>
 
-  <!-- JUAN ASSISTANT: local workspace-only assistant -->
-  <button class="assistant-fab" id="assistantFab" onclick="app.toggleAssistant()" aria-label="Open JUAN Assistant">
-    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3 1.5-4A7 7 0 0 1 3 13V9a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+  <!-- QUICK ACTIONS: global Workspace action launcher -->
+  <button class="quick-actions-fab" id="quickActionsFab" onclick="window.jpToggleQuickActions?.()" aria-label="Open Quick Actions" aria-expanded="false">
+    <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
   </button>
-  <aside class="assistant-panel" id="assistantPanel" aria-hidden="true">
-    <div class="assistant-header">
-      <div><div class="section-kicker">WORKSPACE ASSISTANT</div><h3>JUAN Assistant</h3><p>Answers only from records in this workspace.</p></div>
-      <button class="modal-close" onclick="app.toggleAssistant(false)">×</button>
+  <aside class="quick-actions-panel" id="quickActionsPanel" aria-hidden="true">
+    <div class="quick-actions-header">
+      <div><div class="section-kicker">WORKSPACE</div><h3>Quick Actions</h3><p>Jump straight to the actions you use most.</p></div>
+      <button class="modal-close" onclick="window.jpToggleQuickActions?.(false)" aria-label="Close Quick Actions">×</button>
     </div>
-    <div class="assistant-quick">
-      <button onclick="app.assistantQuick('What projects are due soon?')">Due Soon</button>
-      <button onclick="app.assistantQuick('Which projects are overdue?')">Overdue</button>
-      <button onclick="app.assistantQuick('How many deliverables are unfinished?')">Pending Deliverables</button>
-      <button onclick="app.assistantQuick('How much are my receivables?')">Receivables</button>
-      <button onclick="app.assistantQuick('What is my revenue this month?')">This Month Revenue</button>
-      <button onclick="app.assistantQuick('Show my active projects')">Active Projects</button>
+    <div class="quick-actions-grid">
+      <button type="button" class="quick-action-card primary" onclick="window.jpQuickNewOrder?.()">
+        <span class="quick-action-icon"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>
+        <span><strong>New Order</strong><small>Create a new project order.</small></span>
+      </button>
+      <button type="button" class="quick-action-card" onclick="window.jpOpenOrders?.()">
+        <span class="quick-action-icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+        <span><strong>Orders</strong><small>Review requests before project creation.</small></span>
+      </button>
+      <button type="button" class="quick-action-card" onclick="window.jpOpenQrScanner?.()">
+        <span class="quick-action-icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path d="M9 9h2v2H9zM13 9h2v2h-2zM9 13h2v2H9zM13 13h2v2h-2z"/></svg></span>
+        <span><strong>Scan QR</strong><small>Open a client or order request.</small></span>
+      </button>
+      <button type="button" class="quick-action-card" onclick="window.jpQuickDrafts?.()">
+        <span class="quick-action-icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h6M8 16h4"/></svg></span>
+        <span><strong>Drafts</strong><small>Continue unfinished manual orders.</small></span>
+      </button>
     </div>
-    <div class="assistant-messages" id="assistantMessages">
-      <div class="assistant-message assistant">Ask about active projects, deadlines, deliverables, clients, payments, receivables, or revenue. I will only use information stored in this workspace.</div>
-    </div>
-    <div class="assistant-input-row"><input id="assistantInput" class="form-control" placeholder="Ask about your workspace…" onkeydown="if(event.key==='Enter'){event.preventDefault();app.sendAssistantMessage();}"><button class="btn btn-primary" onclick="app.sendAssistantMessage()">Send</button></div>
   </aside>
 
   <div class="toast-container" id="toastContainer"></div>
@@ -8907,8 +8896,7 @@ ${description}`))actionCallback();return;}
     localStorage.removeItem("JUAN_OFFLINE_SYNC_QUEUE_V133");
     window.app = app;
 
-    // Native bridge for Workspace Order Request tools.
-    // The buttons are always visible; if the extension module is still loading, retry briefly.
+    // Native bridge for Orders, QR Scanner, and global Quick Actions.
     window.jpRunSuiteTool = function(name) {
       const invoke = () => {
         const fn = window.JuanSuite?.[name];
@@ -8927,13 +8915,33 @@ ${description}`))actionCallback();return;}
         if (invoke() || attempts >= 30) {
           clearInterval(timer);
           if (attempts >= 30 && !window.JuanSuite?.[name]) {
-            window.showToast?.("Order tools did not finish loading. Refresh Workspace and try again.");
+            window.showToast?.("Workspace order tools did not finish loading. Refresh and try again.");
           }
         }
       }, 150);
     };
-    window.jpOpenOrderRequests = () => window.jpRunSuiteTool("orderRequests");
-    window.jpOpenQrScanner = () => window.jpRunSuiteTool("scanner");
+    window.jpToggleQuickActions = function(force) {
+      const panel=document.getElementById("quickActionsPanel");
+      const fab=document.getElementById("quickActionsFab");
+      if(!panel||!fab)return;
+      const open=typeof force==="boolean"?force:!panel.classList.contains("open");
+      panel.classList.toggle("open",open);
+      panel.setAttribute("aria-hidden",open?"false":"true");
+      fab.setAttribute("aria-expanded",open?"true":"false");
+    };
+    window.jpOpenOrders = () => { window.jpToggleQuickActions(false); window.jpRunSuiteTool("orderRequests"); };
+    window.jpOpenQrScanner = () => { window.jpToggleQuickActions(false); window.jpRunSuiteTool("scanner"); };
+    window.jpQuickNewOrder = () => { window.jpToggleQuickActions(false); app.navigateTo("new-order"); };
+    window.jpQuickDrafts = () => {
+      window.jpToggleQuickActions(false);
+      app.navigateTo("new-order");
+      setTimeout(()=>document.getElementById("openDraftsBtn")?.click(),80);
+    };
+    document.addEventListener("click",e=>{
+      const panel=document.getElementById("quickActionsPanel"),fab=document.getElementById("quickActionsFab");
+      if(panel?.classList.contains("open")&&!panel.contains(e.target)&&!fab?.contains(e.target))window.jpToggleQuickActions(false);
+    });
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")window.jpToggleQuickActions(false);});
 
     document.addEventListener("DOMContentLoaded", () => {
       app.initWorkspace();
@@ -8972,6 +8980,11 @@ ${description}`))actionCallback();return;}
 .order-item-row{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border-subtle)}.order-item-row:last-child{border-bottom:0}.order-item-main,.order-item-price{display:flex;flex-direction:column;gap:2px}.order-item-main span,.order-item-price span{font-size:11px;color:var(--text-tertiary)}.order-item-price{text-align:right}.order-item-actions{display:flex;gap:6px}
 .assistant-fab{position:fixed;right:24px;bottom:24px;width:54px;height:54px;border:0;border-radius:18px;background:var(--primary-mint);color:#0d3822;box-shadow:var(--shadow-modal);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1800}.assistant-fab .icon-svg{width:23px;height:23px}.assistant-panel{position:fixed;right:24px;bottom:88px;width:min(390px,calc(100vw - 32px));height:min(620px,calc(100vh - 120px));background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:24px;box-shadow:var(--shadow-modal);z-index:1790;display:flex;flex-direction:column;overflow:hidden;transform:translateY(14px) scale(.98);opacity:0;pointer-events:none;transition:.18s ease}.assistant-panel.open{transform:none;opacity:1;pointer-events:auto}.assistant-header{padding:18px 18px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-subtle)}.assistant-header h3{font-size:18px;margin:1px 0 3px}.assistant-header p{font-size:11px;color:var(--text-tertiary)}.assistant-quick{display:flex;gap:6px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border-subtle)}.assistant-quick button{border:1px solid var(--border-subtle);background:var(--bg-subtle);color:var(--text-secondary);font:inherit;font-size:11px;font-weight:650;padding:7px 10px;border-radius:999px;cursor:pointer}.assistant-quick button:hover{border-color:var(--mint-subtle-border);color:var(--primary-mint-dark)}.assistant-messages{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}.assistant-message{max-width:88%;padding:10px 12px;border-radius:14px;font-size:13px;line-height:1.45;white-space:pre-wrap}.assistant-message.assistant{align-self:flex-start;background:var(--bg-subtle);color:var(--text-primary);border-bottom-left-radius:5px}.assistant-message.user{align-self:flex-end;background:var(--primary-mint);color:#0d3822;border-bottom-right-radius:5px}.assistant-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border-subtle);background:var(--bg-card)}.assistant-input-row .form-control{min-width:0}.assistant-input-row .btn{padding-left:14px;padding-right:14px}
 @media(max-width:720px){.assistant-fab{right:16px;bottom:76px}.assistant-panel{right:16px;bottom:140px;height:min(560px,calc(100vh - 170px))}.order-item-row{grid-template-columns:1fr}.order-item-price{text-align:left}.order-item-actions{justify-content:flex-start}.order-items-toolbar{align-items:flex-start;flex-direction:column}}
+.quick-actions-fab{position:fixed;right:24px;bottom:24px;width:54px;height:54px;border:0;border-radius:18px;background:var(--primary-mint);color:#0d3822;box-shadow:var(--shadow-modal);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1800;transition:transform .16s ease,box-shadow .16s ease}.quick-actions-fab:hover{transform:translateY(-1px)}.quick-actions-fab .icon-svg{width:24px;height:24px}.quick-actions-fab[aria-expanded="true"] .icon-svg{transform:rotate(45deg)}
+.quick-actions-panel{position:fixed;right:24px;bottom:88px;width:min(360px,calc(100vw - 32px));background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:22px;box-shadow:var(--shadow-modal);z-index:1790;overflow:hidden;transform:translateY(12px) scale(.98);opacity:0;pointer-events:none;transition:.16s ease}.quick-actions-panel.open{transform:none;opacity:1;pointer-events:auto}
+.quick-actions-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid var(--border-subtle)}.quick-actions-header h3{font-size:18px;margin:1px 0 3px}.quick-actions-header p{font-size:11px;color:var(--text-tertiary)}
+.quick-actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px}.quick-action-card{min-width:0;border:1px solid var(--border-subtle);border-radius:15px;background:var(--bg-card);color:var(--text-primary);padding:14px;text-align:left;display:flex;flex-direction:column;gap:12px;cursor:pointer;font:inherit;transition:.15s ease}.quick-action-card:hover{border-color:var(--mint-subtle-border);background:var(--bg-subtle);transform:translateY(-1px)}.quick-action-card.primary{background:var(--mint-light-bg);border-color:var(--mint-subtle-border)}.quick-action-icon{width:34px;height:34px;border-radius:10px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;color:var(--primary-mint-dark)}.quick-action-card.primary .quick-action-icon{background:var(--primary-mint);color:#0d3822}.quick-action-icon .icon-svg{width:18px;height:18px}.quick-action-card strong{display:block;font-size:13px}.quick-action-card small{display:block;margin-top:3px;color:var(--text-tertiary);font-size:10px;line-height:1.35;font-weight:500}
+@media(max-width:720px){.quick-actions-fab{right:16px;bottom:76px}.quick-actions-panel{right:16px;bottom:140px;width:min(340px,calc(100vw - 32px))}.quick-actions-grid{grid-template-columns:1fr 1fr}}
 </style>
 
 <style>
