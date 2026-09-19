@@ -1547,6 +1547,24 @@ table.jp-packages-table col:nth-child(6){width:7%}
   .rush-status-fee{border-left:0;border-top:1px solid #e5e7eb;padding:14px 18px}
 }
 </style>
+
+<style id="jp-destructive-pin-fix-v1">
+#destructivePinModal .reset-pin-modal{width:min(420px,calc(100vw - 32px))!important}
+#destructivePinModal .reset-pin-field{margin-top:18px!important}
+#destructivePinModal .secure-pin-grid{
+  width:100%!important;
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+#destructivePinModal .secure-pin-digit{
+  width:100%!important;
+  min-width:0!important;
+  height:52px!important;
+  box-sizing:border-box!important;
+}
+#destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
+</style>
 </head>
 <body>
 
@@ -2554,15 +2572,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card compact-validation-modal reset-pin-modal">
       <div class="validation-graphic reset-lock-graphic"><svg class="icon-svg lg" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg></div>
       <div class="validation-copy"><h3 class="modal-title" id="destructivePinTitle">Confirm deletion</h3><p id="destructivePinDescription">Enter your 6-digit PIN to continue.</p></div>
-      <div class="form-group reset-pin-field"><label class="form-label" for="destructivePinInput">PIN Code</label><div class="pin-code-grid destructive-pin-grid" id="destructivePinDigits" aria-label="6-digit PIN">
-  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 1">
-  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 2">
-  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 3">
-  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 4">
-  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 5">
-  <input class="pin-digit destructive-pin-digit" inputmode="numeric" maxlength="1" aria-label="PIN digit 6">
-</div>
-<div class="secure-pin-grid" id="destructivePinDigits" aria-label="6-digit secure PIN">
+      <div class="form-group reset-pin-field"><label class="form-label" for="destructivePinInput">PIN Code</label><div class="secure-pin-grid" id="destructivePinDigits" aria-label="6-digit secure PIN">
 <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 1">
 <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 2">
 <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 3">
@@ -4616,14 +4626,6 @@ ${description}`))actionCallback();return;}
         setupSecurePinBoxes('destructivePinDigits','destructivePinInput',confirmDestructivePin);
       }
 
-      function syncDestructivePinDigits(){
-        const grid=document.getElementById('destructivePinDigits');
-        const hidden=document.getElementById('destructivePinInput');
-        if(!grid||!hidden)return;
-        hidden.value=[...grid.querySelectorAll('.destructive-pin-digit')]
-          .map(input=>String(input.value||'').replace(/\D/g,'').slice(0,1))
-          .join('');
-      }
       function confirmDestructivePin(){
         const hidden=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError');
         const pin=String(hidden?.value||'').replace(/\D/g,'').slice(0,6);
