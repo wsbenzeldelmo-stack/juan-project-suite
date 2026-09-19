@@ -95,3 +95,33 @@ button,.btn,.icon-button,.nav button,.shop-row,.project-button,.settings-row{tou
 
 /* jp-online-rounded-table-patch */
 .invoice table{border-collapse:separate!important;border-spacing:0!important;border:1px solid var(--line)!important;border-radius:12px!important;overflow:hidden!important;background:#fff}.invoice thead th{background:#f4f6f8!important}.invoice thead th:first-child{border-top-left-radius:11px}.invoice thead th:last-child{border-top-right-radius:11px}.invoice tbody tr:last-child td:first-child{border-bottom-left-radius:11px}.invoice tbody tr:last-child td:last-child{border-bottom-right-radius:11px}.invoice th,.invoice td{padding-left:9px!important;padding-right:9px!important}
+
+
+/* JUAN PROJECT Order Request Update — storefront + membership */
+.storefront-welcome .welcome-copy h1{max-width:13ch}
+.welcome-note{display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:#f7faf8;color:var(--muted);font-size:12px;line-height:1.45;text-align:left}
+.welcome-note .ui-icon{flex:0 0 auto;color:var(--green-strong)}
+.membership-card{position:relative;overflow:hidden;margin-bottom:14px;padding:20px;border:1px solid rgba(17,24,39,.08);border-radius:22px;background:linear-gradient(145deg,#111a16,#1b2922);color:#fff;box-shadow:0 12px 30px rgba(16,30,23,.12)}
+.membership-card:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-80px;top:-90px;background:rgba(255,255,255,.06)}
+.membership-card-top,.membership-profile,.membership-details,.membership-progress>div:first-child,.membership-actions{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.membership-brand{font-size:13px;font-weight:900;letter-spacing:.08em}
+.membership-card-top>span{font-size:9px;font-weight:900;letter-spacing:.08em;padding:6px 9px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.08)}
+.membership-profile{justify-content:flex-start;margin:24px 0 18px}
+.membership-profile .profile-avatar{width:58px;height:58px;flex:0 0 58px;border:2px solid rgba(255,255,255,.28);background:#fff;color:#111}
+.membership-profile h2{margin:0 0 2px;font-size:20px}
+.membership-profile p,.membership-profile small{margin:0;display:block;color:rgba(255,255,255,.72)}
+.membership-details{padding:14px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}
+.membership-details>div{display:grid;gap:3px}
+.membership-details>div:last-child{text-align:right}
+.membership-details span,.membership-progress span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.58);font-weight:800}
+.membership-details b,.membership-progress b{font-size:12px}
+.membership-progress{position:relative;z-index:1;padding-top:14px}
+.membership-track{height:6px;margin:8px 0;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}
+.membership-track i{display:block;height:100%;border-radius:inherit;background:#20df8d}
+.membership-progress small{color:rgba(255,255,255,.66);font-size:10px}
+.membership-actions{justify-content:flex-start;margin-top:16px}
+.membership-actions .profile-photo-action,.membership-actions .text-button{color:#fff;border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.08)}
+.membership-silver{background:linear-gradient(145deg,#28302e,#5c6763)}
+.membership-gold{background:linear-gradient(145deg,#241d0c,#735d17)}
+.membership-platinum{background:linear-gradient(145deg,#15171b,#42464f)}
+@media(max-width:520px){.membership-card{padding:17px}.membership-details{align-items:flex-start}.membership-actions{flex-wrap:wrap}}
