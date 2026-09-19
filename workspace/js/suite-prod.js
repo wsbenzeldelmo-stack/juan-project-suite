@@ -180,12 +180,6 @@ async function boot(){
         bind('suiteNavIncoming',incoming);bind('suiteNavScanner',scanner);bind('suiteNavTracking',()=>projectTools());bind('suiteNavPortal',()=>portal());
       }
     }
-    if(!by('juanSuiteWorkspaceActions')){
-      const actions=document.createElement('div');actions.id='juanSuiteWorkspaceActions';actions.className='suite-actions suite-production-actions';
-      actions.innerHTML='<button id="suiteIncoming" class="primary">Order Requests</button><button id="suiteScanner">Scan QR</button>';
-      const head=document.querySelector('#view-my-works .page-header');head?.insertAdjacentElement('afterend',actions);
-    }
-    bind('suiteIncoming',incoming);bind('suiteScanner',scanner);
     const dashboardHeader=document.querySelector('#view-my-works .page-header');
     const dashboardActions=dashboardHeader?.querySelector(':scope > div:last-child');
     if(dashboardActions&&!by('suiteHeaderRequests')){
