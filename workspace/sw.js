@@ -1,4 +1,4 @@
-const CACHE='juan-workspace-v1.4.0-production-suite-v1';
+const CACHE='juan-workspace-v1.4.1-suite-security-v2';
 const SHELL=['/','/index.html','/css/v1-2-ux.css','/css/v1-3-ux.css','/js/v1-2-ux.js','/js/v1-3-ux.js','/css/suite.css','/js/suite-prod.js','/js/jsQR.js','/assets/brand/j-mark.svg','/assets/brand/juan-project.svg','/assets/brand/juan-project-workspace-master.png','/assets/icon-192.png','/assets/payment-institutions/bdo.png','/assets/payment-institutions/bpi.png','/assets/payment-institutions/gcash.png','/assets/payment-institutions/gotyme.png','/assets/payment-institutions/landbank.png','/assets/payment-institutions/maribank.png','/assets/payment-institutions/maya.png','/assets/payment-institutions/metrobank.png','/assets/payment-institutions/pnb.png','/assets/payment-institutions/unionbank.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

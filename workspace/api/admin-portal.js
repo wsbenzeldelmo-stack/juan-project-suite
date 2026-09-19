@@ -1,4 +1,4 @@
-import { requireAdmin, sendError } from './_lib.js';
+import { requireAdmin, enforceRateLimit, assertSafePost, sendError } from './_lib.js';
 import {verifySubmissionShape,rejectionReasons,sanitizeReference} from './_payment-verification.js';
 
 async function listAllAuthUsers(svc){
@@ -312,7 +312,7 @@ async function provisionOneClient(svc,client,snapshot,{refreshTemporary=false}={
 
 export default async function handler(req,res){
   try{
-    const {svc,user}=await requireAdmin(req);
+    const {svc,user}=await requireAdmin(req);if(req.method==='POST')assertSafePost(req,131072);await enforceRateLimit(req,svc,req.method==='GET'?'admin-portal-read':'admin-portal-write',user.id,req.method==='GET'?60:80,900);
 
     if(req.method==='GET'){
       const masterSync=await synchronizeClientMaster(svc);

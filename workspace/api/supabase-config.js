@@ -4,5 +4,5 @@ export default function handler(req, res) {
   const SUPABASE_ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return res.status(500).json({ error: 'Supabase is not configured.' });
   res.setHeader('Cache-Control', 'no-store');
-  return res.status(200).json({ SUPABASE_URL, SUPABASE_ANON_KEY });
+  return res.status(200).json({ SUPABASE_URL, SUPABASE_ANON_KEY, url: SUPABASE_URL, publishableKey: SUPABASE_ANON_KEY });
 }

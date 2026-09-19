@@ -1,11 +1,11 @@
-import { requireUser, ensurePortalAccount, enforceRateLimit, sendError } from './_lib.js';
+import { requireUser, ensurePortalAccount, enforceRateLimit, assertSafePost, sendError } from './_lib.js';
 import {getPaymentInstitution,validatePaymentReference,sanitizePaymentReference} from '../js/payment-institutions.js';
 
 export default async function handler(req,res){
   try{
-    if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
+    if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});assertSafePost(req,65536);
     const {user,svc}=await requireUser(req);
-    await enforceRateLimit(req,svc,'payment-submission',user.id,8,3600);
+    await enforceRateLimit(req,svc,'payment-submission-ip','',20,3600);await enforceRateLimit(req,svc,'payment-submission-user',user.id,8,3600);
     const acc=await ensurePortalAccount(user,svc),b=req.body||{};
     const projectId=String(b.projectId||''),receiptPath=String(b.receiptPath||''),amount=Number(b.amount||0),senderInstitution=String(b.senderInstitution||'').trim().toLowerCase(),referenceNumber=sanitizePaymentReference(b.referenceNumber),paymentDate=String(b.paymentDate||'').trim(),transferFee=Math.max(0,Number(b.transferFee||0));
     const institution=getPaymentInstitution(senderInstitution);

@@ -75,3 +75,28 @@ export function sendError(res, error) {
   console.error(error);
   return res.status(error?.status || 500).json({ error: error?.message || 'Unexpected server error.' });
 }
+
+
+export function assertSafePost(req, maxBytes = 131072) {
+  const length = Number(req.headers['content-length'] || 0);
+  if (Number.isFinite(length) && length > maxBytes) {
+    throw Object.assign(new Error('Request is too large.'), { status: 413 });
+  }
+  const type = String(req.headers['content-type'] || '').toLowerCase();
+  if (req.method === 'POST' && !type.includes('application/json')) {
+    throw Object.assign(new Error('Unsupported request format.'), { status: 415 });
+  }
+  const fetchSite = String(req.headers['sec-fetch-site'] || '').toLowerCase();
+  if (fetchSite && !['same-origin','same-site','none'].includes(fetchSite)) {
+    throw Object.assign(new Error('Cross-site request blocked.'), { status: 403 });
+  }
+  const origin = String(req.headers.origin || '');
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '');
+  if (origin && host) {
+    let originHost = '';
+    try { originHost = new URL(origin).host; } catch {}
+    if (originHost && originHost !== host) {
+      throw Object.assign(new Error('Origin check failed.'), { status: 403 });
+    }
+  }
+}

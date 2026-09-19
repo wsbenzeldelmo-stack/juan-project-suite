@@ -1,4 +1,4 @@
-import { requireUser, ensurePortalAccount, sendError } from './_lib.js';
+import { requireUser, ensurePortalAccount, enforceRateLimit, sendError } from './_lib.js';
 
 const paidSum=rows=>(rows||[]).reduce((s,p)=>s+Number(p.amount_paid||p.amount||0),0);
 
@@ -12,6 +12,7 @@ export default async function handler(req,res){
   try{
     if(req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
     const {user,svc}=await requireUser(req);
+    await enforceRateLimit(req,svc,'portal-data-user',user.id,120,900);
     const account=await ensurePortalAccount(user,svc);
 
     // Select the full row so older databases do not fail when a newer optional column

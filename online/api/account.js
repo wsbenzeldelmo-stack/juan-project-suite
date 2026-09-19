@@ -1,9 +1,9 @@
-import { requireUser, ensurePortalAccount, sendError } from './_lib.js';
+import { requireUser, ensurePortalAccount, enforceRateLimit, assertSafePost, sendError } from './_lib.js';
 export default async function handler(req,res){
   try{
-    if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
+    if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});assertSafePost(req,65536);
     const {user,svc}=await requireUser(req);
-    const account=await ensurePortalAccount(user,svc);
+    await enforceRateLimit(req,svc,'client-account-user',user.id,30,3600);const account=await ensurePortalAccount(user,svc);
     const action=req.body?.action;
 
     if(action==='password-set'){

@@ -1445,6 +1445,22 @@ table.jp-packages-table col:nth-child(6){width:7%}
 @media(max-width:900px){.table-card>.table-responsive,#reportsContent .table-responsive{overflow-x:auto!important}#view-payments .unified-table{min-width:980px!important}.report-recent-table{min-width:720px!important}}
 </style>
 <link rel="stylesheet" href="/css/suite.css">
+<style id="jp-catalog-name-alignment">
+.catalog-services-table th:nth-child(2),.catalog-services-table td:nth-child(2),
+.catalog-packages-table th:nth-child(2),.catalog-packages-table td:nth-child(2){
+  text-align:left!important;
+  padding-left:14px!important;
+  padding-right:14px!important;
+  vertical-align:middle!important;
+}
+.catalog-services-table td:nth-child(2)>strong,
+.catalog-packages-table td:nth-child(2)>strong{
+  display:block!important;
+  margin:0!important;
+  line-height:1.35!important;
+  text-align:left!important;
+}
+</style>
 </head>
 <body>
 
@@ -2000,7 +2016,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           </div>
         </div>
         <div class="catalog-manager-main catalog-manager-simple">
-          <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Service ID</th><th>Name</th><th>Category</th><th>Description</th><th>Price</th><th>Actions</th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
+          <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Service ID</th><th>Service Name</th><th>Category</th><th>Description</th><th>Price</th><th>Actions</th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
           <div class="card table-card" id="catalogPackagesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title">Packages</h2></div><button class="btn btn-secondary btn-sm" onclick="app.openCatalogPackageModal()">+ New Package</button></div><div class="table-responsive"><table class="data-table unified-table catalog-packages-table"><thead><tr><th>Service ID</th><th>Package Name</th><th>Package Inclusions</th><th>Original Price</th><th>New Price</th><th>Actions</th></tr></thead><tbody id="catalogPackagesBody"></tbody></table></div></div>
         </div>
       </section>

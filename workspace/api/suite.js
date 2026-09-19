@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
-import { bearer, requireAdmin, serviceClient, sendError } from './_lib.js';
+import { bearer, requireAdmin, serviceClient, enforceRateLimit, assertSafePost, sendError } from './_lib.js';
 
 const STAGES=['Order Confirmed','Payment Confirmed','Production Started','In Production','Quality Check','Ready for Delivery','Completed'];
 const now=()=>new Date().toISOString();
@@ -189,17 +189,18 @@ async function convertOrder(id,svc,adminUser){
 export default async function handler(req,res){
   if(req.method!=='POST')return res.status(405).json({error:'Method not allowed.'});
   try{
+    assertSafePost(req,98304);
     const b=bodyOf(req),action=String(b.action||'dashboard'),svc=serviceClient();
 
-    if(action==='submit-order')return res.status(200).json(await submitOrder(b,svc));
-    if(action==='track')return res.status(200).json({order:safeOrder(await orderByToken(svc,b.token))});
-    if(action==='resubmit'){
+    if(action==='submit-order'){if(String(b.website||'').trim())fail('Request blocked.',400);await enforceRateLimit(req,svc,'guest-order-ip','',8,3600);return res.status(200).json(await submitOrder(b,svc));}
+    if(action==='track'){await enforceRateLimit(req,svc,'guest-track-ip','',60,900);return res.status(200).json({order:safeOrder(await orderByToken(svc,b.token))});}
+    if(action==='resubmit'){await enforceRateLimit(req,svc,'guest-resubmit-ip','',12,3600);
       const o=await orderByToken(svc,b.token);if(o.status!=='Needs Changes')fail('This order is not awaiting changes.');
       const {data,error}=await svc.from('incoming_orders').update({notes:String(b.notes||''),status:'Order Received',review_note:''}).eq('id',o.id).select('*').single();if(error)throw error;
       await audit(svc,'Guest order resubmitted',o.code);return res.status(200).json({order:safeOrder(data)});
     }
-    if(action==='ads')return res.status(200).json(await publicAds(req,svc));
-    if(action==='accept-invite'){
+    if(action==='ads'){await enforceRateLimit(req,svc,'public-ads-ip','',120,900);return res.status(200).json(await publicAds(req,svc));}
+    if(action==='accept-invite'){await enforceRateLimit(req,svc,'invite-accept-ip','',20,3600);
       const t=String(b.token||'');const {data:i,error}=await svc.from('portal_invitations').select('*').eq('token',t).maybeSingle();if(error)throw error;
       if(!i||i.status==='revoked'||new Date(i.expires_at)<new Date())fail('Invitation is invalid, revoked or expired.',404);
       const {data:c,error:ce}=await svc.from('clients').select('id,name,email,client_code').eq('id',i.client_id).single();if(ce)throw ce;
@@ -207,13 +208,13 @@ export default async function handler(req,res){
       return res.status(200).json({client_id:c.id,name:c.name,email:c.email,client_code:c.client_code});
     }
     if(action==='client-card'){
-      const {account}=await clientContext(req,svc);
+      const {user,account}=await clientContext(req,svc);await enforceRateLimit(req,svc,'client-card-user',user.id,40,900);
       let {data:c,error}=await svc.from('clients').select('*').eq('id',account.client_id).single();if(error)throw error;
       if(!c.qr_token){const q=token().slice(0,32);const up=await svc.from('clients').update({qr_token:q}).eq('id',c.id).select('*').single();if(up.error)throw up.error;c=up.data}
       return res.status(200).json({client:{name:c.name,client_code:c.client_code,qr_token:c.qr_token,classification:c.classification||'New'}});
     }
 
-    const {user}=await requireAdmin(req);
+    const {user}=await requireAdmin(req);await enforceRateLimit(req,svc,'suite-admin-user',user.id,120,900);
 
     if(action==='dashboard')return res.status(200).json(await dashboard(svc));
     if(action==='review-order'){
