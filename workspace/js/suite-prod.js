@@ -1,18 +1,41 @@
 const __JUAN_APP=window.JUAN_SUITE_APP||((document.querySelector('.app-container')||document.querySelector('#view-my-works'))?'workspace':'online');
-const __JUAN_CFG=await fetch('/api/supabase-config',{cache:'no-store'}).then(async r=>{const j=await r.json();if(!r.ok)throw Error(j.error||'Supabase configuration unavailable');return j});
-const __JUAN_URL=__JUAN_CFG.url||__JUAN_CFG.SUPABASE_URL;
-const __JUAN_KEY=__JUAN_CFG.publishableKey||__JUAN_CFG.SUPABASE_ANON_KEY;
-if(!__JUAN_URL||!__JUAN_KEY)throw Error('Supabase configuration fields are missing.');
-const __JUAN_SB=window.supabase.createClient(__JUAN_URL,__JUAN_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-let __JUAN_SESSION=(await __JUAN_SB.auth.getSession()).data.session;
-__JUAN_SB.auth.onAuthStateChange((_event,session)=>{__JUAN_SESSION=session});
+let __JUAN_SB=null,__JUAN_SESSION=null,__JUAN_AUTH_BOUND=false;
+async function __juanResolveClient(){
+  const shared=window.supabaseClient;
+  if(shared?.auth?.getSession){__JUAN_SB=shared;return shared}
+  if(__JUAN_SB)return __JUAN_SB;
+  try{
+    if(!window.supabase?.createClient)return null;
+    const r=await fetch('/api/supabase-config',{cache:'no-store'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw Error(j.error||'Supabase configuration unavailable');
+    const url=j.url||j.SUPABASE_URL,key=j.publishableKey||j.SUPABASE_ANON_KEY;
+    if(!url||!key)return null;
+    __JUAN_SB=window.supabase.createClient(url,key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    return __JUAN_SB;
+  }catch(e){console.warn('JUAN Suite database bootstrap deferred:',e?.message||e);return null}
+}
+async function __juanGetSession(){
+  const sb=await __juanResolveClient();
+  if(!sb)return null;
+  try{
+    const result=await sb.auth.getSession();
+    __JUAN_SESSION=result?.data?.session||null;
+    if(!__JUAN_AUTH_BOUND&&sb.auth?.onAuthStateChange){
+      __JUAN_AUTH_BOUND=true;
+      sb.auth.onAuthStateChange((_event,session)=>{__JUAN_SESSION=session||null});
+    }
+    return __JUAN_SESSION;
+  }catch(e){console.warn('JUAN Suite session unavailable:',e?.message||e);return null}
+}
 async function __juanRequest(path,body){
- const headers={'Content-Type':'application/json'};if(__JUAN_SESSION?.access_token)headers.Authorization='Bearer '+__JUAN_SESSION.access_token;
+ const session=await __juanGetSession();
+ const headers={'Content-Type':'application/json'};if(session?.access_token)headers.Authorization='Bearer '+session.access_token;
  const r=await fetch(path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,cache:'no-store'});
  const type=r.headers.get('content-type')||'';const j=type.includes('application/json')?await r.json():{error:await r.text()};
  if(!r.ok)throw Error(j.error||'Request failed');return j;
 }
-window.JuanSuiteRuntime={app:__JUAN_APP,session:()=>__JUAN_SESSION,getSession:async()=>{__JUAN_SESSION=(await __JUAN_SB.auth.getSession()).data.session;return __JUAN_SESSION},request:__juanRequest,preview:false,onlineUrl:'https://juan-project-online.vercel.app',workspaceUrl:'https://juan-project-workspace-v2.vercel.app',refresh:async()=>{if(__JUAN_APP==='workspace')return window.app?.refreshSharedTest?.();return window.juanOnlineRefresh?.()}};
+window.JuanSuiteRuntime={app:__JUAN_APP,session:()=>__JUAN_SESSION,getSession:__juanGetSession,request:__juanRequest,preview:false,onlineUrl:'https://juan-project-online.vercel.app',workspaceUrl:'https://juan-project-workspace-v2.vercel.app',refresh:async()=>{if(__JUAN_APP==='workspace')return window.app?.refreshSharedTest?.();return window.juanOnlineRefresh?.()}};
 
 /* JUAN PROJECT production extensions — Supabase/Vercel backed. */
 (()=>{'use strict';
@@ -171,7 +194,13 @@ async function boot(){
     }catch(e){error(e)}
   }
   if(admin){
-    if(!by('juanSuiteNavGroup')){
+    // Bind the native Workspace surfaces first. These are intentionally present in index.html
+    // so Order Requests and QR Scanner remain discoverable even before this module finishes auth.
+    ['workspaceOrderRequestsNav','workspaceOverviewOrderRequests','workspaceNewOrderRequests'].forEach(id=>bind(id,incoming));
+    ['workspaceQrScannerNav','workspaceOverviewQrScanner','workspaceNewOrderQrScanner'].forEach(id=>bind(id,scanner));
+
+    // Backward-compatible fallback for older cached Workspace HTML.
+    if(!by('workspaceOrderRequestsNav')&&!by('juanSuiteNavGroup')){
       const nav=document.querySelector('.sidebar nav');
       if(nav){
         const group=document.createElement('div');group.id='juanSuiteNavGroup';group.className='suite-nav-group';
@@ -180,16 +209,22 @@ async function boot(){
         bind('suiteNavIncoming',incoming);bind('suiteNavScanner',scanner);bind('suiteNavTracking',()=>projectTools());bind('suiteNavPortal',()=>portal());
       }
     }
-    const dashboardHeader=document.querySelector('#view-my-works .page-header');
-    const dashboardActions=dashboardHeader?.querySelector(':scope > div:last-child');
-    if(dashboardActions&&!by('suiteHeaderRequests')){
-      const requests=document.createElement('button');requests.id='suiteHeaderRequests';requests.className='btn btn-secondary';requests.textContent='Order Requests';requests.onclick=incoming;
-      const scan=document.createElement('button');scan.id='suiteHeaderScanner';scan.className='btn btn-secondary';scan.textContent='Scan QR';scan.onclick=scanner;
-      dashboardActions.prepend(scan);dashboardActions.prepend(requests);
+
+    if(!by('workspaceOverviewOrderRequests')){
+      const dashboardHeader=document.querySelector('#view-my-works .page-header');
+      const dashboardActions=dashboardHeader?.querySelector(':scope > div:last-child');
+      if(dashboardActions&&!by('suiteHeaderRequests')){
+        const requests=document.createElement('button');requests.id='suiteHeaderRequests';requests.className='btn btn-secondary';requests.textContent='Order Requests';requests.onclick=incoming;
+        const scan=document.createElement('button');scan.id='suiteHeaderScanner';scan.className='btn btn-secondary';scan.textContent='Scan QR';scan.onclick=scanner;
+        dashboardActions.prepend(scan);dashboardActions.prepend(requests);
+      }
     }
-    const row=document.createElement('div');row.className='suite-tabs suite-order-shortcuts';row.innerHTML='<button id="contextIncoming">Order Requests</button><button id="contextScanner">Scan QR</button><button id="contextDrafts">Drafts</button>';
-    const newOrder=document.querySelector('#view-new-order');if(newOrder&&!newOrder.querySelector('.suite-order-shortcuts'))newOrder.prepend(row);
-    bind('contextIncoming',incoming);bind('contextScanner',scanner);bind('contextDrafts',()=>document.querySelector('#openDraftsBtn')?.click());
+
+    if(!by('workspaceNewOrderRequests')){
+      const row=document.createElement('div');row.className='suite-tabs suite-order-shortcuts';row.innerHTML='<button id="contextIncoming">Order Requests</button><button id="contextScanner">Scan QR</button><button id="contextDrafts">Drafts</button>';
+      const newOrder=document.querySelector('#view-new-order');if(newOrder&&!newOrder.querySelector('.suite-order-shortcuts'))newOrder.prepend(row);
+      bind('contextIncoming',incoming);bind('contextScanner',scanner);bind('contextDrafts',()=>document.querySelector('#openDraftsBtn')?.click());
+    }
     document.body.classList.add('suite-workspace');
   }else{
     window.addEventListener('juan-online-render',onlineExtras);
