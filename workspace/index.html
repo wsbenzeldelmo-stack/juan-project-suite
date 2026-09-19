@@ -8909,25 +8909,79 @@ ${description}`))actionCallback();return;}
     });
   }
 
+  const jpActionIcon=()=>`<svg class="jp-action-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="12" cy="19" r="1.7"></circle></svg>`;
+
+  window.TableActionMenu={
+    upgrade(button){
+      if(!button)return;
+      button.classList.add("table-action-button");
+      if(!button.getAttribute("aria-label"))button.setAttribute("aria-label","Open actions");
+      button.innerHTML=jpActionIcon();
+    }
+  };
+
+  function upgradeTableActionButton(button){
+    if(!button)return;
+    const raw=String(button.textContent||"").replace(/\s+/g,"").trim();
+    const horizontal=/^(?:\.{3}|…|⋯|•••|···)$/.test(raw);
+    if(horizontal||button.classList.contains("icon-more-button")||button.classList.contains("vertical-more")||button.classList.contains("table-action-button")){
+      window.TableActionMenu.upgrade(button);
+    }
+  }
+
   function applyJuanTableSystem(root=document){
     [...root.querySelectorAll("table")].forEach(table=>{
       if(table.classList.contains("invoice-table") || table.closest("#invoicePaperPrintable"))return;
-      const heads=[...table.querySelectorAll("thead th")];
+      const heads=[...table.querySelectorAll("thead tr:first-child th")];
       if(heads.length<2)return;
+
       const headers=heads.map(textOf);
-      table.classList.add("jp-static-table");
-      table.closest(".table-responsive")?.classList.add("jp-table-scroll-x");
-      table.closest(".card,.table-card")?.classList.add("jp-table-card");
+      table.classList.add("jp-static-table","jp-system-table");
+      const shell=table.closest(".table-responsive,.portal-payment-review-table-wrap");
+      shell?.classList.add("jp-table-scroll-x","jp-system-table-wrap");
+      table.closest(".card,.table-card")?.classList.add("jp-table-card","jp-system-table-card");
 
       headers.forEach((h,i)=>{
-        if(moneyHeaders.has(h) || /PRICE|AMOUNT|TOTAL|PAID|BALANCE|REVENUE|CHARGE/.test(h)){
-          heads[i].classList.add("jp-money-head");
-          table.querySelectorAll("tbody tr").forEach(r=>r.children[i]?.classList.add("jp-money"));
+        const head=heads[i];
+        const cells=[...table.querySelectorAll("tbody tr")].map(r=>r.children[i]).filter(Boolean);
+
+        if(moneyHeaders.has(h) || /PRICE|AMOUNT|TOTAL|PAID|BALANCE|REVENUE|CHARGE|FEE|SUBTOTAL/.test(h)){
+          head.classList.add("jp-money-head");
+          cells.forEach(c=>c.classList.add("jp-money"));
+        }else{
+          head.classList.add("jp-left-head");
+          cells.forEach(c=>c.classList.add("jp-left-cell"));
         }
       });
 
+      let actionIndex=headers.findIndex(h=>/^(ACTION|ACTIONS)$/.test(h));
+      if(actionIndex<0){
+        const last=heads.length-1;
+        const label=String(heads[last]?.getAttribute("aria-label")||"").toUpperCase();
+        const hasMenu=[...table.querySelectorAll("tbody tr")].some(r=>{
+          const cell=r.children[last];
+          return !!cell?.querySelector(".icon-more-button,.vertical-more,.table-action-button,[aria-label*='action' i]");
+        });
+        if(/ACTION/.test(label)||hasMenu)actionIndex=last;
+      }
+
+      if(actionIndex>=0){
+        table.classList.add("jp-has-actions");
+        const head=heads[actionIndex];
+        head.textContent="";
+        head.setAttribute("aria-label","Actions");
+        head.classList.add("jp-action-column");
+        table.querySelectorAll("tbody tr").forEach(row=>{
+          const cell=row.children[actionIndex];
+          if(!cell)return;
+          cell.classList.add("jp-action-column");
+          cell.querySelectorAll("button").forEach(upgradeTableActionButton);
+        });
+      }
+
       const services=headers.length===6 &&
-        headers[0].includes("SERVICE ID") && headers[1]==="NAME" &&
+        headers[0].includes("SERVICE ID") &&
+        (headers[1]==="NAME"||headers[1].includes("SERVICE NAME")) &&
         headers[2].includes("CATEGORY") && headers[3].includes("DESCRIPTION") &&
         headers[4].includes("PRICE");
 
@@ -8937,12 +8991,12 @@ ${description}`))actionCallback();return;}
         headers[3].includes("ORIGINAL PRICE") && headers[4].includes("NEW PRICE");
 
       if(services){
-        table.classList.add("jp-services-table");
-        ensureColgroup(table,[11,27,20,24,13,5]);
+        table.classList.add("jp-services-table","services-table");
+        ensureColgroup(table,[10.5,23,21,26,14.5,5]);
       }
       if(packages){
-        table.classList.add("jp-packages-table");
-        ensureColgroup(table,[11,22,31,14,15,7]);
+        table.classList.add("jp-packages-table","packages-table");
+        ensureColgroup(table,[10.5,23,36,14,11.5,5]);
         enhancePackageInclusions(table);
       }
     });
@@ -9346,5 +9400,190 @@ ${description}`))actionCallback();return;}
 .workspace-skeleton-layout,.portal-loading-skeleton{display:none!important}
 @keyframes jpCompactLoadingSpin{to{transform:rotate(360deg)}}
 @media(max-width:760px){.clients-table,.projects-table,#view-payments .unified-table,.payment-history-table,.invoice-table,.portal-client-access-table,.portal-payment-review-table{table-layout:auto!important}.table-responsive{overflow-x:auto!important;overflow-y:visible!important}.portal-payment-review-table{display:table!important}.portal-payment-review-table thead{display:table-header-group!important}.portal-payment-review-table tbody{display:table-row-group!important}.portal-payment-review-table tr{display:table-row!important}.portal-payment-review-table th,.portal-payment-review-table td{display:table-cell!important}.portal-payment-review-table td:before{display:none!important}}
+</style>
+
+
+
+<style id="jp-global-table-alignment-v2">
+/* JUAN PROJECT global table alignment patch — presentation only */
+.jp-system-table{
+  width:100%!important;
+  table-layout:fixed!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  border:1px solid #e5e7eb!important;
+  border-radius:14px!important;
+  background:#fff!important;
+}
+.jp-system-table th,
+.jp-system-table td{
+  padding:0 16px!important;
+  vertical-align:middle!important;
+  text-align:left;
+  border-left:0!important;
+  border-right:0!important;
+}
+.jp-system-table th{
+  height:40px!important;
+  min-height:40px!important;
+  background:#f7f8fa!important;
+  color:#7b8492!important;
+  font-size:10px!important;
+  font-weight:600!important;
+  line-height:1.2!important;
+  letter-spacing:.06em!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
+}
+.jp-system-table td{
+  height:40px;
+  min-height:40px;
+  font-size:12px!important;
+  line-height:1.35!important;
+}
+.jp-system-table thead th:first-child{border-top-left-radius:13px!important}
+.jp-system-table thead th:last-child{border-top-right-radius:13px!important}
+.jp-system-table tbody tr:last-child td:first-child{border-bottom-left-radius:13px!important}
+.jp-system-table tbody tr:last-child td:last-child{border-bottom-right-radius:13px!important}
+.jp-system-table .jp-money,
+.jp-system-table .jp-money-head{
+  text-align:right!important;
+  font-variant-numeric:tabular-nums!important;
+  white-space:nowrap!important;
+}
+.jp-system-table .jp-left-head,
+.jp-system-table .jp-left-cell{
+  text-align:left!important;
+}
+.jp-system-table.jp-has-actions .jp-action-column,
+.jp-system-table.jp-has-actions th:last-child,
+.jp-system-table.jp-has-actions td:last-child{
+  width:5%!important;
+  min-width:5%!important;
+  max-width:5%!important;
+  text-align:center!important;
+  padding-left:8px!important;
+  padding-right:8px!important;
+  white-space:nowrap!important;
+  vertical-align:middle!important;
+}
+.jp-system-table .table-action-button,
+.jp-system-table .icon-more-button.table-action-button,
+.jp-system-table .vertical-more.table-action-button{
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+  min-height:32px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  margin:0 auto!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  color:#6b7280!important;
+  cursor:pointer!important;
+  line-height:1!important;
+}
+.jp-system-table .table-action-button:hover{
+  background:rgba(15,23,42,.05)!important;
+}
+.jp-system-table .jp-action-icon{width:16px!important;height:16px!important;display:block!important}
+.jp-system-table-card{
+  width:100%!important;
+  border:1px solid #e5e7eb!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-sizing:border-box!important;
+}
+.jp-system-table-card .jp-system-table{
+  border-left:0!important;
+  border-right:0!important;
+  border-bottom:0!important;
+  border-radius:0 0 14px 14px!important;
+}
+.jp-system-table-card .jp-system-table thead th:first-child{border-top-left-radius:0!important}
+.jp-system-table-card .jp-system-table thead th:last-child{border-top-right-radius:0!important}
+.catalog-manager-simple{
+  width:100%!important;
+  display:block!important;
+}
+.catalog-manager-simple .table-card{
+  width:100%!important;
+  margin:0!important;
+}
+.catalog-manager-simple .table-card + .table-card{
+  margin-top:20px!important;
+}
+.catalog-table-heading,
+.catalog-panel-heading.catalog-table-heading{
+  min-height:64px!important;
+  padding:12px 16px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  box-sizing:border-box!important;
+  margin-bottom:0!important;
+}
+.jp-services-table col:nth-child(1),.services-table col:nth-child(1){width:10.5%!important}
+.jp-services-table col:nth-child(2),.services-table col:nth-child(2){width:23%!important}
+.jp-services-table col:nth-child(3),.services-table col:nth-child(3){width:21%!important}
+.jp-services-table col:nth-child(4),.services-table col:nth-child(4){width:26%!important}
+.jp-services-table col:nth-child(5),.services-table col:nth-child(5){width:14.5%!important}
+.jp-services-table col:nth-child(6),.services-table col:nth-child(6){width:5%!important}
+.jp-packages-table col:nth-child(1),.packages-table col:nth-child(1){width:10.5%!important}
+.jp-packages-table col:nth-child(2),.packages-table col:nth-child(2){width:23%!important}
+.jp-packages-table col:nth-child(3),.packages-table col:nth-child(3){width:36%!important}
+.jp-packages-table col:nth-child(4),.packages-table col:nth-child(4){width:14%!important}
+.jp-packages-table col:nth-child(5),.packages-table col:nth-child(5){width:11.5%!important}
+.jp-packages-table col:nth-child(6),.packages-table col:nth-child(6){width:5%!important}
+.catalog-services-table th:nth-child(1),.catalog-services-table td:nth-child(1){width:10.5%!important}
+.catalog-services-table th:nth-child(2),.catalog-services-table td:nth-child(2){width:23%!important}
+.catalog-services-table th:nth-child(3),.catalog-services-table td:nth-child(3){width:21%!important}
+.catalog-services-table th:nth-child(4),.catalog-services-table td:nth-child(4){width:26%!important}
+.catalog-services-table th:nth-child(5),.catalog-services-table td:nth-child(5){width:14.5%!important}
+.catalog-services-table th:nth-child(6),.catalog-services-table td:nth-child(6){width:5%!important}
+.catalog-packages-table th:nth-child(1),.catalog-packages-table td:nth-child(1){width:10.5%!important}
+.catalog-packages-table th:nth-child(2),.catalog-packages-table td:nth-child(2){width:23%!important}
+.catalog-packages-table th:nth-child(3),.catalog-packages-table td:nth-child(3){width:36%!important}
+.catalog-packages-table th:nth-child(4),.catalog-packages-table td:nth-child(4){width:14%!important}
+.catalog-packages-table th:nth-child(5),.catalog-packages-table td:nth-child(5){width:11.5%!important}
+.catalog-packages-table th:nth-child(6),.catalog-packages-table td:nth-child(6){width:5%!important}
+.jp-package-count,
+.catalog-inclusion-count{
+  display:block!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  line-height:1.25!important;
+}
+.jp-package-preview,
+.catalog-inclusion-preview{
+  display:block!important;
+  margin-top:3px!important;
+  max-width:100%!important;
+  font-size:9px!important;
+  color:#94a3b8!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  line-height:1.3!important;
+}
+.jp-system-table-wrap{
+  width:100%!important;
+  max-width:100%!important;
+  overflow:visible!important;
+}
+@media(max-width:1023px){
+  .jp-system-table-wrap,
+  .table-responsive.jp-system-table-wrap,
+  .portal-payment-review-table-wrap.jp-system-table-wrap{
+    overflow-x:auto!important;
+    overflow-y:visible!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .jp-system-table{min-width:780px!important}
+  .jp-services-table,.jp-packages-table,.catalog-services-table,.catalog-packages-table{min-width:920px!important}
+}
 </style>
 
