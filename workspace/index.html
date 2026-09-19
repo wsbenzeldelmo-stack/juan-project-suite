@@ -2710,6 +2710,12 @@ table.jp-packages-table col:nth-child(6){width:7%}
       return value;
     }
 
+    function displayPackageServiceName(value) {
+      return String(value || "")
+        .replace(/\s*\[[^\]]+\]\s*$/g, "")
+        .trim();
+    }
+
     function normalizeBroadcastPackageNames(list) {
       return (Array.isArray(list) ? list : []).map(pkg => ({
         ...pkg,
@@ -5975,7 +5981,7 @@ ${description}`))actionCallback();return;}
                   <details class="package-inclusions">
                     <summary>VIEW INCLUSIONS</summary>
                     <ul class="package-inclusions-list">
-                      ${inclusions.map(item => `<li>${item}</li>`).join('')}
+                      ${inclusions.map(item => `<li>${escapeHtml(displayPackageServiceName(item))}</li>`).join('')}
                     </ul>
                   </details>
                 </div>
@@ -8156,7 +8162,7 @@ ${description}`))actionCallback();return;}
         const codeNo=x=>Number(String(x.product_code||'').match(/(\d+)$/)?.[1]||999999),price=x=>Number(x.type==='PACKAGE'?x.sellingPrice:x.price||0);const cmp=pref==='price-desc'?(a,b)=>price(b)-price(a)||codeNo(a)-codeNo(b):pref==='price-asc'?(a,b)=>price(a)-price(b)||codeNo(a)-codeNo(b):(a,b)=>codeNo(a)-codeNo(b);services.sort(cmp);packages.sort(cmp);
         const packageCard=document.getElementById('catalogPackagesCard'),serviceCard=document.getElementById('catalogServicesCard');serviceCard.style.display=filter==='Packages'?'none':'';packageCard.style.display=filter==='Services'?'none':'';
         servicesBody.innerHTML=services.map(item=>`<tr><td><strong class="catalog-service-id">${escapeHtml(item.product_code||'—')}</strong></td><td><strong>${escapeHtml(item.name)}</strong></td><td>${escapeHtml(displayCategory(item.category||'—'))}</td><td class="text-sm text-secondary catalog-desc-cell">${escapeHtml(item.description||'')}</td><td><strong>${formatCurrency(item.price||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Service actions" onclick="app.openEditServiceModal('${item.product_code}')">•••</button></td></tr>`).join('')||`<tr><td colspan="6" class="text-center text-muted py-4">No matching services.</td></tr>`;
-        packagesBody.innerHTML=packages.map(pkg=>{const inc=Array.isArray(pkg.includedServiceNames)?pkg.includedServiceNames:[];return `<tr><td><strong class="catalog-service-id">${escapeHtml(pkg.product_code||'—')}</strong></td><td><strong>${escapeHtml(normalizeBroadcastPackageName(pkg.name))}</strong></td><td><span class="catalog-inclusion-count">${inc.length} item${inc.length===1?'':'s'}</span><div class="text-sm text-muted catalog-inclusion-preview">${escapeHtml(inc.join(' • '))}</div></td><td>${formatCurrency(pkg.originalPrice||0)}</td><td><strong>${formatCurrency(pkg.sellingPrice||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Package actions" onclick="app.openEditPackageModal('${pkg.product_code}')">•••</button></td></tr>`}).join('')||`<tr><td colspan="6" class="text-center text-muted py-4">No matching packages.</td></tr>`;
+        packagesBody.innerHTML=packages.map(pkg=>{const inc=Array.isArray(pkg.includedServiceNames)?pkg.includedServiceNames:[],displayInc=inc.map(displayPackageServiceName);return `<tr><td><strong class="catalog-service-id">${escapeHtml(pkg.product_code||'—')}</strong></td><td><strong>${escapeHtml(normalizeBroadcastPackageName(pkg.name))}</strong></td><td><span class="catalog-inclusion-count">${displayInc.length} item${displayInc.length===1?'':'s'}</span><div class="text-sm text-muted catalog-inclusion-preview">${escapeHtml(displayInc.join(' • '))}</div></td><td>${formatCurrency(pkg.originalPrice||0)}</td><td><strong>${formatCurrency(pkg.sellingPrice||0)}</strong></td><td class="text-right"><button class="icon-more-button" aria-label="Package actions" onclick="app.openEditPackageModal('${pkg.product_code}')">•••</button></td></tr>`}).join('')||`<tr><td colspan="6" class="text-center text-muted py-4">No matching packages.</td></tr>`;
       }
 
       function setCatalogManagerFilter(filter){state.catalogManagerFilter=filter;renderPricelist()}
@@ -8170,7 +8176,7 @@ ${description}`))actionCallback();return;}
       }
       function saveCatalogService(){const code=document.getElementById('catalogServiceCode').value,name=document.getElementById('catalogServiceName').value.trim(),category=document.getElementById('catalogServiceCategory').value,desc=document.getElementById('catalogServiceDescription').value.trim(),price=Number(document.getElementById('catalogServicePrice').value),active=document.getElementById('catalogServiceActive').value==='true';if(!name||!category||!Number.isFinite(price)||price<0){showToast('Enter a valid service name, category, and price.');return}if(code){const item=state.soloServices.find(s=>s.product_code===code);if(item)Object.assign(item,{name:name.toUpperCase(),category,description:desc,price,active,type:'SOLO'})}else{const nums=state.soloServices.map(s=>Number(String(s.product_code||'').match(/(\d+)$/)?.[1]||0)),next=Math.max(0,...nums)+1;state.soloServices.push({product_code:`SRV-${String(next).padStart(3,'0')}`,name:name.toUpperCase(),category,description:desc,price,active,type:'SOLO'})}persistCatalogState();queueCatalogCloudSync();closeModal('catalogServiceModal');renderPricelist();renderServiceCatalog();showToast(code?'Service updated.':'Service added.')}
       function renderPackageServiceChoices(query=''){
-        const box=document.getElementById('catalogPackageServiceChoices');if(!box)return;const q=String(query||'').toLowerCase(),category=document.getElementById('catalogPackageCategory')?.value||'',selected=new Set(state.packageBuilderSelectedNames||[]),items=state.soloServices.filter(s=>s.active!==false&&(!category||String(s.category||'')===category)&&(`${s.name||''} ${s.category||''}`).toLowerCase().includes(q));box.innerHTML=items.map(s=>`<label class="package-service-choice"><input type="checkbox" value="${escapeHtml(s.name)}" data-price="${Number(s.price||0)}" ${selected.has(s.name)?'checked':''} onchange="app.togglePackageBuilderService(this.value,this.checked)"><span><strong>${escapeHtml(s.name)}</strong><small>${escapeHtml(displayCategory(s.category||''))} · ${formatCurrency(s.price||0)}</small></span></label>`).join('')||`<div class="typeahead-empty">No matching services in this category</div>`;updatePackagePriceSummary()
+        const box=document.getElementById('catalogPackageServiceChoices');if(!box)return;const q=String(query||'').toLowerCase(),category=document.getElementById('catalogPackageCategory')?.value||'',selected=new Set(state.packageBuilderSelectedNames||[]),items=state.soloServices.filter(s=>s.active!==false&&(!category||String(s.category||'')===category)&&(`${s.name||''} ${s.category||''}`).toLowerCase().includes(q));box.innerHTML=items.map(s=>`<label class="package-service-choice"><input type="checkbox" value="${escapeHtml(s.name)}" data-price="${Number(s.price||0)}" ${selected.has(s.name)?'checked':''} onchange="app.togglePackageBuilderService(this.value,this.checked)"><span><strong>${escapeHtml(displayPackageServiceName(s.name))}</strong><small>${formatCurrency(s.price||0)}</small></span></label>`).join('')||`<div class="typeahead-empty">No matching services in this category</div>`;updatePackagePriceSummary()
       }
       function togglePackageBuilderService(name,checked){const set=new Set(state.packageBuilderSelectedNames||[]);if(checked)set.add(name);else set.delete(name);state.packageBuilderSelectedNames=[...set];updatePackagePriceSummary()}
       function updatePackagePriceSummary(){const selected=new Set(state.packageBuilderSelectedNames||[]),total=state.soloServices.filter(s=>selected.has(s.name)).reduce((sum,s)=>sum+Number(s.price||0),0),el=document.getElementById('catalogPackageOriginalTotal');if(el)el.textContent=formatCurrency(total)}
@@ -8996,7 +9002,7 @@ ${description}`))actionCallback();return;}
       const count=Number(m[1]);
       let rest=raw.replace(m[0],"").replace(/^[\s·\-–—]+/,"").trim();
       if(rest){
-        const parts=rest.split(/[·•]/).map(x=>x.trim()).filter(Boolean);
+        const parts=rest.split(/[·•]/).map(x=>displayPackageServiceName(x.trim())).filter(Boolean);
         const shown=parts.slice(0,4);
         const more=Math.max(0,count-shown.length);
         rest=shown.join(" · ")+(more?` · +${more} more`:"");
