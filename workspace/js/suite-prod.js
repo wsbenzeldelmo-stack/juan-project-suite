@@ -134,7 +134,7 @@ async function trackByIdentity(code,email){
 async function incoming(){
   const d=await api({action:'dashboard'});
   const requests=d.incoming_orders||[],pending=requests.filter(o=>!['Approved','Rejected'].includes(String(o.status||''))).length;
-  open('Order Requests',`<div class="suite-row"><div><small>ONLINE INTAKE</small><h3>${pending} request${pending===1?'':'s'} need attention</h3></div><div class="suite-tabs"><button id="incomingRefresh">Refresh</button><button id="adminDrafts">Drafts</button><button id="adminScan">Scan QR</button><button id="adminNew" class="primary">+ New Order</button></div></div><div class="suite-scroll"><table><thead><tr><th>Request</th><th>Client</th><th>Current Total</th><th>Status</th><th></th></tr></thead><tbody>${requests.map(o=>`<tr><td><b>${esc(o.code)}</b><br>${esc(o.title)}</td><td>${esc(o.name)}<br><small>${esc(o.email)}</small></td><td>${peso(o.total)}</td><td><span class="suite-badge">${esc(o.status)}</span></td><td><button data-review="${esc(o.id)}">Review</button></td></tr>`).join('')}</tbody></table>${requests.length?'':empty('Order requests submitted through JUAN PROJECT Online will appear here.')}</div>`);
+  open('Orders',`<div class="suite-row"><div><small>ORDER REQUESTS</small><h3>${pending} request${pending===1?'':'s'} need attention</h3></div><div class="suite-tabs"><button id="incomingRefresh">Refresh</button><button id="adminDrafts">Drafts</button><button id="adminScan">Scan QR</button><button id="adminNew" class="primary">+ New Order</button></div></div><div class="suite-scroll"><table><thead><tr><th>Request</th><th>Client</th><th>Current Total</th><th>Status</th><th></th></tr></thead><tbody>${requests.map(o=>`<tr><td><b>${esc(o.code)}</b><br>${esc(o.title)}</td><td>${esc(o.name)}<br><small>${esc(o.email)}</small></td><td>${peso(o.total)}</td><td><span class="suite-badge">${esc(o.status)}</span></td><td><button data-review="${esc(o.id)}">Review</button></td></tr>`).join('')}</tbody></table>${requests.length?'':empty('Order requests submitted through JUAN PROJECT Online will appear here.')}</div>`);
   dialog.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>reviewOrder(requests.find(o=>o.id===b.dataset.review)));
   bind('incomingRefresh',incoming);bind('adminScan',scanner);bind('adminNew',()=>{close();window.app.navigateTo('new-order')});
   bind('adminDrafts',async()=>{const x=await T.request('/api/drafts');open('Admin Drafts',x.drafts.map(v=>`<div class="suite-card"><h3>${esc(v.title)}</h3><p>${esc(v.project_name||'')}</p></div>`).join('')||empty('No admin-created drafts.'))});
@@ -194,37 +194,9 @@ async function boot(){
     }catch(e){error(e)}
   }
   if(admin){
-    // Bind the native Workspace surfaces first. These are intentionally present in index.html
-    // so Order Requests and QR Scanner remain discoverable even before this module finishes auth.
-    ['workspaceOrderRequestsNav','workspaceOverviewOrderRequests','workspaceNewOrderRequests'].forEach(id=>bind(id,incoming));
-    ['workspaceQrScannerNav','workspaceOverviewQrScanner','workspaceNewOrderQrScanner'].forEach(id=>bind(id,scanner));
-
-    // Backward-compatible fallback for older cached Workspace HTML.
-    if(!by('workspaceOrderRequestsNav')&&!by('juanSuiteNavGroup')){
-      const nav=document.querySelector('.sidebar nav');
-      if(nav){
-        const group=document.createElement('div');group.id='juanSuiteNavGroup';group.className='suite-nav-group';
-        group.innerHTML='<div class="suite-nav-label">Order Intake <span>NEW</span></div><button type="button" class="nav-item suite-nav-btn" id="suiteNavIncoming">Order Requests</button><button type="button" class="nav-item suite-nav-btn" id="suiteNavScanner">QR Scanner</button><button type="button" class="nav-item suite-nav-btn" id="suiteNavTracking">Tracking & Files</button><button type="button" class="nav-item suite-nav-btn" id="suiteNavPortal">Portal Tools</button>';
-        nav.append(group);
-        bind('suiteNavIncoming',incoming);bind('suiteNavScanner',scanner);bind('suiteNavTracking',()=>projectTools());bind('suiteNavPortal',()=>portal());
-      }
-    }
-
-    if(!by('workspaceOverviewOrderRequests')){
-      const dashboardHeader=document.querySelector('#view-my-works .page-header');
-      const dashboardActions=dashboardHeader?.querySelector(':scope > div:last-child');
-      if(dashboardActions&&!by('suiteHeaderRequests')){
-        const requests=document.createElement('button');requests.id='suiteHeaderRequests';requests.className='btn btn-secondary';requests.textContent='Order Requests';requests.onclick=incoming;
-        const scan=document.createElement('button');scan.id='suiteHeaderScanner';scan.className='btn btn-secondary';scan.textContent='Scan QR';scan.onclick=scanner;
-        dashboardActions.prepend(scan);dashboardActions.prepend(requests);
-      }
-    }
-
-    if(!by('workspaceNewOrderRequests')){
-      const row=document.createElement('div');row.className='suite-tabs suite-order-shortcuts';row.innerHTML='<button id="contextIncoming">Order Requests</button><button id="contextScanner">Scan QR</button><button id="contextDrafts">Drafts</button>';
-      const newOrder=document.querySelector('#view-new-order');if(newOrder&&!newOrder.querySelector('.suite-order-shortcuts'))newOrder.prepend(row);
-      bind('contextIncoming',incoming);bind('contextScanner',scanner);bind('contextDrafts',()=>document.querySelector('#openDraftsBtn')?.click());
-    }
+    // Workspace navigation is now native in index.html.
+    // Do not inject the old "Order Intake" section or duplicate Overview/New Order buttons.
+    ['workspaceOrdersNav'].forEach(id=>bind(id,incoming));
     document.body.classList.add('suite-workspace');
   }else{
     window.addEventListener('juan-online-render',onlineExtras);
