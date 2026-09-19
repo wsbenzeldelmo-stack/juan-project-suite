@@ -1797,7 +1797,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           <div class="toolbar-actions"><div class="filter-pills" id="paymentFilters"></div></div>
         </div>
         <div id="mobilePaymentApprovals" class="mobile-payment-approvals" aria-live="polite"></div>
-        <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th><th class="table-actions-col">Actions</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div></div>
+        <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div></div>
       </section>
 
       <!-- VIEW: REPORTS -->
@@ -2016,8 +2016,8 @@ table.jp-packages-table col:nth-child(6){width:7%}
           </div>
         </div>
         <div class="catalog-manager-main catalog-manager-simple">
-          <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Service ID</th><th>Service Name</th><th>Category</th><th>Description</th><th>Price</th><th>Actions</th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
-          <div class="card table-card" id="catalogPackagesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title">Packages</h2></div><button class="btn btn-secondary btn-sm" onclick="app.openCatalogPackageModal()">+ New Package</button></div><div class="table-responsive"><table class="data-table unified-table catalog-packages-table"><thead><tr><th>Service ID</th><th>Package Name</th><th>Package Inclusions</th><th>Original Price</th><th>New Price</th><th>Actions</th></tr></thead><tbody id="catalogPackagesBody"></tbody></table></div></div>
+          <div class="card table-card" id="catalogServicesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title" id="catalogSelectedCategoryTitle">Services</h2></div><button class="btn btn-primary btn-sm" onclick="app.openCatalogServiceModal()">+ New Service</button></div><div class="table-responsive"><table class="data-table unified-table catalog-services-table"><thead><tr><th>Service ID</th><th>Service Name</th><th>Category</th><th>Description</th><th>Price</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody id="catalogServicesBody"></tbody></table></div></div>
+          <div class="card table-card" id="catalogPackagesCard"><div class="catalog-panel-heading catalog-table-heading"><div><h2 class="card-title">Packages</h2></div><button class="btn btn-secondary btn-sm" onclick="app.openCatalogPackageModal()">+ New Package</button></div><div class="table-responsive"><table class="data-table unified-table catalog-packages-table"><thead><tr><th>Service ID</th><th>Package Name</th><th>Package Inclusions</th><th>Original Price</th><th>New Price</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody id="catalogPackagesBody"></tbody></table></div></div>
         </div>
       </section>
 
@@ -5467,7 +5467,7 @@ ${description}`))actionCallback();return;}
 
               <section class="card report-recent-v2">
                 <div class="report-card-head-v2"><div><h2>Recent Payments</h2><p>Latest recorded payments</p></div><button class="btn btn-secondary btn-sm" onclick="app.navigateTo('payments')">View all payments →</button></div>
-                <div class="table-responsive"><table class="data-table unified-table report-recent-table"><thead><tr><th>Reference</th><th>Payment Method</th><th>Amount</th><th>Date</th><th class="table-actions-col">Actions</th></tr></thead><tbody>
+                <div class="table-responsive"><table class="data-table unified-table report-recent-table"><thead><tr><th>Reference</th><th>Payment Method</th><th>Amount</th><th>Date</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody>
                   ${recentPayments.map(pay=>{const pr=projectMap.get(String(pay.project_id));return `<tr><td><strong>${escapeHtml(pr?formatProjectId(pr):(pay.reference_no||pay.reference_number||'—'))}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}${pay.reference_no||pay.reference_number?` · ${escapeHtml(pay.reference_no||pay.reference_number)}`:''}</td><td><strong>${formatCurrency(Math.max(0,safeNumber(pay.amount_paid??pay.amount)))}</strong></td><td class="jp-date-cell">${escapeHtml(formatProjectDate(pay.payment_date||pay.created_at))}</td><td class="table-row-actions">${pr?`<button type="button" class="btn btn-secondary btn-sm jp-table-action-button" onclick="app.openProjectDetails('${pr.id}','payment-tracker')">Open</button>`:'—'}</td></tr>`}).join('')||`<tr><td colspan="5" class="text-center text-muted py-4">No payments recorded yet.</td></tr>`}
                 </tbody></table></div>
               </section>
