@@ -28,9 +28,10 @@ async function audit(svc,title,entity='',actorUserId=null){
 }
 const safeOrder=o=>({
   id:o.id,code:o.code,name:o.name,email:o.email,phone:o.phone,title:o.title,notes:o.notes,
-  items:Array.isArray(o.items)?o.items:[],subtotal:Number(o.subtotal||0),rush_fee:Number(o.rush_fee||0),
+  items:Array.isArray(o.items)?o.items:[],subtotal:Number(o.subtotal||0),discount_amount:Number(o.discount_amount||0),rush_fee:Number(o.rush_fee||0),
   total:Number(o.total||0),deadline:o.deadline,created_at:o.created_at,status:o.status,
-  review_note:o.review_note||'',project_code:o.project_code||null,project_id:o.project_id||null,client_id:o.client_id||null
+  review_note:o.review_note||'',revised_at:o.revised_at||null,client_accepted_at:o.client_accepted_at||null,approved_at:o.approved_at||null,
+  project_code:o.project_code||null,project_id:o.project_id||null,client_id:o.client_id||null
 });
 async function orderByToken(svc,t){
   if(!t)fail('Tracking token is required.');
@@ -152,9 +153,11 @@ async function submitOrder(b,svc){
     rush=Math.ceil(Math.max(0,standardDays-days)/4)*500;
   }
   const raw=guestTokenForKey(key);
+  const initialTotal=subtotal+rush;
   const {data,error}=await svc.from('incoming_orders').insert({
     name,email,phone:String(b.phone||''),title,notes:String(b.notes||''),deadline:b.deadline||null,items,
-    subtotal,rush_fee:rush,total:subtotal+rush,status:'Order Received',submission_key:key,token_hash:hash(raw)
+    subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,status:'Order Received',submission_key:key,token_hash:hash(raw),
+    original_snapshot:{items,subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,deadline:b.deadline||null}
   }).select('*').single();
   if(error)throw error;await audit(svc,'Guest order received',data.code);return {order:safeOrder(data),token:raw};
 }
@@ -175,7 +178,7 @@ async function convertOrder(id,svc,adminUser){
     id:pId,client_id:client.id,client_name:client.name,client_email:client.email,client_phone:client.phone,
     title:o.title,status:'In Progress',delivery_status:'Pending',priority:Number(o.rush_fee||0)>0,
     project_type:hasPackage?'PACKAGE':'SOLO',pricing_version:'v2',
-    start_date:today(),deadline_date:o.deadline||null,subtotal_amount:o.subtotal||0,rush_fee:o.rush_fee||0,total_amount:o.total||0,
+    start_date:today(),deadline_date:o.deadline||null,subtotal_amount:o.subtotal||0,discount_amount:o.discount_amount||0,rush_fee:o.rush_fee||0,total_amount:o.total||0,
     notes:`Guest order ${o.code||''}`.trim(),tracker_stage:0,milestones:[{stage:0,at:now()}]
   }).select('*').single();
   if(createdProject.error)throw createdProject.error;
@@ -216,7 +219,7 @@ async function convertOrder(id,svc,adminUser){
   }
   if(deliverables.length){const ins=await svc.from('deliverables').insert(deliverables);if(ins.error)throw ins.error}
   try{await provisionClient(svc,client)}catch(e){console.warn('Portal provisioning deferred:',e?.message||e)}
-  const upd=await svc.from('incoming_orders').update({status:'Approved',project_id:project.id,client_id:client.id}).eq('id',o.id);if(upd.error)throw upd.error;
+  const upd=await svc.from('incoming_orders').update({status:'Approved',project_id:project.id,client_id:client.id,approved_at:now(),conversion_lock:null,conversion_started_at:null}).eq('id',o.id);if(upd.error)throw upd.error;
   await audit(svc,'Order approved and converted',o.code,adminUser.id);return {client,project};
 }
 
@@ -228,6 +231,21 @@ export default async function handler(req,res){
 
     if(action==='submit-order'){if(String(b.website||'').trim())fail('Request blocked.',400);await enforceRateLimit(req,svc,'guest-order-ip','',8,3600);return res.status(200).json(await submitOrder(b,svc));}
     if(action==='track'){await enforceRateLimit(req,svc,'guest-track-ip','',60,900);return res.status(200).json({order:safeOrder(await orderByToken(svc,b.token))});}
+    if(action==='track-public'){
+      await enforceRateLimit(req,svc,'guest-track-public-ip','',30,900);
+      const code=String(b.code||'').trim().toUpperCase(),email=String(b.email||'').trim().toLowerCase();
+      if(!code||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail('Enter your Order Request ID and email address.');
+      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('code',code).ilike('email',email).maybeSingle();
+      if(error)throw error;if(!o)fail('No order request matched those details.',404);
+      return res.status(200).json({order:safeOrder(o)});
+    }
+    if(action==='accept-revision'){
+      await enforceRateLimit(req,svc,'guest-accept-revision-ip','',20,3600);
+      const o=await orderByToken(svc,b.token);
+      if(o.status!=='Revised Offer Sent')fail('This order request does not have a revised offer awaiting acceptance.');
+      const {data,error}=await svc.from('incoming_orders').update({status:'Client Accepted',client_accepted_at:now()}).eq('id',o.id).select('*').single();
+      if(error)throw error;await audit(svc,'Client accepted revised offer',o.code);return res.status(200).json({order:safeOrder(data)});
+    }
     if(action==='resubmit'){await enforceRateLimit(req,svc,'guest-resubmit-ip','',12,3600);
       const o=await orderByToken(svc,b.token);if(o.status!=='Needs Changes')fail('This order is not awaiting changes.');
       const {data,error}=await svc.from('incoming_orders').update({notes:String(b.notes||''),status:'Order Received',review_note:''}).eq('id',o.id).select('*').single();if(error)throw error;
@@ -251,6 +269,29 @@ export default async function handler(req,res){
     const {user}=await requireAdmin(req);await enforceRateLimit(req,svc,'suite-admin-user',user.id,120,900);
 
     if(action==='dashboard')return res.status(200).json(await dashboard(svc));
+    if(action==='revise-order'){
+      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
+      if(!o||o.project_id)fail('Order request is missing or already converted.');
+      if(o.status==='Rejected')fail('Rejected order requests must be reopened before revising.');
+      const source=Array.isArray(b.items)?b.items:[];
+      if(!source.length)fail('Keep at least one order item.');
+      const items=source.slice(0,100).map(i=>{
+        const qty=Math.trunc(Number(i.qty||1)),price=money(i.price);
+        if(qty<1||qty>100)fail('Item quantities must be between 1 and 100.');
+        if(price<0)fail('Item prices cannot be negative.');
+        return {id:String(i.id||randomUUID()),catalog_id:i.catalog_id||null,name:String(i.name||'Order Item').trim().slice(0,180),type:String(i.type||'service').toLowerCase()==='package'?'package':'service',price,qty,includedItems:Array.isArray(i.includedItems)?i.includedItems.slice(0,100).map(x=>String(x).slice(0,180)):[]};
+      });
+      const subtotal=Math.round(items.reduce((sum,i)=>sum+i.price*i.qty,0)*100)/100;
+      const rush=money(b.rush_fee),discount=money(b.discount_amount);
+      if(rush<0||discount<0)fail('Rush fee and discount cannot be negative.');
+      const total=Math.max(0,Math.round((subtotal+rush-discount)*100)/100);
+      const sent=Boolean(b.send_to_client),status=sent?'Revised Offer Sent':'Under Review',note=String(b.note||'').trim().slice(0,3000);
+      const {data:updated,error:ue}=await svc.from('incoming_orders').update({items,subtotal,discount_amount:discount,rush_fee:rush,total,review_note:note,status,revised_at:now(),client_accepted_at:null}).eq('id',o.id).select('*').single();
+      if(ue)throw ue;
+      const rev=await svc.from('order_request_revisions').insert({order_id:o.id,items,subtotal,discount_amount:discount,rush_fee:rush,total,note,sent_to_client:sent,created_by:user.id});if(rev.error)throw rev.error;
+      await audit(svc,sent?'Revised offer sent':'Order request revised',o.code,user.id);
+      return res.status(200).json({order:safeOrder(updated)});
+    }
     if(action==='review-order'){
       const status=String(b.status||'');if(!['Under Review','Needs Changes','Rejected'].includes(status))fail('Invalid review status.');
       if(['Needs Changes','Rejected'].includes(status)&&!String(b.note||'').trim())fail('Explain the requested changes or rejection.');
