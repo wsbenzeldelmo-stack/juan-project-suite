@@ -125,3 +125,5 @@ button,.btn,.icon-button,.nav button,.shop-row,.project-button,.settings-row{tou
 .membership-gold{background:linear-gradient(145deg,#241d0c,#735d17)}
 .membership-platinum{background:linear-gradient(145deg,#15171b,#42464f)}
 @media(max-width:520px){.membership-card{padding:17px}.membership-details{align-items:flex-start}.membership-actions{flex-wrap:wrap}}
+
+.shop-request-note{display:block;margin-top:10px;color:var(--muted);font-size:10px;line-height:1.45}.shop-hero>.btn{margin-top:16px}
