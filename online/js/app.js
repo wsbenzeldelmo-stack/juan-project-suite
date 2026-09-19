@@ -309,7 +309,7 @@ function home(){
   if(!isLoggedIn()){
     return `<div class="guest-home">
       <div class="guest-brand">${brand()}</div>
-      <div class="guest-copy"><span class="eyebrow">WELCOME TO JUAN PROJECT</span><h1>Browse first.<br><strong>Log in when it’s yours.</strong></h1><p>Explore JUAN PROJECT services in Guest Mode. If you already have a project with us, use your client account to open your private portal.</p></div>
+      <div class="guest-copy"><span class="eyebrow">WELCOME TO JUAN PROJECT ONLINE</span><h1>Shop now.<br><strong>We’ll review the request.</strong></h1><p>Browse services, build your cart, and submit an Order Request without creating an account. Existing clients can log in to manage active projects and payments.</p></div>
       <div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track Order Request</button><button id="homeLogIn" class="text-button full">Already a Client? Log In</button></div>
       <div class="guest-access"><div class="mini-icon">${icon('lock',17)}</div><div><b>Client access is private</b><p>Your orders, invoices, payments, and project files only appear after you log in.</p></div></div>
     </div>`;
