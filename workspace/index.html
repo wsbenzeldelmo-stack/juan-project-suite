@@ -1427,7 +1427,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 .data-table tbody tr:last-child td:first-child,.unified-table tbody tr:last-child td:first-child{border-bottom-left-radius:17px!important}
 .data-table tbody tr:last-child td:last-child,.unified-table tbody tr:last-child td:last-child{border-bottom-right-radius:17px!important}
 .jp-date-cell{white-space:nowrap!important;overflow-wrap:normal!important;word-break:keep-all!important}
-.jp-table-action-button{min-width:58px!important;white-space:nowrap!important}
+.jp-table-action-button{white-space:nowrap!important}
 #view-payments .unified-table{table-layout:fixed!important}
 #view-payments .unified-table th:nth-child(1),#view-payments .unified-table td:nth-child(1){width:13%}
 #view-payments .unified-table th:nth-child(2),#view-payments .unified-table td:nth-child(2){width:17%}
@@ -1873,13 +1873,13 @@ table.jp-packages-table col:nth-child(6){width:7%}
       <section id="view-projects" class="view">
         <header class="page-header"><div><div class="greeting-subtitle">Workspace</div><h1 class="page-title">Projects</h1></div><button class="btn btn-primary" onclick="app.navigateTo('new-order')">+ New Order</button></header>
         <div class="view-toolbar unified-toolbar projects-toolbar">
-          <input id="projectsSearch" class="form-control" placeholder="Search Project ID, project name, client, or category..." oninput="app.queueViewRender('projects')">
+          <input id="projectsSearch" class="form-control" placeholder="Search Project ID, project name, or client..." oninput="app.queueViewRender('projects')">
           <div class="toolbar-actions"><select id="projectsSort" class="compact-sort" onchange="app.setListSort('projects',this.value)"><option value="default">Default (by ID)</option><option value="date">By Date</option><option value="payment">By Payment</option></select><div class="filter-pills" id="projectFilters"></div></div>
         </div>
         <div class="card table-card">
           <div class="table-responsive">
             <table class="data-table unified-table projects-table">
-              <thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Category</th><th>Balance</th><th>Priority</th><th>Progress</th><th>Deadline</th><th>Status</th><th class="table-actions-col"></th></tr></thead>
+              <thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Balance</th><th>Priority</th><th>Progress</th><th>Deadline</th><th>Status</th><th class="table-actions-col"></th></tr></thead>
               <tbody id="projectsTableBody"></tbody>
             </table>
           </div>
@@ -3532,7 +3532,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         try{
           const [clientsRes,projectsRes,settingsRes,sharedRes]=await Promise.all([
             supabaseClient.from('clients').select('*').order('name'),
-            supabaseClient.from('projects').select('*, payments(*), project_items(*)').order('created_at',{ascending:false}),
+            supabaseClient.from('projects').select('*, payments(*), project_items(*), deliverables(*)').order('created_at',{ascending:false}),
             supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle(),
             supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle()
           ]);
@@ -3579,7 +3579,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           if(entity.startsWith('catalog_')){
             try{await loadSharedCatalogFromDatabase();}catch(e){console.warn('Realtime catalog refresh:',e?.message||e);}
           }
-          if(window.JuanTest||['payment_submissions','portal_accounts','payment_settings','clients','projects','payments'].includes(entity)){
+          if(window.JuanTest||['payment_submissions','portal_accounts','payment_settings','clients','projects','project_items','deliverables','payments'].includes(entity)){
             state.onlinePortalData=null;
             if(state.activeView==='online-portal'){try{await loadOnlinePortalData(true);}catch(_){}}
           }
@@ -4814,7 +4814,7 @@ ${description}`))actionCallback();return;}
         try{
           const [clientsRes,projectsRes,settingsRes,sharedRes]=await Promise.all([
             supabaseClient.from('clients').select('*').order('name'),
-            supabaseClient.from('projects').select('*, payments(*), project_items(*)').order('created_at',{ascending:false}),
+            supabaseClient.from('projects').select('*, payments(*), project_items(*), deliverables(*)').order('created_at',{ascending:false}),
             supabaseClient.from('workspace_settings').select('*').eq('id',1).maybeSingle(),
             supabaseClient.from('workspace_shared_state').select('*').eq('id',1).maybeSingle()
           ]);
@@ -5298,7 +5298,7 @@ ${description}`))actionCallback();return;}
       function renderProjects() {
         const body=document.getElementById("projectsTableBody"),filters=document.getElementById("projectFilters");if(!body||!filters)return;
         const q=(document.getElementById("projectsSearch")?.value||"").trim().toLowerCase();
-        const baseRows=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.project_type||''} ${getProjectType(p)||''}`).toLowerCase().includes(q));
+        const baseRows=state.projects.filter(p=>!p.deleted&&(`${formatProjectId(p)} ${p.title||''} ${p.client_name||''} ${p.client_email||''}`).toLowerCase().includes(q));
         const hasActive=baseRows.some(projectIsActiveByPayment);
         if((state.projectFilter||"Active")==="Active"&&!hasActive)state.projectFilter="All";
         const names=["All","Active","Completed"],current=state.projectFilter||"All";
@@ -5309,9 +5309,9 @@ ${description}`))actionCallback();return;}
         rows=sortProjectsFor('projects',rows,current);
         const sortEl=document.getElementById('projectsSort');if(sortEl)sortEl.value=state.listSorts?.projects||'default';
         body.innerHTML=rows.map(p=>{
-          const bal=getProjectBalance(p),prog=getProjectProgress(p),category=displayCategory(p.project_type||getProjectType(p)||'—'),priority=projectIsPriority(p),active=projectIsActiveByPayment(p),status=active?'ACTIVE':'COMPLETED',menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
-          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','deliverables')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td>${escapeHtml(category)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${active?'badge-orange':'badge-green'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`;
-        }).join('')||`<tr><td colspan="10" class="text-center text-muted py-4">No projects found.</td></tr>`;
+          const bal=getProjectBalance(p),prog=getProjectProgress(p),priority=projectIsPriority(p),active=projectIsActiveByPayment(p),status=active?'ACTIVE':'COMPLETED',menuId=`projectRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','deliverables')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||'—')}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td><span class="project-tag ${priority?'priority':''}">${priority?'YES':'NO'}</span></td><td><div class="table-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${prog}%</span></div></td><td>${escapeHtml(formatProjectDate(p.deadline_date))}</td><td><span class="badge ${active?'badge-orange':'badge-green'}">${escapeHtml(status)}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel project-row-menu"><button class="popover-action" onclick="app.openProjectData('${p.id}')">Edit Project</button><button class="popover-action text-danger" onclick="app.deleteProjectById('${p.id}')">Delete Project</button></div></div></td></tr>`;
+        }).join('')||`<tr><td colspan="9" class="text-center text-muted py-4">No projects found.</td></tr>`;
       }
 
       function setProjectFilter(filter){ state.projectFilter=filter; renderProjects(); }
@@ -5372,7 +5372,7 @@ ${description}`))actionCallback();return;}
           const statusKey=displayStatus.toLowerCase();
           const badgeClass=isProjectOverdue(p)?'badge-red':statusKey.includes('completed')?'badge-green':'badge-orange';
           const label=isProjectOverdue(p)&&bal>0?'Overdue':displayStatus;
-          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','payment-tracker')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td class="jp-date-cell">${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td><td class="table-row-actions"><button type="button" class="btn btn-secondary btn-sm jp-table-action-button" onclick="event.stopPropagation();app.openProjectDetails('${p.id}','payment-tracker')">Open</button></td></tr>`;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','payment-tracker')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td class="jp-date-cell">${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="paymentRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}"><button type="button" class="icon-more-button vertical-more table-action-button" aria-label="Payment actions" onclick="app.togglePopover('paymentRowMenu_${String(p.id).replace(/[^a-zA-Z0-9_-]/g,'')}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="event.stopPropagation();app.openProjectDetails('${p.id}','payment-tracker')">Open Project</button></div></div></td></tr>`;
         }).join("")||`<tr><td colspan="9" class="text-center text-muted py-4">No matching invoice or payment records.</td></tr>`;
       }
       function setPaymentFilter(filter){ state.paymentFilter=filter; renderPaymentsView(); }
@@ -5571,7 +5571,7 @@ ${description}`))actionCallback();return;}
               <section class="card report-recent-v2">
                 <div class="report-card-head-v2"><div><h2>Recent Payments</h2><p>Latest recorded payments</p></div><button class="btn btn-secondary btn-sm" onclick="app.navigateTo('payments')">View all payments →</button></div>
                 <div class="table-responsive"><table class="data-table unified-table report-recent-table"><thead><tr><th>Reference</th><th>Payment Method</th><th>Amount</th><th>Date</th><th class="table-actions-col" aria-label="Actions"></th></tr></thead><tbody>
-                  ${recentPayments.map(pay=>{const pr=projectMap.get(String(pay.project_id));return `<tr><td><strong>${escapeHtml(pr?formatProjectId(pr):(pay.reference_no||pay.reference_number||'—'))}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}${pay.reference_no||pay.reference_number?` · ${escapeHtml(pay.reference_no||pay.reference_number)}`:''}</td><td><strong>${formatCurrency(Math.max(0,safeNumber(pay.amount_paid??pay.amount)))}</strong></td><td class="jp-date-cell">${escapeHtml(formatProjectDate(pay.payment_date||pay.created_at))}</td><td class="table-row-actions">${pr?`<button type="button" class="btn btn-secondary btn-sm jp-table-action-button" onclick="app.openProjectDetails('${pr.id}','payment-tracker')">Open</button>`:'—'}</td></tr>`}).join('')||`<tr><td colspan="5" class="text-center text-muted py-4">No payments recorded yet.</td></tr>`}
+                  ${recentPayments.map(pay=>{const pr=projectMap.get(String(pay.project_id));return `<tr><td><strong>${escapeHtml(pr?formatProjectId(pr):(pay.reference_no||pay.reference_number||'—'))}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}${pay.reference_no||pay.reference_number?` · ${escapeHtml(pay.reference_no||pay.reference_number)}`:''}</td><td><strong>${formatCurrency(Math.max(0,safeNumber(pay.amount_paid??pay.amount)))}</strong></td><td class="jp-date-cell">${escapeHtml(formatProjectDate(pay.payment_date||pay.created_at))}</td><td class="table-row-actions">${pr?`<div class="popover-wrap" id="reportPaymentMenu_${String(pay.id||pay.reference_no||pay.reference_number||Math.random()).replace(/[^a-zA-Z0-9_-]/g,'')}"><button type="button" class="icon-more-button vertical-more table-action-button" aria-label="Payment actions" onclick="app.togglePopover(this.parentElement.id,event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="event.stopPropagation();app.openProjectDetails('${pr.id}','payment-tracker')">Open Project</button></div></div>`:'—'}</td></tr>`}).join('')||`<tr><td colspan="5" class="text-center text-muted py-4">No payments recorded yet.</td></tr>`}
                 </tbody></table></div>
               </section>
             </div>`;
@@ -6483,6 +6483,9 @@ ${description}`))actionCallback();return;}
         const payload = {
           client_id: project.client_id,
           client_name: project.client_name,
+          client_email: project.client_email || null,
+          client_phone: project.client_phone || null,
+          client_address: project.client_address || null,
           title: project.title,
           status: project.status,
           total_amount: Number(project.total_amount || 0),
@@ -6497,6 +6500,15 @@ ${description}`))actionCallback();return;}
           start_date: project.start_date || null,
           deadline_date: project.deadline_date || null,
           delivery_status: project.delivery_status || (project.status === 'Completed' ? 'Delivered' : 'Pending'),
+          priority: Boolean(project.priority),
+          payment_due_date: project.payment_due_date || project.deadline_date || null,
+          drive_url: project.drive_url || null,
+          drive_unlock_at: project.drive_unlock_at || null,
+          drive_expires_at: project.drive_expires_at || null,
+          client_visible: project.client_visible !== false,
+          tracker_stage: Number(project.tracker_stage || 0),
+          milestones: Array.isArray(project.milestones) ? project.milestones : [],
+          files_override: Boolean(project.files_override),
           archived_at: project.archived_at || null,
           notes: project.notes || '',
           project_code: formatProjectId(project),
@@ -6946,7 +6958,7 @@ ${description}`))actionCallback();return;}
 
           const refreshed = await supabaseClient
             .from("projects")
-            .select("*, payments(*), project_items(*)")
+            .select("*, payments(*), project_items(*), deliverables(*)")
             .eq("id", project.id)
             .single();
 
@@ -7207,11 +7219,22 @@ ${description}`))actionCallback();return;}
         const completed=document.getElementById("editProjectCompletedToggle").checked; proj.status=completed?"Completed":"In Progress"; proj.delivery_status=completed?"Delivered":"In Production"; if(completed) proj.archived_at=proj.archived_at||new Date().toISOString(); else proj.archived_at=null; proj.updated_at=new Date().toISOString();
         const client=state.clients.find(c=>c.id===proj.client_id)||state.clients.find(c=>String(c.email||'').toLowerCase()===email.toLowerCase()); if(client){client.name=clientName;if(email)client.email=email;}
         persistProjectsState(); persistClientsState();
+        let cloudSaved=false;
         if(cloudAvailable()){
-          try{await syncProjectToDatabase(proj,{quiet:true});}
-          catch(e){queueOfflineProject(proj,'Edit Project');showToast('Project updated locally. Cloud sync will retry automatically.');}
-        }else{queueOfflineProject(proj,'Edit Project');}
-        closeModal("editProjectModal"); openProjectDetails(proj.id); renderOverviewDashboard(); renderProjects(); showToast(cloudAvailable()?"Project record updated.":"Project updated offline.");
+          try{
+            await syncProjectToDatabase(proj,{quiet:true});
+            if(client) await syncClientToDatabase(client,{quiet:true});
+            cloudSaved=true;
+          }catch(e){
+            console.error('Edit Project cloud save failed:',e);
+            showToast('Project edit was not saved to Supabase: '+(e?.message||e));
+            try{await loadDatabaseData();}catch(_){}
+            return;
+          }
+        }else{
+          queueOfflineProject(proj,'Edit Project');
+        }
+        closeModal("editProjectModal"); openProjectDetails(proj.id); renderOverviewDashboard(); renderProjects(); showToast(cloudSaved?"Project record updated.":"Project updated offline.");
       }
       function openProjectDetails(projId,initialTab='deliverables'){
         state.activeProjectId=projId;const proj=state.projects.find(p=>p.id===projId);if(!proj)return;
