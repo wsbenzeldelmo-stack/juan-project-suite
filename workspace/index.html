@@ -1416,6 +1416,35 @@ table.jp-packages-table col:nth-child(6){width:7%}
 }
 </style>
 
+
+<style id="jp-production-table-polish">
+.table-card,.report-recent-v2{border-radius:18px!important}
+.table-card>.table-responsive,.report-recent-v2>.table-responsive,#reportsContent .table-responsive{border-radius:18px!important;background:var(--bg-card,#fff)!important}
+.data-table,.unified-table{border-collapse:separate!important;border-spacing:0!important;border:1px solid var(--border-subtle,#e8ebef)!important;border-radius:18px!important;background:var(--bg-card,#fff)!important}
+.data-table thead th,.unified-table thead th{background:#f4f6f8!important}
+.data-table thead tr:first-child th:first-child,.unified-table thead tr:first-child th:first-child{border-top-left-radius:17px!important}
+.data-table thead tr:first-child th:last-child,.unified-table thead tr:first-child th:last-child{border-top-right-radius:17px!important}
+.data-table tbody tr:last-child td:first-child,.unified-table tbody tr:last-child td:first-child{border-bottom-left-radius:17px!important}
+.data-table tbody tr:last-child td:last-child,.unified-table tbody tr:last-child td:last-child{border-bottom-right-radius:17px!important}
+.jp-date-cell{white-space:nowrap!important;overflow-wrap:normal!important;word-break:keep-all!important}
+.jp-table-action-button{min-width:58px!important;white-space:nowrap!important}
+#view-payments .unified-table{table-layout:fixed!important}
+#view-payments .unified-table th:nth-child(1),#view-payments .unified-table td:nth-child(1){width:13%}
+#view-payments .unified-table th:nth-child(2),#view-payments .unified-table td:nth-child(2){width:17%}
+#view-payments .unified-table th:nth-child(3),#view-payments .unified-table td:nth-child(3){width:16%}
+#view-payments .unified-table th:nth-child(4),#view-payments .unified-table td:nth-child(4),#view-payments .unified-table th:nth-child(5),#view-payments .unified-table td:nth-child(5),#view-payments .unified-table th:nth-child(6),#view-payments .unified-table td:nth-child(6){width:10%}
+#view-payments .unified-table th:nth-child(7),#view-payments .unified-table td:nth-child(7){width:11%;white-space:nowrap!important}
+#view-payments .unified-table th:nth-child(8),#view-payments .unified-table td:nth-child(8){width:8%}
+#view-payments .unified-table th:nth-child(9),#view-payments .unified-table td:nth-child(9){width:75px;text-align:right!important}
+.report-recent-table{table-layout:fixed!important}
+.report-recent-table th:nth-child(1),.report-recent-table td:nth-child(1){width:27%}
+.report-recent-table th:nth-child(2),.report-recent-table td:nth-child(2){width:32%}
+.report-recent-table th:nth-child(3),.report-recent-table td:nth-child(3){width:17%}
+.report-recent-table th:nth-child(4),.report-recent-table td:nth-child(4){width:16%;white-space:nowrap!important}
+.report-recent-table th:nth-child(5),.report-recent-table td:nth-child(5){width:80px;text-align:right!important}
+@media(max-width:900px){.table-card>.table-responsive,#reportsContent .table-responsive{overflow-x:auto!important}#view-payments .unified-table{min-width:980px!important}.report-recent-table{min-width:720px!important}}
+</style>
+<link rel="stylesheet" href="/css/suite.css">
 </head>
 <body>
 
@@ -1752,7 +1781,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           <div class="toolbar-actions"><div class="filter-pills" id="paymentFilters"></div></div>
         </div>
         <div id="mobilePaymentApprovals" class="mobile-payment-approvals" aria-live="polite"></div>
-        <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div></div>
+        <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table"><thead><tr><th>Project ID</th><th>Project Name</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th><th class="table-actions-col">Actions</th></tr></thead><tbody id="paymentsTableBody"></tbody></table></div></div>
       </section>
 
       <!-- VIEW: REPORTS -->
@@ -2028,7 +2057,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           <div class="card">
             <h2 class="card-title mb-4">Profile</h2>
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-              <img id="settingsAvatarPreview" class="user-avatar" style="width: 64px; height: 64px; font-size: 20px;" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64' role="button" tabindex="0" title="Edit profile photo" onclick="app.editExistingProfilePhoto()"><rect width='64' height='64' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='22' font-weight='bold'>BD</text></svg>" alt="Profile Photo">
+              <div id="settingsAvatarPreview" class="user-avatar jp-profile-avatar" style="width:64px;height:64px;font-size:20px;" role="button" tabindex="0" title="Edit profile photo" onclick="app.editExistingProfilePhoto()">BD</div>
               <div>
                 <div class="text-sm text-muted mt-2">Avatar initials are generated automatically from the Account Owner Name.</div>
               </div>
@@ -5224,8 +5253,8 @@ ${description}`))actionCallback();return;}
           const statusKey=displayStatus.toLowerCase();
           const badgeClass=isProjectOverdue(p)?'badge-red':statusKey.includes('completed')?'badge-green':'badge-orange';
           const label=isProjectOverdue(p)&&bal>0?'Overdue':displayStatus;
-          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','payment-tracker')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td>${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td></tr>`;
-        }).join("")||`<tr><td colspan="8" class="text-center text-muted py-4">No matching invoice or payment records.</td></tr>`;
+          return `<tr class="clickable-row" onclick="app.openProjectDetails('${p.id}','payment-tracker')"><td><strong class="project-id-cell">${escapeHtml(formatProjectId(p))}</strong></td><td><strong>${escapeHtml(p.title||'Untitled Project')}</strong></td><td>${escapeHtml(p.client_name||p.client_email||"—")}</td><td>${formatCurrency(p.total_amount||0)}</td><td>${formatCurrency(paid)}</td><td class="${bal?'text-danger':''}">${formatCurrency(bal)}</td><td class="jp-date-cell">${escapeHtml(formatProjectDate(p.payment_due_date||p.deadline_date))}</td><td><span class="badge ${badgeClass}">${escapeHtml(label.toUpperCase())}</span></td><td class="table-row-actions"><button type="button" class="btn btn-secondary btn-sm jp-table-action-button" onclick="event.stopPropagation();app.openProjectDetails('${p.id}','payment-tracker')">Open</button></td></tr>`;
+        }).join("")||`<tr><td colspan="9" class="text-center text-muted py-4">No matching invoice or payment records.</td></tr>`;
       }
       function setPaymentFilter(filter){ state.paymentFilter=filter; renderPaymentsView(); }
 
@@ -5422,8 +5451,8 @@ ${description}`))actionCallback();return;}
 
               <section class="card report-recent-v2">
                 <div class="report-card-head-v2"><div><h2>Recent Payments</h2><p>Latest recorded payments</p></div><button class="btn btn-secondary btn-sm" onclick="app.navigateTo('payments')">View all payments →</button></div>
-                <div class="table-responsive"><table class="data-table unified-table report-recent-table"><thead><tr><th>Reference</th><th>Payment Method</th><th>Amount</th><th>Date</th></tr></thead><tbody>
-                  ${recentPayments.map(pay=>{const pr=projectMap.get(String(pay.project_id));return `<tr><td><strong>${escapeHtml(pr?formatProjectId(pr):(pay.reference_no||pay.reference_number||'—'))}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}${pay.reference_no||pay.reference_number?` · ${escapeHtml(pay.reference_no||pay.reference_number)}`:''}</td><td><strong>${formatCurrency(Math.max(0,safeNumber(pay.amount_paid??pay.amount)))}</strong></td><td>${escapeHtml(formatProjectDate(pay.payment_date||pay.created_at))}</td></tr>`}).join('')||`<tr><td colspan="4" class="text-center text-muted py-4">No payments recorded yet.</td></tr>`}
+                <div class="table-responsive"><table class="data-table unified-table report-recent-table"><thead><tr><th>Reference</th><th>Payment Method</th><th>Amount</th><th>Date</th><th class="table-actions-col">Actions</th></tr></thead><tbody>
+                  ${recentPayments.map(pay=>{const pr=projectMap.get(String(pay.project_id));return `<tr><td><strong>${escapeHtml(pr?formatProjectId(pr):(pay.reference_no||pay.reference_number||'—'))}</strong></td><td>${escapeHtml(pay.payment_method||pay.method||'Payment')}${pay.reference_no||pay.reference_number?` · ${escapeHtml(pay.reference_no||pay.reference_number)}`:''}</td><td><strong>${formatCurrency(Math.max(0,safeNumber(pay.amount_paid??pay.amount)))}</strong></td><td class="jp-date-cell">${escapeHtml(formatProjectDate(pay.payment_date||pay.created_at))}</td><td class="table-row-actions">${pr?`<button type="button" class="btn btn-secondary btn-sm jp-table-action-button" onclick="app.openProjectDetails('${pr.id}','payment-tracker')">Open</button>`:'—'}</td></tr>`}).join('')||`<tr><td colspan="5" class="text-center text-muted py-4">No payments recorded yet.</td></tr>`}
                 </tbody></table></div>
               </section>
             </div>`;
@@ -5503,7 +5532,7 @@ ${description}`))actionCallback();return;}
         <div class="card mt-6"><div class="card-header"><h2 class="card-title">Messages</h2></div><div class="text-muted">Message interface placeholder. Client communication can be connected here later.</div></div>`;
       }
 
-      function openClientProfile(id){state.activeClientId=id;navigateTo("client-profile");if(window.JuanTest)window.dispatchEvent(new CustomEvent('juan-client-profile',{detail:{id}}));}
+      function openClientProfile(id){state.activeClientId=id;navigateTo("client-profile");if(window.JuanTest||window.JuanSuiteRuntime)window.dispatchEvent(new CustomEvent('juan-client-profile',{detail:{id}}));}
 
       function getFriendlyDeadlineLabel(deadlineDateStr) {
         if (!deadlineDateStr) return "--";
@@ -8399,7 +8428,7 @@ ${description}`))actionCallback();return;}
       }
 
       return {
-        refreshSharedTest: () => window.JuanTest ? refreshWorkspaceFromCloudRealtime() : Promise.resolve(false),
+        refreshSharedTest: () => refreshWorkspaceFromCloudRealtime(),
         bindEmailDomainSuggestions,
         copyPortalLoginEmail,
         formatPhoneField,
@@ -9251,6 +9280,9 @@ ${description}`))actionCallback();return;}
 })();
 </script>
 
+<script>window.JUAN_SUITE_APP='workspace';</script>
+<script src="/js/jsQR.js"></script>
+<script type="module" src="/js/suite-prod.js"></script>
 </body>
 </html>
 <style id="v111-maintenance-patch">
