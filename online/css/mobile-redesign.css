@@ -1838,3 +1838,19 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
 @media(min-width:1200px){
   :root{--jp-desktop-outer-y:32px;--jp-desktop-outer-x:36px;--jp-desktop-page-pad:30px}
 }
+
+/* Compact JUAN PROJECT footer details above the View Cart action. */
+.jp-shop-legal-footer{
+  display:grid;
+  gap:3px;
+  padding:4px 4px 6px;
+  text-align:center;
+  color:#85918b;
+}
+.jp-shop-legal-footer>div{display:flex;align-items:center;justify-content:center;gap:6px}
+.jp-shop-legal-footer a{font-size:8.5px;font-weight:700;color:#68736d;text-decoration:none}
+.jp-shop-legal-footer span{font-size:8px}
+.jp-shop-legal-footer small{font-size:7.5px;line-height:1.35;color:#99a29e}
+.page.route-shop .jp-shop-footer{gap:4px!important}
+.page.route-shop .jp-mini-cart{order:2!important;margin-top:0!important}
+.page.route-shop .jp-shop-legal-footer{order:1!important}
