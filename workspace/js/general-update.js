@@ -31,11 +31,11 @@
       var layer=document.createElement("div");layer.className="jp-confirm-overlay";
       layer.innerHTML='<section class="jp-confirm-card" role="alertdialog" aria-modal="true"><div class="jp-confirm-icon '+(options.danger?"danger":"")+'">'+(options.danger?"!":"✓")+'</div><h3>'+esc(options.title||"Confirm action")+'</h3><p>'+esc(options.message||"")+'</p><div class="jp-confirm-actions"><button class="btn btn-secondary" data-no>Cancel</button><button class="btn '+(options.danger?"btn-danger":"btn-primary")+'" data-yes>'+esc(options.confirmLabel||"Confirm")+'</button></div></section>';
       document.body.appendChild(layer);
-      function finish(value){layer.remove();if(previous&&document.body.contains(previous))previous.style.display="";resolve(value);}
+      var onKey=function(e){if(e.key==="Escape"){finish(false);}else if(e.key==="Enter"){finish(true);}};
+      function finish(value){document.removeEventListener("keydown",onKey,true);layer.remove();if(previous&&document.body.contains(previous))previous.style.display="";resolve(value);}
       layer.querySelector("[data-no]").onclick=function(){finish(false);};
       layer.querySelector("[data-yes]").onclick=function(){finish(true);};
       layer.addEventListener("click",function(e){if(e.target===layer)finish(false);});
-      var onKey=function(e){if(e.key==="Escape"){document.removeEventListener("keydown",onKey,true);finish(false);}if(e.key==="Enter"){document.removeEventListener("keydown",onKey,true);finish(true);}};
       document.addEventListener("keydown",onKey,true);
       layer.querySelector("[data-yes]").focus();
     });
