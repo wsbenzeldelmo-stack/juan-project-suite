@@ -82,12 +82,19 @@
   function trackingLink(token){return location.origin+location.pathname+"#track="+encodeURIComponent(token);}
   function success(o,token){
     var link=trackingLink(token),requested=o.deadline?'<div class="jp-receipt-row"><span>REQUESTED DATE</span><b>'+esc(o.deadline)+'</b></div>':'';
+    var icon=function(path){return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>';};
+    var saveIcon=icon('<path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M5 20h14"/>');
+    var shareIcon=icon('<path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 14v6h14v-6"/>');
+    var copyIcon=icon('<path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1 0l-2 2A5 5 0 0 0 12 20.1l1.1-1.1"/>');
+    var trackIcon=icon('<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>');
     var html='<div class="jp-receipt-result">'+
       '<div class="jp-receipt-confirm">✓ ORDER REQUEST CONFIRMED</div>'+
       '<article class="jp-receipt-card jp-thermal-receipt">'+
-        '<header class="jp-thermal-head"><b>JUAN PROJECT</b><span>ORDER REQUEST RECEIPT</span><small>'+esc(o.code||"")+'</small></header>'+
+        '<header class="jp-thermal-head"><b>JUAN PROJECT</b><span>ORDER REQUEST</span></header>'+
         '<div class="jp-thermal-dash"></div>'+
-        '<div class="jp-thermal-meta"><span>'+esc(new Date(o.created_at).toLocaleString("en-PH"))+'</span><span>'+esc(o.name||"")+'</span>'+(o.title?'<b>'+esc(o.title)+'</b>':'')+'</div>'+
+        '<b class="jp-thermal-order-id">'+esc(o.code||"")+'</b>'+
+        '<div class="jp-thermal-date">'+esc(new Date(o.created_at).toLocaleString("en-PH"))+'</div>'+
+        '<img class="jp-thermal-qr" src="/api/qr?text='+encodeURIComponent(link)+'" alt="QR code to track '+esc(o.code)+'">'+
         '<div class="jp-thermal-dash"></div>'+
         '<div class="jp-receipt-items">'+(o.items||[]).map(function(i){return '<div><span>'+esc(i.name)+' × '+Number(i.qty||1)+'</span><b>'+peso(Number(i.price||0)*Number(i.qty||1))+'</b></div>';}).join("")+'</div>'+
         '<div class="jp-thermal-dash"></div>'+
@@ -95,13 +102,16 @@
         requested+
         '<div class="jp-receipt-row total"><span>ESTIMATED TOTAL</span><strong>'+peso(o.total)+'</strong></div>'+
         '<div class="jp-thermal-dash"></div>'+
-        '<img class="jp-thermal-qr" src="/api/qr?text='+encodeURIComponent(link)+'" alt="QR code to track '+esc(o.code)+'">'+
-        '<div class="jp-thermal-status"><span>STATUS</span><b>'+esc(o.status||"Order Received")+'</b></div>'+
-        '<small class="jp-thermal-note">Scan the QR or use your Order Request ID to track this request.</small>'+
+        '<div class="jp-thermal-status">*** '+esc(String(o.status||"Order Received").toUpperCase())+' ***</div>'+
         '<div class="jp-thermal-dash"></div>'+
-        '<small class="jp-not-invoice">THIS IS NOT AN INVOICE OR PROOF OF PAYMENT</small>'+
+        '<small class="jp-not-invoice">THIS IS NOT AN INVOICE OR PROOF OF PAYMENT.</small>'+
       '</article>'+
-      '<div class="jp-receipt-actions"><button id="jpSaveReceipt"><b>Save</b><span>Image</span></button><button id="jpShareReceipt"><b>Share</b><span>Receipt</span></button><button id="jpCopyTrack"><b>Copy</b><span>Link</span></button><button id="jpTrackReceipt"><b>Track</b><span>Request</span></button></div>'+
+      '<div class="jp-receipt-actions jp-receipt-icon-actions">'+
+        '<button id="jpSaveReceipt" type="button" aria-label="Save receipt image" title="Save">'+saveIcon+'</button>'+
+        '<button id="jpShareReceipt" type="button" aria-label="Share receipt image" title="Share">'+shareIcon+'</button>'+
+        '<button id="jpCopyTrack" type="button" aria-label="Copy tracking link" title="Copy link">'+copyIcon+'</button>'+
+        '<button id="jpTrackReceipt" type="button" aria-label="Track request" title="Track">'+trackIcon+'</button>'+
+      '</div>'+
       '<button id="jpDone" class="jp-mobile-primary">Done</button>'+
     '</div>';
     shell(html,false);

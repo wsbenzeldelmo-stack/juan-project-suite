@@ -48,3 +48,14 @@ body.jp-flow-open{overflow:hidden}.jp-flow-layer{position:fixed;inset:0;z-index:
 .jp-receipt-actions button b{font-size:9px!important;line-height:1.1}
 .jp-receipt-actions button span{display:block!important;margin:0!important;font-size:7px!important;color:#7b8580!important}
 @media(prefers-reduced-motion:reduce){.jp-receipt-result{animation:none}}
+
+/* 2026-09-20 receipt icon actions v3 */
+.jp-thermal-receipt{background:
+  radial-gradient(circle at 12% 18%,rgba(0,0,0,.018) 0 1px,transparent 1.3px),
+  radial-gradient(circle at 72% 44%,rgba(0,0,0,.014) 0 1px,transparent 1.4px),
+  #fff!important;background-size:13px 17px,17px 19px,auto!important}
+.jp-thermal-order-id{display:block;font-size:25px;letter-spacing:.04em;margin:2px 0 4px}.jp-thermal-date{font-size:9px;margin-bottom:3px}.jp-thermal-qr{width:132px!important;height:132px!important;margin:10px auto!important}
+.jp-thermal-status{font-size:10px!important;font-weight:800!important;letter-spacing:.08em!important;background:none!important;color:#111!important;padding:2px 0!important}
+.jp-receipt-icon-actions{grid-template-columns:repeat(4,52px)!important;justify-content:center!important;gap:10px!important}
+.jp-receipt-icon-actions button{width:52px!important;height:48px!important;min-height:48px!important;border-radius:12px!important;padding:0!important;display:grid!important;place-items:center!important}
+.jp-receipt-icon-actions button svg{width:21px!important;height:21px!important}.jp-receipt-icon-actions button b,.jp-receipt-icon-actions button span{display:none!important}

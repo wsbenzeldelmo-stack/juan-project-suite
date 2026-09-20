@@ -78,3 +78,34 @@
   .page.route-shop{padding-left:13px!important;padding-right:13px!important}
   .page.route-shop .jp-shop-footer{margin-left:-13px!important;margin-right:-13px!important;padding-left:13px!important;padding-right:13px!important}
 }
+
+/* 2026-09-20 fixed Home + centered reminder v3 */
+html,body,#root{height:100%;min-height:100%;overflow:hidden}
+.app.route-home{height:100dvh!important;min-height:0!important;overflow:hidden!important;padding-bottom:0!important;background:#fff}
+.page.route-home{height:calc(100dvh - 66px - env(safe-area-inset-bottom))!important;min-height:0!important;overflow:hidden!important;padding:12px 18px 8px!important;display:flex!important;flex-direction:column!important;background:#fff!important}
+.app.guest-mode.route-home .jp-guest-home-centered{flex:1 1 auto!important;min-height:0!important;max-width:520px!important;width:100%!important;margin:0 auto!important;display:grid!important;grid-template-rows:auto auto auto!important;align-content:center!important;gap:12px!important;text-align:center!important;overflow:hidden!important}
+.app.guest-mode.route-home .jp-guest-hero{width:min(390px,100%)!important;margin:0 auto!important;padding:4px 0!important}
+.app.guest-mode.route-home .jp-guest-hero h1{font-size:clamp(28px,7vw,36px)!important;margin:5px 0 10px!important}
+.app.guest-mode.route-home .jp-guest-hero p{font-size:clamp(10px,3vw,13px)!important;line-height:1.4!important;margin:0 auto!important}
+.app.guest-mode.route-home .guest-actions{margin-top:14px!important;gap:7px!important}
+.app.guest-mode.route-home .guest-actions .btn{min-height:44px!important}
+.app.guest-mode.route-home .jp-client-login-question{margin-top:7px!important}
+.app.guest-mode.route-home #jpAdBannerAnchor{margin:0!important}
+.app.guest-mode.route-home .jp-house-banner{margin:0!important}
+.app.guest-mode.route-home .jp-guest-about{margin:0!important;padding:7px 4px!important;display:flex!important;justify-content:center!important;gap:4px!important;flex-wrap:wrap!important;font-size:10px!important}
+.app.guest-mode.route-home .jp-guest-about b{font-size:11px!important}.app.guest-mode.route-home .jp-guest-about span{font-size:10px!important}
+.jp-home-only-footer{flex:0 0 auto!important;margin:4px 0 0!important;padding:6px 0 2px!important;text-align:center!important}
+.jp-home-only-footer nav{display:flex!important;justify-content:center!important;gap:18px!important}.jp-home-only-footer a{font-size:9px!important;font-weight:750!important;color:#68736d!important;text-decoration:none!important}.jp-home-only-footer>div{font-size:8px!important;color:#8a948f!important;margin-top:4px!important}
+.app.client-mode.route-home .page.route-home{overflow:hidden!important;padding-bottom:8px!important}
+.app.client-mode.route-home .dashboard-head{flex:0 0 auto}.app.client-mode.route-home .jp-quick-actions{flex:0 0 auto;margin-bottom:9px!important}.app.client-mode.route-home .section-head{margin:9px 0 6px!important}.app.client-mode.route-home .active-project{padding:12px!important}.app.client-mode.route-home .activity-card{max-height:150px!important;overflow:hidden!important}.app.client-mode.route-home .jp-home-ad-inline{margin-top:8px!important;flex:0 0 auto}
+.client-message-overlay{position:fixed!important;inset:0!important;display:grid!important;place-items:center!important;align-items:center!important;justify-items:center!important;padding:18px!important;overflow:hidden!important}
+.payment-reminder-modal{position:relative!important;margin:0!important;align-self:center!important;max-height:calc(100dvh - 36px)!important;overflow:auto!important}
+.payment-reminder-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border:1px solid #dde4e0;border-radius:12px;background:#fff;color:#1d2621;display:grid;place-items:center;z-index:2}
+.payment-reminder-actions .text-button{display:none!important}
+@media(max-height:720px){
+ .app.guest-mode.route-home .jp-guest-home-centered{gap:8px!important}
+ .app.guest-mode.route-home .jp-guest-hero h1{font-size:27px!important}
+ .app.guest-mode.route-home .guest-actions{margin-top:10px!important}
+ .app.guest-mode.route-home .jp-guest-about{padding:4px!important}
+ .jp-home-only-footer{padding-top:3px!important}
+}

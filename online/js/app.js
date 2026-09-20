@@ -249,6 +249,7 @@ function clientMessageOverlay(){
   const m=state.clientMessage;if(!m||!isLoggedIn())return '';
   const p=(state.portal?.projects||[]).find(x=>String(x.id)===String(m.projectId));if(!p||Number(p.balance||0)<=0)return '';
   return `<div class="overlay client-message-overlay"><div class="payment-reminder-modal" role="dialog" aria-modal="true" aria-label="Payment reminder">
+    <button id="messageClose" class="payment-reminder-close" type="button" aria-label="Close payment reminder">${icon('close',20)}</button>
     <div class="payment-reminder-icon">${icon('payment',34)}</div>
     <div class="payment-reminder-pill">PAYMENT REMINDER</div>
     <h2>You still have</h2>
@@ -259,7 +260,6 @@ function clientMessageOverlay(){
     <div class="payment-reminder-actions">
       <button id="messagePay" class="btn primary full">Make a Payment <span aria-hidden="true">→</span></button>
       <button id="messageInvoice" class="btn full">Review Invoice</button>
-      <button id="messageClose" class="text-button full">Maybe Later</button>
     </div>
   </div></div>`;
 }
