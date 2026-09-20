@@ -121,10 +121,8 @@
         '<button id="jpCopyTrack" type="button" aria-label="Copy tracking link" title="Copy link">'+copyIcon+'</button>'+
         '<button id="jpTrackReceipt" type="button" aria-label="Track request" title="Track">'+trackIcon+'</button>'+
       '</div>'+
-      '<button id="jpDone" class="jp-mobile-primary">Done</button>'+
     '</div>';
     shell(html,false,"receipt");
-    document.getElementById("jpDone").onclick=close;
     document.getElementById("jpCopyTrack").onclick=async function(){await navigator.clipboard.writeText(link);toast("Tracking link copied");};
     document.getElementById("jpTrackReceipt").onclick=function(){trackToken(token);};
     document.getElementById("jpSaveReceipt").onclick=function(){saveReceipt(o,link);};
