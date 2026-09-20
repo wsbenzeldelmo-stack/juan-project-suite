@@ -1854,3 +1854,16 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
 .page.route-shop .jp-shop-footer{gap:4px!important}
 .page.route-shop .jp-mini-cart{order:2!important;margin-top:0!important}
 .page.route-shop .jp-shop-legal-footer{order:1!important}
+
+/* Cart control cleanup */
+.jp-icon-clear,.jp-cart-remove{display:grid!important;place-items:center!important}
+.jp-icon-clear svg,.jp-cart-remove svg{display:block}
+.jp-empty-cart-icon{width:62px!important;height:62px!important;margin:0 auto 14px!important;border-radius:18px!important;background:#eaf9f2!important;color:#15945c!important;display:grid!important;place-items:center!important;font-size:0!important}
+.jp-promo-info{cursor:default!important}
+.jp-promo-info>div{display:grid;gap:2px;text-align:left}
+.jp-promo-info b{font-size:11px}
+.jp-promo-info small{font-size:9px;color:#7f8a84}
+@media(min-width:900px){
+  .jp-guest-mode-badge{position:absolute!important;top:16px!important;right:18px!important}
+  .jp-flow-cart .jp-flow-empty{grid-column:1/-1!important}
+}
