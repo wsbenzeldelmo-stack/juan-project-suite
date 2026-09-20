@@ -1,5 +1,5 @@
-// Production deployment trigger: 2026-09-20
-const CACHE='juan-workspace-v1.6-general-redeployment-production';
+// Production deployment trigger: 2026-09-20 · navigation cleanup
+const CACHE='juan-workspace-v1.6-general-redeployment-production-v2';
 const SHELL=["/","/index.html","/css/v1-2-ux.css","/css/v1-3-ux.css","/js/v1-2-ux.js","/js/v1-3-ux.js","/css/suite.css","/css/redesign-2026-09-20.css","/js/suite-prod.js","/js/workspace-redesign.js","/js/jsQR.js","/assets/brand/j-mark.svg","/assets/brand/juan-project.svg","/assets/brand/juan-project-workspace-master.png","/assets/icon-192.png","/assets/payment-institutions/bdo.png","/assets/payment-institutions/bpi.png","/assets/payment-institutions/gcash.png","/assets/payment-institutions/gotyme.png","/assets/payment-institutions/landbank.png","/assets/payment-institutions/maribank.png","/assets/payment-institutions/maya.png","/assets/payment-institutions/metrobank.png","/assets/payment-institutions/pnb.png","/assets/payment-institutions/unionbank.png","/css/general-update.css","/css/keyboard-shortcuts.css","/js/general-update.js","/js/keyboard-shortcuts.js"];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
