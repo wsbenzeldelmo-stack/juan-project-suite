@@ -1,0 +1,120 @@
+/* JUAN PROJECT Online — mobile service-commerce flow */
+(function(){
+  "use strict";
+  var CART_KEY="JUAN_ORDER_REQUEST_CART_V1",TERMS_VERSION="2026-09-20",catalog=null,layer=null,checkout={name:"",email:"",title:"",deadline:"",notes:""},lastReceipt=null;
+  var T=function(){return window.JuanSuiteRuntime;};
+  var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
+  var peso=function(v){return new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP"}).format(Number(v||0));};
+  var toast=function(msg){var e=document.createElement("div");e.className="jp-mobile-toast";e.innerHTML='<span>✓</span><b>'+esc(msg)+"</b>";document.body.appendChild(e);setTimeout(function(){e.classList.add("show");},10);setTimeout(function(){e.classList.remove("show");setTimeout(function(){e.remove();},220);},2600);};
+  function cart(){try{var x=JSON.parse(localStorage.getItem(CART_KEY)||"[]");return Array.isArray(x)?x:[];}catch(_){return [];}}
+  function saveCart(items){localStorage.setItem(CART_KEY,JSON.stringify(items));window.dispatchEvent(new CustomEvent("juan-cart-change",{detail:{count:count(items)}}));}
+  function count(items){return (items||cart()).reduce(function(s,x){return s+Number(x.qty||1);},0);}
+  function total(items){return (items||cart()).reduce(function(s,x){return s+Number(x.price||0)*Number(x.qty||1);},0);}
+  function cartCount(){return count(cart());}
+  function cartTotal(){return total(cart());}
+  async function getCatalog(){if(catalog)return catalog;catalog=await fetch("/api/catalog",{cache:"no-store"}).then(async function(r){var j=await r.json();if(!r.ok)throw new Error(j.error||"Catalog unavailable");return j;});return catalog;}
+  async function addCatalogItem(kind,id){
+    var c=await getCatalog(),isPackage=String(kind).toLowerCase()==="package",src=isPackage?(c.packages||[]):(c.services||[]),item=src.find(function(x){return String(x.id)===String(id);});
+    if(!item)throw new Error("This item is no longer available.");
+    var items=cart(),existing=items.find(function(x){return String(x.id)===String(id)&&x.type===(isPackage?"package":"service");}),price=Number(isPackage?(item.new_price??item.original_price??0):(item.price||0));
+    if(existing)existing.qty=Math.min(100,Number(existing.qty||1)+1);else items.push({id:item.id,type:isPackage?"package":"service",name:item.name,price:price,qty:1,product_code:item.product_code||""});
+    saveCart(items);toast("Added to your cart");return items;
+  }
+  function close(){if(layer)layer.remove();layer=null;document.body.classList.remove("jp-flow-open");}
+  function shell(content,back){
+    close();layer=document.createElement("div");layer.className="jp-flow-layer";layer.innerHTML='<div class="jp-flow-phone"><header class="jp-flow-header">'+(back?'<button id="jpFlowBack" aria-label="Back">←</button>':'<span></span>')+'<div class="jp-flow-brand"><b>JUAN PROJECT</b><small>Online</small></div><button id="jpFlowClose" aria-label="Close">×</button></header><main class="jp-flow-main">'+content+"</main></div>";document.body.appendChild(layer);document.body.classList.add("jp-flow-open");document.getElementById("jpFlowClose").onclick=close;return layer;
+  }
+  function thumb(i){return '<div class="jp-cart-thumb">'+esc((i.product_code||"JP").slice(0,6))+"</div>";}
+  function openCart(){
+    var items=cart();
+    var html='<div class="jp-flow-title"><h1>Your Cart</h1><button id="jpClearCart" class="jp-icon-clear" aria-label="Clear cart">⌫</button></div>';
+    if(!items.length)html+='<div class="jp-flow-empty"><div>🛒</div><h2>Your cart is empty.</h2><p>Browse JUAN PROJECT services and add something when you are ready.</p><button id="jpBrowse" class="jp-mobile-primary">Browse Services</button></div>';
+    else html+='<div class="jp-cart-list">'+items.map(function(i,n){return '<article class="jp-cart-item">'+thumb(i)+'<div class="jp-cart-copy"><h3>'+esc(i.name)+'</h3><b>'+peso(i.price)+'</b><div class="jp-qty"><button data-minus="'+n+'">−</button><span>'+Number(i.qty||1)+'</span><button data-plus="'+n+'">+</button></div></div><button class="jp-cart-remove" data-remove="'+n+'" aria-label="Remove">⌫</button></article>';}).join("")+'</div><button class="jp-promo-row">Have a promo code?<span>›</span></button><div class="jp-cart-summary"><div><span>Subtotal</span><b>'+peso(total(items))+'</b></div><div class="total"><span>Estimated Total</span><strong>'+peso(total(items))+'</strong></div></div><button id="jpCheckout" class="jp-mobile-primary">Continue to Checkout →</button>';
+    var v=shell(html,true);document.getElementById("jpFlowBack").onclick=close;
+    v.querySelectorAll("[data-minus]").forEach(function(b){b.onclick=function(){var x=cart(),i=Number(b.dataset.minus);x[i].qty=Math.max(1,Number(x[i].qty||1)-1);saveCart(x);openCart();};});
+    v.querySelectorAll("[data-plus]").forEach(function(b){b.onclick=function(){var x=cart(),i=Number(b.dataset.plus);x[i].qty=Math.min(100,Number(x[i].qty||1)+1);saveCart(x);openCart();};});
+    v.querySelectorAll("[data-remove]").forEach(function(b){b.onclick=function(){var x=cart();x.splice(Number(b.dataset.remove),1);saveCart(x);openCart();};});
+    var clear=document.getElementById("jpClearCart");if(clear)clear.onclick=function(){if(confirm("Clear your cart?")){saveCart([]);openCart();}};
+    var browse=document.getElementById("jpBrowse");if(browse)browse.onclick=close;
+    var next=document.getElementById("jpCheckout");if(next)next.onclick=checkoutOne;
+  }
+  function profilePrefill(){
+    var p=window.JPOAppState?.portal?.profile||{};return {name:p.name||checkout.name||"",email:p.email||checkout.email||""};
+  }
+  function checkoutOne(){
+    var pre=profilePrefill(),html='<div class="jp-step-head"><span>Checkout</span><b>1 / 2</b></div><div class="jp-step-bar"><i style="width:50%"></i></div><div class="jp-step-icon">♙</div><div class="jp-step-copy"><h1>Your Information</h1><p>We only need a few details to process your Order Request.</p></div><div class="jp-mobile-field"><label>Full Name *</label><input id="jpGuestName" value="'+esc(pre.name)+'" autocomplete="name"></div><div class="jp-mobile-field"><label>Email Address *</label><input id="jpGuestEmail" type="email" value="'+esc(pre.email)+'" autocomplete="email"></div><div id="jpContactError" class="jp-mobile-error"></div><button id="jpContactNext" class="jp-mobile-primary">Continue →</button><p class="jp-safe-note">🔒 Your information is safe with us.</p>';
+    shell(html,true);document.getElementById("jpFlowBack").onclick=openCart;document.getElementById("jpContactNext").onclick=function(){var n=document.getElementById("jpGuestName").value.trim(),e=document.getElementById("jpGuestEmail").value.trim().toLowerCase();if(!n||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){document.getElementById("jpContactError").textContent="Enter your full name and a valid email address.";return;}checkout.name=n;checkout.email=e;checkoutTwo();};
+  }
+  function checkoutTwo(){
+    var today=new Date(),min=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+    var html='<div class="jp-step-head"><span>Checkout</span><b>2 / 2</b></div><div class="jp-step-bar"><i style="width:100%"></i></div><div class="jp-step-copy left"><h1>Additional Details</h1><p>These details help JUAN PROJECT understand your request. Optional.</p></div><div class="jp-mobile-field"><label>Project Title</label><input id="jpProjectTitle" value="'+esc(checkout.title)+'" placeholder="e.g. YouTube Intro for My Channel"></div><div class="jp-mobile-field"><label>Requested Date</label><input id="jpRequestedDate" type="date" min="'+min+'" value="'+esc(checkout.deadline)+'"></div><div class="jp-mobile-field"><label>Notes</label><textarea id="jpProjectNotes" maxlength="500" placeholder="Any additional details about your project?">'+esc(checkout.notes)+'</textarea><small>Optional · 500 characters max</small></div><button id="jpReviewOrder" class="jp-mobile-primary">Review Order →</button>';
+    shell(html,true);document.getElementById("jpFlowBack").onclick=checkoutOne;document.getElementById("jpReviewOrder").onclick=function(){checkout.title=document.getElementById("jpProjectTitle").value.trim();checkout.deadline=document.getElementById("jpRequestedDate").value;checkout.notes=document.getElementById("jpProjectNotes").value.trim();reviewOrder();};
+  }
+  function reviewOrder(){
+    var items=cart(),html='<div class="jp-flow-title"><h1>Review Order</h1></div><section class="jp-review-card"><div class="jp-review-label">Guest Information <button id="jpEditGuest">Edit</button></div><b>'+esc(checkout.name)+'</b><span>'+esc(checkout.email)+'</span></section><section class="jp-review-card"><div class="jp-review-label">Order Summary <span>'+count(items)+' item(s)</span></div>'+items.map(function(i){return '<div class="jp-review-item">'+thumb(i)+'<div><b>'+esc(i.name)+'</b><small>Qty: '+Number(i.qty||1)+'</small></div><strong>'+peso(Number(i.price||0)*Number(i.qty||1))+'</strong></div>';}).join("")+'<div class="jp-review-total"><span>Subtotal</span><b>'+peso(total(items))+'</b></div><div class="jp-review-total final"><span>Estimated Total</span><strong>'+peso(total(items))+'</strong></div></section><div class="jp-terms-note">ⓘ By continuing, you will need to read and agree to the <b>Terms of Service</b> before submitting your Order Request.</div><button id="jpTermsNext" class="jp-mobile-primary">Continue →</button>';
+    shell(html,true);document.getElementById("jpFlowBack").onclick=checkoutTwo;document.getElementById("jpEditGuest").onclick=checkoutOne;document.getElementById("jpTermsNext").onclick=termsScreen;
+  }
+  function termsScreen(){
+    var terms='<h2>JUAN PROJECT ONLINE - TERMS OF SERVICE</h2><p><b>Last Updated: September 20, 2026</b></p><p>Welcome to JUAN PROJECT ONLINE. By submitting this Order Request you acknowledge these terms. The service agreement becomes effective when the required downpayment is submitted and verified.</p>'+
+      '<h3>1. AGREEMENT TO TERMS</h3><p>By proceeding with the initial payment, you ("the Client") enter into a binding agreement with Benzel Delmo, operating under JUAN PROJECT WORKSPACE ("the Service Provider"). This agreement governs your use of the online workspace and the fulfillment of requested services.</p>'+
+      '<h3>2. PROJECT INITIATION & DOWNPAYMENT</h3><ul><li><b>Initial Deposit:</b> A non-refundable downpayment of 50% (unless otherwise specified in your invoice) is required to initialize your workspace and secure your place in the service queue.</li><li><b>Work Commencement:</b> No design, development, or production work will begin until the downpayment is successfully processed and verified in the system.</li><li><b>Final Balance:</b> The remaining balance must be cleared upon approval of the final Deliverables before source files or final assets are released.</li></ul>'+
+      '<h3>3. DELIVERABLES & REVISION POLICY</h3><ul><li><b>Scope:</b> The Service Provider is only obligated to complete the specific Deliverables outlined and approved in your active workspace dashboard.</li><li><b>Revisions:</b> Each Deliverable includes the allotted minor revision rounds specified in the package. Major structural changes after concept approval may be billed separately.</li><li><b>Approval Window:</b> Clients are expected to review Deliverables within 3 business days. Prolonged delays may result in auto-approval to keep the timeline on track.</li></ul>'+
+      '<h3>4. LOYALTY PROGRAM & REWARDS</h3><p>Clients may earn points through the workspace loyalty system. Loyalty points and referral codes have no direct cash value and may only be used for JUAN PROJECT ONLINE discounts or perks. Points cannot be applied retroactively to paid invoices.</p>'+
+      '<h3>5. INTELLECTUAL PROPERTY & USAGE RIGHTS</h3><ul><li><b>Ownership Transfer:</b> Full usage rights for final approved Deliverables transfer only after final payment.</li><li><b>Working Files:</b> Raw source files, backend code, and 3D project files remain the Service Provider\'s property unless a Source File Transfer add-on was purchased.</li><li><b>Portfolio Rights:</b> JUAN PROJECT WORKSPACE may display completed Deliverables and early concepts in portfolios, case studies, and social media promotions.</li></ul>'+
+      '<h3>6. CANCELLATION & TERMINATION</h3><p>If the Client cancels after work has commenced, the initial downpayment is forfeited to cover administrative and labor costs. If cancelled midway, completed and approved Deliverables may be invoiced up to the cancellation date.</p>';
+    var html='<div class="jp-flow-title"><h1>Terms & Conditions</h1></div><div class="jp-terms-scroll">'+terms+'</div><label class="jp-terms-check"><input id="jpTermsAgree" type="checkbox"><span>I have read, understood, and agree to the Terms of Service.</span></label><button id="jpSubmitOrder" class="jp-mobile-primary" disabled>Agree & Submit Order Request</button>';
+    shell(html,true);document.getElementById("jpFlowBack").onclick=reviewOrder;var chk=document.getElementById("jpTermsAgree"),btn=document.getElementById("jpSubmitOrder");chk.onchange=function(){btn.disabled=!chk.checked;};btn.onclick=submitOrder;
+  }
+  async function submitOrder(){
+    var items=cart(),key=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();
+    processing();
+    try{
+      var request={action:"submit-order",key:key,items:items,name:checkout.name,email:checkout.email,title:checkout.title,deadline:checkout.deadline||null,notes:checkout.notes,termsAccepted:true,termsVersion:TERMS_VERSION,website:""};
+      var r=await T().request("/api/suite",request);
+      await delay(1150);saveCart([]);localStorage.setItem("JUAN_LAST_GUEST_TOKEN",r.token);lastReceipt={order:r.order,token:r.token};success(r.order,r.token);
+    }catch(e){await delay(400);failure(e.message||"We could not submit your request.");}
+  }
+  function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  function processing(){
+    var html='<div class="jp-processing-screen"><div class="jp-processing-logo">➤</div><h1>Submitting<br>your request...</h1><p>Please wait a moment while we process your order.</p><div class="jp-process-list"><div class="done">✓ <span>Validating your information</span></div><div class="done">✓ <span>Creating your Order Request</span></div><div class="active"><i></i><span>Generating receipt</span></div><div><i></i><span>Finalizing</span></div></div></div>';
+    shell(html,false);
+  }
+  function trackingLink(token){return location.origin+location.pathname+"#track="+encodeURIComponent(token);}
+  function success(o,token){
+    var link=trackingLink(token),html='<div class="jp-success-check">✓</div><div class="jp-success-copy"><h1>Order Request Submitted!</h1><p>Your request has been received.<br>Here’s your receipt.</p></div><div class="jp-receipt-card"><div class="jp-receipt-brand">JUAN PROJECT<small>ORDER REQUEST</small></div><b class="jp-receipt-id">'+esc(o.code)+'</b><span>'+esc(new Date(o.created_at).toLocaleString("en-PH"))+'</span><img src="/api/qr?text='+encodeURIComponent(link)+'" alt="QR code to track '+esc(o.code)+'"><div class="jp-receipt-items">'+(o.items||[]).map(function(i){return '<div><span>'+esc(i.name)+' × '+Number(i.qty||1)+'</span><b>'+peso(Number(i.price||0)*Number(i.qty||1))+'</b></div>';}).join("")+'</div><div class="jp-receipt-sum"><span>Subtotal</span><b>'+peso(o.subtotal)+'</b></div><div class="jp-receipt-sum total"><span>Estimated Total</span><strong>'+peso(o.total)+'</strong></div><div class="jp-receipt-status">'+esc(o.status||"Order Received")+'</div><small class="jp-not-invoice">THIS IS NOT AN INVOICE OR PROOF OF PAYMENT.</small></div><div class="jp-receipt-actions"><button id="jpSaveReceipt">⇩<span>Save Image</span></button><button id="jpShareReceipt">↥<span>Share Image</span></button><button id="jpCopyTrack">⌁<span>Copy Link</span></button><button id="jpTrackReceipt">⌕<span>Track Request</span></button></div><button id="jpDone" class="jp-mobile-primary">Done</button>';
+    shell(html,false);document.getElementById("jpDone").onclick=close;document.getElementById("jpCopyTrack").onclick=async function(){await navigator.clipboard.writeText(link);toast("Tracking link copied");};document.getElementById("jpTrackReceipt").onclick=function(){trackToken(token);};document.getElementById("jpSaveReceipt").onclick=function(){saveReceipt(o,link);};document.getElementById("jpShareReceipt").onclick=function(){shareReceipt(o,link);};
+  }
+  function failure(message){var html='<div class="jp-failure">!<h1>Request not submitted</h1><p>'+esc(message)+'</p><button id="jpRetrySubmit" class="jp-mobile-primary">Try Again</button><button id="jpBackReview" class="jp-mobile-secondary">Back to Review</button></div>';shell(html,false);document.getElementById("jpRetrySubmit").onclick=submitOrder;document.getElementById("jpBackReview").onclick=reviewOrder;}
+  async function makeReceiptBlob(o,link){
+    var canvas=document.createElement("canvas");canvas.width=720;canvas.height=900+(o.items||[]).length*55;var x=canvas.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,canvas.width,canvas.height);x.fillStyle="#111";x.textAlign="center";x.font="bold 32px monospace";x.fillText("JUAN PROJECT",360,60);x.font="bold 20px monospace";x.fillText("ORDER REQUEST",360,94);x.font="bold 24px monospace";x.fillText(String(o.code||""),360,135);var y=190;x.textAlign="left";x.font="18px monospace";x.fillText(String(o.name||"").slice(0,45),45,y);y+=38;
+    (o.items||[]).forEach(function(i){x.fillText(String(i.name||"Item").slice(0,38)+" x"+Number(i.qty||1),45,y);x.textAlign="right";x.fillText(peso(Number(i.price||0)*Number(i.qty||1)),675,y);x.textAlign="left";y+=48;});x.fillText("TOTAL",45,y+20);x.textAlign="right";x.font="bold 22px monospace";x.fillText(peso(o.total),675,y+20);y+=70;
+    var image=new Image();image.src="/api/qr?text="+encodeURIComponent(link);await image.decode();x.drawImage(image,240,y,240,240);x.textAlign="center";x.font="15px monospace";x.fillText("NOT AN INVOICE OR PROOF OF PAYMENT",360,y+280);
+    return await new Promise(function(resolve,reject){canvas.toBlob(function(b){b?resolve(b):reject(new Error("Could not create receipt image."));},"image/png",1);});
+  }
+  function download(blob,name){var a=document.createElement("a"),u=URL.createObjectURL(blob);a.href=u;a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(u);},1200);}
+  async function saveReceipt(o,link){try{download(await makeReceiptBlob(o,link),(o.code||"JUAN-ORDER")+"-receipt.png");toast("Receipt image saved successfully");}catch(e){toast(e.message);}}
+  async function shareReceipt(o,link){try{var blob=await makeReceiptBlob(o,link),file=new File([blob],(o.code||"JUAN-ORDER")+"-receipt.png",{type:"image/png"});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"JUAN PROJECT "+o.code});toast("Receipt shared");}else{download(blob,file.name);toast("Receipt saved for sharing");}}catch(e){if(e.name!=="AbortError")toast(e.message);}}
+  function stageFor(status){
+    var order=["Order Received","Under Review","Revised Offer Sent","Client Accepted","Project Created","In Progress","Delivered"],s=String(status||"Order Received");var idx=order.indexOf(s);if(idx<0){if(s==="Approved")idx=3;else if(s==="Needs Changes")idx=1;else idx=0;}return {order:order,index:idx};
+  }
+  function timeline(order,token){
+    var st=stageFor(order.status),titles={ "Order Received":"Your request has been received.","Under Review":"We’re reviewing your request and preparing an offer.","Revised Offer Sent":"A revised offer is ready for your review.","Client Accepted":"You accepted the revised offer.","Project Created":"Your JUAN PROJECT has been created.","In Progress":"Production is underway.","Delivered":"Your project has been delivered."};
+    return '<div class="jp-track-summary"><div><h2>'+esc(order.code||"Order Request")+'</h2><p>'+esc(order.title||"Order Request")+'</p></div><span>'+esc(order.status||"Order Received")+'</span><div class="meta"><b>'+peso(order.total||0)+'</b><small>'+((order.items||[]).length)+' item(s)</small></div></div><div class="jp-track-timeline">'+st.order.map(function(s,i){var cls=i<st.index?"done":i===st.index?"current":"future";return '<div class="jp-track-node '+cls+'"><i>'+(i<st.index?"✓":i===st.index?"●":"○")+'</i><div><b>'+s+'</b><small>'+(i<=st.index?titles[s]:"Waiting")+'</small></div></div>';}).join("")+'</div><div class="jp-next-step"><b>Next Step</b><p>'+esc(titles[st.order[Math.min(st.index,st.order.length-1)]]||"We’ll keep you updated.")+'</p></div>'+(order.status==="Revised Offer Sent"&&token?'<button id="jpAcceptOffer" class="jp-mobile-primary">Accept Revised Offer</button>':"")+'<button id="jpRefreshTrack" class="jp-mobile-secondary">Refresh Status</button>';
+  }
+  function openTrack(){
+    var html='<div class="jp-flow-title"><h1>Track Request</h1></div><div class="jp-step-copy left"><p>Enter your Order Request ID and the email used at checkout.</p></div><div class="jp-mobile-field"><label>Order Request ID</label><input id="jpTrackCode" placeholder="OR-001"></div><div class="jp-mobile-field"><label>Email Address</label><input id="jpTrackEmail" type="email" placeholder="you@example.com"></div><button id="jpTrackLookup" class="jp-mobile-primary">Track Request</button>';
+    shell(html,true);document.getElementById("jpFlowBack").onclick=close;document.getElementById("jpTrackLookup").onclick=async function(){var code=document.getElementById("jpTrackCode").value.trim(),email=document.getElementById("jpTrackEmail").value.trim();try{var r=await T().request("/api/suite",{action:"track-public",code:code,email:email});showTrack(r.order,"");}catch(e){toast(e.message);}};
+  }
+  async function trackToken(token){try{var r=await T().request("/api/suite",{action:"track",token:token});showTrack(r.order,token);}catch(e){toast(e.message);openTrack();}}
+  function showTrack(order,token){
+    var html='<div class="jp-flow-title"><h1>Track Request</h1></div>'+timeline(order,token);shell(html,true);document.getElementById("jpFlowBack").onclick=close;var ref=document.getElementById("jpRefreshTrack");if(ref)ref.onclick=function(){token?trackToken(token):showTrack(order,"");};var accept=document.getElementById("jpAcceptOffer");if(accept)accept.onclick=async function(){try{var r=await T().request("/api/suite",{action:"accept-revision",token:token});toast("Revised offer accepted");showTrack(r.order,token);}catch(e){toast(e.message);}};
+  }
+  function trackClientRequest(order){showTrack(order,"");}
+  function install(){
+    window.JPMobileCommerce={addCatalogItem:addCatalogItem,openCart:openCart,openTrack:openTrack,trackClientRequest:trackClientRequest,trackToken:trackToken,cartCount:cartCount,cartTotal:cartTotal,close:close};
+    if(window.JuanSuite){window.JuanSuite.addShopItem=addCatalogItem;window.JuanSuite.openCart=openCart;window.JuanSuite.track=openTrack;window.JuanSuite.shop=function(){return null;};}
+    document.querySelectorAll(".suite-online-quick-actions").forEach(function(x){x.remove();});
+    if(location.hash.indexOf("#track=")===0){var token=decodeURIComponent(location.hash.slice(7));setTimeout(function(){trackToken(token);},150);}
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(install,50);});else setTimeout(install,50);
+})();
