@@ -51,9 +51,30 @@ export async function ensurePortalAccount(user, svc) {
   const email = String(user.email || '').trim().toLowerCase();
   if (!email) throw Object.assign(new Error('Authenticated account has no email address.'), { status: 403 });
 
-  const { data: client, error: clientError } = await svc.from('clients').select('id,name,email,phone,address,client_code').ilike('email', email).limit(1).maybeSingle();
-  if (clientError) throw clientError;
-  if (!client) throw Object.assign(new Error('No JUAN PROJECT client profile is linked to this account. Please contact JUAN PROJECT.'), { status: 403 });
+  const { data: role, error: roleError } = await svc.from('user_roles').select('role').eq('auth_user_id', user.id).maybeSingle();
+  if (roleError) throw roleError;
+  if (role?.role === 'admin') {
+    throw Object.assign(new Error('The Workspace administrator account cannot be used as a client portal account.'), { status: 403 });
+  }
+
+  const clientResult = await svc
+    .from('clients')
+    .select('id,name,email,phone,address,client_code')
+    .ilike('email', email)
+    .order('client_code', { ascending: true })
+    .limit(2);
+  if (clientResult.error) throw clientResult.error;
+  const matches = clientResult.data || [];
+  if (!matches.length) throw Object.assign(new Error('No JUAN PROJECT client profile is linked to this account. Please contact JUAN PROJECT.'), { status: 403 });
+  if (matches.length > 1) throw Object.assign(new Error('More than one client profile uses this email. Please contact JUAN PROJECT so the duplicate can be resolved.'), { status: 409 });
+  const client = matches[0];
+
+  const { data: clientAccount, error: clientAccountError } = await svc.from('portal_accounts').select('*').eq('client_id', client.id).maybeSingle();
+  if (clientAccountError) throw clientAccountError;
+  if (clientAccount && String(clientAccount.auth_user_id) !== String(user.id)) {
+    throw Object.assign(new Error('This client profile is already linked to another login. Please contact JUAN PROJECT.'), { status: 409 });
+  }
+  if (clientAccount) return clientAccount;
 
   const insertedAccount = await svc.from('portal_accounts').insert({
     auth_user_id: user.id,
@@ -61,13 +82,21 @@ export async function ensurePortalAccount(user, svc) {
     password_set: false,
     portal_enabled: true
   }).select('*').single();
-  if (insertedAccount.error) throw insertedAccount.error;
 
-  const { data: roleRow } = await svc.from('user_roles').select('role').eq('auth_user_id', user.id).maybeSingle();
-  if (!roleRow) await svc.from('user_roles').insert({ auth_user_id: user.id, role: 'client' });
+  if (insertedAccount.error) {
+    if (insertedAccount.error.code === '23505') {
+      const retry = await svc.from('portal_accounts').select('*').eq('auth_user_id', user.id).maybeSingle();
+      if (!retry.error && retry.data) return retry.data;
+    }
+    throw insertedAccount.error;
+  }
+
+  if (!role) {
+    const roleInsert = await svc.from('user_roles').insert({ auth_user_id: user.id, role: 'client' });
+    if (roleInsert.error && roleInsert.error.code !== '23505') throw roleInsert.error;
+  }
   return insertedAccount.data;
 }
-
 
 export async function enforceRateLimit(req, svc, scope, subject='', maxHits=6, windowSeconds=900){const forwarded=String(req.headers['x-forwarded-for']||'').split(',')[0].trim(),ip=forwarded||String(req.headers['x-real-ip']||req.socket?.remoteAddress||'unknown'),raw=`${scope}|${ip}|${String(subject||'').trim().toLowerCase()}`,key=`${scope}:${createHash('sha256').update(raw).digest('hex')}`;const {data,error}=await svc.rpc('consume_juan_rate_limit',{p_key:key,p_window_seconds:windowSeconds,p_max_hits:maxHits});if(error)throw Object.assign(new Error('Security rate-limit check is unavailable. Please try again.'),{status:503});if(data!==true)throw Object.assign(new Error('Too many attempts. Please wait and try again.'),{status:429});}
 
