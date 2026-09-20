@@ -132,7 +132,9 @@ const icons={
   alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/>',
   receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/>',
   spark:'<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/>',
-  help:'<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 4.5 1.5c-.8.9-2.2 1.3-2.2 2.7M12 17h.01"/>'
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 4.5 1.5c-.8.9-2.2 1.3-2.2 2.7M12 17h.01"/>',
+  plus:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'
 };
 const icon=(name,size=20)=>`<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||''}</svg>`;
 
