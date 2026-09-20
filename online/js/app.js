@@ -1,4 +1,4 @@
-// JUAN PROJECT Online release sync: 2026-09-20
+// JUAN PROJECT Online production release: 2026-09-20
 import {getSupabase,session,signIn,setPassword,changePasswordWithCurrent,sendPasswordReset,signOut} from './auth.js';
 import {getPortal,getCatalog,markPasswordSet,setProfilePhoto} from './data.js';
 import {uploadReceipt,submitPayment as submitPaymentApi} from './payments.js';
