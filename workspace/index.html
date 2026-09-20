@@ -2787,11 +2787,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
       }
     ];
 
-    // Editable sample data preloaded from the uploaded Payment Tracker sheet.
-    // Blank template rows (055/056) are intentionally not seeded; entry forms stay blank.
-    const SAMPLE_DATA_VERSION = "PAYMENT_TRACKER_2025_001_054_CONTINUOUS_V2";
-    // Production builds do not embed historical client/payment data in public HTML.
-    // Existing records are loaded from the protected shared Supabase database.
+    // Historical preload authority: corrected JUAN_PROJECT_PAYMENT_TRACKER_UPDATED(1).csv.
+    // Production builds do not embed client/payment history in public HTML.
+    // The canonical 53 projects / 45 clients are stored in protected Supabase preload source tables.
+    const SAMPLE_DATA_VERSION = "PAYMENT_TRACKER_CORRECTED_2026_09_20_V1";
     const LEGACY_SHEET_RECORDS = [];
     const app = (function() {
       let supabaseClient = null;
@@ -2869,12 +2868,12 @@ table.jp-packages-table col:nth-child(6){width:7%}
         onlinePortalLoading: false
       };
 
-      // Authoritative client identity mapping imported from JUAN_PROJECT_Client_ID_Mapping_UPDATED(5).xlsx
-      // Source SHA-256: 556584cf3e027ffc515346964c19370f33032c60d00df0bea5935c158645976f
-      const CLIENT_MASTER_VERSION = "client-master-2026-09-16-v1";
-      const CLIENT_ID_BY_EMAIL = {"imahemultimediaproductions@gmail.com":"CL-001","yvonnemaedelgado@gmail.com":"CL-002","trishakayemesana@gmail.com":"CL-003","dkian032@gmail.com":"CL-004","dalumpinesmargaret@gmail.com":"CL-005","ws.benzeldelmo@gmail.com":"CL-006","ardienjamesgais@gmail.com":"CL-007","kztksem88@gmail.com":"CL-008","oliver.villaruel@deped.gov.ph":"CL-009","dimaanolorraine37@gmail.com":"CL-010","janellerinn@gmail.com":"CL-011","ramosdenmar03@gmail.com":"CL-012","nikkazara29@gmail.com":"CL-013","mamadoaalexanderissaiah@gmail.com":"CL-014","earljohnmapa12@gmail.com":"CL-015","annefelicityrufo1@gmail.com":"CL-016","sosadanica07@gmail.com":"CL-017","ashleymaeramos001@gmail.com":"CL-018","leisoriano25@gmail.com":"CL-019","bacalaaj@gmail.com":"CL-020","calmorinjareen@gmail.com":"CL-021","danrowey2009@gmail.com":"CL-022","rapaconnicolo7@gmail.com":"CL-023","apriljoy.tabingo@deped.gov.ph":"CL-024","villegasnathaniel10@gmail.com":"CL-025","michaelquinto33@gmail.com":"CL-026","acunamika67@gmail.com":"CL-027","caliaoalthea6@gmail.com":"CL-028","macarimbangesmail18@gmail.com":"CL-029","santos.amielelijah@gmail.com":"CL-030","joycemagtibay@gmail.com":"CL-031","kyledylan1921@gmail.com":"CL-032","iannebaristol2005@gmail.com":"CL-033","jetcastre5@gmail.com":"CL-034","sittieazhimagyusoph@gmail.com":"CL-035","tjmercado1515@gmail.com":"CL-036","allieyahbautista@gmail.com":"CL-037","scharlesleendon@gmail.com":"CL-038","tagapulot.brianaziv@gmail.com":"CL-039","babonmichaelneil@gmail.com":"CL-040","caliguirankathleengrace@gmail.com":"CL-041","brylevicmudo@gmail.com":"CL-042","sharanfaten9@gmail.com":"CL-043","mykellpatigayon949@gmail.com":"CL-044","barejechad05@gmail.com":"CL-045","christian.aficionado@gmail.com":"CL-046"};
+      // Authoritative client identity mapping from corrected JUAN_PROJECT_PAYMENT_TRACKER_UPDATED(1).csv
+      // Source SHA-256: 02c3b0cddef59d007a6ad6503be074775ef111b51165ee4768c1901ef56865ab
+      const CLIENT_MASTER_VERSION = "payment-tracker-client-master-2026-09-20-v1";
+      const CLIENT_ID_BY_EMAIL = {"imahemultimediaproductions@gmail.com":"CL-001","yvonnemaedelgado@gmail.com":"CL-002","dkian032@gmail.com":"CL-003","dalumpinesmargaret@gmail.com":"CL-004","trishakayemesana@gmail.com":"CL-005","ardienjamesgais@gmail.com":"CL-006","kztksem88@gmail.com":"CL-007","oliver.villaruel@deped.gov.ph":"CL-008","dimaanolorraine37@gmail.com":"CL-009","janellerinn@gmail.com":"CL-010","ramosdenmar03@gmail.com":"CL-011","nikkazara29@gmail.com":"CL-012","mamadoaalexanderissaiah@gmail.com":"CL-013","earljohnmapa12@gmail.com":"CL-014","sosadanica07@gmail.com":"CL-015","annefelicityrufo1@gmail.com":"CL-016","ashleymaeramos001@gmail.com":"CL-017","leisoriano25@gmail.com":"CL-018","bacalaaj@gmail.com":"CL-019","calmorinjareen@gmail.com":"CL-020","danrowey2009@gmail.com":"CL-021","rapaconnicolo7@gmail.com":"CL-022","apriljoy.tabingo@deped.gov.ph":"CL-023","villegasnathaniel10@gmail.com":"CL-024","michaelquinto33@gmail.com":"CL-025","acunamika67@gmail.com":"CL-026","caliaoalthea6@gmail.com":"CL-027","macarimbangesmail18@gmail.com":"CL-028","santos.amielelijah@gmail.com":"CL-029","joycemagtibay@gmail.com":"CL-030","kyledylan1921@gmail.com":"CL-031","iannebaristol2005@gmail.com":"CL-032","jetcastre5@gmail.com":"CL-033","sittieazhimagyusoph@gmail.com":"CL-034","tjmercado1515@gmail.com":"CL-035","allieyahbautista@gmail.com":"CL-036","scharlesleendon@gmail.com":"CL-037","tagapulot.brianaziv@gmail.com":"CL-038","babonmichaelneil@gmail.com":"CL-039","caliguirankathleengrace@gmail.com":"CL-040","brylevicmudo@gmail.com":"CL-041","sharanfaten9@gmail.com":"CL-042","mykellpatigayon949@gmail.com":"CL-043","barejechad05@gmail.com":"CL-044","christian.aficionado@gmail.com":"CL-045"};
 
-      const CLIENT_ID_FLOOR = 46;
+      const CLIENT_ID_FLOOR = 45;
       function normalizeClientIdentityEmail(value){ return String(value||'').trim().toLowerCase(); }
       function clientCodeNumber(value){ const m=String(value||'').toUpperCase().match(/^CL-(\d+)$/); return m?Number(m[1]):0; }
       function nextLocalClientCode(){
@@ -3394,13 +3393,16 @@ table.jp-packages-table col:nth-child(6){width:7%}
         const split = delimiter === "\t" ? (line => line.split("\t").map(x => x.trim())) : parseCSVLine;
         const headers = split(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
         const aliases = {
-          ref:["date","reference","invoice","invoice number","record id"],
+          ref:["project id","date","reference","invoice","invoice number","record id"],
+          clientCode:["client id","client code"],
           clientName:["client name","client","customer name","customer"],
           clientEmail:["client email","email","customer email"],
           project:["project name","project","title"],
           type:["project type","type","service"],
           due:["amount due","total amount","amount","invoice amount"],
           received:["amount received","received","paid","amount paid"],
+          startDate:["start date","project start date"],
+          dueDate:["due date","deadline","deadline date","completion date"],
           status:["payment status","status"],
           pending:["pending amount","balance","outstanding"]
         };
@@ -3458,6 +3460,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
             );
             const projectStatus = paymentStatus === "Completed" ? "Completed" : "In Progress";
 
+            const sourceClientCode = idx.clientCode >= 0 ? String(cells[idx.clientCode] || "").trim().toUpperCase() : "";
             let clientName = idx.clientName >= 0 ? String(cells[idx.clientName] || "").trim() : "";
             let clientEmail = idx.clientEmail >= 0 ? String(cells[idx.clientEmail] || "").trim() : "";
             if (!clientEmail && clientName.includes("@")) {
@@ -3474,6 +3477,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
               const createdClient = await supabaseClient
                 .from("clients")
                 .insert([{
+                  client_code: /^CL-\d+$/i.test(sourceClientCode) ? sourceClientCode : null,
                   name: clientName,
                   email: clientEmail || null,
                   phone: null,
@@ -3490,6 +3494,14 @@ table.jp-packages-table col:nth-child(6){width:7%}
               if (client.name) clientByName.set(normalizeName(client.name), client);
             }
 
+            if (/^CL-\d+$/i.test(sourceClientCode) && String(client.client_code || "").toUpperCase() !== sourceClientCode) {
+              const conflict = clients.find(x => String(x.id) !== String(client.id) && String(x.client_code || "").toUpperCase() === sourceClientCode);
+              if (conflict) throw new Error("Client ID " + sourceClientCode + " is already assigned to a different client.");
+              const correctedClient = await supabaseClient.from("clients").update({client_code:sourceClientCode}).eq("id",client.id).select("id,client_code,name,email,phone,address,notes,archived_at").single();
+              if (correctedClient.error) throw correctedClient.error;
+              Object.assign(client, correctedClient.data);
+            }
+
             const projectNumber = nextHistoricalProjectNumber(ref, usedProjectNumbers);
             const projectCode = "JP-" + String(projectNumber).padStart(3, "0");
             if (existingProjectCodes.has(projectCode)) {
@@ -3497,7 +3509,13 @@ table.jp-packages-table col:nth-child(6){width:7%}
               continue;
             }
 
-            const historicalDate = historicalImportDate(ref, i);
+            const sourceStartDate = idx.startDate >= 0 ? String(cells[idx.startDate] || "").trim() : "";
+            const sourceDueDate = idx.dueDate >= 0 ? String(cells[idx.dueDate] || "").trim() : "";
+            const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(value + "T12:00:00").getTime());
+            const historicalDate = validDate(sourceStartDate)
+              ? {date:sourceStartDate,timestamp:new Date(sourceStartDate + "T09:00:00+08:00").toISOString()}
+              : historicalImportDate(ref, i);
+            const deadlineDate = validDate(sourceDueDate) ? sourceDueDate : null;
             const title = idx.project >= 0 ? String(cells[idx.project] || "").trim() : "Imported Project";
             const projectType = idx.type >= 0 ? String(cells[idx.type] || "").trim() : "Other";
 
@@ -3517,7 +3535,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
               project_type: projectType || "Other",
               pricing_version: "legacy",
               start_date: historicalDate.date,
-              deadline_date: null,
+              deadline_date: deadlineDate,
               payment_due_date: null,
               subtotal_amount: due,
               discount_amount: 0,
@@ -3557,8 +3575,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
               counts_as_deliverable: false,
               status: projectStatus === "Completed" ? "Completed" : "Pending",
               progress: projectStatus === "Completed" ? 100 : 0,
-              due_date: null,
-              completed_at: projectStatus === "Completed" ? historicalDate.timestamp : null,
+              due_date: deadlineDate,
+              completed_at: projectStatus === "Completed"
+                ? new Date((deadlineDate || historicalDate.date) + "T17:00:00+08:00").toISOString()
+                : null,
               client_visible: true,
               sort_order: 0
             }]);
@@ -3572,7 +3592,9 @@ table.jp-packages-table col:nth-child(6){width:7%}
                 payment_date: historicalDate.date,
                 payment_method: "Historical Record",
                 reference_no: ref || null,
-                notes: "Imported from historical CSV."
+                notes: idx.startDate >= 0
+                  ? "Imported from corrected payment tracker. Exact payment date was not supplied; project start date is used for the historical record."
+                  : "Imported from historical CSV."
               }]);
               if (paymentInsert.error) throw paymentInsert.error;
             }
