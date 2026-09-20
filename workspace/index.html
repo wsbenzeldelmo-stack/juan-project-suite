@@ -2369,6 +2369,11 @@ table.jp-packages-table col:nth-child(6){width:7%}
       <div class="modal-body">
         <input type="hidden" id="editClientId">
         <div class="form-group">
+          <label class="form-label">Client ID</label>
+          <input type="text" class="form-control" id="editClientCode" readonly aria-readonly="true" tabindex="-1">
+          <span class="text-muted" style="display:block;margin-top:4px;font-size:11px;">System-generated identifier. It cannot be edited.</span>
+        </div>
+        <div class="form-group">
           <label class="form-label">Client Name *</label>
           <input type="text" class="form-control" id="editClientName" placeholder="Client Name">
           <span id="editClientNameError" class="inline-error"></span>
@@ -8624,6 +8629,7 @@ ${description}`))actionCallback();return;}
         if (!client) return;
 
         document.getElementById("editClientId").value = client.id;
+        document.getElementById("editClientCode").value = formatClientId(client);
         document.getElementById("editClientName").value = client.name || "";
         document.getElementById("editClientEmail").value = client.email || "";
         document.getElementById("editClientPhone").value = client.phone || "";

@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { bearer, requireAdmin, serviceClient, enforceRateLimit, assertSafePost, sendError } from './_lib.js';
 
-const STAGES=['Order Confirmed','Payment Confirmed','Production Started','In Production','Quality Check','Ready for Delivery','Completed'];
+const STAGES=['Order Confirmed','Downpayment Confirmed','Production Started','In Production','Quality Assessment','Ready for Delivery','Completed','Delivered'];
 const now=()=>new Date().toISOString();
 const today=()=>new Date().toISOString().slice(0,10);
 const hash=v=>createHash('sha256').update(String(v||'')).digest('hex');
@@ -420,7 +420,7 @@ export default async function handler(req,res){
       if('tracker_stage'in u){
         const stage=Number(u.tracker_stage);if(!Number.isInteger(stage)||stage<0||stage>=STAGES.length)fail('Invalid project stage.');
         patch.tracker_stage=stage;patch.milestones=[...(Array.isArray(p.milestones)?p.milestones:[]),{stage,at:now()}];
-        patch.status=stage===6?'Completed':'In Progress';patch.delivery_status=stage===6?'Delivered':'Pending';
+        patch.status=stage>=6?'Completed':'In Progress';patch.delivery_status=stage===7?'Delivered':'Pending';
       }
       if(patch.drive_url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(patch.drive_url))fail('Use a Google Drive URL.');
       const up=await svc.from('projects').update(patch).eq('id',p.id);if(up.error)throw up.error;
@@ -448,6 +448,11 @@ export default async function handler(req,res){
       if(!['banner','popup'].includes(type))fail('Choose Banner or Popup.');
       if(!['draft','scheduled','published','paused','expired','archived'].includes(status))fail('Invalid campaign status.');
       const destinationType=String(a.destination_type||'no_action'),destinationValue=String(a.destination_value||'').trim();
+      const audience=String(a.audience||'all'),placement=String(a.placement||('popup'===type?'homepage_popup':'homepage_banner'));
+      if(!['all','guest','client'].includes(audience))fail('Invalid ad audience.');
+      const bannerPlacements=['homepage_banner','guest_home_banner','guest_shop_banner','client_home_banner','client_shop_banner'];
+      const popupPlacements=['homepage_popup','guest_home_popup','client_home_popup'];
+      if(!(type==='banner'?bannerPlacements:popupPlacements).includes(placement))fail('Choose a valid Online placement for this ad type.');
       if(!['no_action','shop','package','service','referral','loyalty','page','external_url'].includes(destinationType))fail('Invalid ad destination.');
       if(destinationType==='external_url'&&!/^https:\/\//i.test(destinationValue))fail('External ad URLs must use HTTPS.');
       if(['package','service','page'].includes(destinationType)&&!destinationValue)fail('Choose a valid destination before publishing.');
@@ -458,8 +463,8 @@ export default async function handler(req,res){
       if(status==='published'&&!String(a.image||'').trim())fail('Upload a promotional image before publishing.');
       const row={
         title,body:String(a.body||''),cta:String(a.cta||'Learn more'),url:destinationType==='external_url'?destinationValue:null,image:String(a.image||'').trim()||null,
-        audience:a.audience||'all',enabled:!['paused','archived','expired','draft'].includes(status),
-        ad_type:type,status,placement:String(a.placement||('popup'===type?'homepage_popup':'homepage_banner')),
+        audience,enabled:!['paused','archived','expired','draft'].includes(status),
+        ad_type:type,status,placement,
         destination_type:destinationType,destination_value:destinationValue||null,start_at:startAt,end_at:endAt,no_expiration:Boolean(a.no_expiration),
         priority,image_alt:String(a.image_alt||title).slice(0,240),published_at:status==='published'?(a.published_at||now()):null,archived_at:status==='archived'?now():null
       };

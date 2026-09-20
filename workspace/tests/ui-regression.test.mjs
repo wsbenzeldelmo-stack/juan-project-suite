@@ -50,3 +50,29 @@ test("repeated command-center opens cannot leave stacked overlays", async () => 
   assert.match(js, /var request=\+\+paletteRequest/);
   assert.match(js, /if\(request!==paletteRequest\)return/);
 });
+
+
+test("client ID is visible but immutable in Edit Client", async () => {
+  const html = await read("index.html");
+  assert.match(html, /id="editClientCode" readonly aria-readonly="true"/);
+  assert.match(html, /editClientCode"\)\.value = formatClientId\(client\)/);
+  const editBlock = html.slice(html.indexOf("async function submitEditClient"), html.indexOf("function openProjectDetails", html.indexOf("async function submitEditClient")));
+  assert.doesNotMatch(editBlock, /client_code\s*:/);
+});
+
+test("In-House Ads editor exposes audience and Online placements", async () => {
+  const js = await read("js/general-update.js");
+  assert.match(js, /id="adAudience"/);
+  assert.match(js, /guest_home_banner/);
+  assert.match(js, /guest_shop_banner/);
+  assert.match(js, /client_home_banner/);
+  assert.match(js, /client_home_popup/);
+});
+
+test("Online API supports the full eight-stage tracker", async () => {
+  const api = await read("../online/api/suite.js");
+  assert.match(api, /'Downpayment Confirmed'/);
+  assert.match(api, /'Quality Assessment'/);
+  assert.match(api, /'Delivered'/);
+  assert.match(api, /delivery_status=stage===7\?'Delivered':'Pending'/);
+});
