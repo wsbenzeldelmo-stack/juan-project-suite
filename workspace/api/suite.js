@@ -31,6 +31,7 @@ const safeOrder=o=>({
   items:Array.isArray(o.items)?o.items:[],subtotal:Number(o.subtotal||0),discount_amount:Number(o.discount_amount||0),rush_fee:Number(o.rush_fee||0),
   total:Number(o.total||0),deadline:o.deadline,created_at:o.created_at,status:o.status,
   review_note:o.review_note||'',revised_at:o.revised_at||null,client_accepted_at:o.client_accepted_at||null,approved_at:o.approved_at||null,
+  terms_version:o.terms_version||null,terms_accepted_at:o.terms_accepted_at||null,archived_at:o.archived_at||null,converted_at:o.converted_at||null,
   project_code:o.project_code||null,project_id:o.project_id||null,client_id:o.client_id||null
 });
 async function orderView(svc,o){
@@ -62,23 +63,50 @@ async function packageInclusions(svc,packageIds){
   return out;
 }
 async function provisionClient(svc,client){
-  const {data:existing}=await svc.from('portal_accounts').select('*').eq('client_id',client.id).maybeSingle();
-  if(existing)return existing;
+  const {data:byClient,error:clientAccountError}=await svc.from('portal_accounts').select('*').eq('client_id',client.id).maybeSingle();
+  if(clientAccountError)throw clientAccountError;
+  if(byClient)return byClient;
   const email=String(client.email||'').trim().toLowerCase();if(!email)return null;
+
   let user=null;
   const listed=await svc.auth.admin.listUsers({page:1,perPage:1000});
-  if(!listed.error)user=(listed.data?.users||[]).find(u=>String(u.email||'').toLowerCase()===email)||null;
-  if(!user){
-    const created=await svc.auth.admin.createUser({email,password:String(client.client_code||'JP-CLIENT'),email_confirm:true,user_metadata:{juan_client_id:client.id,must_change_password:true}});
+  if(listed.error)throw listed.error;
+  user=(listed.data?.users||[]).find(u=>String(u.email||'').trim().toLowerCase()===email)||null;
+
+  if(user){
+    const {data:role,error:roleError}=await svc.from('user_roles').select('role').eq('auth_user_id',user.id).maybeSingle();
+    if(roleError)throw roleError;
+    if(role?.role==='admin')fail('This email is already used by the Workspace admin account. Use a different client email.',409);
+
+    const {data:byAuth,error:authAccountError}=await svc.from('portal_accounts').select('*').eq('auth_user_id',user.id).maybeSingle();
+    if(authAccountError)throw authAccountError;
+    if(byAuth){
+      if(String(byAuth.client_id)!==String(client.id)){
+        fail('This login is already linked to another client profile. Resolve the duplicate client record first.',409);
+      }
+      return byAuth;
+    }
+  }else{
+    const created=await svc.auth.admin.createUser({
+      email,password:String(client.client_code||'JP-CLIENT'),email_confirm:true,
+      user_metadata:{juan_client_id:client.id,must_change_password:true,juan_project_client:true}
+    });
     if(created.error)throw created.error;user=created.data.user;
   }
-  const {data:account,error}=await svc.from('portal_accounts').upsert({
+
+  const inserted=await svc.from('portal_accounts').insert({
     auth_user_id:user.id,client_id:client.id,password_set:false,portal_enabled:true,updated_at:now()
-  },{onConflict:'auth_user_id'}).select('*').single();
-  if(error)throw error;
-  const {data:role}=await svc.from('user_roles').select('auth_user_id').eq('auth_user_id',user.id).maybeSingle();
+  }).select('*').single();
+  if(inserted.error){
+    if(inserted.error.code==='23505'){
+      const existing=await svc.from('portal_accounts').select('*').or(`auth_user_id.eq.${user.id},client_id.eq.${client.id}`).limit(1).maybeSingle();
+      if(!existing.error&&existing.data)return existing.data;
+    }
+    throw inserted.error;
+  }
+  const {data:role}=await svc.from('user_roles').select('auth_user_id,role').eq('auth_user_id',user.id).maybeSingle();
   if(!role){const ins=await svc.from('user_roles').insert({auth_user_id:user.id,role:'client'});if(ins.error)throw ins.error}
-  return account;
+  return inserted.data;
 }
 function nestDeliverables(rows){
   const byId=new Map((rows||[]).map(r=>[String(r.id),{...r,children:[]}]));
@@ -120,19 +148,44 @@ async function dashboard(svc){
 }
 async function publicAds(req,svc){
   const user=await optionalUser(req,svc);
-  let audience='guest';
+  let audience='guest',clientId=null;
   if(user){
     const {data}=await svc.from('portal_accounts').select('client_id').eq('auth_user_id',user.id).maybeSingle();
-    if(data)audience='client';
+    if(data){audience='client';clientId=data.client_id}
   }
-  const {data,error}=await svc.from('promotions').select('*').eq('enabled',true).order('created_at',{ascending:false});
-  if(error)throw error;const d=today();
-  return {ads:(data||[]).filter(a=>(!a.start_date||a.start_date<=d)&&(!a.end_date||a.end_date>=d)&&['all',audience].includes(a.audience)).map(a=>({...a,start:a.start_date,end:a.end_date}))};
+  const [adsRes,settingsRes]=await Promise.all([
+    svc.from('promotions').select('*').neq('status','archived').order('priority',{ascending:false}).order('created_at',{ascending:false}),
+    svc.from('ad_settings').select('*').eq('id',1).maybeSingle()
+  ]);
+  if(adsRes.error)throw adsRes.error;if(settingsRes.error)throw settingsRes.error;
+  const instant=Date.now();
+  const ads=(adsRes.data||[]).filter(a=>{
+    if(a.enabled===false)return false;
+    if(!['all',audience].includes(a.audience||'all'))return false;
+    if(!['published','scheduled'].includes(String(a.status||'draft')))return false;
+    const start=a.start_at?new Date(a.start_at).getTime():null,end=a.end_at?new Date(a.end_at).getTime():null;
+    if(start&&start>instant)return false;
+    if(!a.no_expiration&&end&&end<=instant)return false;
+    return true;
+  }).map(a=>({...a,effective_status:'published',start:a.start_at||a.start_date,end:a.end_at||a.end_date}));
+  return {ads,settings:settingsRes.data||{rotation_seconds:8,transition:'fade'},client_id:clientId};
+}
+async function recordAdEvent(b,req,svc){
+  const adId=String(b.ad_id||''),eventType=String(b.event_type||''),visitorId=String(b.visitor_id||'').slice(0,120),sessionId=String(b.session_id||'').slice(0,120);
+  if(!adId||!['impression','click','dismiss'].includes(eventType)||!sessionId)fail('Invalid ad event.');
+  const user=await optionalUser(req,svc);let clientId=null;
+  if(user){const {data}=await svc.from('portal_accounts').select('client_id').eq('auth_user_id',user.id).maybeSingle();clientId=data?.client_id||null}
+  if(!clientId&&!visitorId)fail('Visitor identifier required.');
+  const eventKey=String(b.event_key||`${adId}:${eventType}:${clientId||visitorId}:${sessionId}`).slice(0,300);
+  const {error}=await svc.from('ad_events').insert({ad_id:adId,client_id:clientId,visitor_id:clientId?null:visitorId,session_id:sessionId,event_type:eventType,event_key:eventKey});
+  if(error&&error.code!=='23505')throw error;
+  return {ok:true,duplicate:error?.code==='23505'};
 }
 async function submitOrder(b,svc){
-  const name=String(b.name||'').trim(),email=String(b.email||'').trim().toLowerCase(),title=String(b.title||'').trim(),key=String(b.key||'').trim();
-  if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!title||!key)fail('Name, valid email and project title are required.');
-  if(name.length>160||title.length>160||email.length>254||String(b.notes||'').length>3000)fail('Please shorten the submitted details.');
+  const name=String(b.name||'').trim(),email=String(b.email||'').trim().toLowerCase(),key=String(b.key||'').trim();
+  if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!key)fail('Name and a valid email address are required.');
+  if(b.termsAccepted!==true||String(b.termsVersion||'')!=='2026-09-20')fail('Please read and accept the current JUAN PROJECT Online Terms of Service.');
+  if(name.length>160||email.length>254||String(b.notes||'').length>3000||String(b.title||'').length>160)fail('Please shorten the submitted details.');
   const {data:existing,error:ee}=await svc.from('incoming_orders').select('*').eq('submission_key',key).maybeSingle();if(ee)throw ee;
   if(existing)return {order:safeOrder(existing),token:guestTokenForKey(key),duplicate:true};
   const requested=Array.isArray(b.items)?b.items:[];if(!requested.length)fail('Choose at least one service or package.');
@@ -152,21 +205,22 @@ async function submitOrder(b,svc){
     const price=money(kind==='package'?(p.new_price??p.original_price??0):p.price);
     return {id:randomUUID(),catalog_id:p.id,name:p.name,type:kind,price,qty,includedItems:kind==='package'?(inc.get(String(p.id))||[]):[]};
   });
+  const title=String(b.title||'').trim()||items[0]?.name||'Order Request';
   const subtotal=Math.round(items.reduce((s,i)=>s+i.price*i.qty,0)*100)/100;
-  const hasPackage=items.some(i=>i.type==='package');
-  const standardDays=hasPackage?14:10;
+  const hasPackage=items.some(i=>i.type==='package'),standardDays=hasPackage?14:10;
   let rush=0;
   if(b.deadline){
     const deadline=new Date(String(b.deadline)+'T00:00:00');if(Number.isNaN(deadline.getTime()))fail('Invalid requested date.');
     const start=new Date(today()+'T00:00:00'),days=Math.round((deadline-start)/86400000);if(days<0)fail('Requested date cannot be in the past.');
     rush=Math.ceil(Math.max(0,standardDays-days)/4)*500;
   }
-  const raw=guestTokenForKey(key);
-  const initialTotal=subtotal+rush;
+  const raw=guestTokenForKey(key),initialTotal=subtotal+rush;
+  const acceptanceKey=hash(`${email}|${key}|2026-09-20`);
   const {data,error}=await svc.from('incoming_orders').insert({
     name,email,phone:String(b.phone||''),title,notes:String(b.notes||''),deadline:b.deadline||null,items,
     subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,status:'Order Received',submission_key:key,token_hash:hash(raw),
-    original_snapshot:{items,subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,deadline:b.deadline||null}
+    terms_version:'2026-09-20',terms_accepted_at:now(),terms_acceptance_key:acceptanceKey,
+    original_snapshot:{items,subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,deadline:b.deadline||null,title}
   }).select('*').single();
   if(error)throw error;await audit(svc,'Guest order received',data.code);return {order:safeOrder(data),token:raw};
 }
@@ -261,6 +315,7 @@ export default async function handler(req,res){
       await audit(svc,'Guest order resubmitted',o.code);return res.status(200).json({order:safeOrder(data)});
     }
     if(action==='ads'){await enforceRateLimit(req,svc,'public-ads-ip','',120,900);return res.status(200).json(await publicAds(req,svc));}
+    if(action==='ad-event'){await enforceRateLimit(req,svc,'public-ad-event-ip','',240,900);return res.status(200).json(await recordAdEvent(b,req,svc));}
     if(action==='accept-invite'){await enforceRateLimit(req,svc,'invite-accept-ip','',20,3600);
       const t=String(b.token||'');const {data:i,error}=await svc.from('portal_invitations').select('*').eq('token',t).maybeSingle();if(error)throw error;
       if(!i||i.status==='revoked'||new Date(i.expires_at)<new Date())fail('Invitation is invalid, revoked or expired.',404);
@@ -281,7 +336,7 @@ export default async function handler(req,res){
         const paid=pays.filter(x=>String(x.project_id)===String(p.id)&&!x.deleted_at).reduce((sum,x)=>sum+Number(x.amount_paid||0),0);
         return delivered&&paid+0.005>=Number(p.total_amount||0);
       }).length;
-      const loyalty=completed>=10?'PLATINUM':completed>=6?'GOLD':completed>=3?'SILVER':'BRONZE';
+      const loyalty=completed>=4?'PLATINUM':completed>=3?'GOLD':completed>=2?'SILVER':'BRONZE';
       return res.status(200).json({client:{name:c.name,client_code:c.client_code,qr_token:c.qr_token,classification:c.classification||'New',loyalty_tier:loyalty,completed_projects:completed,member_since:c.created_at}});
     }
 
@@ -318,7 +373,30 @@ export default async function handler(req,res){
       const up=await svc.from('incoming_orders').update({status,review_note:String(b.note||'')}).eq('id',o.id);if(up.error)throw up.error;
       await audit(svc,'Order '+status,o.code,user.id);return res.status(200).json({ok:true});
     }
-    if(action==='convert')return res.status(200).json(await convertOrder(b.id,svc,user));
+    if(action==='approve-order'){
+      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
+      if(!o||o.project_id||o.archived_at)fail('Order request is missing, archived, or already converted.');
+      let {data:client,error:ce}=await svc.from('clients').select('*').ilike('email',o.email).limit(1).maybeSingle();if(ce)throw ce;
+      if(!client){const created=await svc.from('clients').insert({id:randomUUID(),name:o.name,email:o.email,phone:o.phone||null}).select('*').single();if(created.error)throw created.error;client=created.data}
+      const {data:updated,error:ue}=await svc.from('incoming_orders').update({status:'Approved',approved_at:now(),client_id:client.id,review_note:String(b.note||o.review_note||'')}).eq('id',o.id).select('*').single();
+      if(ue)throw ue;await audit(svc,'Order approved for entry',o.code,user.id);
+      return res.status(200).json({order:safeOrder(updated),client});
+    }
+    if(action==='archive-order'){
+      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;if(!o)fail('Order not found.',404);
+      if(o.project_id)fail('Converted order requests cannot be deleted. Keep them as history.');
+      const stamp=now();const up=await svc.from('incoming_orders').update({status:'Archived',archived_at:stamp}).eq('id',o.id);if(up.error)throw up.error;
+      await audit(svc,'Order archived',o.code,user.id);return res.status(200).json({ok:true});
+    }
+    if(action==='link-order-project'){
+      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.order_id).maybeSingle();if(error)throw error;if(!o)fail('Order request not found.',404);
+      const {data:p,error:pe}=await svc.from('projects').select('id,client_id,project_code,source_order_id').eq('id',b.project_id).maybeSingle();if(pe)throw pe;if(!p)fail('Project not found.',404);
+      if(o.client_id&&String(o.client_id)!==String(p.client_id))fail('Order request and project client do not match.');
+      const proj=await svc.from('projects').update({source_order_id:o.id}).eq('id',p.id);if(proj.error)throw proj.error;
+      const updated=await svc.from('incoming_orders').update({status:'Project Created',project_id:p.id,client_id:p.client_id,converted_at:now()}).eq('id',o.id).select('*').single();if(updated.error)throw updated.error;
+      await audit(svc,'Order converted to project',o.code,user.id);return res.status(200).json({order:safeOrder(updated.data),project:p});
+    }
+    if(action==='convert')fail('Direct conversion is disabled. Approve the request, preload it into New Order, then create the project.',409);
     if(action==='review-payment'){
       const decision=String(b.decision||b.status||'');const reason=String(b.reason||b.note||'');
       const {data,error}=await svc.rpc('review_juan_payment_submission',{p_submission_id:b.id||b.submissionId,p_decision:decision,p_admin_user:user.id,p_reason:reason||null});
@@ -353,12 +431,43 @@ export default async function handler(req,res){
       await audit(svc,'Client classified '+b.value,String(b.id),user.id);return res.status(200).json({ok:true});
     }
     if(action==='save-ad'){
-      const a=b.ad||{};if(!String(a.title||'').trim())fail('Ad title required.');
-      for(const k of ['url','image'])if(a[k]&&!/^https?:\/\//i.test(a[k]))fail('Use an HTTP or HTTPS URL.');
-      const row={title:String(a.title).trim(),body:String(a.body||''),cta:String(a.cta||'Browse services'),url:a.url||null,image:a.image||null,audience:a.audience||'all',start_date:a.start||null,end_date:a.end||null,enabled:a.enabled!==false};
-      let q=a.id?svc.from('promotions').update(row).eq('id',a.id):svc.from('promotions').insert(row);const {error}=await q;if(error)throw error;return res.status(200).json({ok:true});
+      const a=b.ad||{},title=String(a.title||'').trim(),type=String(a.ad_type||a.type||'banner'),status=String(a.status||'draft');
+      if(!title)fail('Ad name is required.');
+      if(!['banner','popup'].includes(type))fail('Choose Banner or Popup.');
+      if(!['draft','scheduled','published','paused','expired','archived'].includes(status))fail('Invalid campaign status.');
+      const destinationType=String(a.destination_type||'no_action'),destinationValue=String(a.destination_value||'').trim();
+      if(!['no_action','shop','package','service','referral','loyalty','page','external_url'].includes(destinationType))fail('Invalid ad destination.');
+      if(destinationType==='external_url'&&!/^https:\/\//i.test(destinationValue))fail('External ad URLs must use HTTPS.');
+      if(['package','service','page'].includes(destinationType)&&!destinationValue)fail('Choose a valid destination before publishing.');
+      const startAt=a.start_at||null,endAt=a.no_expiration?null:(a.end_at||null),priority=Math.max(0,Math.min(1000,Math.trunc(Number(a.priority||0))));
+      if(startAt&&Number.isNaN(new Date(startAt).getTime()))fail('Invalid campaign start date.');
+      if(endAt&&Number.isNaN(new Date(endAt).getTime()))fail('Invalid campaign end date.');
+      if(startAt&&endAt&&new Date(endAt)<=new Date(startAt))fail('Campaign end must be after the start.');
+      if(status==='published'&&!String(a.image||'').trim())fail('Upload a promotional image before publishing.');
+      const row={
+        title,body:String(a.body||''),cta:String(a.cta||'Learn more'),url:destinationType==='external_url'?destinationValue:null,image:String(a.image||'').trim()||null,
+        audience:a.audience||'all',enabled:!['paused','archived','expired','draft'].includes(status),
+        ad_type:type,status,placement:String(a.placement||('popup'===type?'homepage_popup':'homepage_banner')),
+        destination_type:destinationType,destination_value:destinationValue||null,start_at:startAt,end_at:endAt,no_expiration:Boolean(a.no_expiration),
+        priority,image_alt:String(a.image_alt||title).slice(0,240),published_at:status==='published'?(a.published_at||now()):null,archived_at:status==='archived'?now():null
+      };
+      let q=a.id?svc.from('promotions').update(row).eq('id',a.id):svc.from('promotions').insert(row);
+      const {data,error}=await q.select('*').single();if(error)throw error;return res.status(200).json({ok:true,ad:data});
     }
-    if(action==='delete-ad'){const {error}=await svc.from('promotions').delete().eq('id',b.id);if(error)throw error;return res.status(200).json({ok:true})}
+    if(action==='ad-settings'){
+      const seconds=Math.max(3,Math.min(120,Math.trunc(Number(b.rotation_seconds||8))));
+      const {data,error}=await svc.from('ad_settings').upsert({id:1,rotation_seconds:seconds,transition:'fade',updated_at:now()},{onConflict:'id'}).select('*').single();
+      if(error)throw error;return res.status(200).json({ok:true,settings:data});
+    }
+    if(action==='archive-ad'){
+      const {error}=await svc.from('promotions').update({status:'archived',enabled:false,archived_at:now()}).eq('id',b.id);if(error)throw error;return res.status(200).json({ok:true});
+    }
+    if(action==='delete-ad'){
+      const {data:a,error:ae}=await svc.from('promotions').select('id,status').eq('id',b.id).maybeSingle();if(ae)throw ae;if(!a)fail('Ad not found.',404);
+      const {count,error:ce}=await svc.from('ad_events').select('id',{count:'exact',head:true}).eq('ad_id',a.id);if(ce)throw ce;
+      if(a.status!=='draft'||Number(count||0)>0)fail('Only unused draft ads can be permanently deleted. Archive this campaign instead.');
+      const {error}=await svc.from('promotions').delete().eq('id',a.id);if(error)throw error;return res.status(200).json({ok:true});
+    }
     if(action==='configure'){
       const cfg=b.config||{},rules=cfg.rules||{};rules.maribank='^\\d{6,12}$';
       const {error}=await svc.from('suite_config').upsert({id:1,online_url:cfg.online_url||null,workspace_url:cfg.workspace_url||null,rules},{onConflict:'id'});if(error)throw error;
