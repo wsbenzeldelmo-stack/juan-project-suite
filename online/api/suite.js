@@ -343,6 +343,17 @@ export default async function handler(req,res){
     const {user}=await requireAdmin(req);await enforceRateLimit(req,svc,'suite-admin-user',user.id,120,900);
 
     if(action==='dashboard')return res.status(200).json(await dashboard(svc));
+    if(action==='ad-dashboard'){
+      const [ads,settings,events]=await Promise.all([
+        svc.from('promotions').select('*').order('created_at',{ascending:false}),
+        svc.from('ad_settings').select('*').eq('id',1).maybeSingle(),
+        svc.from('ad_events').select('ad_id,event_type,created_at').order('created_at',{ascending:false}).limit(5000)
+      ]);
+      if(ads.error)throw ads.error;if(settings.error)throw settings.error;if(events.error)throw events.error;
+      const stats={};
+      (events.data||[]).forEach(e=>{const s=stats[e.ad_id]||(stats[e.ad_id]={impression:0,click:0,dismiss:0});if(e.event_type in s)s[e.event_type]++});
+      return res.status(200).json({ads:ads.data||[],settings:settings.data||{rotation_seconds:8,transition:'fade'},stats});
+    }
     if(action==='revise-order'){
       const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
       if(!o||o.project_id)fail('Order request is missing or already converted.');
