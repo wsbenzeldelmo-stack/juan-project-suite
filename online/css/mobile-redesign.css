@@ -776,3 +776,343 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   .app.route-account .membership-card{max-width:620px!important}
   .app.route-shop .jp-shop-footer{padding:5px 0 0!important}
 }
+
+/* Unified desktop shell + mobile title alignment · 2026-09-20 23:33 */
+
+/* Smooth reveal after the branded boot card hands control to the app. */
+.app{animation:jpOnlineReveal .24s ease-out both}
+@keyframes jpOnlineReveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.app{animation:none!important}}
+
+/* DESKTOP: one consistent soft-corner application shell. */
+@media(min-width:900px){
+  html,body,#root{
+    width:100%!important;
+    height:100%!important;
+    min-height:100%!important;
+    margin:0!important;
+    overflow:hidden!important;
+    background:#edf3f0!important;
+  }
+  #root{
+    box-sizing:border-box!important;
+    padding:20px!important;
+    display:grid!important;
+    place-items:center!important;
+  }
+  .app{
+    width:min(1220px,calc(100vw - 40px))!important;
+    max-width:1220px!important;
+    height:calc(100dvh - 40px)!important;
+    min-height:0!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:220px minmax(0,1fr)!important;
+    grid-template-rows:minmax(0,1fr)!important;
+    gap:16px!important;
+    overflow:visible!important;
+    background:transparent!important;
+  }
+  .app>.nav{
+    position:relative!important;
+    inset:auto!important;
+    width:220px!important;
+    height:100%!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    padding:20px 14px!important;
+    border:1px solid #e1e8e4!important;
+    border-radius:24px!important;
+    background:#fff!important;
+    box-shadow:0 16px 42px rgba(22,40,31,.065)!important;
+    overflow:hidden!important;
+  }
+  .app>.page{
+    position:relative!important;
+    width:100%!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    margin:0!important;
+    padding:28px!important;
+    border:1px solid #e1e8e4!important;
+    border-radius:24px!important;
+    background:#fff!important;
+    box-shadow:0 16px 42px rgba(22,40,31,.065)!important;
+    overflow:hidden!important;
+  }
+
+  /* Consistent interior gutters on every page shell. */
+  .app.route-home>.page,
+  .app.route-shop>.page,
+  .app.route-orders>.page,
+  .app.route-payment>.page,
+  .app.route-account>.page,
+  .app.route-project>.page,
+  .app.route-invoice>.page{
+    padding:28px!important;
+    border-radius:24px!important;
+  }
+
+  /* Guest Home: one unified page, not three disconnected panels. */
+  .app.guest-mode.route-home>.page{
+    display:block!important;
+    overflow:hidden!important;
+  }
+  .app.guest-mode.route-home .jp-guest-home-centered{
+    width:min(820px,100%)!important;
+    max-width:820px!important;
+    height:100%!important;
+    min-height:0!important;
+    margin:0 auto!important;
+    padding:0!important;
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:auto minmax(0,1fr) auto auto!important;
+    grid-template-areas:"head" "hero" "ad" "about"!important;
+    align-content:stretch!important;
+    gap:16px!important;
+    background:transparent!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+  }
+  .app.guest-mode.route-home .jp-guest-desktop-head{
+    grid-area:head!important;
+    display:block!important;
+    padding:0 0 12px!important;
+    border-bottom:1px solid #edf1ef!important;
+    text-align:left!important;
+  }
+  .app.guest-mode.route-home .jp-guest-desktop-head>span{
+    font-size:9px!important;
+    font-weight:850!important;
+    letter-spacing:.12em!important;
+    color:#7b8781!important;
+  }
+  .app.guest-mode.route-home .jp-guest-desktop-head h1{
+    margin:4px 0 2px!important;
+    font-size:26px!important;
+    color:#111916!important;
+  }
+  .app.guest-mode.route-home .jp-guest-desktop-head p{
+    margin:0!important;
+    font-size:11px!important;
+    color:#78837e!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero{
+    grid-area:hero!important;
+    width:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:22px 8% 18px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:center!important;
+    align-items:center!important;
+    text-align:center!important;
+    box-sizing:border-box!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero h1{
+    margin:7px 0 12px!important;
+    font-size:clamp(38px,4.1vw,58px)!important;
+    line-height:.98!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero p{
+    max-width:560px!important;
+    margin:0 auto!important;
+    font-size:13px!important;
+  }
+  .app.guest-mode.route-home .guest-actions{
+    width:min(520px,100%)!important;
+    margin:22px auto 0!important;
+    gap:9px!important;
+  }
+  .app.guest-mode.route-home #jpAdBannerAnchor{
+    grid-area:ad!important;
+    width:100%!important;
+    margin:0!important;
+    min-height:0!important;
+  }
+  .app.guest-mode.route-home .jp-house-banner,
+  .app.guest-mode.route-home #jpAdBannerAnchor img{
+    width:100%!important;
+    max-width:100%!important;
+    border-radius:18px!important;
+    overflow:hidden!important;
+  }
+  .app.guest-mode.route-home .jp-guest-about{
+    grid-area:about!important;
+    margin:0!important;
+    padding:12px 4px 0!important;
+    display:flex!important;
+    align-items:baseline!important;
+    justify-content:center!important;
+    flex-wrap:wrap!important;
+    gap:5px!important;
+    border-top:1px solid #edf1ef!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    text-align:center!important;
+  }
+
+  /* Shop is one clipped shell; only catalog content scrolls. */
+  .app.route-shop>.page{
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .app.route-shop .jp-shop-sticky{
+    position:relative!important;
+    top:auto!important;
+    flex:0 0 auto!important;
+    padding:0 0 12px!important;
+    margin:0!important;
+    background:#fff!important;
+    border-radius:0!important;
+  }
+  .app.route-shop .jp-shop-scroll{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    padding:0 2px 10px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    scrollbar-width:none!important;
+  }
+  .app.route-shop .jp-shop-scroll::-webkit-scrollbar{display:none!important}
+  .app.route-shop .jp-shop-footer{
+    flex:0 0 auto!important;
+    margin:0!important;
+    padding:8px 0 0!important;
+    background:#fff!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+  }
+  .app.route-shop .jp-mini-cart{
+    margin:0!important;
+    border-radius:16px!important;
+  }
+
+  /* Orders: no body scroll; only the list viewport can scroll. */
+  .app.route-orders>.page{
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .app.route-orders .screen-head,
+  .app.route-orders .order-tabs{flex:0 0 auto!important}
+  .app.route-orders .project-list{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    align-content:start!important;
+    padding:0 2px 4px!important;
+    scrollbar-width:none!important;
+  }
+  .app.route-orders .project-list::-webkit-scrollbar{display:none!important}
+
+  /* Payment and Account keep their page shell fixed and scroll internally. */
+  .app.route-payment>.page,
+  .app.route-account>.page,
+  .app.route-project>.page,
+  .app.route-invoice>.page{
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scrollbar-width:none!important;
+  }
+  .app.route-payment>.page::-webkit-scrollbar,
+  .app.route-account>.page::-webkit-scrollbar,
+  .app.route-project>.page::-webkit-scrollbar,
+  .app.route-invoice>.page::-webkit-scrollbar{display:none!important}
+
+  /* Bottom radii remain visible; inner modules never clip the page shell. */
+  .app>.page>:last-child{margin-bottom:0!important}
+}
+
+/* MOBILE: larger icon-led title aligned exactly with the content/search edge. */
+@media(max-width:899px){
+  .screen-head{
+    width:100%!important;
+    margin:0 0 18px!important;
+    padding:0!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:10px!important;
+    align-items:center!important;
+  }
+  .screen-head>.ghost-space{display:none!important}
+  .screen-head>.icon-button:not(.ghost-space)+.screen-title{
+    grid-column:2!important;
+  }
+  .screen-head>.icon-button:not(.ghost-space){
+    grid-column:1!important;
+  }
+  .screen-head .screen-title{
+    grid-column:1!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:12px!important;
+    margin:0!important;
+    text-align:left!important;
+  }
+  .screen-title-icon{
+    width:44px!important;
+    height:44px!important;
+    flex:0 0 44px!important;
+    border-radius:13px!important;
+    display:grid!important;
+    place-items:center!important;
+  }
+  .screen-title-icon svg{
+    width:26px!important;
+    height:26px!important;
+  }
+  .screen-head .screen-title>span:last-child{
+    font-size:28px!important;
+    line-height:1!important;
+    letter-spacing:-.04em!important;
+  }
+
+  /* Shop title/icon starts on the exact same left edge as search. */
+  .page.route-shop .jp-shop-sticky{
+    padding-left:0!important;
+    padding-right:0!important;
+  }
+  .page.route-shop .screen-head,
+  .page.route-shop .jp-shop-head,
+  .page.route-shop .jp-category-chips{
+    margin-left:0!important;
+    margin-right:0!important;
+  }
+
+  /* Prevent blank scroll tails on short pages. */
+  .app.route-shop,
+  .app.route-orders,
+  .app.route-payment,
+  .app.route-account{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .page.route-shop,
+  .page.route-orders,
+  .page.route-payment,
+  .page.route-account{
+    min-height:0!important;
+    box-sizing:border-box!important;
+  }
+}
+
+@media(max-width:430px){
+  .screen-title-icon{width:42px!important;height:42px!important;flex-basis:42px!important}
+  .screen-title-icon svg{width:25px!important;height:25px!important}
+  .screen-head .screen-title>span:last-child{font-size:27px!important}
+}
