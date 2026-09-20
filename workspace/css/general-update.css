@@ -16,3 +16,28 @@ body.jp-general-modal-open{overflow:hidden}
 .jp-ads-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:14px}.jp-ads-heading h2{margin:2px 0 3px;font-size:24px}.jp-ads-heading p{margin:0;color:var(--text-tertiary);font-size:11px}.jp-ads-heading>div:last-child{display:flex;gap:8px}.jp-ad-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.jp-ad-kpis .card{display:grid;gap:5px}.jp-ad-kpis span{font-size:10px;color:var(--text-tertiary)}.jp-ad-kpis strong{font-size:24px}.jp-ad-table{table-layout:fixed!important;min-width:1050px!important}.jp-ad-rules{display:flex;justify-content:space-between;gap:20px;align-items:center;background:#f0fbf6!important}.jp-ad-rules span{font-size:10px;color:var(--text-secondary)}.jp-ad-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.jp-check-row{display:flex!important;align-items:center!important;gap:8px!important;font-size:11px!important}.jp-check-row input{width:auto!important}
 @media(max-width:980px){.jp-order-preview-grid,.jp-inline-client-layout{grid-template-columns:1fr}.jp-ad-kpis{grid-template-columns:1fr 1fr}.jp-ad-editor-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.nav-item[data-view="new-order"]{background:transparent!important;color:inherit!important;margin:0!important}.nav-item[data-view="new-order"].active{background:var(--mint-light-bg)!important;color:var(--primary-mint-dark)!important}.jp-general-overlay{padding:0;align-items:end}.jp-general-modal{width:100%;max-height:94dvh;border-radius:20px 20px 0 0}}
+/* Sep 20 consistency pass */
+.jp-order-preview-modal{width:min(760px,calc(100vw - 32px))!important}
+.jp-order-preview-grid{display:block!important}
+.jp-order-client-card,.jp-order-preview-modal>.card{margin-bottom:12px}
+.jp-order-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.jp-order-preview-table{table-layout:fixed;width:100%;min-width:0!important}
+.jp-order-preview-table th:nth-child(1){width:auto}
+.jp-order-preview-table th:nth-child(2){width:70px}
+.jp-order-preview-table th:nth-child(3),.jp-order-preview-table th:nth-child(4){width:120px}
+.jp-order-preview-table th,.jp-order-preview-table td{overflow:hidden;text-overflow:ellipsis}
+.jp-confirm-overlay,.jp-prepare-overlay{position:fixed;inset:0;z-index:195000;display:grid;place-items:center;padding:20px;background:rgba(18,26,22,.46);backdrop-filter:blur(8px)}
+.jp-confirm-card{width:min(420px,calc(100vw - 32px));border:1px solid var(--border-subtle);border-radius:16px;background:#fff;padding:22px;box-shadow:0 24px 80px rgba(12,22,17,.22);text-align:center}
+.jp-confirm-icon{width:44px;height:44px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;background:#e8fbf1;color:#078c53;font-weight:900}
+.jp-confirm-icon.danger{background:#fff0ef;color:#d43b33}
+.jp-confirm-card h3{margin:0 0 6px;font-size:18px}.jp-confirm-card p{margin:0;color:var(--text-tertiary);font-size:11px;line-height:1.5}
+.jp-confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.jp-prepare-overlay{background:rgba(18,26,22,.28)}
+.jp-prepare-card{width:min(430px,calc(100vw - 32px));display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:center;padding:18px;border:1px solid var(--border-subtle);border-radius:16px;background:#fff;box-shadow:0 24px 80px rgba(12,22,17,.18)}
+.jp-prepare-mark{width:52px;height:52px;border-radius:50%;background:#e8fbf1;display:grid;place-items:center;color:#08a85f;font-size:24px;font-weight:900}
+.jp-prepare-mark span{width:22px;height:22px;border:3px solid #bdebd3;border-top-color:#08b966;border-radius:50%;animation:jpPrepareSpin .7s linear infinite}
+.jp-prepare-card h3{margin:2px 0 4px;font-size:16px}.jp-prepare-card p{margin:0;color:var(--text-tertiary);font-size:10px;line-height:1.45}
+.jp-prepare-card.done .jp-prepare-mark{background:#dff8e9}.jp-prepare-card.failed .jp-prepare-mark{background:#fff0ef;color:#d43b33}
+@keyframes jpPrepareSpin{to{transform:rotate(360deg)}}
+.jp-inline-form-footer{min-height:34px!important;justify-content:flex-start!important}
+#inlineClientSaveState{font-size:10px;color:var(--text-tertiary)}
