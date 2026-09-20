@@ -387,8 +387,9 @@ export default async function handler(req,res){
     if(action==='approve-order'){
       const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
       if(!o||o.project_id||o.archived_at)fail('Order request is missing, archived, or already converted.');
-      let {data:client,error:ce}=await svc.from('clients').select('*').ilike('email',o.email).limit(1).maybeSingle();if(ce)throw ce;
-      if(!client){const created=await svc.from('clients').insert({id:randomUUID(),name:o.name,email:o.email,phone:o.phone||null}).select('*').single();if(created.error)throw created.error;client=created.data}
+      const normalizedEmail=String(o.email||'').trim().toLowerCase();
+      let {data:client,error:ce}=await svc.from('clients').select('*').eq('email',normalizedEmail).limit(1).maybeSingle();if(ce)throw ce;
+      if(!client){const created=await svc.from('clients').insert({id:randomUUID(),name:o.name,email:normalizedEmail,phone:o.phone||null}).select('*').single();if(created.error)throw created.error;client=created.data}
       const {data:updated,error:ue}=await svc.from('incoming_orders').update({status:'Approved',approved_at:now(),client_id:client.id,review_note:String(b.note||o.review_note||'')}).eq('id',o.id).select('*').single();
       if(ue)throw ue;await audit(svc,'Order approved for entry',o.code,user.id);
       return res.status(200).json({order:safeOrder(updated),client});
