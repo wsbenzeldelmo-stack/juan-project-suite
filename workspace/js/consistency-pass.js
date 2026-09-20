@@ -126,7 +126,7 @@
     ];
     view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
       '<div class="jp-settings-layout"><aside id="jpSettingsSegments" class="jp-settings-navigation" role="tablist" aria-label="Settings sections">'+navItems.map(([id,label])=>'<button type="button" role="tab" class="jp-settings-nav-item '+(id==="danger"?"danger":"")+'" data-settings-tab="'+id+'" aria-controls="settings-'+id+'" aria-selected="false" tabindex="-1"><span class="jp-settings-nav-mark" aria-hidden="true"></span><span>'+esc(label)+'</span>'+(id==="database"&&!connected?'<small>Sign in</small>':'')+'</button>').join("")+'</aside><section class="jp-settings-content" aria-live="polite"><div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div></section></div>';
-    settingsBuilt=true;bindSettings();bindSettingsTabs();
+    settingsBuilt=true;bindSettingsTabs();try{bindSettings();}catch(e){console.error("Settings control binding failed:",e);toast("Some Settings controls could not be initialized.");}
   }
 
   function activateSettingsSegment(id,{focus=false}={}){

@@ -76,3 +76,15 @@ test("Online API supports the full eight-stage tracker", async () => {
   assert.match(api, /'Delivered'/);
   assert.match(api, /delivery_status=stage===7\?'Delivered':'Pending'/);
 });
+
+
+test("Settings tab activation uses collection selectors and initializes content first", async () => {
+  const js = await read("js/consistency-pass.js");
+  assert.match(js, /\$\$\("\\.jp-settings-nav-item"\)\.forEach/);
+  assert.match(js, /\$\$\("\\.jp-settings-segment"\)\.forEach/);
+  assert.match(js, /const tabs=\$\$\("\\.jp-settings-nav-item"\)/);
+  assert.match(js, /\$\$\("\[data-search-index\]",box\)\.forEach/);
+  assert.doesNotMatch(js, /\$\("\\.jp-settings-nav-item"\)\.forEach/);
+  assert.doesNotMatch(js, /\$\("\\.jp-settings-segment"\)\.forEach/);
+  assert.match(js, /settingsBuilt=true;bindSettingsTabs\(\);try\{bindSettings\(\);\}/);
+});
