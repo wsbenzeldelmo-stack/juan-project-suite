@@ -311,7 +311,7 @@ async function provisionOneClient(svc,client,snapshot,{refreshTemporary=false}={
 
 export default async function handler(req,res){
   try{
-    const {svc,user}=await requireAdmin(req);if(req.method==='POST')assertSafePost(req,131072);await enforceRateLimit(req,svc,req.method==='GET'?'admin-portal-read':'admin-portal-write',user.id,req.method==='GET'?60:80,900);
+    const {svc,user}=await requireAdmin(req);if(req.method==='POST')assertSafePost(req,131072);await enforceRateLimit(req,svc,req.method==='GET'?'admin-portal-read':'admin-portal-write',user.id,req.method==='GET'?240:180,900);
 
     if(req.method==='GET'){
       const masterSync=await synchronizeClientMaster(svc);
