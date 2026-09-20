@@ -1,3 +1,4 @@
+// JUAN PROJECT production release: 2026-09-20
 /* JUAN PROJECT Workspace — consistency & reliability pass */
 (function(){
   "use strict";
