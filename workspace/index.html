@@ -1568,6 +1568,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
   <link rel="stylesheet" href="/css/general-update.css">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css">
+  <link rel="stylesheet" href="/css/consistency-pass.css">
 </head>
 <body>
 
@@ -5922,7 +5923,7 @@ ${description}`))actionCallback();return;}
         const initials=String(c.name||c.email||'CL').replace(/[^a-zA-Z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,2).toUpperCase()||'CL';
         document.getElementById("clientProfileName").innerText="Client Profile";
         document.getElementById("clientProfileEmail").innerText="Client Directory";
-        document.getElementById("clientProfileEditBtn").onclick=()=>openEditClientModal(id);
+        const profileEditBtn=document.getElementById("clientProfileEditBtn");if(profileEditBtn)profileEditBtn.onclick=()=>openEditClientModal(id);
         const infoRows=[
           ['Client ID',formatClientId(c)],
           ['Full Name',c.name||'—'],
@@ -6440,7 +6441,7 @@ ${description}`))actionCallback();return;}
 
       function pricingVersionForProject(projectOrNo){const n=typeof projectOrNo==='number'?projectOrNo:projectNumber(projectOrNo);return Number(n)>=54?'v2':'legacy';}
       function countDeliverablesFromItems(items=[]){return (items||[]).reduce((total,item)=>{const qty=Math.max(1,Math.round(Number(item?.qty||1))),isPackage=String(item?.type||'').toUpperCase()==='PACKAGE'||String(item?.product_code||'').toUpperCase().startsWith('PKG-');if(!isPackage)return total+qty;const pkg=(state.packagesList||[]).find(p=>String(p.product_code||'')===String(item.product_code||'')||String(p.name||'').trim().toLowerCase()===String(item.name||'').trim().toLowerCase());const count=Math.max(1,(pkg?.includedServiceNames||item?.includedItems||[]).length);return total+(count*qty);},0);}
-      function pricingStandardDays(items=[],projectNo=null){if(Number(projectNo)>=54)return projectHasPackageItems(items)?14:10;return 14;}
+      function pricingStandardDays(items=[],projectNo=null){return 14;}
       function pricingRushRate(items=[],projectNo=null){if(Number(projectNo)<54)return 500;const count=countDeliverablesFromItems(items);return count<=3?500:count<=8?800:1200;}
       function calculateRushForProject(projectOrItems,startValue,deadlineValue,projectNo=null){const items=Array.isArray(projectOrItems)?projectOrItems:(projectOrItems?.project_items||[]),no=projectNo??(Array.isArray(projectOrItems)?null:projectNumber(projectOrItems));const start=parseDateSafe(startValue),due=parseDateSafe(deadlineValue);const standard=pricingStandardDays(items,no);if(!start||!due)return {duration:null,daysEarly:0,fee:0,standard,deliverableCount:countDeliverablesFromItems(items),rate:pricingRushRate(items,no)};const duration=Math.max(0,Math.round((due-start)/86400000)),daysEarly=Math.max(0,standard-duration),rate=pricingRushRate(items,no),fee=daysEarly>0?Math.ceil(daysEarly/4)*rate:0;return {duration,daysEarly,fee,standard,deliverableCount:countDeliverablesFromItems(items),rate};}
       function nextProjectNumber(){const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite);return used.length?Math.max(...used)+1:1;}
@@ -10164,7 +10165,9 @@ ${description}`))actionCallback();return;}
 <script>window.JUAN_SUITE_APP='workspace';</script>
 <script src="/js/jsQR.js"></script>
 <script type="module" src="/js/suite-prod.js"></script>
-<script type="module" src="/js/workspace-redesign.js"></script>\n<script type="module" src="/js/general-update.js"></script>\n<script type="module" src="/js/keyboard-shortcuts.js"></script>
+<script type="module" src="/js/workspace-redesign.js"></script>
+<script type="module" src="/js/general-update.js"></script>
+<script type="module" src="/js/keyboard-shortcuts.js"></script>
 </body>
 </html>
 <style id="v111-maintenance-patch">
