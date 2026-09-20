@@ -16,6 +16,7 @@ let state={
   shopQuery:'',shopSort:'default',paymentFlow:'',
   notificationOpen:false,senderInstitution:'',guestGateContext:'default',receiptPreviewUrl:'',receiptPreviewType:'',receiptPreviewName:'',clientMessage:null
 };
+window.JPOAppState=state;
 
 let portalRealtimeChannel=null;
 let portalRealtimeRefreshTimer=null;
