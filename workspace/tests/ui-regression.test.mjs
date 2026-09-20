@@ -80,11 +80,11 @@ test("Online API supports the full eight-stage tracker", async () => {
 
 test("Settings tab activation uses collection selectors and initializes content first", async () => {
   const js = await read("js/consistency-pass.js");
-  assert.match(js, /\$\$\("\\.jp-settings-nav-item"\)\.forEach/);
-  assert.match(js, /\$\$\("\\.jp-settings-segment"\)\.forEach/);
-  assert.match(js, /const tabs=\$\$\("\\.jp-settings-nav-item"\)/);
-  assert.match(js, /\$\$\("\[data-search-index\]",box\)\.forEach/);
-  assert.doesNotMatch(js, /\$\("\\.jp-settings-nav-item"\)\.forEach/);
-  assert.doesNotMatch(js, /\$\("\\.jp-settings-segment"\)\.forEach/);
-  assert.match(js, /settingsBuilt=true;bindSettingsTabs\(\);try\{bindSettings\(\);\}/);
+  assert.ok(js.includes('$$(".jp-settings-nav-item").forEach'));
+  assert.ok(js.includes('$$(".jp-settings-segment").forEach'));
+  assert.ok(js.includes('const tabs=$$(".jp-settings-nav-item")'));
+  assert.ok(js.includes('$$("[data-search-index]",box).forEach'));
+  assert.ok(!js.includes('$(".jp-settings-nav-item").forEach'));
+  assert.ok(!js.includes('$(".jp-settings-segment").forEach'));
+  assert.ok(js.includes('settingsBuilt=true;bindSettingsTabs();try{bindSettings();}'));
 });

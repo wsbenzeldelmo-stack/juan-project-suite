@@ -132,19 +132,19 @@
   function activateSettingsSegment(id,{focus=false}={}){
     const segment=SETTINGS_SEGMENTS.includes(id)?id:"profile";
     localStorage.setItem(SETTINGS_TAB_KEY,segment);
-    $(".jp-settings-nav-item").forEach(btn=>{
+    $$(".jp-settings-nav-item").forEach(btn=>{
       const active=btn.dataset.settingsTab===segment;
       btn.classList.toggle("active",active);btn.setAttribute("aria-selected",active?"true":"false");btn.tabIndex=active?0:-1;
       if(active&&focus)btn.focus();
     });
-    $(".jp-settings-segment").forEach(panel=>{
+    $$(".jp-settings-segment").forEach(panel=>{
       const active=panel.dataset.segment===segment;
       panel.classList.toggle("active",active);panel.hidden=!active;panel.setAttribute("role","tabpanel");panel.setAttribute("aria-hidden",active?"false":"true");
     });
     const content=$(".jp-settings-content");if(content)content.scrollTop=0;
   }
   function bindSettingsTabs(){
-    const tabs=$(".jp-settings-nav-item");if(!tabs.length)return;
+    const tabs=$$(".jp-settings-nav-item");if(!tabs.length)return;
     activateSettingsSegment(localStorage.getItem(SETTINGS_TAB_KEY)||"profile");
     tabs.forEach((btn,index)=>{
       btn.addEventListener("click",()=>activateSettingsSegment(btn.dataset.settingsTab));
@@ -272,7 +272,7 @@
       const hits=entries.filter(x=>x.text.toLowerCase().includes(q)).slice(0,10);
       box.innerHTML=hits.length?hits.map((x,i)=>'<button data-search-index="'+i+'"><span>'+esc(x.text)+'</span><small>'+esc(x.segment[0].toUpperCase()+x.segment.slice(1))+'</small></button>').join(""):'<div class="jp-settings-no-results">No settings found</div>';
       box.classList.add("open");
-      $("[data-search-index]",box).forEach(b=>b.onclick=()=>{const hit=hits[Number(b.dataset.searchIndex)];box.classList.remove("open");activateSettingsSegment(hit.segment);requestAnimationFrame(()=>{hit.el.classList.add("jp-settings-search-hit");hit.el.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>hit.el.classList.remove("jp-settings-search-hit"),2200);});});
+      $$("[data-search-index]",box).forEach(b=>b.onclick=()=>{const hit=hits[Number(b.dataset.searchIndex)];box.classList.remove("open");activateSettingsSegment(hit.segment);requestAnimationFrame(()=>{hit.el.classList.add("jp-settings-search-hit");hit.el.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>hit.el.classList.remove("jp-settings-search-hit"),2200);});});
     });
   }
   function previewFile(file){
