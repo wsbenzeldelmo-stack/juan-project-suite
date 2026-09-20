@@ -22,7 +22,14 @@
   }
   function close(){if(layer)layer.remove();layer=null;document.body.classList.remove("jp-flow-open");}
   function shell(content,back,mode){
-    close();layer=document.createElement("div");layer.className="jp-flow-layer jp-flow-"+String(mode||"default");layer.innerHTML='<div class="jp-flow-phone"><header class="jp-flow-header">'+(back?'<button id="jpFlowBack" aria-label="Back">←</button>':'<span></span>')+'<div class="jp-flow-brand"><b>JUAN PROJECT</b><small>Online</small></div><button id="jpFlowClose" aria-label="Close">×</button></header><main class="jp-flow-main">'+content+"</main></div>";document.body.appendChild(layer);document.body.classList.add("jp-flow-open");document.getElementById("jpFlowClose").onclick=close;return layer;
+    close();
+    var flowMode=String(mode||"default");
+    var backIcon='<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+    var closeIcon='<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+    var adArea='<aside class="jp-flow-ad-area" data-jp-ad-anchor data-flow-mode="'+flowMode+'" aria-label="JUAN PROJECT in-house promotion"></aside>';
+    layer=document.createElement("div");layer.className="jp-flow-layer jp-flow-"+flowMode;
+    layer.innerHTML='<div class="jp-flow-phone"><header class="jp-flow-header">'+(back?'<button id="jpFlowBack" aria-label="Back">'+backIcon+'</button>':'<span></span>')+'<div class="jp-flow-brand"><b>JUAN PROJECT</b><small>Online</small></div><button id="jpFlowClose" class="jp-flow-close" aria-label="Close">'+closeIcon+'</button></header><main class="jp-flow-main"><div class="jp-flow-content">'+content+'</div>'+adArea+'</main></div>';
+    document.body.appendChild(layer);document.body.classList.add("jp-flow-open");document.getElementById("jpFlowClose").onclick=close;window.dispatchEvent(new Event("juan-online-render"));return layer;
   }
   function thumb(){return "";}
   function openCart(){
@@ -76,7 +83,7 @@
   }
   function delay(ms){return new Promise(function(r){setTimeout(r,ms);});}
   function processing(){
-    var html='<div class="jp-processing-screen"><div class="jp-processing-logo">➤</div><h1>Submitting<br>your request...</h1><p>Please wait a moment while we process your order.</p><div class="jp-process-list"><div class="done">✓ <span>Validating your information</span></div><div class="done">✓ <span>Creating your Order Request</span></div><div class="active"><i></i><span>Generating receipt</span></div><div><i></i><span>Finalizing</span></div></div></div>';
+    var html='<div class="jp-processing-screen"><div class="jp-cute-loader jp-cute-loader-order" aria-hidden="true"><span></span><span></span><span></span><i></i></div><h1>Submitting<br>your request...</h1><p>Please wait a moment while we process your order.</p><div class="jp-process-list"><div class="done">✓ <span>Validating your information</span></div><div class="done">✓ <span>Creating your Order Request</span></div><div class="active"><i></i><span>Generating receipt</span></div><div><i></i><span>Finalizing</span></div></div></div>';
     shell(html,false,"processing");
   }
   function trackingLink(token){return location.origin+location.pathname+"#track="+encodeURIComponent(token);}
