@@ -293,3 +293,275 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   .app{height:calc(100dvh - 24px)!important;min-height:0!important}
   .app>.page{padding-top:22px!important;padding-bottom:22px!important}
 }
+
+/* Desktop soft-corner surface system · 2026-09-20 */
+@media(min-width:900px){
+  :root{
+    --jp-desktop-shell-radius:26px;
+    --jp-desktop-panel-radius:22px;
+    --jp-desktop-card-radius:18px;
+    --jp-desktop-control-radius:12px;
+    --jp-desktop-border:#e4e9e6;
+    --jp-desktop-bg:#eef3f1;
+    --jp-desktop-surface:#ffffff;
+    --jp-desktop-soft:#f7f9f8;
+    --jp-desktop-shadow:0 18px 48px rgba(26,43,35,.07);
+    --jp-desktop-card-shadow:0 5px 18px rgba(26,43,35,.035);
+  }
+
+  html,body,#root{background:var(--jp-desktop-bg)!important}
+  #root{padding:22px!important}
+
+  .app{
+    width:min(1200px,calc(100vw - 44px))!important;
+    max-width:1200px!important;
+    height:min(870px,calc(100dvh - 44px))!important;
+    min-height:620px!important;
+    grid-template-columns:232px minmax(0,1fr)!important;
+    gap:14px!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    background:transparent!important;
+    overflow:visible!important;
+  }
+
+  .app>.nav{
+    width:232px!important;
+    max-width:232px!important;
+    height:100%!important;
+    padding:20px 13px!important;
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-shell-radius)!important;
+    background:rgba(255,255,255,.94)!important;
+    box-shadow:var(--jp-desktop-shadow)!important;
+    overflow:hidden!important;
+  }
+
+  .jp-desktop-nav-brand{
+    margin:0 3px 14px!important;
+    padding:4px 9px 20px!important;
+    border-bottom:1px solid var(--jp-desktop-border)!important;
+  }
+
+  .app>.nav .jp-nav-links{gap:5px!important}
+  .app>.nav button{
+    min-height:44px!important;
+    padding:0 12px!important;
+    border-radius:13px!important;
+  }
+  .app>.nav button.active{
+    background:#e8faf1!important;
+    box-shadow:inset 0 0 0 1px rgba(8,185,102,.08)!important;
+  }
+  .app>.nav button.active:before{
+    left:4px!important;
+    top:10px!important;
+    bottom:10px!important;
+    border-radius:999px!important;
+  }
+
+  .app>.page{
+    width:100%!important;
+    height:100%!important;
+    padding:26px 28px!important;
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-shell-radius)!important;
+    background:var(--jp-desktop-soft)!important;
+    box-shadow:var(--jp-desktop-shadow)!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scrollbar-width:thin!important;
+    scrollbar-color:#d8dfdb transparent!important;
+  }
+  .app>.page::-webkit-scrollbar{width:7px!important}
+  .app>.page::-webkit-scrollbar-thumb{background:#d8dfdb!important;border-radius:999px!important}
+  .app>.page::-webkit-scrollbar-track{background:transparent!important}
+
+  /* Top-level content surfaces */
+  .app>.page .card,
+  .app>.page .jp-quick-actions>button,
+  .app>.page .tabs,
+  .app>.page .settings-list,
+  .app>.page .account-status-card,
+  .app>.page .membership-card,
+  .app>.page .jp-client-membership-card,
+  .app>.page .active-project,
+  .app>.page .activity-card,
+  .app>.page .project-list-card,
+  .app>.page .payment-card,
+  .app>.page .invoice-card,
+  .app>.page .jp-track-summary,
+  .app>.page .jp-track-timeline,
+  .app>.page .jp-next-step,
+  .app>.page .jp-guest-about,
+  .app>.page .jp-house-banner,
+  .app>.page .jp-mini-cart{
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-card-radius)!important;
+    background:var(--jp-desktop-surface)!important;
+    box-shadow:var(--jp-desktop-card-shadow)!important;
+  }
+
+  .app>.page .btn,
+  .app>.page .input,
+  .app>.page input,
+  .app>.page select,
+  .app>.page textarea,
+  .app>.page .icon-button,
+  .app>.page .text-button,
+  .app>.page .password-eye,
+  .app>.page .filter-pill,
+  .app>.page .tabs button{
+    border-radius:var(--jp-desktop-control-radius)!important;
+  }
+
+  .app>.page .section-head{margin:16px 2px 8px!important}
+  .app>.page .page-head,
+  .app>.page .dashboard-head{margin-bottom:14px!important}
+
+  /* Home */
+  .app.route-home>.page{
+    padding:24px 26px!important;
+    overflow:hidden!important;
+  }
+  .app.client-mode.route-home>.page{
+    display:grid!important;
+    align-content:start!important;
+    gap:0!important;
+  }
+  .app.client-mode.route-home .jp-quick-actions{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  .app.client-mode.route-home .jp-quick-actions>button{
+    min-height:92px!important;
+    padding:14px!important;
+  }
+  .app.client-mode.route-home .active-project{padding:17px 18px!important}
+  .app.client-mode.route-home .activity-card{overflow:hidden!important}
+  .app.client-mode.route-home .jp-home-ad-inline{border-radius:var(--jp-desktop-card-radius)!important;overflow:hidden!important}
+
+  /* Guest Home */
+  .app.guest-mode.route-home .jp-guest-home-centered{
+    width:min(760px,100%)!important;
+    max-width:760px!important;
+    height:auto!important;
+    min-height:100%!important;
+    padding:26px 30px!important;
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-panel-radius)!important;
+    background:var(--jp-desktop-surface)!important;
+    box-shadow:var(--jp-desktop-card-shadow)!important;
+    align-content:center!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero{width:min(540px,100%)!important}
+  .app.guest-mode.route-home .guest-actions{width:min(480px,100%)!important}
+  .app.guest-mode.route-home #jpAdBannerAnchor{width:min(700px,100%)!important}
+  .app.guest-mode.route-home .jp-guest-about{
+    width:min(650px,100%)!important;
+    padding:11px 14px!important;
+  }
+  .jp-home-only-footer{border-radius:14px!important}
+
+  /* Orders / projects */
+  .app.route-orders .project-list,
+  .app.route-project .project-detail,
+  .app.route-invoice .invoice-view{
+    display:grid!important;
+    gap:10px!important;
+  }
+  .app.route-orders .tabs{
+    padding:5px!important;
+    margin-bottom:12px!important;
+  }
+  .app.route-orders .project-list-card{padding:15px 17px!important}
+  .app.route-project .card{padding:16px 18px!important}
+
+  /* Payments */
+  .app.route-payment .card,
+  .app.route-payment .payment-card{padding:16px 18px!important}
+  .app.route-payment .payment-list{display:grid!important;gap:10px!important}
+
+  /* Shop */
+  .app.route-shop>.page{
+    height:100%!important;
+    padding:18px!important;
+    gap:12px!important;
+  }
+  .app.route-shop .jp-shop-sticky{
+    flex:0 0 auto!important;
+    padding:16px!important;
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-panel-radius)!important;
+    background:var(--jp-desktop-surface)!important;
+    box-shadow:var(--jp-desktop-card-shadow)!important;
+  }
+  .app.route-shop .jp-shop-scroll{
+    padding:0 2px 8px!important;
+  }
+  .app.route-shop .jp-shop-scroll>.card,
+  .app.route-shop .jp-shop-card{
+    border-radius:var(--jp-desktop-card-radius)!important;
+  }
+  .app.route-shop .jp-shop-footer{
+    margin:0!important;
+    padding:10px!important;
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-panel-radius)!important;
+    background:var(--jp-desktop-surface)!important;
+    box-shadow:var(--jp-desktop-card-shadow)!important;
+  }
+  .app.route-shop .jp-mini-cart{margin:0!important}
+
+  /* Account */
+  .app.route-account>.page{padding:24px 28px!important}
+  .app.route-account .membership-card,
+  .app.route-account .jp-client-membership-card{
+    border-radius:22px!important;
+    overflow:hidden!important;
+  }
+  .app.route-account .settings-group{margin-top:14px!important}
+  .app.route-account .settings-list{overflow:hidden!important}
+  .app.route-account .settings-row{padding:14px 16px!important}
+  .app.route-account .account-status-card{padding:14px 16px!important}
+
+  /* Tracking / modals / overlays */
+  .jp-popup-ad,
+  .payment-reminder-modal,
+  .jp-mobile-flow,
+  .suite-panel,
+  .jp-general-modal{
+    border-radius:22px!important;
+    box-shadow:0 24px 70px rgba(19,33,26,.16)!important;
+  }
+  .client-message-overlay,
+  .jp-popup-ad-overlay,
+  .overlay{backdrop-filter:blur(8px)!important}
+
+  /* Preserve the thermal receipt as paper, not a rounded app card. */
+  .jp-thermal-receipt{
+    border-radius:0!important;
+    box-shadow:0 10px 28px rgba(20,30,25,.10)!important;
+  }
+
+  /* Prevent nested cards from feeling too heavy. */
+  .app>.page .card .card,
+  .app>.page .settings-list .settings-row,
+  .app>.page .activity-card .activity-row{
+    box-shadow:none!important;
+  }
+}
+
+@media(min-width:900px) and (max-height:720px){
+  #root{padding:14px!important}
+  .app{
+    width:min(1200px,calc(100vw - 28px))!important;
+    height:calc(100dvh - 28px)!important;
+    min-height:0!important;
+  }
+  .app>.page{padding:20px 22px!important}
+  .app.route-shop>.page{padding:14px!important}
+}
