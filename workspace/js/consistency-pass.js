@@ -280,6 +280,20 @@
     const p=await db.from("projects").delete().in("id",ids);if(p.error)throw p.error;toast(ids.length+" imported historical projects deleted.");await window.app.refreshSharedTest();
   }
 
+  async function saveProjectFilesSilent(projectId){
+    const st=window.app.getWorkspaceState(),proj=(st.projects||[]).find(p=>String(p.id)===String(projectId)),db=window.app.getDatabaseClient();if(!proj||!db)return;
+    const url=$("#projectFilesDriveUrl")?.value.trim()||"",unlock=$("#projectFilesUnlockAt")?.value||"",expires=$("#projectFilesExpiresAt")?.value||"";
+    if(url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(url))return;
+    const unlockIso=unlock?new Date(unlock).toISOString():null,expiresIso=expires?new Date(expires).toISOString():null;
+    if(unlockIso&&expiresIso&&new Date(expiresIso)<=new Date(unlockIso))return;
+    const updated_at=new Date().toISOString();
+    const r=await db.from("projects").update({drive_url:url||null,drive_unlock_at:unlockIso,drive_expires_at:expiresIso,updated_at}).eq("id",proj.id).select("id").single();
+    if(r.error)throw r.error;proj.drive_url=url||null;proj.drive_unlock_at=unlockIso;proj.drive_expires_at=expiresIso;proj.updated_at=updated_at;
+  }
+  async function saveProjectNotesSilent(projectId){
+    const st=window.app.getWorkspaceState(),proj=(st.projects||[]).find(p=>String(p.id)===String(projectId)),db=window.app.getDatabaseClient(),field=$("#projectNotesTextarea");if(!proj||!db||!field)return;
+    const notes=field.value.trim(),updated_at=new Date().toISOString();const r=await db.from("projects").update({notes,updated_at}).eq("id",proj.id).select("id").single();if(r.error)throw r.error;proj.notes=notes;proj.updated_at=updated_at;
+  }
   function bindProjectDrafts(){
     document.addEventListener("input",e=>{
       const el=e.target;if(!(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement||el instanceof HTMLSelectElement)||!el.id)return;
@@ -289,7 +303,11 @@
       if(view.id==="view-project-details"&&st?.activeProjectId)scope+=":"+st.activeProjectId;
       if(view.id==="view-client-profile"&&st?.activeClientId)scope+=":"+st.activeClientId;
       const drafts=readDrafts();drafts[scope]??={};drafts[scope][el.id]={value:el.type==="checkbox"?el.checked:el.value,at:Date.now()};localStorage.setItem(FORM_DRAFT_KEY,JSON.stringify(drafts));
-      if(view.id==="view-project-details"&&el.id.startsWith("projectData"))debounce("project:"+st.activeProjectId,()=>window.app.saveProjectData({silent:true}),700);
+      if(view.id==="view-project-details"&&st?.activeProjectId){
+        if(el.id.startsWith("projectData"))debounce("project:"+st.activeProjectId,()=>window.app.saveProjectData({silent:true}),700);
+        if(["projectFilesDriveUrl","projectFilesUnlockAt","projectFilesExpiresAt"].includes(el.id))debounce("files:"+st.activeProjectId,()=>saveProjectFilesSilent(st.activeProjectId),800);
+        if(el.id==="projectNotesTextarea")debounce("notes:"+st.activeProjectId,()=>saveProjectNotesSilent(st.activeProjectId),800);
+      }
     },true);
     window.addEventListener("focus",restoreActiveDrafts);
     document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")restoreActiveDrafts();});
@@ -331,7 +349,7 @@
     document.addEventListener("keydown",e=>{
       const mod=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?e.metaKey:e.ctrlKey;
       if(mod&&e.key.toLowerCase()==="s"){
-        const active=$(".view.active");if(active?.id==="view-project-details"){e.preventDefault();window.app.saveProjectData({silent:false});}
+        const active=$(".view.active");if(active?.id==="view-project-details"){e.preventDefault();const st=window.app.getWorkspaceState();Promise.allSettled([window.app.saveProjectData({silent:false}),saveProjectFilesSilent(st.activeProjectId),saveProjectNotesSilent(st.activeProjectId)]);}
       }
     },true);
     new MutationObserver(()=>{cleanRootText();portalPolish();overviewPolish();}).observe(document.body,{childList:true,subtree:true});
