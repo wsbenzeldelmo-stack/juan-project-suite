@@ -5,7 +5,7 @@
     projects:'<path d="M3 7h7l2 2h9v10H3z"/><path d="M3 7V5h7l2 2"/>',
     clients:'<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M18 8a3 3 0 0 1 0 6M22 21v-2a4 4 0 0 0-3-3.7"/>',
     'new-order':'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
-    'workspaceOrdersNav':'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    'orders':'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
     payments:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/>',
     reports:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
     calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
@@ -36,7 +36,7 @@
     qa('.nav-item',menu).forEach(el=>{const key=el.dataset.view||el.id;if(key)items[key]=el});
     menu.innerHTML='';
     const append=(label,views)=>{menu.append(makeLabel(label));views.forEach(v=>{const el=items[v];if(el)menu.append(el)})};
-    append(labels.work,['my-works','projects','clients','new-order','workspaceOrdersNav']);
+    append(labels.work,['my-works','projects','clients','new-order','orders']);
     if(items['new-order'])items['new-order'].classList.remove('workspace-primary-action');
     append(labels.finance,['payments','reports']);
     append(labels.operations,['calendar','pricelist','online-portal']);
