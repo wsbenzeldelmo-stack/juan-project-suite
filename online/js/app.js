@@ -12,7 +12,7 @@ const REMEMBERED_CLIENT_KEY='JUAN_REMEMBERED_CLIENT';
 let state={
   route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
   catalog:{categories:[],services:[],packages:[],packageItems:[]},catalogLoaded:false,
-  gateOpen:false,onboardingStep:0,orderFilter:'active',shopItem:null,paymentProjectId:null,
+  gateOpen:false,onboardingStep:0,orderFilter:'requests',shopItem:null,paymentProjectId:null,
   shopQuery:'',shopSort:'default',paymentFlow:'',
   notificationOpen:false,senderInstitution:'',guestGateContext:'default',receiptPreviewUrl:'',receiptPreviewType:'',receiptPreviewName:'',clientMessage:null
 };
@@ -135,13 +135,17 @@ const icons={
 };
 const icon=(name,size=20)=>`<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||''}</svg>`;
 
-const nav=()=>`<nav class="nav" aria-label="Primary navigation">
-  <button data-r="home" class="${state.route==='home'?'active':''}">${icon('home')}<span>Home</span></button>
-  <button data-r="orders" class="${['orders','project','invoice'].includes(state.route)?'active':''}">${icon('orders')}<span>Orders</span></button>
-  <button data-r="payment" class="${state.route==='payment'?'active':''}">${icon('payment')}<span>Payment</span></button>
-  <button data-r="shop" class="${state.route==='shop'?'active':''}">${icon('shop')}<span>Shop</span></button>
-  <button data-r="account" class="${state.route==='account'?'active':''}">${icon('account')}<span>Account</span></button>
-</nav>`;
+const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation">'+
+  '<button data-r="home" class="'+(state.route==='home'?'active':'')+'">'+icon('home')+'<span>Home</span></button>'+
+  '<button data-r="orders" class="'+(['orders','project','invoice'].includes(state.route)?'active':'')+'">'+icon('orders')+'<span>Orders</span></button>'+
+  '<button data-r="payment" class="'+(state.route==='payment'?'active':'')+'">'+icon('payment')+'<span>Payment</span></button>'+
+  '<button data-r="shop" class="'+(state.route==='shop'?'active':'')+'">'+icon('shop')+'<span>Shop</span></button>'+
+  '<button data-r="account" class="'+(state.route==='account'?'active':'')+'">'+icon('account')+'<span>Account</span></button></nav>'
+  :'<nav class="nav guest-nav" aria-label="Guest navigation">'+
+  '<button data-r="home" class="'+(state.route==='home'?'active':'')+'">'+icon('home')+'<span>Home</span></button>'+
+  '<button data-r="shop" class="'+(state.route==='shop'?'active':'')+'">'+icon('shop')+'<span>Shop</span></button>'+
+  '<button data-guest-action="track">'+icon('search')+'<span>Track</span></button>'+
+  '<button data-guest-action="login">'+icon('account')+'<span>Login</span></button></nav>';
 
 function welcomeScreen(){
   root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome"><div class="welcome-hero">${brand()}<div class="welcome-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Shop JUAN PROJECT services, submit an order request, and track it before it becomes an official project.</p></div></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeLogIn" class="btn full">Already a Client? Log In</button><button id="welcomeTrack" class="text-button full">Track an Order Request</button></div><div class="welcome-note">${icon('receipt',18)}<span>Shopping does not create a Project ID. Your request becomes a project only after JUAN PROJECT reviews and approves it.</span></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
@@ -274,7 +278,7 @@ function notificationOverlay(){
   return `<div class="overlay" id="notificationOverlay"><div class="sheet notification-sheet"><button id="notificationX" class="icon-button sheet-x" aria-label="Close">×</button><div class="sheet-header-left"><span class="eyebrow">ACTIVITY</span><h2 class="sheet-title">Notifications</h2><p>Project and payment updates from JUAN PROJECT.</p></div><div class="notification-list">${rows.map(x=>`<div class="notification-row"><span>${icon(x.icon,16)}</span><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No notifications yet.</div>'}</div></div></div>`;
 }
 
-function shopOverlay(){if(!state.shopItem)return'';const x=state.shopItem,price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0;return `<div class="overlay" id="shopOverlay"><div class="sheet shop-detail-sheet"><button id="shopX" class="icon-button sheet-x" aria-label="Close">×</button><div class="shop-kind">${esc(x.product_code||'')} · ${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</div><h2 class="sheet-title">${esc(x.name)}</h2><div class="detail-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div><p class="detail-copy">${esc(x.description||'JUAN PROJECT creative service.')}</p><div class="service-detail-meta"><div><span>Turnaround</span><b>Standard timeline applies</b></div><div><span>Ordering</span><b>Order request available</b></div></div><button id="detailStartProject" class="btn primary full">Add to Order Request</button>${!isLoggedIn()?`<button id="detailLogIn" class="btn full">Already a Client? Log In</button>`:''}<button id="detailClose" class="btn full">Close</button></div></div>`}
+function shopOverlay(){if(!state.shopItem)return'';const x=state.shopItem,price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0;return `<div class="overlay" id="shopOverlay"><div class="sheet shop-detail-sheet"><button id="shopX" class="icon-button sheet-x" aria-label="Close">×</button><div class="shop-kind">${esc(x.product_code||'')} · ${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</div><h2 class="sheet-title">${esc(x.name)}</h2><div class="detail-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div><p class="detail-copy">${esc(x.description||'JUAN PROJECT creative service.')}</p><div class="service-detail-meta"><div><span>Turnaround</span><b>Standard timeline applies</b></div><div><span>Ordering</span><b>Order request available</b></div></div><button id="detailStartProject" class="btn primary full">Add to Cart</button>${!isLoggedIn()?`<button id="detailLogIn" class="btn full">Already a Client? Log In</button>`:''}<button id="detailClose" class="btn full">Close</button></div></div>`}
 
 function pageHead(title,{back=false,more=false}={}){return `<div class="screen-head"><button id="screenBack" class="icon-button ${back?'':'ghost-space'}" ${back?'':'disabled'} aria-label="Back">${back?icon('back'):''}</button><h1>${esc(title)}</h1><button class="icon-button ${more?'':'ghost-space'}" aria-label="More">${more?icon('more'):''}</button></div>`}
 function projectStats(p){const ds=(p?.deliverables||[]).flatMap(d=>d.children?.length?d.children:[d]),done=ds.filter(d=>d.completed||String(d.status||'').toLowerCase()==='completed').length,total=ds.length||Math.max(1,p?.items?.length||0),pct=total?Math.round(done/total*100):0;return{done,total,pct}}
@@ -307,36 +311,32 @@ function activityFeed(){
 
 function home(){
   if(!isLoggedIn()){
-    return `<div class="guest-home">
-      <div class="guest-brand">${brand()}</div>
-      <div class="guest-copy"><span class="eyebrow">WELCOME TO JUAN PROJECT ONLINE</span><h1>Shop now.<br><strong>We’ll review the request.</strong></h1><p>Browse services, build your cart, and submit an Order Request without creating an account. Existing clients can log in to manage active projects and payments.</p></div>
-      <div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track Order Request</button><button id="homeLogIn" class="text-button full">Already a Client? Log In</button></div>
-      <div class="guest-access"><div class="mini-icon">${icon('lock',17)}</div><div><b>Client access is private</b><p>Your orders, invoices, payments, and project files only appear after you log in.</p></div></div>
-    </div>`;
+    return '<div class="guest-home jp-guest-home-v2">'+
+      '<div class="guest-brand">'+brand()+'</div>'+
+      '<div class="jp-guest-hero"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Creative Services<br><strong>Made Simple.</strong></h1><p>Browse services, build your cart, and submit an Order Request without creating an account.</p><div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now →</button><button id="homeTrack" class="btn full">Track Request</button></div></div>'+
+      '<div class="jp-trust-list"><div>'+icon('account',16)+'<span>No account needed</span></div><div>'+icon('check',16)+'<span>Fast and easy ordering</span></div><div>'+icon('spark',16)+'<span>Professional creative services</span></div></div>'+
+      '<div id="jpAdBannerAnchor"></div></div>';
   }
-
-  const p=activeProject(),action=nextAction(p),feed=activityFeed(),profile=state.portal?.profile||{};
-  const avatar=profile.profile_photo_url?`<img src="${esc(profile.profile_photo_url)}" alt="">`:initials();
-  const pStats=p?projectStats(p):null,next=p?nextDeliverable(p):null;
-  return `<div class="dashboard-head"><div><span>Welcome back</span><h1>${esc((profile.name||'Client').split(/\s+/)[0])}</h1></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">${icon('bell',19)}</button><button id="topAccount" class="avatar top-avatar" aria-label="Account">${avatar}</button></div></div>
-    ${p?`<button class="card active-project project-button" id="homeOrders" data-open="${esc(p.id)}"><div class="card-topline"><span class="project-code">${esc(p.project_code||p.id)}</span><span class="status-dot-label">${Number(p.balance||0)>0?'Balance Pending':esc(effectiveProjectStatus(p))}</span></div><div class="project-name">${esc(p.title||'Untitled Project')}</div><div class="progress"><span style="width:${pStats.pct}%"></span></div><div class="meta"><span>${pStats.done}/${pStats.total} deliverables</span><b>${pStats.pct}%</b></div>${next?`<div class="next-deliverable"><span>NEXT DELIVERABLE</span><b>${esc(next.item_name||next.name||'Deliverable')}</b><small>${esc(fmtDate(next.due_date||p.deadline_date))}</small></div>`:''}<div class="card-action-row"><span>${Number(p.balance||0)>0?`${peso(p.balance)} balance remaining`:'View project details'}</span>${icon('chevron',16)}</div></button>`:`<div class="card empty guided-empty"><b>No active project right now</b><span>Your next JUAN PROJECT order will appear here.</span><button id="homeShop" class="btn primary small">Browse Services</button></div>`}
-    <div class="section-head"><h2>Next Action</h2></div>
-    <div class="card next-action-card ${esc(action.kind||'none')}"><div class="next-action-icon">${icon(action.kind==='payment'?'payment':action.kind==='pending'?'clock':action.kind==='progress'?'spark':'check',18)}</div><div><b>${esc(action.title)}</b><p>${esc(action.body)}</p></div>${action.cta?`<button id="nextActionBtn" class="btn small">${esc(action.cta)}</button>`:''}</div>
-    <div class="section-head"><h2>Recent Activity</h2><span>${feed.length?'Latest updates':''}</span></div>
-    <div class="card activity-card">${feed.slice(0,4).map(x=>`<div class="activity-row"><div class="activity-icon">${icon(x.icon,15)}</div><div><b>${esc(x.title)}</b><small>${esc(x.sub)} · ${esc(fmtDate(x.date))}</small></div></div>`).join('')||'<div class="empty compact-empty">No recent activity yet.</div>'}</div>`;
+  const p=activeProject(),feed=activityFeed(),profile=state.portal?.profile||{};
+  const avatar=profile.profile_photo_url?'<img src="'+esc(profile.profile_photo_url)+'" alt="Profile photo">':initials();
+  const pStats=p?projectStats(p):null;
+  return '<div class="dashboard-head"><div><span>Good day,</span><h1>'+esc((profile.name||'Client').split(/\s+/)[0])+'!</h1><p>Let’s bring your ideas to life.</p></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">'+icon('bell',19)+'</button><button id="topAccount" class="avatar top-avatar" aria-label="Account">'+avatar+'</button></div></div>'+
+    '<div class="section-head"><h2>Quick Actions</h2></div><div class="jp-quick-actions"><button id="clientStartOrder">'+icon('plus',20)+'<b>Start New Order</b><small>Get a quote</small></button><button id="clientTrackRequest">'+icon('search',20)+'<b>Track Request</b><small>Check status</small></button><button id="clientCardAction">'+icon('account',20)+'<b>My Client Card</b><small>Show QR</small></button></div>'+
+    (p?'<div class="section-head"><h2>Active Project</h2></div><button class="card active-project project-button" data-open="'+esc(p.id)+'"><div class="card-topline"><span class="project-code">'+esc(p.project_code||p.id)+'</span><span class="status-dot-label">'+esc(effectiveProjectStatus(p))+'</span></div><div class="project-name">'+esc(p.title||'Untitled Project')+'</div><div class="progress"><span style="width:'+pStats.pct+'%"></span></div><div class="meta"><span>'+pStats.done+'/'+pStats.total+' deliverables</span><b>'+pStats.pct+'%</b></div><div class="card-action-row"><span>View project details</span>'+icon('chevron',16)+'</div></button>':'<div class="card empty guided-empty"><b>No active project right now</b><span>Your next JUAN PROJECT order will appear here.</span><button id="homeShop" class="btn primary small">Browse Services</button></div>')+
+    '<div class="section-head"><h2>Recent Activity</h2><span>See All</span></div><div class="card activity-card">'+(feed.slice(0,4).map(x=>'<div class="activity-row"><div class="activity-icon">'+icon(x.icon,15)+'</div><div><b>'+esc(x.title)+'</b><small>'+esc(x.sub)+' · '+esc(fmtDate(x.date))+'</small></div></div>').join('')||'<div class="empty compact-empty">No recent activity yet.</div>')+'</div><div id="jpAdBannerAnchor"></div>';
 }
-
 function orders(){
-  const all=state.portal?.projects||[],filter=state.orderFilter;
-  const ps=all.filter(p=>{
-    const cancelled=String(p?.status||'').toLowerCase()==='cancelled';
-    const active=!cancelled&&(Number(p.balance||0)>0||!isProjectDelivered(p));
-    const completed=!cancelled&&Number(p.balance||0)<=0&&isProjectDelivered(p);
-    return filter==='all'||(filter==='completed'?completed:active);
-  });
-  return `${pageHead('Orders',{back:false,more:false})}<p class="screen-subtitle">Track each JUAN PROJECT order from confirmation to delivery.</p><div class="tabs order-tabs"><button data-order-filter="active" class="${filter==='active'?'active':''}">Active</button><button data-order-filter="completed" class="${filter==='completed'?'active':''}">Completed</button><button data-order-filter="all" class="${filter==='all'?'active':''}">All</button></div><div class="project-list">${ps.map(p=>{const s=projectStats(p);return `<button class="card project-list-card project-button" data-open="${esc(p.id)}"><div class="project-list-top"><div><div class="project-code">${esc(p.project_code||p.id)}</div><div class="project-name">${esc(p.title||'Untitled Project')}</div><small>${esc(effectiveProjectStatus(p))}</small></div>${icon('chevron',18)}</div><div class="progress"><span style="width:${s.pct}%"></span></div><div class="meta"><span>${s.done}/${s.total} deliverables</span><b>${s.pct}%</b></div>${p.deadline_date?`<div class="order-deadline">Estimated completion · ${esc(fmtDate(p.deadline_date))}</div>`:''}</button>`}).join('')||'<div class="card empty guided-empty"><b>No matching orders</b><span>Orders in this status will appear here.</span></div>'}</div>`;
+  const requests=state.portal?.orderRequests||[],projects=state.portal?.projects||[],filter=state.orderFilter||'requests';
+  if(filter==='requests'){
+    return pageHead('My Orders',{back:false,more:false})+'<div class="tabs order-tabs"><button data-order-filter="requests" class="active">Requests</button><button data-order-filter="projects">Projects</button><button data-order-filter="completed">Completed</button></div><div class="project-list">'+
+      (requests.map(o=>'<button class="card project-list-card project-button" data-request-open="'+esc(o.id)+'"><div class="project-list-top"><div><div class="project-code">'+esc(o.code||'Order Request')+'</div><div class="project-name">'+esc(o.title||'Order Request')+'</div><small>'+esc(fmtDate(o.created_at))+'</small></div><span class="badge">'+esc(o.status||'Order Received')+'</span>'+icon('chevron',18)+'</div><div class="meta"><span>'+((o.items||[]).length)+' item(s)</span><b>'+peso(o.total||0)+'</b></div></button>').join('')||'<div class="card empty guided-empty"><b>No order requests yet.</b><span>Start a new order whenever you’re ready.</span><button id="ordersStartNew" class="btn primary small">Start New Order</button></div>')+'</div>';
+  }
+  const completed=projects.filter(p=>Number(p.balance||0)<=0&&isProjectDelivered(p));
+  const active=projects.filter(p=>!completed.includes(p)&&String(p.status||'').toLowerCase()!=='cancelled');
+  const list=filter==='completed'?completed:active;
+  return pageHead('My Orders',{back:false,more:false})+'<div class="tabs order-tabs"><button data-order-filter="requests">Requests</button><button data-order-filter="projects" class="'+(filter==='projects'?'active':'')+'">Projects</button><button data-order-filter="completed" class="'+(filter==='completed'?'active':'')+'">Completed</button></div><div class="project-list">'+
+    (list.map(p=>'<button class="card project-list-card project-button" data-open="'+esc(p.id)+'"><div class="project-list-top"><div><div class="project-code">'+esc(p.project_code||p.id)+'</div><div class="project-name">'+esc(p.title||'Untitled Project')+'</div><small>'+esc(fmtDate(p.created_at||p.start_date))+'</small></div><span class="badge">'+esc(effectiveProjectStatus(p))+'</span>'+icon('chevron',18)+'</div><div class="meta"><span>'+esc(effectiveProjectStatus(p))+'</span><b>'+peso(p.total_amount||0)+'</b></div></button>').join('')||'<div class="card empty guided-empty"><b>No matching projects</b><span>Projects in this stage will appear here.</span></div>')+'</div>';
 }
-
 function trackingStages(p){
   const s=projectStats(p),status=String(effectiveProjectStatus(p)||'').toLowerCase(),paid=Number(p.amount_paid||0),allDone=s.total>0&&s.done>=s.total;
   let current=0;
@@ -421,10 +421,10 @@ function invoice(){
 function membershipProgress(){
   const projects=state.portal?.projects||[];
   const completed=projects.filter(p=>Number(p.balance||0)<=0&&isProjectDelivered(p)).length;
-  const tiers=[{name:'BRONZE',min:0,next:3},{name:'SILVER',min:3,next:6},{name:'GOLD',min:6,next:10},{name:'PLATINUM',min:10,next:null}];
+  const tiers=[{name:'BRONZE',min:1,next:2},{name:'SILVER',min:2,next:3},{name:'GOLD',min:3,next:4},{name:'PLATINUM',min:4,next:null}];
   let tier=tiers[0];for(const t of tiers)if(completed>=t.min)tier=t;
-  const span=tier.next===null?1:Math.max(1,tier.next-tier.min);
-  const progress=tier.next===null?100:Math.max(0,Math.min(100,Math.round(((completed-tier.min)/span)*100)));
+  const base=Math.max(0,tier.min),span=tier.next===null?1:Math.max(1,tier.next-base);
+  const progress=tier.next===null?100:Math.max(0,Math.min(100,Math.round(((completed-base)/span)*100)));
   return {completed,tier:tier.name,next:tier.next,progress,remaining:tier.next===null?0:Math.max(0,tier.next-completed)};
 }
 
@@ -451,13 +451,16 @@ function account(){
 }
 
 function categoryName(id){return state.catalog.categories.find(c=>c.id===id)?.name||'Service'}
-function shopRow(x){const price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0,key=`${x.kind}:${x.id}`;return `<button class="shop-row" data-view-shop="${esc(key)}"><div><div class="shop-kind">${esc(x.product_code||'')} · ${esc(x.kind==='Package'?'Package':categoryName(x.category_id))}</div><div class="shop-title">${esc(x.name)}</div><p>${esc(x.description||'JUAN PROJECT creative service.')}</p></div><div class="shop-side"><div class="shop-price">${old>price?`<span>${peso(old)}</span>`:''}${peso(price)}</div>${icon('chevron',17)}</div></button>`}
+function shopRow(x){
+  const price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0;
+  return '<article class="jp-shop-card"><button class="jp-shop-main" data-view-shop="'+esc(x.kind+':'+x.id)+'"><div class="jp-shop-thumb">'+esc((x.product_code||'JP').slice(0,6))+'</div><div class="jp-shop-copy"><span>'+esc(x.product_code||'')+'</span><h3>'+esc(x.name)+'</h3><p>'+esc((x.description||'Creative service').slice(0,82))+'</p><div class="jp-shop-price">'+(old>price?'<s>'+peso(old)+'</s>':'')+'<b>'+peso(price)+'</b></div></div></button><button class="btn primary jp-add-cart" data-add-cart="'+esc(x.kind+':'+x.id)+'">Add to Cart</button></article>';
+}
 function shop(){
   const all=[...(state.catalog.services||[]).map(x=>({...x,kind:'Service'})),...(state.catalog.packages||[]).map(x=>({...x,kind:'Package'}))];
-  const q=String(state.shopQuery||'').trim().toLowerCase(),pref=state.shopSort||'default';
+  const q=String(state.shopQuery||'').trim().toLowerCase();
   let items=all.filter(x=>!q||[x.name,x.description,x.kind,categoryName(x.category_id),x.product_code].some(v=>String(v||'').toLowerCase().includes(q)));
-  const price=x=>x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),code=x=>Number(String(x.product_code||'').match(/(\d+)$/)?.[1]||999999);items.sort(pref==='price-desc'?(a,b)=>price(b)-price(a)||code(a)-code(b):pref==='price-asc'?(a,b)=>price(a)-price(b)||code(a)-code(b):(a,b)=>code(a)-code(b));
-  return `${pageHead('Shop',{back:false,more:false})}<div class="shop-hero"><span class="eyebrow">JUAN PROJECT SERVICES</span><h2>Bring your next idea to life.</h2><p>Browse services and packages, add them to your cart, and submit an Order Request. No client account is required to shop.</p><button id="shopOrderCart" class="btn primary full">Open Order Cart</button><small class="shop-request-note">A Project ID is created only after JUAN PROJECT reviews and approves your request.</small></div><div class="shop-tools"><div class="shop-search"><span>⌕</span><input id="shopSearch" value="${esc(state.shopQuery)}" placeholder="Search service ID or name"></div><select id="shopSort" class="input shop-sort"><option value="default" ${pref==='default'?'selected':''}>Default (by ID)</option><option value="price-asc" ${pref==='price-asc'?'selected':''}>Price: Low to High</option><option value="price-desc" ${pref==='price-desc'?'selected':''}>Price: High to Low</option></select></div><div class="shop-list">${items.map(shopRow).join('')||'<div class="card empty guided-empty"><b>No matching services</b><span>Try a different service ID or keyword.</span></div>'}</div>`;
+  const count=window.JPMobileCommerce?.cartCount?.()||0,total=window.JPMobileCommerce?.cartTotal?.()||0;
+  return pageHead('Shop',{back:false,more:false})+'<div class="jp-shop-head"><div class="shop-search"><span>⌕</span><input id="shopSearch" value="'+esc(state.shopQuery)+'" placeholder="Search services or packages..."></div><button id="shopOrderCart" class="jp-cart-icon" aria-label="Cart">'+icon('shop',20)+'<span>'+count+'</span></button></div><div class="jp-category-chips"><button class="active">All</button><button>Video</button><button>Graphics</button><button>Editing</button><button>More</button></div><div class="jp-shop-grid">'+(items.map(shopRow).join('')||'<div class="card empty guided-empty"><b>No matching services</b></div>')+'</div>'+(count?'<button id="shopMiniCart" class="jp-mini-cart"><span><b>'+count+' item'+(count===1?'':'s')+'</b><small>'+peso(total)+'</small></span><strong>View Cart →</strong></button>':'');
 }
 function findShopItem(key){const [kind,id]=String(key).split(':');if(kind==='Package')return {...state.catalog.packages.find(x=>String(x.id)===String(id)),kind};return {...state.catalog.services.find(x=>String(x.id)===String(id)),kind:'Service'}}
 
@@ -466,11 +469,17 @@ function render(){root.innerHTML=`<div class="app"><main class="page">${routePag
 
 function bind(){
   document.querySelectorAll('.nav [data-r]').forEach(b=>b.onclick=()=>{const r=b.dataset.r;if(!isLoggedIn()&&['orders','payment'].includes(r))return gate(r);state.route=r;render()});
+  document.querySelectorAll('.nav [data-guest-action]').forEach(b=>b.onclick=()=>{if(b.dataset.guestAction==='track')return window.JPMobileCommerce?.openTrack?.();if(b.dataset.guestAction==='login')return authScreen();});
   document.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>{if(!isLoggedIn())return gate('orders');state.selected=x.dataset.open;state.route='project';render()});
   document.querySelectorAll('[data-drive]').forEach(x=>x.onclick=()=>window.open(x.dataset.drive,'_blank','noopener'));
   const topAccount=document.getElementById('topAccount');if(topAccount)topAccount.onclick=()=>{state.route='account';render()};
-  const homeShop=document.getElementById('homeShop');if(homeShop)homeShop.onclick=()=>{state.route='shop';render();setTimeout(()=>window.JuanSuite?.shop?.(),0)};
-  const homeTrack=document.getElementById('homeTrack');if(homeTrack)homeTrack.onclick=()=>window.JuanSuite?.track?.();
+  const homeShop=document.getElementById('homeShop');if(homeShop)homeShop.onclick=()=>{state.route='shop';render()};
+  const homeTrack=document.getElementById('homeTrack');if(homeTrack)homeTrack.onclick=()=>window.JPMobileCommerce?.openTrack?.();
+  const clientStartOrder=document.getElementById('clientStartOrder');if(clientStartOrder)clientStartOrder.onclick=()=>{state.route='shop';render()};
+  const clientTrackRequest=document.getElementById('clientTrackRequest');if(clientTrackRequest)clientTrackRequest.onclick=()=>{state.orderFilter='requests';state.route='orders';render()};
+  const clientCardAction=document.getElementById('clientCardAction');if(clientCardAction)clientCardAction.onclick=()=>window.JuanSuite?.card?.();
+  const ordersStartNew=document.getElementById('ordersStartNew');if(ordersStartNew)ordersStartNew.onclick=()=>{state.route='shop';render()};
+  document.querySelectorAll('[data-request-open]').forEach(b=>b.onclick=()=>{const req=(state.portal?.orderRequests||[]).find(x=>String(x.id)===String(b.dataset.requestOpen));if(req)window.JPMobileCommerce?.trackClientRequest?.(req);});
   const homeLogIn=document.getElementById('homeLogIn');if(homeLogIn)homeLogIn.onclick=()=>authScreen();
   const guestAccountLogin=document.getElementById('guestAccountLogin');if(guestAccountLogin)guestAccountLogin.onclick=()=>authScreen();
   const membershipQr=document.getElementById('membershipQr');if(membershipQr)membershipQr.onclick=()=>window.JuanSuite?.card?.();
@@ -481,7 +490,9 @@ function bind(){
   const payProject=document.getElementById('payProject');if(payProject)payProject.onclick=()=>{state.paymentProjectId=state.selected;state.route='payment';render()};
   const invoiceBtn=document.getElementById('projectInvoiceBtn');if(invoiceBtn)invoiceBtn.onclick=()=>{state.route='invoice';render()};
   document.querySelectorAll('[data-view-shop]').forEach(b=>b.onclick=()=>{state.shopItem=findShopItem(b.dataset.viewShop);render()});
-  const shopOrderCart=document.getElementById('shopOrderCart');if(shopOrderCart)shopOrderCart.onclick=()=>window.JuanSuite?.openCart?.();
+  document.querySelectorAll('[data-add-cart]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const [kind,id]=b.dataset.addCart.split(':');await window.JPMobileCommerce?.addCatalogItem?.(kind,id);render();});
+  const shopOrderCart=document.getElementById('shopOrderCart');if(shopOrderCart)shopOrderCart.onclick=()=>window.JPMobileCommerce?.openCart?.();
+  const shopMiniCart=document.getElementById('shopMiniCart');if(shopMiniCart)shopMiniCart.onclick=()=>window.JPMobileCommerce?.openCart?.();
   const shopSort=document.getElementById('shopSort');if(shopSort)shopSort.onchange=()=>{state.shopSort=shopSort.value;render()};
   const shopSearch=document.getElementById('shopSearch');if(shopSearch){shopSearch.oninput=()=>{state.shopQuery=shopSearch.value;const pos=shopSearch.selectionStart;render();const next=document.getElementById('shopSearch');if(next){next.focus();try{next.setSelectionRange(pos,pos)}catch{}}}};
   const paymentHistoryTab=document.getElementById('paymentHistoryTab');if(paymentHistoryTab)paymentHistoryTab.onclick=()=>document.querySelector('.payment-history')?.scrollIntoView({behavior:'smooth'});
@@ -563,7 +574,7 @@ function bind(){
   const shopX=document.getElementById('shopX');if(shopX)shopX.onclick=()=>{state.shopItem=null;render()};
   const detailClose=document.getElementById('detailClose');if(detailClose)detailClose.onclick=()=>{state.shopItem=null;render()};
   const detailLogIn=document.getElementById('detailLogIn');if(detailLogIn)detailLogIn.onclick=()=>authScreen();
-  const detailStartProject=document.getElementById('detailStartProject');if(detailStartProject)detailStartProject.onclick=async()=>{const item=state.shopItem;if(!item)return;state.shopItem=null;render();await window.JuanSuite?.addShopItem?.(item.kind,item.id)};
+  const detailStartProject=document.getElementById('detailStartProject');if(detailStartProject)detailStartProject.onclick=async()=>{const item=state.shopItem;if(!item)return;await window.JPMobileCommerce?.addCatalogItem?.(item.kind,item.id);state.shopItem=null;render();};
 }
 
 (async()=>{
