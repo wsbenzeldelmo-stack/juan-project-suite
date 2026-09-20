@@ -15,9 +15,10 @@
   function later(fn,n=0){if(appReady())return fn();if(n<80)setTimeout(()=>later(fn,n+1),75);}
 
   function cleanRootText(){
+    // Only remove truly empty/whitespace body text nodes. Literal escaped text must
+    // be fixed at its source instead of being rewritten broadly at runtime.
     Array.from(document.body.childNodes).forEach(node=>{
-      if(node.nodeType===Node.TEXT_NODE&&/^(?:\\n|\s)+$/.test(String(node.textContent||"")))node.remove();
-      if(node.nodeType===Node.TEXT_NODE&&String(node.textContent||"").includes("\\n"))node.textContent=String(node.textContent||"").replace(/\\n/g,"");
+      if(node.nodeType===Node.TEXT_NODE&&!String(node.textContent||"").trim())node.remove();
     });
   }
 
