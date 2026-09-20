@@ -146,7 +146,7 @@ const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation"><di
   '<button data-r="payment" class="'+(state.route==='payment'?'active':'')+'">'+icon('payment')+'<span>Payment</span></button>'+
   '<button data-r="shop" class="'+(state.route==='shop'?'active':'')+'">'+icon('shop')+'<span>Shop</span></button>'+
   '<button data-r="account" class="'+(state.route==='account'?'active':'')+'">'+icon('account')+'<span>Account</span></button></div></nav>'
-  :'<nav class="nav guest-nav" aria-label="Guest navigation"><div class="jp-desktop-nav-brand"><b>JUAN PROJECT</b><span>Online</span><small>Guest Mode</small></div><div class="jp-nav-links">'+
+  :'<nav class="nav guest-nav" aria-label="Guest navigation"><div class="jp-desktop-nav-brand"><b>JUAN PROJECT</b><span>Online</span></div><div class="jp-nav-links">'+
   '<button data-r="home" class="'+(state.route==='home'?'active':'')+'">'+icon('home')+'<span>Home</span></button>'+
   '<button data-r="shop" class="'+(state.route==='shop'?'active':'')+'">'+icon('shop')+'<span>Shop</span></button>'+
   '<button data-guest-action="track">'+icon('search')+'<span>Track</span></button>'+
