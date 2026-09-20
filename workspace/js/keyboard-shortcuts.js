@@ -8,7 +8,7 @@
   function toast(m){if(window.showToast)window.showToast(m);}
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function icon(name){var p={overview:"⌂",projects:"▣",clients:"◉",payments:"▤",reports:"▥",calendar:"□",shop:"◇",portal:"▧",orders:"▦",scanner:"⌗",settings:"⚙",create:"+",search:"⌕",refresh:"↻"};return p[name]||"•";}
-  function nav(view){window.app&&window.app.navigateTo(view);}
+  function nav(view){closePalette();window.app&&window.app.navigateTo(view);}
   function openScanner(){if(window.jpOpenQrScanner)window.jpOpenQrScanner();toast("QR Scanner opened");}
   function openOrders(){nav("orders");}
   function newOrder(){nav("new-order");}
@@ -72,8 +72,8 @@
   }
   async function openPalette(initial){
     closeHud();closePalette();lastFocus=document.activeElement;commands=staticCommands().concat(await recordCommands());selected=0;
-    palette=document.createElement("div");palette.className="jp-command-overlay";palette.innerHTML='<section class="jp-command-palette" role="dialog" aria-modal="true" aria-label="Command Palette"><div class="jp-command-search"><span>⌕</span><input id="jpCommandInput" autocomplete="off" placeholder="Search commands, clients, projects..." aria-label="Search commands"></div><div id="jpCommandRows" class="jp-command-rows"></div><footer><span>↑↓ Navigate</span><span>Enter Open</span><span>Esc Close</span></footer></section>';
-    document.body.appendChild(palette);palette.onclick=function(e){if(e.target===palette)closePalette();};var input=palette.querySelector("#jpCommandInput");input.value=initial||"";input.oninput=function(){selected=0;drawPalette();};input.onkeydown=function(e){if(e.key==="ArrowDown"){e.preventDefault();selected=Math.min(selected+1,filtered().length-1);drawPalette();}else if(e.key==="ArrowUp"){e.preventDefault();selected=Math.max(0,selected-1);drawPalette();}else if(e.key==="Enter"){e.preventDefault();runSelected();}else if(e.key==="Escape"){e.preventDefault();closePalette();}};drawPalette();requestAnimationFrame(function(){input.focus();input.select();});
+    palette=document.createElement("div");palette.className="jp-command-overlay";palette.innerHTML='<section class="jp-command-palette" role="dialog" aria-modal="false" aria-label="Command Palette"><div class="jp-command-search"><span>⌕</span><input id="jpCommandInput" autocomplete="off" placeholder="Search commands, clients, projects..." aria-label="Search commands"><button type="button" id="jpCommandClose" class="jp-command-close" aria-label="Close command center">×</button></div><div id="jpCommandRows" class="jp-command-rows"></div><footer><span>↑↓ Navigate</span><span>Enter Open</span><span>Esc Close</span></footer></section>';
+    document.body.appendChild(palette);palette.querySelector("#jpCommandClose").onclick=closePalette;var input=palette.querySelector("#jpCommandInput");input.value=initial||"";input.oninput=function(){selected=0;drawPalette();};input.onkeydown=function(e){if(e.key==="ArrowDown"){e.preventDefault();selected=Math.min(selected+1,filtered().length-1);drawPalette();}else if(e.key==="ArrowUp"){e.preventDefault();selected=Math.max(0,selected-1);drawPalette();}else if(e.key==="Enter"){e.preventDefault();runSelected();}else if(e.key==="Escape"){e.preventDefault();closePalette();}};drawPalette();requestAnimationFrame(function(){input.focus();input.select();});
   }
   function closeHud(){if(hud)hud.remove();hud=null;if(sequenceTimer)clearTimeout(sequenceTimer);sequenceTimer=null;sequence=null;}
   function showHud(kind){
@@ -126,7 +126,7 @@
     var mod=isMac?e.metaKey:e.ctrlKey;
     if(mod&&e.key.toLowerCase()==="k"){e.preventDefault();openPalette();return;}
     if(mod&&e.key.toLowerCase()==="s"){e.preventDefault();contextualSave();return;}
-    if(palette){trapFocus(e);return;}
+    if(palette){if(e.key==="Escape"){e.preventDefault();closePalette();return;}trapFocus(e);return;}
     if(scannerContext(e))return;
     if(e.key==="Escape"){
       if(topOverlayClose()){e.preventDefault();return;}

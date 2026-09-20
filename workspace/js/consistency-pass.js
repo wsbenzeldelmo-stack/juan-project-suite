@@ -3,7 +3,7 @@
   "use strict";
   const SETTINGS_KEY="JUAN_WORKSPACE_SETTINGS_V2";
   const FORM_DRAFT_KEY="JUAN_WORKSPACE_DRAFTS_V2";
-  let settingsBuilt=false, saveTimers=new Map(), settingsObserver=null;
+  let settingsBuilt=false, saveTimers=new Map();
 
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -119,7 +119,6 @@
       '<div class="card jp-settings-card jp-danger-card"><div class="jp-danger-row"><div><b>Reset Workspace Data</b><small>Reset operational Workspace data using the protected reset workflow.</small></div><button class="btn btn-danger" data-danger="reset">Reset Workspace Data</button></div><div class="jp-danger-row"><div><b>Delete Imported Historical Records</b><small>Remove imported historical project records while preserving the canonical preload reference.</small></div><button class="btn btn-danger" data-danger="historical">Delete Imported Historical Records</button></div><div class="jp-danger-row"><div><b>Clear Cached Data</b><small>Clear browser-only drafts and cached interface preferences.</small></div><button class="btn btn-danger" data-danger="cache">Clear Cached Data</button></div><div class="jp-danger-row"><div><b>Disconnect Database</b><small>End this Workspace database session.</small></div><button class="btn btn-danger" data-danger="disconnect">Disconnect Database</button></div><div class="jp-danger-row"><div><b>Sign Out of Workspace</b><small>End the current Workspace account session.</small></div><button class="btn btn-danger" data-danger="signout">Sign Out of Workspace</button></div></div>',true);
 
     view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
-      '<nav id="jpSettingsSegments" class="jp-settings-segment-nav">'+["profile","workspace","database","appearance","notifications","data","security","about"].map(x=>'<button data-target="'+x+'">'+x[0].toUpperCase()+x.slice(1)+'</button>').join("")+'</nav>'+
       '<div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div>';
     settingsBuilt=true;bindSettings();
   }
@@ -181,23 +180,13 @@
     $("#jpCheckUpdates")?.addEventListener("click",()=>toast("You are on the current Workspace build in this deployment."));
     $("#jpSystemInfo")?.addEventListener("click",()=>{$("#jpBuildInfo").textContent=navigator.platform+" · "+navigator.userAgent.split(" ").slice(-2).join(" ");});
     $$("[data-danger]").forEach(b=>b.addEventListener("click",()=>runDanger(b.dataset.danger)));
-    bindSettingsSearch();bindSegmentNav();updateDataMeta();
+    bindSettingsSearch();updateDataMeta();
   }
 
   function updateDataMeta(){
     const b=$("#jpLastBackup"),i=$("#jpLastImport");
     const last=localStorage.getItem("JUAN_LAST_BACKUP_AT");if(b)b.textContent=last?new Date(last).toLocaleString("en-PH"):"Not recorded";
     if(i)i.textContent=localStorage.getItem("JUAN_LAST_IMPORT_RESULT")||"No recent import";
-  }
-  function bindSegmentNav(){
-    const nav=$("#jpSettingsSegments");if(!nav)return;
-    $$("button",nav).forEach(b=>b.onclick=()=>$("#settings-"+b.dataset.target)?.scrollIntoView({behavior:"smooth",block:"start"}));
-    settingsObserver?.disconnect();
-    settingsObserver=new IntersectionObserver(entries=>{
-      const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];if(!visible)return;
-      const key=visible.target.dataset.segment;$$("button",nav).forEach(b=>b.classList.toggle("active",b.dataset.target===key));
-    },{root:$(".main-content"),rootMargin:"-140px 0px -55% 0px",threshold:[0,.2,.5]});
-    $$(".jp-settings-segment").forEach(s=>settingsObserver.observe(s));
   }
   function bindSettingsSearch(){
     const input=$("#jpSettingsSearch"),box=$("#jpSettingsSearchResults");if(!input||!box)return;
