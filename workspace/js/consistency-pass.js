@@ -28,7 +28,7 @@
       showBusinessContact:true,includeBranding:true,autoReference:true,reconnectAutomatically:true,showConnectionSidebar:true,notifySyncFailure:true,
       accent:"mint",density:"comfortable",sidebarSize:"standard",rowHeight:"comfortable",reduceMotion:false,
       notifNewOrder:true,notifPaymentSubmitted:true,notifPaymentApproved:true,notifDeadline:true,notifOverdue:true,notifClientMessage:true,notifSyncFail:true,
-      browserNotifications:false,notificationSounds:true,deadlineReminderDays:3,facialVerification:false,autoLock:false,autoLockMinutes:30,
+      browserNotifications:false,notificationSounds:true,deadlineReminderDays:3,facialVerification:false,autoLock:true,autoLockMinutes:30,
       verifyReset:true,verifyDisconnect:true
     };
   }
@@ -230,7 +230,7 @@
     $("#jpConfirmImport").onclick=async()=>{
       try{
         if(file){
-          const input=$("#jpHistoricalInput");Object.defineProperty(input,"files",{value:[file],configurable:true});await window.app.handleLegacyCSVImport({target:input});
+          await window.app.handleLegacyCSVImport({target:{files:[file],value:""}});
         }else await window.app.importPastedSheetData();
         const result="Import completed "+new Date().toLocaleString("en-PH");localStorage.setItem("JUAN_LAST_IMPORT_RESULT",result);updateDataMeta();host.innerHTML='<div class="jp-import-valid">Import completed. Review Projects and Clients before continuing.</div>';
       }catch(e){host.innerHTML='<div class="jp-import-invalid">'+esc(e.message||"Import failed")+'</div>';}
