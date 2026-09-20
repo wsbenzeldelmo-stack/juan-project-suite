@@ -1566,9 +1566,9 @@ table.jp-packages-table col:nth-child(6){width:7%}
 #destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
-  <link rel="stylesheet" href="/css/general-update.css">
-  <link rel="stylesheet" href="/css/keyboard-shortcuts.css">
-  <link rel="stylesheet" href="/css/consistency-pass.css">
+  <link rel="stylesheet" href="/css/general-update.css?v=20260920-1805">
+  <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
+  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260920-1805">
 </head>
 <body>
 
@@ -9382,7 +9382,7 @@ ${description}`))actionCallback();return;}
 
     document.addEventListener("DOMContentLoaded", () => {
       app.initWorkspace();
-      if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(err=>console.warn('Workspace offline cache unavailable:',err?.message||err)));}
+      if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js?v=20260920-1805',{updateViaCache:'none'}).catch(err=>console.warn('Workspace offline cache unavailable:',err?.message||err)));}
       setTimeout(()=>{refreshSearchableSelects(document);app.bindEmailDomainSuggestions();if(location.hash==="#online-portal")app.navigateTo("online-portal");},60);
       
       document.addEventListener("click", (e) => {
@@ -10175,9 +10175,9 @@ ${description}`))actionCallback();return;}
 <script src="/js/jsQR.js"></script>
 <script type="module" src="/js/suite-prod.js"></script>
 <script type="module" src="/js/workspace-redesign.js"></script>
-<script type="module" src="/js/general-update.js"></script>
-<script type="module" src="/js/keyboard-shortcuts.js"></script>
-<script src="/js/consistency-pass.js"></script>
+<script type="module" src="/js/general-update.js?v=20260920-1805"></script>
+<script type="module" src="/js/keyboard-shortcuts.js?v=20260920-1805"></script>
+<script src="/js/consistency-pass.js?v=20260920-1805"></script>
 </body>
 </html>
 <style id="v111-maintenance-patch">
