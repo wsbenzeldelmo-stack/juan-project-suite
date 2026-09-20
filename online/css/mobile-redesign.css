@@ -109,3 +109,187 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
  .app.guest-mode.route-home .jp-guest-about{padding:4px!important}
  .jp-home-only-footer{padding-top:3px!important}
 }
+
+/* Desktop app shell with sidebar · 2026-09-20 */
+.jp-desktop-nav-brand{display:none}
+.jp-nav-links{display:contents}
+
+@media(min-width:900px){
+  html,body,#root{width:100%;min-width:100%;height:100%;min-height:100%;margin:0}
+  body{background:#edf3f2!important;overflow:hidden!important}
+  #root{display:grid!important;place-items:center!important;padding:20px!important;box-sizing:border-box!important;background:#edf3f2!important}
+
+  .app{
+    width:min(1180px,calc(100vw - 48px))!important;
+    max-width:1180px!important;
+    height:min(860px,calc(100dvh - 40px))!important;
+    min-height:620px!important;
+    display:grid!important;
+    grid-template-columns:228px minmax(0,1fr)!important;
+    grid-template-rows:1fr!important;
+    margin:0 auto!important;
+    padding:0!important;
+    overflow:hidden!important;
+    border:1px solid rgba(17,24,39,.08)!important;
+    border-radius:22px!important;
+    background:#fff!important;
+    box-shadow:0 20px 55px rgba(20,39,31,.09)!important;
+  }
+
+  .app>.nav{
+    position:relative!important;
+    inset:auto!important;
+    left:auto!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    transform:none!important;
+    width:228px!important;
+    max-width:228px!important;
+    height:100%!important;
+    min-height:0!important;
+    grid-column:1!important;
+    grid-row:1!important;
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    gap:0!important;
+    padding:22px 14px!important;
+    box-sizing:border-box!important;
+    border:0!important;
+    border-right:1px solid var(--jpo-border)!important;
+    background:#f8faf9!important;
+    backdrop-filter:none!important;
+    overflow:hidden!important;
+  }
+
+  .jp-desktop-nav-brand{
+    display:grid!important;
+    gap:1px!important;
+    padding:3px 8px 22px!important;
+    margin-bottom:12px!important;
+    border-bottom:1px solid var(--jpo-border)!important;
+  }
+  .jp-desktop-nav-brand b{font-size:14px!important;line-height:1.05!important;letter-spacing:-.02em!important;color:#121916!important}
+  .jp-desktop-nav-brand span{font-size:12px!important;font-weight:850!important;color:var(--jpo-green)!important}
+  .jp-desktop-nav-brand small{margin-top:8px!important;font-size:8px!important;font-weight:800!important;letter-spacing:.11em!important;text-transform:uppercase!important;color:#8b958f!important}
+
+  .app>.nav .jp-nav-links{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:6px!important;
+    width:100%!important;
+  }
+  .app>.nav button{
+    width:100%!important;
+    min-height:46px!important;
+    display:grid!important;
+    grid-template-columns:24px 1fr!important;
+    place-items:initial!important;
+    align-items:center!important;
+    gap:10px!important;
+    padding:0 12px!important;
+    border-radius:11px!important;
+    color:#68736d!important;
+    text-align:left!important;
+    font-size:11px!important;
+    font-weight:750!important;
+  }
+  .app>.nav button svg{width:19px!important;height:19px!important}
+  .app>.nav button span{display:block!important}
+  .app>.nav button:hover{background:#eef3f0!important;color:#27322c!important}
+  .app>.nav button.active{
+    position:relative!important;
+    background:#e8faf1!important;
+    color:#078c53!important;
+  }
+  .app>.nav button.active:before{
+    content:""!important;
+    position:absolute!important;
+    left:0!important;
+    top:9px!important;
+    bottom:9px!important;
+    width:3px!important;
+    border-radius:0 3px 3px 0!important;
+    background:#08b966!important;
+  }
+
+  .app>.page{
+    grid-column:2!important;
+    grid-row:1!important;
+    width:100%!important;
+    max-width:none!important;
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:30px 36px!important;
+    box-sizing:border-box!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    background:#fff!important;
+    scrollbar-width:thin!important;
+  }
+  .app>.page::-webkit-scrollbar{width:8px!important}
+  .app>.page::-webkit-scrollbar-thumb{background:#d9dfdc!important;border-radius:999px!important}
+  .app>.page::-webkit-scrollbar-track{background:transparent!important}
+
+  .app.route-home>.page{
+    overflow:hidden!important;
+    padding-top:28px!important;
+    padding-bottom:28px!important;
+  }
+
+  .app.guest-mode.route-home .jp-guest-home-centered{
+    width:min(720px,100%)!important;
+    max-width:720px!important;
+    min-height:100%!important;
+    height:100%!important;
+    margin:0 auto!important;
+    display:grid!important;
+    grid-template-rows:auto auto auto!important;
+    align-content:center!important;
+    gap:18px!important;
+    overflow:hidden!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero{
+    width:min(520px,100%)!important;
+    margin:0 auto!important;
+    padding:0!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero h1{font-size:42px!important}
+  .app.guest-mode.route-home .jp-guest-hero p{font-size:13px!important;max-width:500px!important}
+  .app.guest-mode.route-home .guest-actions{width:min(460px,100%)!important;margin:18px auto 0!important}
+  .app.guest-mode.route-home #jpAdBannerAnchor{width:min(720px,100%)!important;margin:0 auto!important}
+  .app.guest-mode.route-home .jp-guest-about{
+    width:min(620px,100%)!important;
+    margin:0 auto!important;
+    justify-content:center!important;
+  }
+  .jp-home-only-footer{margin-top:auto!important}
+
+  .app.client-mode.route-home>.page{
+    display:grid!important;
+    grid-template-rows:auto auto auto auto auto auto!important;
+    align-content:start!important;
+    gap:0!important;
+  }
+
+  .app.route-shop>.page{
+    height:100%!important;
+    padding:26px 32px 0!important;
+  }
+  .app.route-shop .jp-shop-sticky{background:#fff!important}
+  .app.route-shop .jp-shop-footer{
+    margin:0 -32px!important;
+    padding-left:32px!important;
+    padding-right:32px!important;
+  }
+
+  .overlay{position:fixed!important;inset:0!important}
+}
+
+@media(min-width:900px) and (max-height:700px){
+  #root{padding:12px!important}
+  .app{height:calc(100dvh - 24px)!important;min-height:0!important}
+  .app>.page{padding-top:22px!important;padding-bottom:22px!important}
+}
