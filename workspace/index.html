@@ -1566,7 +1566,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 #destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
-</head>
+  <link rel="stylesheet" href="/css/general-update.css">\n  <link rel="stylesheet" href="/css/keyboard-shortcuts.css">\n</head>
 <body>
 
   <div class="app-container">
@@ -1586,7 +1586,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         <a href="#" class="nav-item" data-view="projects"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h7M7 16h5"/></svg></span>Projects</a>
         <a href="#" class="nav-item" data-view="clients"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Clients</a>
         <a href="#" class="nav-item" data-view="new-order"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>New Order</a>
-        <a href="#" class="nav-item" id="workspaceOrdersNav" onclick="window.jpOpenOrders?.(); return false;"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Orders</a>
+        <a href="#" class="nav-item" id="workspaceOrdersNav" data-view="orders"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>Orders</a>
         <div class="nav-divider"></div>
         <div class="nav-section-label">FINANCE</div>
         <a href="#" class="nav-item" data-view="payments"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>Invoices & Payments</a>
@@ -1737,8 +1737,6 @@ table.jp-packages-table col:nth-child(6){width:7%}
             <h1 class="page-title">New Order Entry</h1>
           </div>
           <div class="order-header-actions">
-            <button type="button" class="btn btn-secondary" id="workspaceNewOrderRequests" onclick="window.jpOpenOrders?.()">Order Requests</button>
-            <button type="button" class="btn btn-secondary" id="workspaceNewOrderQrScanner" onclick="window.jpOpenQrScanner?.()">Scan QR</button>
             <button type="button" class="btn btn-secondary" id="openDraftsBtn">Drafts</button>
             <button type="button" class="btn btn-secondary" id="saveDraftBtn">Save Draft</button>
           </div>
@@ -1923,7 +1921,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
       <!-- VIEW: CLIENT PROFILE -->
       <section id="view-client-profile" class="view">
-        <header class="page-header"><div><button class="btn-text mb-2" onclick="app.navigateTo('clients')">← Back to Clients</button><div class="greeting-subtitle" id="clientProfileEmail"></div><h1 class="page-title" id="clientProfileName">Client</h1></div><button class="btn btn-secondary" id="clientProfileEditBtn">Edit Client</button></header>
+        <header class="page-header"><div><button class="btn-text mb-2" onclick="app.navigateTo('clients')">← Back to Clients</button><div class="greeting-subtitle" id="clientProfileEmail"></div><h1 class="page-title" id="clientProfileName">Client</h1></div></header>
         <div id="clientProfileContent"></div>
       </section>
 
@@ -2839,7 +2837,9 @@ table.jp-packages-table col:nth-child(6){width:7%}
           deadlineDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
           deadlineManuallySet: false,
           rushFee: 0,
-          rushDaysEarly: 0
+          rushDaysEarly: 0,
+          sourceOrderId: null,
+          sourceOrderCode: ""
         },
 
         activeView: "my-works",
@@ -5181,7 +5181,17 @@ ${description}`))actionCallback();return;}
       function getAllPayments(){return state.projects.flatMap(p=>(p.payments||[]).filter(pay=>!pay.deleted_at).map(pay=>({...pay,project:p})));}
 
 
-      function parseDateSafe(value){ if(!value) return null; const d=new Date(String(value).length===10?value+"T12:00:00":value); return isNaN(d)?null:d; }
+      function parseDateSafe(value){
+        if(!value)return null;
+        const raw=String(value).trim();
+        if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+          const [y,m,d]=raw.split('-').map(Number);
+          const local=new Date(y,m-1,d,12,0,0,0);
+          return Number.isNaN(local.getTime())?null:local;
+        }
+        const parsed=new Date(raw);
+        return Number.isNaN(parsed.getTime())?null:parsed;
+      }
       function deadlineInfo(dateValue){
         const d=parseDateSafe(dateValue); if(!d) return {label:"No deadline",sub:"",cls:""};
         const now=new Date(); now.setHours(0,0,0,0); const due=new Date(d); due.setHours(0,0,0,0);
@@ -6169,6 +6179,48 @@ ${description}`))actionCallback();return;}
       /* ==========================================================================
          NEW ORDER & CART PERSISTENCE WORKFLOW
          ========================================================================== */
+      function preloadOrderRequestData(order, client) {
+        if(!order||!client)return false;
+        const today=getLocalDateString(new Date());
+        const items=(Array.isArray(order.items)?order.items:[]).map((item,index)=>({
+          id:String(item.id||`request_item_${index}_${Date.now()}`),
+          name:String(item.name||'Order Item'),
+          price:Number(item.price||0),
+          type:String(item.type||'service').toUpperCase()==='PACKAGE'?'PACKAGE':'SOLO',
+          qty:Math.max(1,Number(item.qty||1)),
+          product_code:item.product_code||item.code||null,
+          catalog_id:item.catalog_id||null,
+          category:item.category||'',
+          includedItems:Array.isArray(item.includedItems)?item.includedItems:[]
+        }));
+        state.cart.clientMode='existing';
+        state.cart.selectedClientId=client.id;
+        state.cart.projectName=String(order.title||'').trim()||`${order.code||'Order Request'} Project`;
+        state.cart.items=items;
+        state.cart.discountType='fixed';
+        state.cart.discountVal=Math.max(0,Number(order.discount_amount||0));
+        state.cart.rushFee=Math.max(0,Number(order.rush_fee||0));
+        state.cart.rushDaysEarly=0;
+        state.cart.startDate=today;
+        state.cart.deadlineDate=order.deadline||addDaysToDateString(today,items.some(i=>i.type==='PACKAGE')?14:10);
+        state.cart.deadlineManuallySet=Boolean(order.deadline);
+        state.cart.sourceOrderId=order.id;
+        state.cart.sourceOrderCode=order.code||'';
+        persistCartState();
+        navigateTo('new-order');
+        renderNewOrderView();
+        setClientMode('existing');
+        selectExistingClient(client.id);
+        const projectInput=document.getElementById('orderProjectName');if(projectInput)projectInput.value=state.cart.projectName;
+        const startInput=document.getElementById('orderStartDate');if(startInput)startInput.value=state.cart.startDate;
+        const deadlineInput=document.getElementById('orderDeadlineDate');if(deadlineInput)deadlineInput.value=state.cart.deadlineDate;
+        const discountInput=document.getElementById('cartDiscountVal');if(discountInput)discountInput.value=String(state.cart.discountVal||0);
+        updateCartCalculations();
+        return true;
+      }
+      function getWorkspaceState(){return state;}
+      function getDatabaseClient(){return supabaseClient;}
+
       function renderNewOrderView() {
         populateClientDropdown();
         const projectNameInput = document.getElementById("orderProjectName");
@@ -7296,6 +7348,16 @@ ${description}`))actionCallback();return;}
           );
           state.projects.unshift(hydratedProject);
 
+          const sourceOrderId=state.cart.sourceOrderId||null;
+          if(sourceOrderId){
+            try{
+              await window.JuanSuiteRuntime?.request('/api/suite',{action:'link-order-project',order_id:sourceOrderId,project_id:hydratedProject.id});
+            }catch(linkError){
+              console.error('Order request link failed:',linkError);
+              throw new Error('Project was created, but the originating Order Request could not be linked. Please open Orders and retry the link before creating another project.');
+            }
+          }
+
           // Reset only after the database confirms the complete project structure.
           const today = getLocalDateString(new Date());
 
@@ -7307,6 +7369,8 @@ ${description}`))actionCallback();return;}
           state.cart.rushFee = 0;
           state.cart.rushDaysEarly = 0;
           state.cart.deadlineManuallySet = false;
+          state.cart.sourceOrderId = null;
+          state.cart.sourceOrderCode = "";
           state.cart.startDate = today;
           state.cart.deadlineDate = addDaysToDateString(today, 10);
 
@@ -9121,6 +9185,9 @@ ${description}`))actionCallback();return;}
         renderClients,
         removeClient,
         renderClientProfile,
+        preloadOrderRequestData,
+        getWorkspaceState,
+        getDatabaseClient,
         handleLegacyCSVImport,
         importPastedSheetData,
         openEditProjectModal,
@@ -10009,7 +10076,7 @@ ${description}`))actionCallback();return;}
 <script>window.JUAN_SUITE_APP='workspace';</script>
 <script src="/js/jsQR.js"></script>
 <script type="module" src="/js/suite-prod.js"></script>
-<script type="module" src="/js/workspace-redesign.js"></script>
+<script type="module" src="/js/workspace-redesign.js"></script>\n<script type="module" src="/js/general-update.js"></script>\n<script type="module" src="/js/keyboard-shortcuts.js"></script>
 </body>
 </html>
 <style id="v111-maintenance-patch">
