@@ -1565,6 +1565,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 }
 #destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
 </style>
+  <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
 </head>
 <body>
 
@@ -1736,6 +1737,8 @@ table.jp-packages-table col:nth-child(6){width:7%}
             <h1 class="page-title">New Order Entry</h1>
           </div>
           <div class="order-header-actions">
+            <button type="button" class="btn btn-secondary" id="workspaceNewOrderRequests" onclick="window.jpOpenOrders?.()">Order Requests</button>
+            <button type="button" class="btn btn-secondary" id="workspaceNewOrderQrScanner" onclick="window.jpOpenQrScanner?.()">Scan QR</button>
             <button type="button" class="btn btn-secondary" id="openDraftsBtn">Drafts</button>
             <button type="button" class="btn btn-secondary" id="saveDraftBtn">Save Draft</button>
           </div>
@@ -5753,7 +5756,6 @@ ${description}`))actionCallback();return;}
                 <div class="report-kpi-card-v2"><div class="report-kpi-icon money">${reportIcon('money')}</div><div><span>Total Receivables</span><strong>${formatCurrency(totalReceivables)}</strong><small>Total amount expected from all customers</small></div></div>
                 <div class="report-kpi-card-v2"><div class="report-kpi-icon collected">${reportIcon('collected')}</div><div><span>Collected</span><strong>${formatCurrency(collected)}</strong><small class="report-positive">${collectionRate}% of total receivables collected</small></div></div>
                 <div class="report-kpi-card-v2"><div class="report-kpi-icon neutral">${reportIcon('clock')}</div><div><span>Outstanding</span><strong>${formatCurrency(outstanding)}</strong><small>Remaining balance to be collected</small></div></div>
-                <div class="report-kpi-card-v2"><div class="report-kpi-icon month">${reportIcon('calendar')}</div><div><span>${escapeHtml(rangeTitle)}</span><strong>${formatCurrency(periodCollected)}</strong><small>Payments received in the selected timeline</small></div></div>
               </div>
 
               <div class="report-main-grid-v2">
@@ -5786,13 +5788,6 @@ ${description}`))actionCallback();return;}
                   <div class="report-status-footer-v2"><span><b>${projects.filter(p=>projectBalance(p)<=0.005).length}</b> settled projects</span><span><b>${collectionRate}%</b> collected</span><span><b>${projects.filter(p=>projectIsActiveByPayment(p)).length}</b> active</span></div>
                 </section>
               </div>
-
-              <section class="card report-milestones-v2">
-                <div class="report-milestone-intro"><div class="report-trophy">${reportIcon('trophy')}</div><div><h2>Revenue Milestones</h2><p>Track collected revenue toward your next goal.</p></div></div>
-                <div class="report-milestone-track">
-                  ${milestones.map(m=>`<div class="report-milestone-step ${m.achieved?'achieved':m.inProgress?'in-progress':'upcoming'}"><div class="milestone-icon">${reportIcon(m.achieved?'check':m.inProgress?'progress':'lock')}</div><div><strong>₱${Math.round(m.target/1000)}K</strong><span>${m.achieved?'Achieved':m.inProgress?'In Progress':'Upcoming'}</span>${!m.achieved?`<div class="milestone-progress"><i style="width:${m.progress}%"></i></div><small>${Math.round(m.progress)}%</small>`:''}</div></div>`).join('')}
-                </div>
-              </section>
 
               <section class="card report-recent-v2">
                 <div class="report-card-head-v2"><div><h2>Recent Payments</h2><p>Latest recorded payments</p></div><button class="btn btn-secondary btn-sm" onclick="app.navigateTo('payments')">View all payments →</button></div>
@@ -5866,17 +5861,65 @@ ${description}`))actionCallback();return;}
 
       function renderClientProfile(){
         const id=state.activeClientId, c=state.clients.find(x=>x.id===id); if(!c)return;
-        document.getElementById("clientProfileName").innerText=c.name||"Client";
-        document.getElementById("clientProfileEmail").innerText=`${formatClientId(c)} · ${c.email||""}`;
         const projects=state.projects.filter(p=>!p.deleted&&String(p.client_id)===String(id));
-        const paid=projects.reduce((s,p)=>s+getProjectPaid(p),0), total=projects.reduce((s,p)=>s+Number(p.total_amount||0),0);
+        const paid=projects.reduce((s,p)=>s+getProjectPaid(p),0);
+        const total=projects.reduce((s,p)=>s+Number(p.total_amount||0),0);
+        const outstanding=Math.max(0,total-paid);
+        const initials=String(c.name||c.email||'CL').replace(/[^a-zA-Z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,2).toUpperCase()||'CL';
+        document.getElementById("clientProfileName").innerText="Client Profile";
+        document.getElementById("clientProfileEmail").innerText="Client Directory";
         document.getElementById("clientProfileEditBtn").onclick=()=>openEditClientModal(id);
-        document.getElementById("clientProfileContent").innerHTML=`<div class="client-stat-grid"><div class="mini-stat"><div class="label">Projects</div><div class="value">${projects.length}</div></div><div class="mini-stat"><div class="label">Total Project Value</div><div class="value">${formatCurrency(total)}</div></div><div class="mini-stat"><div class="label">Paid</div><div class="value">${formatCurrency(paid)}</div></div><div class="mini-stat"><div class="label">Outstanding</div><div class="value">${formatCurrency(Math.max(0,total-paid))}</div></div></div>
-        <div class="card"><div class="card-header"><h2 class="card-title">Projects</h2></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Project</th><th>Value</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>${projects.map(p=>`<tr onclick="app.openProjectDetails('${p.id}')" style="cursor:pointer"><td>${escapeHtml(p.title)}</td><td>${formatCurrency(p.total_amount)}</td><td>${formatCurrency(getProjectPaid(p))}</td><td>${formatCurrency(getProjectBalance(p))}</td><td>${escapeHtml(p.status||"")}</td></tr>`).join("")||`<tr><td colspan="5" class="text-muted text-center">No projects.</td></tr>`}</tbody></table></div></div>
-        <div class="card mt-6"><div class="card-header"><h2 class="card-title">Payment History</h2></div>${projects.flatMap(p=>(p.payments||[]).map(pay=>`<div class="summary-row"><span>${escapeHtml(p.title)} • ${escapeHtml(pay.payment_date||"")}</span><strong>${formatCurrency(pay.amount_paid||pay.amount||0)}</strong></div>`)).join("")||`<div class="text-muted">No payment history.</div>`}</div>
-        <div class="card mt-6"><div class="card-header"><h2 class="card-title">Messages</h2></div><div class="text-muted">Message interface placeholder. Client communication can be connected here later.</div></div>`;
+        const infoRows=[
+          ['Client ID',formatClientId(c)],
+          ['Full Name',c.name||'—'],
+          ['Email',c.email||'—'],
+          ['Contact Number',formatPhilippinePhone(c.phone||'—')],
+          ['Address',c.address||'—'],
+          ['Date Added',formatProjectDate(c.created_at)||'—'],
+          ['Notes',c.notes||'No additional notes.']
+        ];
+        const recent=projects.slice().sort((a,b)=>(parseDateSafe(b.created_at)?.getTime()||0)-(parseDateSafe(a.created_at)?.getTime()||0)).slice(0,5);
+        document.getElementById("clientProfileContent").innerHTML=\`
+          <div class="jp-client-profile-shell">
+            <div class="jp-client-profile-hero">
+              <div class="jp-client-profile-avatar">\${escapeHtml(initials)}</div>
+              <div class="jp-client-profile-identity">
+                <span class="jp-suite-kicker">\${escapeHtml(formatClientId(c))}</span>
+                <h2>\${escapeHtml(c.name||'Client')}</h2>
+                <p>\${escapeHtml(c.email||'')}</p>
+                <span class="jp-client-active">Active Client</span>
+              </div>
+            </div>
+            <div class="jp-client-profile-grid">
+              <section class="jp-profile-panel">
+                <h3>Client Information</h3>
+                <div class="jp-client-info-list">
+                  \${infoRows.map(row=>\`<div class="jp-client-info-row"><span>\${escapeHtml(row[0])}</span><b>\${escapeHtml(row[1])}</b></div>\`).join('')}
+                </div>
+              </section>
+              <section class="jp-profile-panel">
+                <h3>Summary</h3>
+                <div class="jp-client-summary-list">
+                  <div class="jp-client-summary-row"><div class="jp-summary-icon">▣</div><span>Total Projects</span><strong>\${projects.length}</strong></div>
+                  <div class="jp-client-summary-row"><div class="jp-summary-icon">◫</div><span>Total Project Value</span><strong>\${formatCurrency(total)}</strong></div>
+                  <div class="jp-client-summary-row"><div class="jp-summary-icon">✓</div><span>Total Paid</span><strong class="positive">\${formatCurrency(paid)}</strong></div>
+                  <div class="jp-client-summary-row"><div class="jp-summary-icon">◷</div><span>Outstanding Balance</span><strong>\${formatCurrency(outstanding)}</strong></div>
+                </div>
+              </section>
+            </div>
+            <section class="jp-client-recent">
+              <div class="jp-client-recent-head"><h3>Recent Projects</h3><button class="btn btn-secondary btn-sm" onclick="app.navigateTo('projects')">View All →</button></div>
+              <div class="table-responsive">
+                <table>
+                  <thead><tr><th>Project</th><th>Value</th><th>Paid</th><th>Balance</th><th>Status</th><th>Date</th></tr></thead>
+                  <tbody>
+                    \${recent.map(p=>\`<tr onclick="app.openProjectDetails('\${p.id}')"><td><strong>\${escapeHtml(p.title||formatProjectId(p))}</strong></td><td>\${formatCurrency(p.total_amount)}</td><td>\${formatCurrency(getProjectPaid(p))}</td><td>\${formatCurrency(getProjectBalance(p))}</td><td><span class="jp-status \${String(p.status||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')}">\${escapeHtml(p.status||p.delivery_status||'Active')}</span></td><td>\${escapeHtml(formatProjectDate(p.created_at||p.start_date||p.deadline_date))}</td></tr>\`).join('')||\`<tr><td colspan="6" class="text-muted text-center">No projects yet.</td></tr>\`}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>\`;
       }
-
       function openClientProfile(id){state.activeClientId=id;navigateTo("client-profile");if(window.JuanTest||window.JuanSuiteRuntime)window.dispatchEvent(new CustomEvent('juan-client-profile',{detail:{id}}));}
 
       function getFriendlyDeadlineLabel(deadlineDateStr) {
@@ -8353,17 +8396,26 @@ ${description}`))actionCallback();return;}
          CLIENTS DIRECTORY & EDIT CLIENT WORKFLOW
          ========================================================================== */
       function renderClients(){
-        pruneClientDirectoryToProjects();const grid=document.getElementById('clientsListGrid'),filters=document.getElementById('clientFilters');if(!grid)return;
-        const names=['All','Pending','Completed'],current=state.clientFilter||'All';if(filters)filters.innerHTML=names.map(n=>`<button class="filter-pill ${current===n?'active':''}" onclick="app.setClientFilter('${n}')">${n}</button>`).join('');
+        pruneClientDirectoryToProjects();
+        const grid=document.getElementById('clientsListGrid'),filters=document.getElementById('clientFilters');if(!grid)return;
+        const names=['All','Pending','Completed'],current=state.clientFilter||'All';
+        if(filters)filters.innerHTML=names.map(n=>\`<button class="filter-pill \${current===n?'active':''}" onclick="app.setClientFilter('\${n}')">\${n}</button>\`).join('');
         const q=(document.getElementById('clientsSearch')?.value||'').trim().toLowerCase(),pref=state.listSorts?.clients||'default',norm=v=>String(v||'').trim().toLowerCase();
         const projectsFor=c=>state.projects.filter(p=>{if(p.deleted)return false;if(p.client_id)return String(p.client_id)===String(c.id);const pe=norm(p.client_email),ce=norm(c.email);if(pe&&ce&&pe===ce)return true;const pn=norm(p.client_name),cn=norm(c.name);return !!(pn&&cn&&pn===cn);});
-        let clients=state.clients.slice().filter(c=>!c.archived_at).filter(c=>`${c.client_code||''} ${c.name||''} ${c.email||''} ${c.phone||''} ${c.address||''}`.toLowerCase().includes(q));
+        let clients=state.clients.slice().filter(c=>!c.archived_at).filter(c=>\`\${c.client_code||''} \${c.name||''} \${c.email||''} \${c.phone||''} \${c.address||''}\`.toLowerCase().includes(q));
         clients=clients.filter(c=>{const ps=projectsFor(c),pending=ps.some(p=>p.status!=='Completed'&&p.delivery_status!=='Delivered'&&!p.archived_at);if(current==='Pending')return pending;if(current==='Completed')return ps.length>0&&!pending;return true;});
-        const codeNo=c=>Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||999999);if(pref==='date')clients.sort((a,b)=>(parseDateSafe(b.created_at)?.getTime()||0)-(parseDateSafe(a.created_at)?.getTime()||0)||codeNo(a)-codeNo(b));else if(pref==='payment')clients.sort((a,b)=>projectsFor(b).reduce((x,p)=>x+getProjectPaid(p),0)-projectsFor(a).reduce((x,p)=>x+getProjectPaid(p),0)||codeNo(a)-codeNo(b));else clients.sort((a,b)=>codeNo(a)-codeNo(b));
-        const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;if(!clients.length){grid.innerHTML=`<div class="card text-center text-muted py-4">${q?'No matching clients.':'No clients in this filter.'}</div>`;return;}
-        grid.innerHTML=`<div class="card table-card"><div class="table-responsive"><table class="data-table unified-table clients-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Phone</th><th>Projects</th><th>Payments</th><th class="table-actions-col" aria-label="Row actions"></th></tr></thead><tbody>${clients.map(c=>{const ps=projectsFor(c),paid=ps.reduce((x,p)=>x+getProjectPaid(p),0),menuId=`clientMenu_${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}`;return `<tr class="clickable-row" onclick="app.openClientProfile('${c.id}')"><td><strong>${escapeHtml(c.client_code||'—')}</strong></td><td><strong>${escapeHtml(c.name||'Client')}</strong></td><td>${escapeHtml(c.email||'—')}</td><td>${escapeHtml(formatPhilippinePhone(c.phone||'—'))}</td><td>${ps.length}</td><td><strong>${formatCurrency(paid)}</strong></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('${menuId}',event)" aria-label="Client actions">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('${c.id}')">Edit Client</button><button class="popover-action text-danger" onclick="app.removeClient('${c.id}')">Delete Client</button></div></div></td></tr>`}).join('')}</tbody></table></div></div>`;
+        const codeNo=c=>Number(String(c.client_code||'').match(/(\d+)$/)?.[1]||999999);
+        if(pref==='date')clients.sort((a,b)=>(parseDateSafe(b.created_at)?.getTime()||0)-(parseDateSafe(a.created_at)?.getTime()||0)||codeNo(a)-codeNo(b));
+        else if(pref==='payment')clients.sort((a,b)=>projectsFor(b).reduce((x,p)=>x+getProjectPaid(p),0)-projectsFor(a).reduce((x,p)=>x+getProjectPaid(p),0)||codeNo(a)-codeNo(b));
+        else clients.sort((a,b)=>codeNo(a)-codeNo(b));
+        const sortEl=document.getElementById('clientsSort');if(sortEl)sortEl.value=pref;
+        if(!clients.length){grid.innerHTML=\`<div class="card text-center text-muted py-4">\${q?'No matching clients.':'No clients in this filter.'}</div>\`;return;}
+        grid.innerHTML=\`<div class="card table-card"><div class="table-responsive"><table class="data-table unified-table clients-table"><thead><tr><th>Client ID</th><th>Client</th><th>Email</th><th>Phone</th><th>Projects</th><th>Payments</th><th class="table-actions-col" aria-label="Row actions"></th></tr></thead><tbody>\${clients.map(c=>{
+          const ps=projectsFor(c),paid=ps.reduce((x,p)=>x+getProjectPaid(p),0),menuId=\`clientMenu_\${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}\`;
+          const initials=String(c.name||c.email||'CL').replace(/[^a-zA-Z0-9 ]/g,' ').trim().split(/\s+/).filter(Boolean).map(x=>x[0]).join('').slice(0,2).toUpperCase()||'CL';
+          return \`<tr class="clickable-row" onclick="app.openClientProfile('\${c.id}')"><td><strong>\${escapeHtml(c.client_code||'—')}</strong></td><td><div class="jp-client-list-cell"><span class="jp-client-list-avatar">\${escapeHtml(initials)}</span><span class="jp-client-list-copy"><strong>\${escapeHtml(c.name||'Client')}</strong><small>Client since \${escapeHtml(formatProjectDate(c.created_at)||'—')}</small></span></div></td><td>\${escapeHtml(c.email||'—')}</td><td>\${escapeHtml(formatPhilippinePhone(c.phone||'—'))}</td><td>\${ps.length}</td><td><strong>\${formatCurrency(paid)}</strong></td><td class="table-row-actions" onclick="event.stopPropagation()"><div class="popover-wrap" id="\${menuId}"><button class="icon-more-button vertical-more" onclick="app.togglePopover('\${menuId}',event)" aria-label="Client actions">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action" onclick="app.openEditClientModal('\${c.id}')">Edit Client</button><button class="popover-action text-danger" onclick="app.removeClient('\${c.id}')">Delete Client</button></div></div></td></tr>\`;
+        }).join('')}</tbody></table></div></div>\`;
       }
-
       function setClientFilter(filter){state.clientFilter=filter;renderClients();}
 
       function removeClient(clientId){
@@ -9957,6 +10009,7 @@ ${description}`))actionCallback();return;}
 <script>window.JUAN_SUITE_APP='workspace';</script>
 <script src="/js/jsQR.js"></script>
 <script type="module" src="/js/suite-prod.js"></script>
+<script type="module" src="/js/workspace-redesign.js"></script>
 </body>
 </html>
 <style id="v111-maintenance-patch">
