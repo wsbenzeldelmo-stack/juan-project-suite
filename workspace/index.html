@@ -1602,6 +1602,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         <a href="#" class="nav-item" data-view="pricelist"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Shop</a>
         <div class="nav-divider"></div>
         <a href="#" class="nav-item" data-view="online-portal"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h5"/><circle cx="17" cy="15" r="2"/><path d="M17 17v2"/></svg></span>Online Portal</a>
+        <a href="#" class="nav-item" data-view="in-house-ads"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h4"/><path d="m17 9 .7 1.4 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z"/></svg></span>In-House Ads</a>
         <a href="#" class="nav-item" data-view="settings"><span class="icon"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33A1.65 1.65 0 0 0 14 21v.09a2 2 0 0 1-4 0V21a1.65 1.65 0 0 0-1.51-1.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.23 15H4a2 2 0 0 1 0-4h.23a1.65 1.65 0 0 0 1.51-1.6 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 4.23V4a2 2 0 0 1 4 0v.23a1.65 1.65 0 0 0 1.51 1.51l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.77 11H20a2 2 0 0 1 0 4h-.23a1.65 1.65 0 0 0-1.51 0z"/></svg></span>Settings</a>
       </nav>
 
@@ -2171,6 +2172,9 @@ table.jp-packages-table col:nth-child(6){width:7%}
           <div class="card portal-payment-settings"><div class="form-grid"><div><div class="form-group"><label class="form-label">Payment Method</label><input id="portalMethodLabel" class="form-control" placeholder="UnionBank InstaPay"></div><div class="form-group"><label class="form-label">Account Name</label><input id="portalAccountName" class="form-control"></div><div class="form-group"><label class="form-label">Account Number</label><input id="portalAccountNumber" class="form-control"></div></div><div><div class="form-group"><label class="form-label">QR Image URL</label><input id="portalQrImageUrl" class="form-control" placeholder="Optional URL; blank uses bundled UnionBank QR"></div><div class="form-group"><label class="form-label">Instructions</label><textarea id="portalInstructions" class="form-control" rows="5"></textarea></div></div></div><button id="portalSavePaymentSettings" class="btn btn-primary">Save Payment Setup</button><p class="text-sm text-muted mt-2">Leaving QR Image URL blank uses the supplied UnionBank QR asset without altering it.</p></div>
         </div>
       </section>
+
+      <!-- VIEW: IN-HOUSE ADS — standalone campaign manager -->
+      <section id="view-in-house-ads" class="view"><div id="jpAdsAdmin"></div></section>
 
       <!-- VIEW 8: POLISHED APPLE-STYLE SETTINGS -->
       <section id="view-settings" class="view">

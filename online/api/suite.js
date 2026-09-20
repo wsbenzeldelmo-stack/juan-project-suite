@@ -480,10 +480,12 @@ export default async function handler(req,res){
       const {error}=await svc.from('promotions').update({status:'archived',enabled:false,archived_at:now()}).eq('id',b.id);if(error)throw error;return res.status(200).json({ok:true});
     }
     if(action==='delete-ad'){
-      const {data:a,error:ae}=await svc.from('promotions').select('id,status').eq('id',b.id).maybeSingle();if(ae)throw ae;if(!a)fail('Ad not found.',404);
-      const {count,error:ce}=await svc.from('ad_events').select('id',{count:'exact',head:true}).eq('ad_id',a.id);if(ce)throw ce;
-      if(a.status!=='draft'||Number(count||0)>0)fail('Only unused draft ads can be permanently deleted. Archive this campaign instead.');
-      const {error}=await svc.from('promotions').delete().eq('id',a.id);if(error)throw error;return res.status(200).json({ok:true});
+      const {data:a,error:ae}=await svc.from('promotions').select('id,title,image').eq('id',b.id).maybeSingle();if(ae)throw ae;if(!a)fail('Ad not found.',404);
+      const {error}=await svc.from('promotions').delete().eq('id',a.id);if(error)throw error;
+      let image_cleanup_warning=null;
+      if(a.image){try{const {count,error:sharedError}=await svc.from('promotions').select('id',{count:'exact',head:true}).eq('image',a.image);if(sharedError)throw sharedError;if(Number(count||0)===0){const marker='/storage/v1/object/public/juan-ad-assets/',idx=String(a.image).indexOf(marker);if(idx>=0){const path=decodeURIComponent(String(a.image).slice(idx+marker.length));if(path){const removed=await svc.storage.from('juan-ad-assets').remove([path]);if(removed.error)throw removed.error;}}}}catch(cleanupError){image_cleanup_warning=cleanupError?.message||'Campaign deleted but the image could not be removed from storage.'}}
+      await audit(svc,'In-house ad permanently deleted',a.title||String(a.id),user.id);
+      return res.status(200).json({ok:true,image_cleanup_warning});
     }
     if(action==='configure'){
       const cfg=b.config||{},rules=cfg.rules||{};rules.maribank='^\\d{6,12}$';

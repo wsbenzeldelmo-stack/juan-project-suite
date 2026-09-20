@@ -106,3 +106,31 @@ test("Settings mirrors the approved reference layout and staged save behavior", 
   assert.match(css, /\.jp-settings-nav-item\{[^}]*grid-template-columns:4px 24px/);
   assert.match(css, /\.jp-settings-action-bar\{/);
 });
+
+
+test("In-House Ads is a standalone Workspace page with permanent deletion", async () => {
+  const html = await read("index.html");
+  const js = await read("js/general-update.js");
+  const css = await read("css/general-update.css");
+  const api = await read("../online/api/suite.js");
+  assert.match(html, /data-view="in-house-ads"/);
+  assert.match(html, /id="view-in-house-ads"/);
+  assert.match(js, /function ensureAdsPage/);
+  assert.match(js, /data-adelete/);
+  assert.match(js, /Delete permanently/);
+  assert.match(css, /Standalone In-House Ads page/);
+  assert.doesNotMatch(api, /Only unused draft ads can be permanently deleted/);
+  assert.match(api, /In-house ad permanently deleted/);
+});
+
+test("JUAN PROJECT Online refreshes and cache-busts in-house ads", async () => {
+  const ads = await read("../online/js/ads.js");
+  const sw = await read("../online/sw.js");
+  const html = await read("../online/index.html");
+  assert.match(ads, /lastLoadedAt/);
+  assert.match(ads, /juan-ads-refresh/);
+  assert.match(sw, /juan-online-v1\.8-ads-release/);
+  assert.match(sw, /networkFirst/);
+  assert.match(html, /\/js\/ads\.js\?v=20260920-1900/);
+  assert.match(html, /updateViaCache:"none"/);
+});
