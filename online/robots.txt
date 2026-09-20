@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /workspace/
+Sitemap: https://juan-project-online.vercel.app/sitemap.xml
