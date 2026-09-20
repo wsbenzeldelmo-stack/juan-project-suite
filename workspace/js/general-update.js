@@ -23,6 +23,32 @@
     overlay.addEventListener("click",function(e){if(e.target===overlay)closeOverlay();});
     return overlay.firstElementChild;
   }
+  function confirmAction(options){
+    options=options||{};
+    return new Promise(function(resolve){
+      var previous=overlay;
+      if(previous)previous.style.display="none";
+      var layer=document.createElement("div");layer.className="jp-confirm-overlay";
+      layer.innerHTML='<section class="jp-confirm-card" role="alertdialog" aria-modal="true"><div class="jp-confirm-icon '+(options.danger?"danger":"")+'">'+(options.danger?"!":"✓")+'</div><h3>'+esc(options.title||"Confirm action")+'</h3><p>'+esc(options.message||"")+'</p><div class="jp-confirm-actions"><button class="btn btn-secondary" data-no>Cancel</button><button class="btn '+(options.danger?"btn-danger":"btn-primary")+'" data-yes>'+esc(options.confirmLabel||"Confirm")+'</button></div></section>';
+      document.body.appendChild(layer);
+      function finish(value){layer.remove();if(previous&&document.body.contains(previous))previous.style.display="";resolve(value);}
+      layer.querySelector("[data-no]").onclick=function(){finish(false);};
+      layer.querySelector("[data-yes]").onclick=function(){finish(true);};
+      layer.addEventListener("click",function(e){if(e.target===layer)finish(false);});
+      var onKey=function(e){if(e.key==="Escape"){document.removeEventListener("keydown",onKey,true);finish(false);}if(e.key==="Enter"){document.removeEventListener("keydown",onKey,true);finish(true);}};
+      document.addEventListener("keydown",onKey,true);
+      layer.querySelector("[data-yes]").focus();
+    });
+  }
+  function preparingOrder(order){
+    var layer=document.createElement("div");layer.className="jp-prepare-overlay";
+    layer.innerHTML='<section class="jp-prepare-card"><div class="jp-prepare-mark"><span></span></div><div><span class="section-kicker">ORDER REQUEST</span><h3>Preparing '+esc(order?.code||"order")+'…</h3><p>Matching the client email and loading the request into New Order.</p></div></section>';
+    document.body.appendChild(layer);
+    return {
+      done:function(message){layer.classList.add("done");layer.querySelector(".jp-prepare-mark").innerHTML="✓";layer.querySelector("h3").textContent=message||"Order ready";layer.querySelector("p").textContent="You can review dates, discounts, and charges before creating the project.";setTimeout(function(){layer.remove();},650);},
+      fail:function(message){layer.classList.add("failed");layer.querySelector(".jp-prepare-mark").innerHTML="!";layer.querySelector("h3").textContent="Could not prepare order";layer.querySelector("p").textContent=message||"Try again.";setTimeout(function(){layer.remove();},1600);}
+    };
+  }
 
   function ensureOrdersView(){
     if(document.getElementById("view-orders"))return;
@@ -90,11 +116,11 @@
     var canDecide=!o.project_id&&!o.archived_at&&o.status!=="Rejected"&&o.status!=="Project Created";
     var m=modal(
       '<header class="jp-general-modal-head"><div><span class="section-kicker">ORDER REQUEST</span><h2>'+esc(o.code||"Order")+'</h2><p>'+esc(o.title||"Order Request")+'</p></div><button class="jp-general-x" aria-label="Close">×</button></header>'+
-      '<div class="jp-order-preview-grid"><section class="card"><div class="section-kicker">CLIENT INFORMATION</div><div class="jp-order-client-name">'+esc(o.name||"Client")+'</div><div class="jp-order-facts"><span>Email</span><b>'+esc(o.email||"—")+'</b><span>Phone</span><b>'+esc(o.phone||"—")+'</b><span>Requested Date</span><b>'+esc(dateText(o.deadline))+'</b><span>Submitted</span><b>'+esc(dateTime(o.created_at))+'</b></div></section>'+
-      '<section class="card jp-order-summary-card"><div class="section-kicker">INITIAL ORDER</div><div><span>Subtotal</span><b>'+peso(o.subtotal)+'</b></div><div><span>Rush Fee</span><b>'+peso(o.rush_fee)+'</b></div><div><span>Discount</span><b>− '+peso(o.discount_amount)+'</b></div><div class="total"><span>Estimated Total</span><strong>'+peso(o.total)+'</strong></div><span class="badge '+(o.status==="Rejected"?"badge-red":o.status==="Approved"?"badge-green":"badge-neutral")+'">'+esc(effectiveStatus(o))+"</span></section></div>"+
+      '<section class="card jp-order-client-card"><div class="jp-order-card-head"><div><div class="section-kicker">CLIENT INFORMATION</div><div class="jp-order-client-name">'+esc(o.name||"Client")+'</div></div><span class="badge '+(o.status==="Rejected"?"badge-red":o.status==="Approved"?"badge-green":"badge-neutral")+'">'+esc(effectiveStatus(o))+'</span></div><div class="jp-order-facts"><span>Email</span><b>'+esc(o.email||"—")+'</b><span>Phone</span><b>'+esc(o.phone||"—")+'</b><span>Requested Date</span><b>'+esc(dateText(o.deadline))+'</b><span>Submitted</span><b>'+esc(dateTime(o.created_at))+'</b></div></section>'+
       '<section class="card"><div class="card-header"><div><div class="section-kicker">ORDER ITEMS</div><h3 class="card-title">'+(editing?"Edit Requested Items":"Requested Items")+'</h3></div></div><div class="table-responsive"><table class="data-table jp-order-preview-table"><thead><tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead><tbody>'+itemTable(items,!!editing)+"</tbody></table></div></section>"+
-      '<section class="card"><label class="form-label">Review Note</label><textarea id="orderPageNote" class="form-control" rows="3">'+esc(o.review_note||"")+"</textarea></section>"+
-      '<footer class="jp-order-preview-actions">'+(editing?'<button class="btn btn-secondary" id="orderSaveEdits">Save Changes</button>':"")+(canDecide?'<button class="btn btn-danger" id="orderRejectBtn">Reject</button><button class="btn btn-primary" id="orderApproveBtn">Approve & Continue to New Order</button>':"")+"</footer>",
+      '<section class="card jp-order-summary-card"><div class="section-kicker">ORDER SUMMARY</div><div><span>Subtotal</span><b>'+peso(o.subtotal)+'</b></div><div><span>Rush Fee</span><b>'+peso(o.rush_fee)+'</b></div><div><span>Discount</span><b>− '+peso(o.discount_amount)+'</b></div><div class="total"><span>Estimated Total</span><strong>'+peso(o.total)+'</strong></div></section>'+
+      '<section class="card"><label class="form-label">Review Note</label><textarea id="orderPageNote" class="form-control" rows="3" placeholder="Add an internal note (optional)">'+esc(o.review_note||"")+"</textarea></section>"+
+      '<footer class="jp-order-preview-actions">'+(editing?'<button class="btn btn-secondary" id="orderSaveEdits">Save Changes</button>':"")+(canDecide?'<button class="btn btn-danger" id="orderRejectBtn">Reject</button><button class="btn btn-primary" id="orderApproveBtn">Approve Order</button>':"")+"</footer>",
       "jp-order-preview-modal"
     );
     m.querySelector(".jp-general-x").onclick=closeOverlay;
@@ -111,24 +137,36 @@
     var reject=m.querySelector("#orderRejectBtn");
     if(reject)reject.onclick=async function(){
       var note=m.querySelector("#orderPageNote").value.trim();if(!note){toast("Add a rejection reason first.");return;}
-      if(!confirm("Reject "+o.code+"?"))return;
-      try{await API({action:"review-order",id:o.id,status:"Rejected",note:note});toast("Order rejected.");closeOverlay();await renderOrders(true);}catch(e){toast(e.message);}
+      if(!(await confirmAction({title:"Reject "+o.code+"?",message:"This request will stay in history with a Rejected status.",confirmLabel:"Reject Order",danger:true})))return;
+      try{
+        await API({action:"review-order",id:o.id,status:"Rejected",note:note});
+        o.status="Rejected";o.review_note=note;closeOverlay();toast("Order rejected.");renderOrders(false);
+      }catch(e){toast(e.message);}
     };
     var approve=m.querySelector("#orderApproveBtn");
     if(approve)approve.onclick=async function(){
-      if(!confirm("Approve "+o.code+" and preload it into New Order?"))return;
+      if(!(await confirmAction({title:"Approve "+o.code+"?",message:"The request will be prepared in New Order. An existing client is used only when the email matches exactly.",confirmLabel:"Approve Order"})))return;
+      var prep=preparingOrder(o);
       try{
-        approve.disabled=true;approve.textContent="Preparing New Order…";
+        approve.disabled=true;
         var r=await API({action:"approve-order",id:o.id,note:m.querySelector("#orderPageNote").value});
-        try{await window.app.refreshSharedTest();}catch(_){}
-        var st=window.app.getWorkspaceState(),client=(st.clients||[]).find(function(c){return String(c.id)===String(r.client.id);})||r.client;
-        closeOverlay();window.app.preloadOrderRequestData(r.order,client);toast(o.code+" loaded into New Order.");
-      }catch(e){approve.disabled=false;approve.textContent="Approve & Continue to New Order";toast(e.message);}
+        o.status="Approved";o.client_id=r.client?.id||null;Object.assign(o,r.order||{});
+        closeOverlay();
+        window.app.preloadOrderRequestData(r.order,r.client);
+        prep.done((o.code||"Order")+" is ready");
+        toast((o.code||"Order")+" loaded into New Order.");
+      }catch(e){prep.fail(e.message);approve.disabled=false;toast(e.message);}
     };
   }
   async function archiveOrder(id){
-    var o=findOrder(id);if(!o)return;if(!confirm("Delete "+o.code+" from active Orders? It will be archived."))return;
-    try{await API({action:"archive-order",id:id});toast("Order archived.");await renderOrders(true);}catch(e){toast(e.message);}
+    var o=findOrder(id);if(!o)return;
+    if(!(await confirmAction({title:"Delete "+o.code+"?",message:"It will disappear from Active Orders and remain archived for history.",confirmLabel:"Delete Order",danger:true})))return;
+    var index=orders.findIndex(function(x){return String(x.id)===String(id);});
+    var snapshot=index>=0?Object.assign({},orders[index]):null;
+    if(index>=0){orders[index].archived_at=new Date().toISOString();orders[index].status="Archived";}
+    closeOverlay();renderOrders(false);toast("Order removed.");
+    try{await API({action:"archive-order",id:id});}
+    catch(e){if(index>=0&&snapshot)orders[index]=snapshot;renderOrders(false);toast("Delete failed: "+(e.message||e));}
   }
 
   function renderEditableClient(){
@@ -146,25 +184,35 @@
       '<div class="form-group"><label class="form-label">Contact Number</label><input id="inlineClientPhone" class="form-control" value="'+esc(c.phone||"")+'"></div>'+
       '<div class="form-group" style="grid-column:1/-1"><label class="form-label">Address</label><input id="inlineClientAddress" class="form-control" value="'+esc(c.address||"")+'"></div>'+
       '<div class="form-group" style="grid-column:1/-1"><label class="form-label">Notes</label><textarea id="inlineClientNotes" class="form-control" rows="4">'+esc(c.notes||"")+"</textarea></div></div>"+
-      '<div class="jp-inline-form-footer"><span>Changes are saved to the shared client record.</span><button id="inlineClientSave" class="btn btn-primary">Save Changes</button></div></section>'+
+      '<div class="jp-inline-form-footer"><span id="inlineClientSaveState">Changes save automatically.</span></div></section>'+
       '<aside class="card jp-inline-client-summary"><div class="section-kicker">SUMMARY</div><h2 class="card-title">Client Value</h2><div class="jp-summary-line"><span>Total Projects</span><b>'+ps.length+'</b></div><div class="jp-summary-line"><span>Total Project Value</span><b>'+peso(total)+'</b></div><div class="jp-summary-line"><span>Total Paid</span><b class="positive">'+peso(paidTotal)+'</b></div><div class="jp-summary-line"><span>Outstanding</span><b>'+peso(Math.max(0,total-paidTotal))+'</b></div><div class="jp-summary-line"><span>Date Added</span><b>'+esc(dateText(c.created_at))+"</b></div></aside></div>"+
       '<section class="card jp-inline-recent"><div class="card-header"><h2 class="card-title">Recent Projects</h2><button class="btn btn-secondary btn-sm" onclick="app.navigateTo(\'projects\')">View All →</button></div><div class="table-responsive"><table class="data-table"><thead><tr><th>Project</th><th>Value</th><th>Paid</th><th>Balance</th><th>Status</th><th>Date</th></tr></thead><tbody>'+
       (ps.slice().sort(function(a,b){return new Date(b.created_at||0)-new Date(a.created_at||0);}).slice(0,5).map(function(p){var pd=paid(p);return '<tr class="clickable-row" onclick="app.openProjectDetails(\''+esc(p.id)+'\')"><td><strong class="project-id-cell">'+esc(p.title||p.project_code||"Project")+'</strong></td><td>'+peso(p.total_amount)+'</td><td>'+peso(pd)+'</td><td>'+peso(Math.max(0,Number(p.total_amount||0)-pd))+'</td><td><span class="badge badge-green">'+esc(p.status||p.delivery_status||"Active")+'</span></td><td class="jp-date-cell">'+esc(dateText(p.created_at||p.start_date))+"</td></tr>";}).join("")||'<tr><td colspan="6" class="text-center text-muted">No projects.</td></tr>')+
       "</tbody></table></div></section>";
-    document.getElementById("inlineClientSave").onclick=function(){saveClient(c.id);};
+    var timer=null;
+    ["inlineClientName","inlineClientEmail","inlineClientPhone","inlineClientAddress","inlineClientNotes"].forEach(function(fid){
+      var field=document.getElementById(fid);if(!field)return;
+      field.addEventListener("input",function(){
+        localStorage.setItem("JUAN_CLIENT_DRAFT_"+c.id,JSON.stringify({name:document.getElementById("inlineClientName").value,email:document.getElementById("inlineClientEmail").value,phone:document.getElementById("inlineClientPhone").value,address:document.getElementById("inlineClientAddress").value,notes:document.getElementById("inlineClientNotes").value,at:Date.now()}));
+        var stateEl=document.getElementById("inlineClientSaveState");if(stateEl)stateEl.textContent="Saving…";
+        clearTimeout(timer);timer=setTimeout(function(){saveClient(c.id,true);},650);
+      });
+    });
+    var draft=localStorage.getItem("JUAN_CLIENT_DRAFT_"+c.id);
+    if(draft){try{var d=JSON.parse(draft);if(Date.now()-Number(d.at||0)<86400000){document.getElementById("inlineClientName").value=d.name??document.getElementById("inlineClientName").value;document.getElementById("inlineClientEmail").value=d.email??document.getElementById("inlineClientEmail").value;document.getElementById("inlineClientPhone").value=d.phone??document.getElementById("inlineClientPhone").value;document.getElementById("inlineClientAddress").value=d.address??document.getElementById("inlineClientAddress").value;document.getElementById("inlineClientNotes").value=d.notes??document.getElementById("inlineClientNotes").value;}}catch(_){}}
   }
-  async function saveClient(id){
+  async function saveClient(id,silent){
     var st=window.app.getWorkspaceState(),c=(st.clients||[]).find(function(x){return String(x.id)===String(id);}),db=window.app.getDatabaseClient();if(!c||!db)return toast("Database is not connected.");
     var name=document.getElementById("inlineClientName").value.trim(),email=document.getElementById("inlineClientEmail").value.trim().toLowerCase(),phone=document.getElementById("inlineClientPhone").value.trim(),address=document.getElementById("inlineClientAddress").value.trim(),notes=document.getElementById("inlineClientNotes").value.trim();
     if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return toast("Enter a client name and valid email.");
-    var btn=document.getElementById("inlineClientSave");
+    var stateEl=document.getElementById("inlineClientSaveState");
     try{
-      btn.disabled=true;btn.textContent="Saving…";var u=await db.from("clients").update({name:name,email:email,phone:phone||null,address:address||null,notes:notes}).eq("id",id).select("*").single();if(u.error)throw u.error;
+      var u=await db.from("clients").update({name:name,email:email,phone:phone||null,address:address||null,notes:notes}).eq("id",id).select("*").single();if(u.error)throw u.error;
       var pu=await db.from("projects").update({client_name:name,client_email:email,client_phone:phone||null}).eq("client_id",id);if(pu.error)throw pu.error;
       Object.assign(c,u.data);(st.projects||[]).filter(function(p){return String(p.client_id)===String(id);}).forEach(function(p){p.client_name=name;p.client_email=email;p.client_phone=phone||null;});
-      toast("Changes saved");renderEditableClient();
-    }catch(e){toast(e.code==="23505"?"That email is already assigned to another client.":e.message);}
-    finally{if(document.body.contains(btn)){btn.disabled=false;btn.textContent="Save Changes";}}
+      localStorage.removeItem("JUAN_CLIENT_DRAFT_"+id);if(stateEl)stateEl.textContent="Saved";
+      if(!silent)toast("Changes saved");
+    }catch(e){if(stateEl)stateEl.textContent="Save failed";toast(e.code==="23505"?"That email is already assigned to another client.":e.message);}
   }
 
   function ensureAdsTab(){
