@@ -665,3 +665,114 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   .app.route-shop .jp-shop-copy{min-width:0!important}
   .app.route-shop .jp-shop-copy h3,.app.route-shop .jp-shop-copy p{overflow-wrap:anywhere!important}
 }
+
+/* Online cleanup pass · 2026-09-20 23:15 */
+/* Legacy onboarding must never be visible, even if an old cached script attempts to inject it. */
+.suite-onboard,.visual-onboard-shell,.visual-onboard-card,.visual-onboard-image,.visual-onboard-controls,.visual-skip,.visual-next,.visual-dots{display:none!important}
+
+/* Icon-led page titles */
+.screen-head .screen-title{display:flex!important;align-items:center!important;gap:10px!important;min-width:0}
+.screen-title-icon{width:32px;height:32px;flex:0 0 32px;border-radius:10px;background:#e8faf1;color:#07a65e;display:grid;place-items:center}
+.screen-title-icon svg{width:19px!important;height:19px!important}
+
+/* Remove the empty outer rectangle around View Cart. */
+.page.route-shop .jp-shop-footer,.app.route-shop .jp-shop-footer{
+  margin:0!important;
+  padding:6px 0 0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  min-height:0!important;
+}
+.page.route-shop .jp-mini-cart,.app.route-shop .jp-mini-cart{
+  width:100%!important;
+  min-height:56px!important;
+  margin:0!important;
+  border-radius:16px!important;
+}
+.page.route-shop .jp-shop-item-indicator{padding:7px 0!important;background:transparent!important}
+
+/* Account card must stay premium/dark instead of being swallowed by a generic white desktop surface. */
+.app.route-account .membership-card{
+  width:min(680px,100%)!important;
+  max-width:680px!important;
+  min-height:0!important;
+  height:auto!important;
+  aspect-ratio:1.59/1!important;
+  margin:0!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:0 14px 34px rgba(10,24,17,.15)!important;
+}
+.app.route-account .membership-bronze{background:linear-gradient(145deg,#0d1b15,#1b3026)!important}
+.app.route-account .membership-silver{background:linear-gradient(145deg,#28302e,#5c6763)!important}
+.app.route-account .membership-gold{background:linear-gradient(145deg,#241d0c,#735d17)!important}
+.app.route-account .membership-platinum{background:linear-gradient(145deg,#15171b,#42464f)!important}
+.app.route-account .membership-card h2,.app.route-account .membership-card b{color:#fff!important}
+.app.route-account .membership-card p,.app.route-account .membership-card small,.app.route-account .membership-card span{color:rgba(255,255,255,.72)!important}
+
+/* Clickable support/legal rows */
+.settings-row-button{width:100%;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.settings-link{color:inherit;text-decoration:none;cursor:pointer}
+.settings-link:hover,.settings-row-button:hover{background:#f6faf8}
+
+/* Payment legal footer */
+.jp-payment-legal-footer{display:grid;justify-items:center;gap:5px;text-align:center;padding:18px 8px 4px;color:#7c8781}
+.jp-payment-legal-footer nav{display:flex;align-items:center;justify-content:center;gap:8px}
+.jp-payment-legal-footer a{font-size:10px;font-weight:800;color:#526058;text-decoration:none}
+.jp-payment-legal-footer a:hover{text-decoration:underline}
+.jp-payment-legal-footer>b{font-size:9px;color:#68746e}
+.jp-payment-legal-footer>small{font-size:8px;color:#9aa39f;letter-spacing:.025em}
+
+/* Browser notification permission block */
+.browser-notification-enable,.browser-notification-state{width:100%;box-sizing:border-box;margin:8px 0 12px;padding:12px;border:1px solid #e1e8e4;border-radius:13px;background:#f8fbf9;color:#1c2923}
+.browser-notification-enable{display:grid;grid-template-columns:32px 1fr 18px;gap:9px;align-items:center;text-align:left;font:inherit;cursor:pointer}
+.browser-notification-enable>span{width:32px;height:32px;border-radius:10px;background:#e6faf0;color:#07985a;display:grid;place-items:center}
+.browser-notification-enable b,.browser-notification-state b{font-size:10px}.browser-notification-enable small,.browser-notification-state small{display:block;margin-top:2px;font-size:9px;color:#7b8780}
+.browser-notification-state.allowed{background:#eaf9f2;border-color:#d2efe0;color:#087d4d}
+
+/* Mobile: page shell stays fixed; only the Orders list can move if it overflows. */
+@media(max-width:899px){
+  html,body,#root{min-height:0!important}
+  .app.route-orders{
+    height:100dvh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .page.route-orders{
+    height:calc(100dvh - 66px - env(safe-area-inset-bottom))!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+    padding-bottom:8px!important;
+  }
+  .page.route-orders>.screen-head,.page.route-orders>.order-tabs{flex:0 0 auto!important}
+  .page.route-orders>.project-list{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    align-content:start!important;
+    padding-bottom:2px!important;
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+  }
+  .page.route-orders>.project-list::-webkit-scrollbar{display:none!important}
+  .page.route-shop,.page.route-payment,.page.route-account{min-height:0!important}
+  .page.route-shop{padding-bottom:0!important}
+  .page.route-shop .jp-shop-scroll{padding-bottom:4px!important}
+  .page.route-shop .jp-shop-footer{padding:6px 0 calc(6px + env(safe-area-inset-bottom))!important}
+  .page.route-payment,.page.route-account{padding-bottom:calc(78px + env(safe-area-inset-bottom))!important}
+  .screen-title-icon{width:30px;height:30px;flex-basis:30px;border-radius:9px}
+  .screen-title-icon svg{width:18px!important;height:18px!important}
+  .jp-payment-legal-footer{padding-bottom:2px!important}
+}
+
+/* Desktop: keep Account and Shop compact; no giant empty white blocks. */
+@media(min-width:900px){
+  .app.route-account>.page{align-content:start!important;overflow-y:auto!important}
+  .app.route-account .membership-card{max-width:620px!important}
+  .app.route-shop .jp-shop-footer{padding:5px 0 0!important}
+}

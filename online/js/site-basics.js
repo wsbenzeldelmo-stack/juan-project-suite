@@ -19,7 +19,13 @@
     document.getElementById("jpEssentialOnly").onclick=function(){localStorage.setItem(CONSENT_KEY,"essential");el.remove();};
     document.getElementById("jpAcceptPrivacy").onclick=function(){localStorage.setItem(CONSENT_KEY,"all");el.remove();};
   }
-  function enhance(){syncFooter();consent();document.querySelectorAll("img:not([alt])").forEach(function(img){img.alt="JUAN PROJECT visual";});}
+  function purgeLegacyOnboarding(){
+    document.querySelectorAll(".suite-onboard").forEach(function(el){var overlay=el.closest(".suite-overlay,.overlay");(overlay||el).remove();});
+    document.querySelectorAll(".visual-onboard-shell,.visual-onboard-card").forEach(function(el){el.remove();});
+    document.querySelectorAll(".suite-overlay,.overlay").forEach(function(el){var text=(el.textContent||"").trim();if(text.includes("Welcome to your client portal")||text.includes("Your projects, together")||text.includes("Payments made clear")||text.includes("Ready when you are"))el.remove();});
+  }
+  function enhance(){purgeLegacyOnboarding();syncFooter();consent();document.querySelectorAll("img:not([alt])").forEach(function(img){img.alt="JUAN PROJECT visual";});}
   window.addEventListener("juan-online-render",enhance);
+  new MutationObserver(function(){purgeLegacyOnboarding();}).observe(document.documentElement,{childList:true,subtree:true});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(enhance,250);});else setTimeout(enhance,250);
 })();
