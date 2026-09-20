@@ -7,13 +7,12 @@ import {PAYMENT_INSTITUTIONS,getPaymentInstitution,validatePaymentReference,sani
 
 const root=document.getElementById('root');
 const QR_FALLBACK='/assets/unionbank-bankqr-placeholder.jpg';
-const ONBOARDING_KEY='JUAN_ONBOARDING_DONE_V7';
 const REMEMBERED_CLIENT_KEY='JUAN_REMEMBERED_CLIENT';
 
 let state={
   route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
   catalog:{categories:[],services:[],packages:[],packageItems:[]},catalogLoaded:false,
-  gateOpen:false,onboardingStep:0,orderFilter:'requests',shopItem:null,paymentProjectId:null,
+  gateOpen:false,orderFilter:'requests',shopItem:null,paymentProjectId:null,
   shopQuery:'',shopSort:'default',shopCategory:'all',paymentFlow:'',
   notificationOpen:false,senderInstitution:'',guestGateContext:'default',receiptPreviewUrl:'',receiptPreviewType:'',receiptPreviewName:'',clientMessage:null
 };
@@ -154,27 +153,12 @@ const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation"><di
 
 function welcomeScreen(){
   root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome jp-welcome-simplified"><div class="welcome-copy"><span class="eyebrow">WELCOME</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Choose what you want to do today.</p></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="welcomeLogIn" class="text-button">Log In</button></p></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
-  document.getElementById('welcomeShop').onclick=()=>{localStorage.setItem(ONBOARDING_KEY,'1');state.route='shop';render();};
+  document.getElementById('welcomeShop').onclick=()=>{state.route='shop';render();};
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
   document.getElementById('welcomeTrack').onclick=()=>window.JPMobileCommerce?.openTrack?.();
 }
 
-const onboardingSlides=[
-  '/assets/onboarding/onboarding-1.png',
-  '/assets/onboarding/onboarding-2.png',
-  '/assets/onboarding/onboarding-3.png'
-];
-function onboardingScreen(){
-  const src=onboardingSlides[state.onboardingStep];
-  root.innerHTML=`<div class="visual-onboard-shell"><div class="visual-onboard-card"><img class="visual-onboard-image" src="${src}" alt="JUAN PROJECT Online introduction ${state.onboardingStep+1} of ${onboardingSlides.length}"><button id="skipOnboard" class="visual-skip">Skip</button><div class="visual-onboard-controls"><div class="visual-dots">${onboardingSlides.map((_,i)=>`<span class="${i===state.onboardingStep?'active':''}"></span>`).join('')}</div><button id="onboardNext" class="visual-next" aria-label="${state.onboardingStep===onboardingSlides.length-1?'Finish introduction':'Next introduction'}">${state.onboardingStep===onboardingSlides.length-1?'Get Started':'→'}</button></div></div></div>`;
-  document.getElementById('skipOnboard').onclick=()=>enterGuest();
-  document.getElementById('onboardNext').onclick=()=>{if(state.onboardingStep<onboardingSlides.length-1){state.onboardingStep++;onboardingScreen()}else enterGuest()};
-  const card=document.querySelector('.visual-onboard-card');let x0=null;
-  card.addEventListener('touchstart',e=>{x0=e.touches?.[0]?.clientX??null},{passive:true});
-  card.addEventListener('touchend',e=>{if(x0==null)return;const x1=e.changedTouches?.[0]?.clientX??x0,dx=x1-x0;x0=null;if(Math.abs(dx)<45)return;if(dx<0&&state.onboardingStep<onboardingSlides.length-1){state.onboardingStep++;onboardingScreen()}else if(dx>0&&state.onboardingStep>0){state.onboardingStep--;onboardingScreen()}},{passive:true});
-}
-
-function enterGuest(){localStorage.setItem(ONBOARDING_KEY,'1');state.route='home';state.gateOpen=false;render()}
+function enterGuest(){state.route='home';state.gateOpen=false;render()}
 
 function setFieldError(id,message=''){
   const el=document.getElementById(id);if(!el)return;
@@ -215,7 +199,7 @@ async function renderPortalLoadError(error){
 
 async function loadPortal(){
   try{
-    state.portal=await getPortal();localStorage.setItem(ONBOARDING_KEY,'1');
+    state.portal=await getPortal();
     if(!state.portal.passwordSet){stopPortalRealtimeSync();return renderSetPassword();}
     state.clientMessage=pickClientMessage();
     state.route='home';render();
@@ -576,7 +560,7 @@ function bind(){
     await setProfilePhoto(path);state.portal=await getPortal();if(status)status.textContent='Photo updated.';toast('Profile photo updated.');render();
   }catch(e){if(status)status.textContent=e.message||'Could not update photo.';toast(e.message||'Could not update photo.')}};
   const changeBtn=document.getElementById('changePass');if(changeBtn)changeBtn.onclick=async()=>{try{const p1=document.getElementById('newPass'),p2=document.getElementById('newPass2');if((p1?.value||'').length<8)throw Error('Use at least 8 characters.');if(p1.value!==p2.value)throw Error('Passwords do not match.');changeBtn.disabled=true;changeBtn.textContent='Updating…';await setPassword(p1.value);await markPasswordSet();toast('Password updated.');p1.value=p2.value=''}catch(e){toast(e.message)}finally{if(document.body.contains(changeBtn)){changeBtn.disabled=false;changeBtn.textContent='Update Password'}}};
-  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{stopPortalRealtimeSync();await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';state.onboardingStep=0;welcomeScreen()};
+  const logoutBtn=document.getElementById('logout');if(logoutBtn)logoutBtn.onclick=async()=>{stopPortalRealtimeSync();await signOut();localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';welcomeScreen()};
   const gateX=document.getElementById('gateX');if(gateX)gateX.onclick=()=>{state.gateOpen=false;render()};
   const gateLogIn=document.getElementById('gateLogIn');if(gateLogIn)gateLogIn.onclick=()=>authScreen();
   const gateShop=document.getElementById('gateShop');if(gateShop)gateShop.onclick=()=>{state.gateOpen=false;state.route='shop';render()};
@@ -593,23 +577,22 @@ function bind(){
 
 (async()=>{
   // V1.3.3.2: paint the first useful screen before any network request.
-  if(window.JuanTest?.session()){localStorage.setItem(REMEMBERED_CLIENT_KEY,'1');localStorage.setItem(ONBOARDING_KEY,'1');}
-  // New/no-remembered visitors always see onboarding first, then Guest Mode.
+  if(window.JuanTest?.session()){localStorage.setItem(REMEMBERED_CLIENT_KEY,'1');}
+  // New/no-remembered visitors open directly in Guest Mode.
   const remembered=localStorage.getItem(REMEMBERED_CLIENT_KEY)==='1';
   if(!remembered){
     // First opening OR no remembered client: storefront → Shop / Track / Client Login.
-    state.onboardingStep=0;
     welcomeScreen();
   } else {
     // Returning client: keep the branded loading state visible while the persisted
     // Supabase session restores. Do not flash an empty portal or login screen.
   }
 
-  // Public catalog never blocks onboarding/guest UI.
+  // Public catalog never blocks guest UI.
   getCatalog().then(c=>{state.catalog=c;state.catalogLoaded=true;if(!isLoggedIn()&&state.route==='shop')render();}).catch(e=>console.warn('Catalog unavailable:',e?.message||e));
 
   if(remembered){
-    try{await getSupabase();const s=await session();if(s)await loadPortal();else{localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.onboardingStep=0;welcomeScreen()}}
+    try{await getSupabase();const s=await session();if(s)await loadPortal();else{localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;welcomeScreen()}}
     catch(e){console.warn('Saved client session could not be restored:',e?.message||e);state.portal=null;renderPortalLoadError(e)}
   }
 })();
