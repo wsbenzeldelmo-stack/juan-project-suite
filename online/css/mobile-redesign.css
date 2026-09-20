@@ -48,3 +48,33 @@
 .jp-home-footer small{font-size:8.5px;line-height:1.35;color:#8a948f}
 .app.route-home .nav{z-index:40}
 @media(max-width:480px){.page.route-home{padding-left:16px!important;padding-right:16px!important;padding-bottom:calc(188px + env(safe-area-inset-bottom))!important}.jp-home-bottom-dock{padding-left:16px;padding-right:16px}}
+
+/* 2026-09-20 receipt/shop cleanup v2 */
+/* Shop owns the viewport: header + filters fixed, only catalog scrolls, footer sits directly above nav. */
+.app.route-shop{height:100dvh!important;min-height:0!important;overflow:hidden!important;padding-bottom:0!important;background:#fff}
+.page.route-shop{height:calc(100dvh - 66px - env(safe-area-inset-bottom))!important;min-height:0!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;padding:14px 16px 0!important;background:#fff!important}
+.page.route-shop .jp-shop-sticky{position:relative!important;top:auto!important;z-index:20!important;flex:0 0 auto!important;background:#fff!important;padding:0!important}
+.page.route-shop .jp-category-chips{overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;-ms-overflow-style:none!important}
+.page.route-shop .jp-category-chips::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+.page.route-shop .jp-shop-scroll{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;padding:8px 0 12px!important;scrollbar-width:none!important;-ms-overflow-style:none!important}
+.page.route-shop .jp-shop-scroll::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+.page.route-shop .jp-shop-footer{position:relative!important;bottom:auto!important;z-index:22!important;flex:0 0 auto!important;margin:0 -16px!important;padding:8px 16px calc(10px + env(safe-area-inset-bottom))!important;border-top:1px solid var(--jpo-border)!important;background:#fff!important;box-shadow:0 -7px 18px rgba(18,30,24,.035)!important}
+.page.route-shop .jp-mini-cart{position:relative!important;bottom:auto!important;margin:0!important;width:100%!important}
+.page.route-shop .jp-shop-item-indicator{padding:9px 0!important}
+.jp-shop-footer>small{display:none!important}
+
+/* Home content is not pinned behind a footer anymore. */
+.jp-home-bottom-dock,.jp-home-footer{display:none!important}
+.page.route-home{padding-bottom:calc(86px + env(safe-area-inset-bottom))!important}
+.jp-home-ad-inline{margin-top:14px}
+
+/* Slow client-card fetch feedback: appears only after the short delay in app.js. */
+.jp-quick-actions button.is-loading{position:relative!important;pointer-events:none!important}
+.jp-quick-actions button.is-loading>*{opacity:.28!important}
+.jp-quick-actions button.is-loading:after{content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;border:2px solid rgba(8,185,102,.22);border-top-color:#08b966;border-radius:50%;animation:jpClientCardSpin .72s linear infinite}
+@keyframes jpClientCardSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.jp-quick-actions button.is-loading:after{animation:none;border-top-color:#08b966}}
+@media(max-width:390px){
+  .page.route-shop{padding-left:13px!important;padding-right:13px!important}
+  .page.route-shop .jp-shop-footer{margin-left:-13px!important;margin-right:-13px!important;padding-left:13px!important;padding-right:13px!important}
+}
