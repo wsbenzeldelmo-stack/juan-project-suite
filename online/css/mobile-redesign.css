@@ -80,7 +80,7 @@
 }
 
 /* 2026-09-20 fixed Home + centered reminder v3 */
-html,body,#root{height:100%;min-height:100%;overflow:hidden}
+body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;overflow:hidden}
 .app.route-home{height:100dvh!important;min-height:0!important;overflow:hidden!important;padding-bottom:0!important;background:#fff}
 .page.route-home{height:calc(100dvh - 66px - env(safe-area-inset-bottom))!important;min-height:0!important;overflow:hidden!important;padding:12px 18px 8px!important;display:flex!important;flex-direction:column!important;background:#fff!important}
 .app.guest-mode.route-home .jp-guest-home-centered{flex:1 1 auto!important;min-height:0!important;max-width:520px!important;width:100%!important;margin:0 auto!important;display:grid!important;grid-template-rows:auto auto auto!important;align-content:center!important;gap:12px!important;text-align:center!important;overflow:hidden!important}
