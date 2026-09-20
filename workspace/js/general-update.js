@@ -217,8 +217,19 @@
 
   function ensureAdsTab(){
     var tabs=document.getElementById("onlinePortalTabs");if(!tabs)return;
-    if(!tabs.querySelector('[data-portal-tab="ads"]')){var b=document.createElement("button");b.type="button";b.dataset.portalTab="ads";b.textContent="In-House Ads";tabs.appendChild(b);b.onclick=function(){window.app.setOnlinePortalTab("ads");};}
-    if(!document.getElementById("onlinePortalAdsPanel")){var p=document.createElement("div");p.id="onlinePortalAdsPanel";p.className="portal-panel hidden";p.innerHTML='<div id="jpAdsAdmin"></div>';var settings=document.getElementById("onlinePortalSettingsPanel");if(settings)settings.after(p);}
+    var b=tabs.querySelector('[data-portal-tab="ads"]');
+    if(!b){b=document.createElement("button");b.type="button";b.dataset.portalTab="ads";b.textContent="In-House Ads";tabs.appendChild(b);}
+    b.disabled=false;b.removeAttribute("aria-disabled");b.style.pointerEvents="auto";
+    b.onclick=function(e){e.preventDefault();e.stopPropagation();window.app?.setOnlinePortalTab?.("ads");};
+    if(!tabs.dataset.jpAdsDelegated){
+      tabs.dataset.jpAdsDelegated="1";
+      tabs.addEventListener("click",function(e){var target=e.target.closest('[data-portal-tab="ads"]');if(!target)return;e.preventDefault();e.stopPropagation();window.app?.setOnlinePortalTab?.("ads");});
+    }
+    if(!document.getElementById("onlinePortalAdsPanel")){
+      var p=document.createElement("div");p.id="onlinePortalAdsPanel";p.className="portal-panel hidden";p.innerHTML='<div id="jpAdsAdmin"></div>';
+      var settingsPanel=document.getElementById("onlinePortalSettingsPanel"),activity=document.getElementById("onlinePortalActivityPanel");
+      if(settingsPanel)settingsPanel.after(p);else if(activity)activity.after(p);else tabs.parentElement?.appendChild(p);
+    }
   }
   function adStatus(a){
     if(a.archived_at||a.status==="archived")return "Archived";if(a.status==="paused")return "Paused";var now=Date.now(),start=a.start_at?new Date(a.start_at).getTime():0,end=a.end_at?new Date(a.end_at).getTime():0;

@@ -18,11 +18,15 @@ test("client recent-project table contains all six columns", async () => {
   assert.match(css, /\.jp-client-recent th,.jp-client-recent td\{[^}]*overflow:hidden!important/);
 });
 
-test("Settings is one continuous page without internal segment navigation", async () => {
+test("Settings uses persistent segmented navigation", async () => {
   const js = await read("js/consistency-pass.js");
-  assert.doesNotMatch(js, /id="jpSettingsSegments"/);
-  assert.doesNotMatch(js, /bindSegmentNav\(\)/);
-  assert.match(js, /'<div class="jp-settings-scroll">'/);
+  const css = await read("css/consistency-pass.css");
+  assert.match(js, /id="jpSettingsSegments"/);
+  assert.match(js, /bindSettingsTabs\(\)/);
+  assert.match(js, /SETTINGS_TAB_KEY/);
+  assert.match(css, /\.jp-settings-layout\{[^}]*grid-template-columns:260px minmax\(0,1fr\)/);
+  assert.match(css, /\.jp-settings-segment\{display:none\}/);
+  assert.match(css, /\.jp-settings-segment\.active\{display:block\}/);
 });
 
 test("command center is floating, dismissible, and non-modal", async () => {
@@ -33,7 +37,9 @@ test("command center is floating, dismissible, and non-modal", async () => {
   assert.match(css, /\.jp-command-overlay\{[^}]*backdrop-filter:none!important/);
   assert.match(js, /id="jpCommandClose"/);
   assert.match(js, /aria-modal="false"/);
-  assert.match(js, /function nav\(view\)\{closePalette\(\);/);
+  assert.doesNotMatch(js, /function nav\(view\)\{closePalette\(\);/);
+  assert.match(js, /then\(function\(\)\{closePalette\(\);\}\)/);
+  assert.match(css, /\.jp-command-helper\{display:none!important\}/);
   assert.match(js, /if\(palette\)\{if\(e\.key==="Escape"\)\{e\.preventDefault\(\);closePalette\(\);return;\}/);
 });
 

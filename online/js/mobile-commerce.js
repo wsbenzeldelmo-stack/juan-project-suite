@@ -24,7 +24,7 @@
   function shell(content,back){
     close();layer=document.createElement("div");layer.className="jp-flow-layer";layer.innerHTML='<div class="jp-flow-phone"><header class="jp-flow-header">'+(back?'<button id="jpFlowBack" aria-label="Back">←</button>':'<span></span>')+'<div class="jp-flow-brand"><b>JUAN PROJECT</b><small>Online</small></div><button id="jpFlowClose" aria-label="Close">×</button></header><main class="jp-flow-main">'+content+"</main></div>";document.body.appendChild(layer);document.body.classList.add("jp-flow-open");document.getElementById("jpFlowClose").onclick=close;return layer;
   }
-  function thumb(i){return '<div class="jp-cart-thumb">'+esc((i.product_code||"JP").slice(0,6))+"</div>";}
+  function thumb(){return "";}
   function openCart(){
     var items=cart();
     var html='<div class="jp-flow-title"><h1>Your Cart</h1><button id="jpClearCart" class="jp-icon-clear" aria-label="Clear cart">⌫</button></div>';
@@ -47,7 +47,7 @@
   }
   function checkoutTwo(){
     var today=new Date(),min=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-    var html='<div class="jp-step-head"><span>Checkout</span><b>2 / 2</b></div><div class="jp-step-bar"><i style="width:100%"></i></div><div class="jp-step-copy left"><h1>Additional Details</h1><p>These details help JUAN PROJECT understand your request. Optional.</p></div><div class="jp-mobile-field"><label>Project Title</label><input id="jpProjectTitle" value="'+esc(checkout.title)+'" placeholder="e.g. YouTube Intro for My Channel"></div><div class="jp-mobile-field"><label>Requested Date</label><input id="jpRequestedDate" type="date" min="'+min+'" value="'+esc(checkout.deadline)+'"></div><div class="jp-mobile-field"><label>Notes</label><textarea id="jpProjectNotes" maxlength="500" placeholder="Any additional details about your project?">'+esc(checkout.notes)+'</textarea><small>Optional · 500 characters max</small></div><button id="jpReviewOrder" class="jp-mobile-primary">Review Order →</button>';
+    var html='<div class="jp-step-head"><span>Checkout</span><b>2 / 2</b></div><div class="jp-step-bar"><i style="width:100%"></i></div><div class="jp-step-copy left"><h1>Additional Details</h1><p>These details help JUAN PROJECT understand your request. Optional.</p></div><div class="jp-mobile-field"><label>Project / Output Name</label><input id="jpProjectTitle" value="'+esc(checkout.title)+'" placeholder="e.g. KAMPUS KONEK / CAMPUS PATROL"></div><div class="jp-mobile-field"><label>Requested Date</label><input id="jpRequestedDate" type="date" min="'+min+'" value="'+esc(checkout.deadline)+'"><small>Your requested date is a preference. Standard timeline and rush rules still apply.</small></div><div class="jp-mobile-field"><label>Notes</label><textarea id="jpProjectNotes" maxlength="500" placeholder="Any additional details about your project?">'+esc(checkout.notes)+'</textarea><small>Optional · 500 characters max</small></div><button id="jpReviewOrder" class="jp-mobile-primary">Review Order →</button>';
     shell(html,true);document.getElementById("jpFlowBack").onclick=checkoutOne;document.getElementById("jpReviewOrder").onclick=function(){checkout.title=document.getElementById("jpProjectTitle").value.trim();checkout.deadline=document.getElementById("jpRequestedDate").value;checkout.notes=document.getElementById("jpProjectNotes").value.trim();reviewOrder();};
   }
   function reviewOrder(){

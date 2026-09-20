@@ -78,3 +78,49 @@ html[data-jp-sidebar-size="compact"] .main-content{margin-left:230px!important;w
 html[data-jp-row-height="compact"] .data-table th,html[data-jp-row-height="compact"] .data-table td{padding-top:7px!important;padding-bottom:7px!important}
 .jp-reduce-motion *,html.jp-reduce-motion *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 @media(max-width:820px){.main-content>.view>.page-header{padding-right:0!important}}
+
+
+/* 2026-09-20 unified release */
+.jp-command-helper{display:none!important}
+.main-content>.view>.page-header{padding-right:0!important}
+body:has(#view-settings.active) .main-content,
+body:has(#view-reports.active) .main-content{overflow:hidden!important}
+#view-settings.active{height:100%;min-height:0;display:grid!important;grid-template-rows:auto minmax(0,1fr);overflow:hidden;padding-bottom:0!important}
+.jp-settings-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;min-height:0;height:100%}
+.jp-settings-navigation,.jp-settings-content{min-height:0;border:1px solid var(--border-subtle);border-radius:16px;background:var(--bg-card)}
+.jp-settings-navigation{padding:8px;overflow:auto}
+.jp-settings-nav-item{position:relative;width:100%;min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--text-secondary);display:grid;grid-template-columns:4px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 10px;text-align:left;font:inherit;font-size:11px;font-weight:700;cursor:pointer}
+.jp-settings-nav-item:hover{background:var(--bg-subtle);color:var(--text-primary)}
+.jp-settings-nav-item:focus-visible{outline:2px solid var(--primary-mint);outline-offset:2px}
+.jp-settings-nav-mark{align-self:stretch;border-radius:99px;background:transparent}
+.jp-settings-nav-item.active{background:var(--mint-light-bg);color:var(--primary-mint-dark)}
+.jp-settings-nav-item.active .jp-settings-nav-mark{background:var(--primary-mint)}
+.jp-settings-nav-item.danger{color:#b9342d}
+.jp-settings-nav-item.danger.active{background:#fff1f1;color:#b9342d}
+.jp-settings-nav-item.danger.active .jp-settings-nav-mark{background:#e5483f}
+.jp-settings-nav-item small{font-size:8px;padding:3px 6px;border-radius:99px;background:#fff3df;color:#9a6400}
+.jp-settings-content{overflow:auto;padding:18px}
+.jp-settings-scroll{display:block;max-width:none}
+.jp-settings-segment{display:none}
+.jp-settings-segment.active{display:block}
+.jp-settings-segment[hidden]{display:none!important}
+.jp-settings-segment-head{grid-template-columns:170px minmax(0,1fr)}
+.jp-passkey-note{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--border-subtle)}
+.jp-passkey-note>div{display:grid;gap:3px}.jp-passkey-note b{font-size:11px}.jp-passkey-note small{font-size:9px;color:var(--text-tertiary);line-height:1.45}
+.jp-inline-recent,.jp-inline-recent .table-responsive{min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.jp-inline-recent table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+.jp-inline-recent th,.jp-inline-recent td{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.jp-inline-recent th:last-child,.jp-inline-recent td:last-child{width:15%!important}
+#view-reports.active{height:100%;min-height:0;display:grid!important;grid-template-rows:auto minmax(0,1fr);overflow:hidden}
+#view-reports #reportsContent{min-height:0;overflow:hidden}
+#view-reports .reports-bento{height:100%;min-height:0;overflow:hidden}
+#view-reports .report-recent-v2{min-height:0;overflow:hidden;display:flex;flex-direction:column}
+#view-reports .report-recent-v2 .table-responsive{min-height:0;overflow:auto}
+@media(max-width:900px){
+  body:has(#view-settings.active) .main-content,body:has(#view-reports.active) .main-content{overflow:auto!important}
+  #view-settings.active,#view-reports.active{height:auto;display:block!important;overflow:visible}
+  .jp-settings-layout{grid-template-columns:1fr;height:auto}
+  .jp-settings-navigation{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:6px}
+  .jp-settings-nav-item{width:auto;min-width:max-content;grid-template-columns:3px auto auto}
+  .jp-settings-content{overflow:visible;padding:14px}
+}

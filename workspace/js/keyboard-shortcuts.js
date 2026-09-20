@@ -8,7 +8,7 @@
   function toast(m){if(window.showToast)window.showToast(m);}
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function icon(name){var p={overview:"⌂",projects:"▣",clients:"◉",payments:"▤",reports:"▥",calendar:"□",shop:"◇",portal:"▧",orders:"▦",scanner:"⌗",settings:"⚙",create:"+",search:"⌕",refresh:"↻"};return p[name]||"•";}
-  function nav(view){closePalette();window.app&&window.app.navigateTo(view);}
+  function nav(view){window.app&&window.app.navigateTo(view);}
   function openScanner(){if(window.jpOpenQrScanner)window.jpOpenQrScanner();toast("QR Scanner opened");}
   function openOrders(){nav("orders");}
   function newOrder(){nav("new-order");}
@@ -68,7 +68,8 @@
     var active=host.querySelector(".selected");if(active)active.scrollIntoView({block:"nearest"});
   }
   function runSelected(){
-    var rows=filtered(),c=rows[selected];if(!c)return;closePalette();Promise.resolve(c.run()).catch(function(e){toast(e.message||"Command failed");});
+    var rows=filtered(),c=rows[selected];if(!c)return;
+    Promise.resolve().then(function(){return c.run();}).then(function(){closePalette();}).catch(function(e){toast(e.message||"Command failed");drawPalette();});
   }
   async function openPalette(initial){
     closeHud();closePalette();var request=++paletteRequest;lastFocus=document.activeElement;var dynamicCommands=await recordCommands();if(request!==paletteRequest)return;commands=staticCommands().concat(dynamicCommands);selected=0;
@@ -142,7 +143,7 @@
   },true);
   document.addEventListener("click",function(e){if(!e.target.closest("table")){if(tableRow){tableRow.classList.remove("jp-kb-selected");tableRow=null;}}});
   function install(){
-    if(document.getElementById("jpCommandHelper"))return;var b=document.createElement("button");b.id="jpCommandHelper";b.className="jp-command-helper";b.type="button";b.innerHTML="<kbd>"+prefix+" K</kbd><span>Commands</span>";b.onclick=function(){openPalette();};document.body.appendChild(b);
+    document.getElementById("jpCommandHelper")?.remove();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   window.JPKeyboard={openPalette:openPalette,openHelp:openHelp};

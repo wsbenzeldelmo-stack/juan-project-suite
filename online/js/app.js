@@ -13,7 +13,7 @@ let state={
   route:'home',portal:null,selected:null,receiptPath:null,extractedReceipt:null,
   catalog:{categories:[],services:[],packages:[],packageItems:[]},catalogLoaded:false,
   gateOpen:false,onboardingStep:0,orderFilter:'requests',shopItem:null,paymentProjectId:null,
-  shopQuery:'',shopSort:'default',paymentFlow:'',
+  shopQuery:'',shopSort:'default',shopCategory:'all',paymentFlow:'',
   notificationOpen:false,senderInstitution:'',guestGateContext:'default',receiptPreviewUrl:'',receiptPreviewType:'',receiptPreviewName:'',clientMessage:null
 };
 window.JPOAppState=state;
@@ -134,7 +134,8 @@ const icons={
   spark:'<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/>',
   help:'<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 4.5 1.5c-.8.9-2.2 1.3-2.2 2.7M12 17h.01"/>',
   plus:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
-  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  cart:'<circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6"/>'
 };
 const icon=(name,size=20)=>`<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||''}</svg>`;
 
@@ -151,10 +152,10 @@ const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation">'+
   '<button data-guest-action="login">'+icon('account')+'<span>Login</span></button></nav>';
 
 function welcomeScreen(){
-  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome"><div class="welcome-hero">${brand()}<div class="welcome-copy"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Shop JUAN PROJECT services, submit an order request, and track it before it becomes an official project.</p></div></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeLogIn" class="btn full">Already a Client? Log In</button><button id="welcomeTrack" class="text-button full">Track an Order Request</button></div><div class="welcome-note">${icon('receipt',18)}<span>Shopping does not create a Project ID. Your request becomes a project only after JUAN PROJECT reviews and approves it.</span></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
-  document.getElementById('welcomeShop').onclick=()=>{localStorage.setItem(ONBOARDING_KEY,'1');state.route='shop';render();setTimeout(()=>window.JuanSuite?.shop?.(),0)};
+  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome jp-welcome-simplified"><div class="welcome-copy"><span class="eyebrow">WELCOME</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Choose what you want to do today.</p></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="welcomeLogIn" class="text-button">Log In</button></p></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
+  document.getElementById('welcomeShop').onclick=()=>{localStorage.setItem(ONBOARDING_KEY,'1');state.route='shop';render();};
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
-  document.getElementById('welcomeTrack').onclick=()=>window.JuanSuite?.track?.();
+  document.getElementById('welcomeTrack').onclick=()=>window.JPMobileCommerce?.openTrack?.();
 }
 
 const onboardingSlides=[
@@ -314,10 +315,8 @@ function activityFeed(){
 
 function home(){
   if(!isLoggedIn()){
-    return '<div class="guest-home jp-guest-home-v2">'+
-      '<div class="guest-brand">'+brand()+'</div>'+
-      '<div class="jp-guest-hero"><span class="eyebrow">JUAN PROJECT ONLINE</span><h1>Creative Services<br><strong>Made Simple.</strong></h1><p>Browse services, build your cart, and submit an Order Request without creating an account.</p><div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now →</button><button id="homeTrack" class="btn full">Track Request</button></div></div>'+
-      '<div class="jp-trust-list"><div>'+icon('account',16)+'<span>No account needed</span></div><div>'+icon('check',16)+'<span>Fast and easy ordering</span></div><div>'+icon('spark',16)+'<span>Professional creative services</span></div></div>'+
+    return '<div class="guest-home jp-guest-home-v2 jp-guest-home-centered">'+
+      '<div class="jp-guest-hero"><span class="eyebrow">WELCOME</span><h1>JUAN PROJECT<br><strong>made simple.</strong></h1><p>Shop creative services or track an existing Order Request.</p><div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="homeLogIn" class="text-button">Log In</button></p></div></div>'+
       '<div id="jpAdBannerAnchor"></div></div>';
   }
   const p=activeProject(),feed=activityFeed(),profile=state.portal?.profile||{};
@@ -341,23 +340,25 @@ function orders(){
     (list.map(p=>'<button class="card project-list-card project-button" data-open="'+esc(p.id)+'"><div class="project-list-top"><div><div class="project-code">'+esc(p.project_code||p.id)+'</div><div class="project-name">'+esc(p.title||'Untitled Project')+'</div><small>'+esc(fmtDate(p.created_at||p.start_date))+'</small></div><span class="badge">'+esc(effectiveProjectStatus(p))+'</span>'+icon('chevron',18)+'</div><div class="meta"><span>'+esc(effectiveProjectStatus(p))+'</span><b>'+peso(p.total_amount||0)+'</b></div></button>').join('')||'<div class="card empty guided-empty"><b>No matching projects</b><span>Projects in this stage will appear here.</span></div>')+'</div>';
 }
 function trackingStages(p){
-  const s=projectStats(p),status=String(effectiveProjectStatus(p)||'').toLowerCase(),paid=Number(p.amount_paid||0),allDone=s.total>0&&s.done>=s.total;
+  const s=projectStats(p),status=String(effectiveProjectStatus(p)||'').toLowerCase(),paid=Number(p.amount_paid||0),balance=Number(p.balance||0),allDone=s.total>0&&s.done>=s.total,delivered=allDone&&balance<=0&&isProjectDelivered(p);
   let current=0;
   if(paid>0||['paid','partially paid'].includes(String(p.payment_status||'').toLowerCase()))current=1;
-  if(status.includes('progress')||s.pct>0)current=Math.max(current,2);
-  if(status.includes('production')||s.pct>=20)current=Math.max(current,3);
-  if(status.includes('review')||status.includes('quality')||s.pct>=80)current=Math.max(current,4);
-  if(status.includes('ready')||allDone)current=Math.max(current,5);
-  if(status.includes('complete')||status.includes('deliver'))current=6;
-  if(Number.isInteger(p.tracker_stage))current=Math.max(0,Math.min(6,p.tracker_stage));
+  if(current>=1||status.includes('started'))current=Math.max(current,2);
+  if(s.done>0||status.includes('production')||status.includes('progress'))current=Math.max(current,3);
+  if(status.includes('review')||status.includes('quality'))current=Math.max(current,4);
+  if(status.includes('ready'))current=Math.max(current,5);
+  if(allDone||status.includes('complete'))current=Math.max(current,6);
+  if(delivered||status.includes('deliver'))current=7;
+  if(Number.isInteger(p.tracker_stage))current=Math.max(current,Math.max(0,Math.min(7,p.tracker_stage)));
   return {current,stages:[
-    ['Order Confirmed','Your project is recorded in JUAN PROJECT.'],
-    ['Payment Confirmed','A payment has been recorded for this project.'],
-    ['Production Started','Work has started on project deliverables.'],
-    ['In Production','Your project is actively being produced.'],
-    ['Quality Check','Deliverables are being reviewed before release.'],
-    ['Ready for Delivery','Final files are being prepared for release.'],
-    ['Completed','Your project is complete.']
+    ['Order Confirmed','Your order has been approved and recorded in JUAN PROJECT.'],
+    ['Downpayment Confirmed','Your required downpayment has been verified.'],
+    ['Production Started','Production begins automatically after downpayment confirmation.'],
+    ['In Production','At least one project deliverable is actively being worked on.'],
+    ['Quality Assessment','Deliverables are being checked for quality and revisions.'],
+    ['Ready for Delivery','Quality checks are complete and final files are being prepared.'],
+    ['Completed','All required deliverables are complete.'],
+    ['Delivered','Payment requirements are satisfied and final access has been released.']
   ]};
 }
 function projectTracking(p){const {current,stages}=trackingStages(p);return `<div class="tracking-card card"><div class="section-head inner"><div><span class="eyebrow">ORDER TRACKER</span><h2>Project Progress</h2></div><span class="tracker-step-count">${Math.min(current+1,stages.length)} of ${stages.length}</span></div><div class="route-timeline">${stages.map(([title,desc],i)=>`<div class="route-node ${i<current?'done':i===current?'current':'future'}"><div class="route-marker">${i<current?icon('check',13):i+1}</div><div class="route-copy"><b>${esc(title)}</b><small>${esc(desc)}</small>${i===current?'<span>Current stage</span>':''}</div></div>`).join('')}</div></div>`}
@@ -442,7 +443,7 @@ function account(){
     <div class="membership-card membership-${member.tier.toLowerCase()}">
       <div class="membership-card-top"><div class="membership-brand">JUAN PROJECT</div><span>${member.tier} MEMBER</span></div>
       <div class="membership-profile"><div class="avatar large profile-avatar">${avatar}</div><div><h2>${esc(p.name||'Client')}</h2><p>${esc(p.client_code||'Client')}</p><small>${esc(p.email||'')}</small></div></div>
-      <div class="membership-details"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Completed Projects</span><b>${member.completed}</b></div></div>
+      <div class="membership-details"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Membership</span><b>${esc(member.tier)}</b></div></div>
       <div class="membership-progress"><div><span>Membership Progress</span><b>${esc(member.tier)}</b></div><div class="membership-track"><i style="width:${member.progress}%"></i></div><small>${esc(tierMessage)}</small></div>
       <div class="membership-actions"><label class="profile-photo-action">Change Photo<input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><button id="membershipQr" class="text-button">Show Client QR</button></div><span id="profilePhotoStatus" class="profile-photo-status"></span>
     </div>
@@ -456,14 +457,17 @@ function account(){
 function categoryName(id){return state.catalog.categories.find(c=>c.id===id)?.name||'Service'}
 function shopRow(x){
   const price=x.kind==='Package'?Number(x.new_price||0):Number(x.price||0),old=x.kind==='Package'?Number(x.original_price||0):0;
-  return '<article class="jp-shop-card"><button class="jp-shop-main" data-view-shop="'+esc(x.kind+':'+x.id)+'"><div class="jp-shop-thumb">'+esc((x.product_code||'JP').slice(0,6))+'</div><div class="jp-shop-copy"><span>'+esc(x.product_code||'')+'</span><h3>'+esc(x.name)+'</h3><p>'+esc((x.description||'Creative service').slice(0,82))+'</p><div class="jp-shop-price">'+(old>price?'<s>'+peso(old)+'</s>':'')+'<b>'+peso(price)+'</b></div></div></button><button class="btn primary jp-add-cart" data-add-cart="'+esc(x.kind+':'+x.id)+'">Add to Cart</button></article>';
+  return '<article class="jp-shop-card"><button class="jp-shop-main" data-view-shop="'+esc(x.kind+':'+x.id)+'"><div class="jp-shop-copy"><span>'+esc(x.product_code||'')+' · '+esc(x.kind==='Package'?'Package':categoryName(x.category_id))+'</span><h3>'+esc(x.name)+'</h3><p>'+esc((x.description||'Creative service').slice(0,82))+'</p><div class="jp-shop-price">'+(old>price?'<s>'+peso(old)+'</s>':'')+'<b>'+peso(price)+'</b></div></div></button><button class="btn primary jp-add-cart" data-add-cart="'+esc(x.kind+':'+x.id)+'">Add to Cart</button></article>';
 }
 function shop(){
-  const all=[...(state.catalog.services||[]).map(x=>({...x,kind:'Service'})),...(state.catalog.packages||[]).map(x=>({...x,kind:'Package'}))];
-  const q=String(state.shopQuery||'').trim().toLowerCase();
-  let items=all.filter(x=>!q||[x.name,x.description,x.kind,categoryName(x.category_id),x.product_code].some(v=>String(v||'').toLowerCase().includes(q)));
+  const packages=[...(state.catalog.packages||[])].sort((a,b)=>String(a.product_code||a.id).localeCompare(String(b.product_code||b.id),undefined,{numeric:true})).map(x=>({...x,kind:'Package'}));
+  const services=[...(state.catalog.services||[])].sort((a,b)=>String(a.product_code||a.id).localeCompare(String(b.product_code||b.id),undefined,{numeric:true})).map(x=>({...x,kind:'Service'}));
+  const all=[...packages,...services],active=state.shopCategory||'all',q=String(state.shopQuery||'').trim().toLowerCase();
+  let items=all.filter(x=>active==='all'||(active==='packages'&&x.kind==='Package')||(x.kind==='Service'&&String(x.category_id)===active));
+  items=items.filter(x=>!q||[x.name,x.description,x.kind,categoryName(x.category_id),x.product_code].some(v=>String(v||'').toLowerCase().includes(q)));
   const count=window.JPMobileCommerce?.cartCount?.()||0,total=window.JPMobileCommerce?.cartTotal?.()||0;
-  return pageHead('Shop',{back:false,more:false})+'<div class="jp-shop-head"><div class="shop-search"><span>⌕</span><input id="shopSearch" value="'+esc(state.shopQuery)+'" placeholder="Search services or packages..."></div><button id="shopOrderCart" class="jp-cart-icon" aria-label="Cart">'+icon('shop',20)+'<span>'+count+'</span></button></div><div class="jp-category-chips"><button class="active">All</button><button>Video</button><button>Graphics</button><button>Editing</button><button>More</button></div><div class="jp-shop-grid">'+(items.map(shopRow).join('')||'<div class="card empty guided-empty"><b>No matching services</b></div>')+'</div>'+(count?'<button id="shopMiniCart" class="jp-mini-cart"><span><b>'+count+' item'+(count===1?'':'s')+'</b><small>'+peso(total)+'</small></span><strong>View Cart →</strong></button>':'');
+  const chips='<button data-shop-category="all" class="'+(active==='all'?'active':'')+'">All</button><button data-shop-category="packages" class="'+(active==='packages'?'active':'')+'">Packages</button>'+(state.catalog.categories||[]).map(c=>'<button data-shop-category="'+esc(c.id)+'" class="'+(active===String(c.id)?'active':'')+'">'+esc(c.name)+'</button>').join('');
+  return '<div class="jp-shop-sticky">'+pageHead('Shop',{back:false,more:false})+'<div class="jp-shop-head"><div class="shop-search"><span>'+icon('search',17)+'</span><input id="shopSearch" value="'+esc(state.shopQuery)+'" placeholder="Search services or packages..."></div><button id="shopOrderCart" class="jp-cart-icon" aria-label="Cart">'+icon('cart',20)+'<span>'+count+'</span></button></div><div class="jp-category-chips">'+chips+'</div></div><div class="jp-shop-scroll"><div class="jp-shop-grid">'+(items.map(shopRow).join('')||'<div class="card empty guided-empty"><b>No matching services</b></div>')+'</div></div><div class="jp-shop-footer">'+(count?'<button id="shopMiniCart" class="jp-mini-cart"><span><b>'+count+' item'+(count===1?'':'s')+'</b><small>'+peso(total)+'</small></span><strong>View Cart →</strong></button>':'<div class="jp-shop-item-indicator">Your cart is empty</div>')+'<small>Terms of Service · Privacy · Developed by BENZEL DELMO</small></div>';
 }
 function findShopItem(key){const [kind,id]=String(key).split(':');if(kind==='Package')return {...state.catalog.packages.find(x=>String(x.id)===String(id)),kind};return {...state.catalog.services.find(x=>String(x.id)===String(id)),kind:'Service'}}
 
@@ -498,6 +502,7 @@ function bind(){
   const shopMiniCart=document.getElementById('shopMiniCart');if(shopMiniCart)shopMiniCart.onclick=()=>window.JPMobileCommerce?.openCart?.();
   const shopSort=document.getElementById('shopSort');if(shopSort)shopSort.onchange=()=>{state.shopSort=shopSort.value;render()};
   const shopSearch=document.getElementById('shopSearch');if(shopSearch){shopSearch.oninput=()=>{state.shopQuery=shopSearch.value;const pos=shopSearch.selectionStart;render();const next=document.getElementById('shopSearch');if(next){next.focus();try{next.setSelectionRange(pos,pos)}catch{}}}};
+  document.querySelectorAll('[data-shop-category]').forEach(b=>b.onclick=()=>{state.shopCategory=b.dataset.shopCategory||'all';render();});
   const paymentHistoryTab=document.getElementById('paymentHistoryTab');if(paymentHistoryTab)paymentHistoryTab.onclick=()=>document.querySelector('.payment-history')?.scrollIntoView({behavior:'smooth'});
   const projectSel=document.getElementById('payProjectSel');if(projectSel)projectSel.onchange=()=>{state.paymentProjectId=projectSel.value;render()};
 

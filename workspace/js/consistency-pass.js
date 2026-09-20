@@ -2,6 +2,8 @@
 (function(){
   "use strict";
   const SETTINGS_KEY="JUAN_WORKSPACE_SETTINGS_V2";
+  const SETTINGS_TAB_KEY="JUAN_WORKSPACE_SETTINGS_TAB_V1";
+  const SETTINGS_SEGMENTS=["profile","workspace","database","appearance","notifications","data","security","about","danger"];
   const FORM_DRAFT_KEY="JUAN_WORKSPACE_DRAFTS_V2";
   let settingsBuilt=false, saveTimers=new Map();
 
@@ -99,7 +101,7 @@
     const notifications=section("notifications","Notifications","Choose which events should get your attention.",
       '<div class="card jp-settings-card"><div class="jp-settings-toggle-list">'+
       toggleRow("New order received","notifNewOrder",p.notifNewOrder)+toggleRow("New payment submitted","notifPaymentSubmitted",p.notifPaymentSubmitted)+toggleRow("Payment approved","notifPaymentApproved",p.notifPaymentApproved)+toggleRow("Project deadline approaching","notifDeadline",p.notifDeadline)+toggleRow("Project overdue","notifOverdue",p.notifOverdue)+toggleRow("Client message received","notifClientMessage",p.notifClientMessage)+toggleRow("Database synchronization failure","notifSyncFail",p.notifSyncFail)+toggleRow("Browser notifications","browserNotifications",p.browserNotifications)+toggleRow("Notification sounds","notificationSounds",p.notificationSounds)+'</div>'+
-      '<label class="jp-settings-field jp-reminder-field"><span>Deadline reminder</span><select class="form-control jp-setting-local" data-key="deadlineReminderDays"><option value="1">1 day before</option><option value="3">3 days before</option><option value="5">5 days before</option><option value="7">7 days before</option></select></label></div>');
+      '<label class="jp-settings-field jp-reminder-field"><span>Deadline reminder</span><select class="form-control jp-setting-local" data-key="deadlineReminderDays"><option value="1">1 day before</option><option value="3">3 days before</option><option value="5">5 days before</option><option value="7">7 days before</option></select></label><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpSendTestNotification">Send test notification</button></div></div>');
 
     const data=section("data","Data Management","Backups, exports, and validated imports.",
       '<div class="card jp-settings-card"><div class="jp-data-actions"><button class="btn btn-secondary" id="jpExportBackup">Export JSON Backup</button><button class="btn btn-secondary" id="jpRestoreBackup">Restore or Import Data</button><button class="btn btn-secondary" id="jpImportCsv">Import CSV</button><button class="btn btn-secondary" id="jpTemplate">Download Import Template</button><button class="btn btn-secondary" data-export="projects">Export Projects</button><button class="btn btn-secondary" data-export="clients">Export Clients</button><button class="btn btn-secondary" data-export="finance">Export Invoices & Payments</button></div>'+
@@ -109,7 +111,7 @@
 
     const security=section("security","Security","Sign-in protection and sensitive-action verification.",
       '<div class="card jp-settings-card"><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpChangePassword">Change Password</button><button class="btn btn-secondary" id="jpActiveSessions">Active Sessions</button><button class="btn btn-secondary" id="jpSignInHistory">Sign-in History</button><button class="btn btn-danger" id="jpLogoutOthers">Log Out Other Sessions</button></div>'+
-      '<div class="jp-settings-toggle-list">'+toggleRow("Facial Verification","facialVerification",p.facialVerification,"Optional additional security method. Password authentication remains required.")+toggleRow("Auto-Lock Workspace","autoLock",p.autoLock)+toggleRow("Require verification before resetting data","verifyReset",p.verifyReset)+toggleRow("Require verification before disconnecting the database","verifyDisconnect",p.verifyDisconnect)+'</div>'+
+      '<div class="jp-settings-toggle-list">'+'<div class="jp-passkey-note"><div><b>Device biometric / passkey login</b><small>Uses supported device authentication such as Face ID, Touch ID, Windows Hello, or Android biometrics. Password sign-in remains the fallback.</small></div><button class="btn btn-secondary btn-sm" type="button" disabled title="This deployment must be upgraded to the passkey-enabled Supabase authentication runtime first.">Not available in this build</button></div>'+toggleRow("Auto-Lock Workspace","autoLock",p.autoLock)+toggleRow("Require verification before resetting data","verifyReset",p.verifyReset)+toggleRow("Require verification before disconnecting the database","verifyDisconnect",p.verifyDisconnect)+'</div>'+
       '<label class="jp-settings-field jp-reminder-field"><span>Auto-lock duration</span><select class="form-control jp-setting-local" data-key="autoLockMinutes"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></label><div id="jpSecurityInfo" class="jp-inline-info">Current browser session is active.</div></div>');
 
     const about=section("about","About","Application, release, and deployment information.",
@@ -118,9 +120,42 @@
     const danger=section("danger","Danger Zone","Sensitive operations require typed confirmation and verification.",
       '<div class="card jp-settings-card jp-danger-card"><div class="jp-danger-row"><div><b>Reset Workspace Data</b><small>Reset operational Workspace data using the protected reset workflow.</small></div><button class="btn btn-danger" data-danger="reset">Reset Workspace Data</button></div><div class="jp-danger-row"><div><b>Delete Imported Historical Records</b><small>Remove imported historical project records while preserving the canonical preload reference.</small></div><button class="btn btn-danger" data-danger="historical">Delete Imported Historical Records</button></div><div class="jp-danger-row"><div><b>Clear Cached Data</b><small>Clear browser-only drafts and cached interface preferences.</small></div><button class="btn btn-danger" data-danger="cache">Clear Cached Data</button></div><div class="jp-danger-row"><div><b>Disconnect Database</b><small>End this Workspace database session.</small></div><button class="btn btn-danger" data-danger="disconnect">Disconnect Database</button></div><div class="jp-danger-row"><div><b>Sign Out of Workspace</b><small>End the current Workspace account session.</small></div><button class="btn btn-danger" data-danger="signout">Sign Out of Workspace</button></div></div>',true);
 
+    const navItems=[
+      ["profile","Profile"],["workspace","Workspace"],["database","Database & Sync"],["appearance","Appearance"],["notifications","Notifications"],["data","Data Management"],["security","Security"],["about","About"],["danger","Danger Zone"]
+    ];
     view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
-      '<div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div>';
-    settingsBuilt=true;bindSettings();
+      '<div class="jp-settings-layout"><aside id="jpSettingsSegments" class="jp-settings-navigation" role="tablist" aria-label="Settings sections">'+navItems.map(([id,label])=>'<button type="button" role="tab" class="jp-settings-nav-item '+(id==="danger"?"danger":"")+'" data-settings-tab="'+id+'" aria-controls="settings-'+id+'" aria-selected="false" tabindex="-1"><span class="jp-settings-nav-mark" aria-hidden="true"></span><span>'+esc(label)+'</span>'+(id==="database"&&!connected?'<small>Sign in</small>':'')+'</button>').join("")+'</aside><section class="jp-settings-content" aria-live="polite"><div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div></section></div>';
+    settingsBuilt=true;bindSettings();bindSettingsTabs();
+  }
+
+  function activateSettingsSegment(id,{focus=false}={}){
+    const segment=SETTINGS_SEGMENTS.includes(id)?id:"profile";
+    localStorage.setItem(SETTINGS_TAB_KEY,segment);
+    $(".jp-settings-nav-item").forEach(btn=>{
+      const active=btn.dataset.settingsTab===segment;
+      btn.classList.toggle("active",active);btn.setAttribute("aria-selected",active?"true":"false");btn.tabIndex=active?0:-1;
+      if(active&&focus)btn.focus();
+    });
+    $(".jp-settings-segment").forEach(panel=>{
+      const active=panel.dataset.segment===segment;
+      panel.classList.toggle("active",active);panel.hidden=!active;panel.setAttribute("role","tabpanel");panel.setAttribute("aria-hidden",active?"false":"true");
+    });
+    const content=$(".jp-settings-content");if(content)content.scrollTop=0;
+  }
+  function bindSettingsTabs(){
+    const tabs=$(".jp-settings-nav-item");if(!tabs.length)return;
+    activateSettingsSegment(localStorage.getItem(SETTINGS_TAB_KEY)||"profile");
+    tabs.forEach((btn,index)=>{
+      btn.addEventListener("click",()=>activateSettingsSegment(btn.dataset.settingsTab));
+      btn.addEventListener("keydown",e=>{
+        if(!["ArrowDown","ArrowUp","ArrowRight","ArrowLeft","Home","End","Enter"," "].includes(e.key))return;
+        e.preventDefault();
+        if(e.key==="Enter"||e.key===" "){activateSettingsSegment(btn.dataset.settingsTab,{focus:true});return;}
+        let next=index;
+        if(e.key==="Home")next=0;else if(e.key==="End")next=tabs.length-1;else if(e.key==="ArrowDown"||e.key==="ArrowRight")next=(index+1)%tabs.length;else next=(index-1+tabs.length)%tabs.length;
+        activateSettingsSegment(tabs[next].dataset.settingsTab,{focus:true});
+      });
+    });
   }
 
   function debounce(key,fn,delay=550){
@@ -137,7 +172,7 @@
         const value=el.type==="checkbox"?el.checked:(el.type==="number"?Number(el.value):el.value);
         if(key==="colorfulMode"){window.app.setColorfulMode(value?"on":"off");savePrefs({[key]:value});return;}
         savePrefs({[key]:value});
-        if(key==="browserNotifications"&&value&&"Notification" in window&&Notification.permission==="default")try{await Notification.requestPermission();}catch(_){}
+        if(key==="browserNotifications"&&value&&"Notification" in window){try{if(Notification.permission==="default")await Notification.requestPermission();installBrowserNotifications();}catch(_){}}
       });
     });
     const profileMap={
@@ -173,6 +208,7 @@
     $("#jpPreviewImport")?.addEventListener("click",()=>previewPasted());
     $("#jpTemplate")?.addEventListener("click",downloadTemplate);
     $$("[data-export]").forEach(b=>b.addEventListener("click",()=>exportCsv(b.dataset.export)));
+    $("#jpSendTestNotification")?.addEventListener("click",async()=>{if(!("Notification" in window)){toast("Browser notifications are not supported here.");return;}if(Notification.permission==="default")await Notification.requestPermission();if(Notification.permission==="granted"){new Notification("JUAN PROJECT Workspace",{body:"Browser notifications are working on this device."});toast("Test notification sent.");}else toast("Browser notification permission is not enabled.");});
     $("#jpChangePassword")?.addEventListener("click",changePasswordDialog);
     $("#jpActiveSessions")?.addEventListener("click",()=>{$("#jpSecurityInfo").textContent="Current browser session is active. Other sessions can be signed out below.";});
     $("#jpSignInHistory")?.addEventListener("click",()=>{$("#jpSecurityInfo").textContent="Sign-in history is available through Supabase authentication logs.";});
@@ -181,6 +217,34 @@
     $("#jpSystemInfo")?.addEventListener("click",()=>{$("#jpBuildInfo").textContent=navigator.platform+" · "+navigator.userAgent.split(" ").slice(-2).join(" ");});
     $$("[data-danger]").forEach(b=>b.addEventListener("click",()=>runDanger(b.dataset.danger)));
     bindSettingsSearch();updateDataMeta();
+  }
+
+  let browserNotificationChannel=null;
+  function notifyOnce(key,title,body,prefKey){
+    const p=stored();if(!p.browserNotifications||(prefKey&&!p[prefKey])||!("Notification" in window)||Notification.permission!=="granted")return;
+    const storageKey="JUAN_BROWSER_NOTICE_"+key;if(localStorage.getItem(storageKey))return;
+    localStorage.setItem(storageKey,new Date().toISOString());
+    try{new Notification(title,{body,tag:"juan-"+key});}catch(_){}
+  }
+  function scanDeadlineNotifications(){
+    const p=stored(),st=window.app?.getWorkspaceState?.();if(!st?.projects)return;
+    const now=new Date();now.setHours(0,0,0,0);const remind=Math.max(1,Number(p.deadlineReminderDays||3));
+    st.projects.filter(x=>!x.deleted&&x.deadline_date).forEach(project=>{
+      const due=new Date(project.deadline_date+"T00:00:00");if(Number.isNaN(due.getTime()))return;
+      const days=Math.ceil((due-now)/86400000),code=project.project_code||project.id||"project";
+      if(days<0)notifyOnce("overdue-"+code+"-"+project.deadline_date,"Project overdue",(project.title||code)+" passed its deadline.","notifOverdue");
+      else if(days<=remind)notifyOnce("deadline-"+code+"-"+project.deadline_date,"Project deadline approaching",(project.title||code)+" is due "+(days===0?"today":days+" day"+(days===1?"":"s")+" from now")+".","notifDeadline");
+    });
+  }
+  function installBrowserNotifications(){
+    if(!stored().browserNotifications||!("Notification" in window)||Notification.permission!=="granted")return;
+    scanDeadlineNotifications();
+    const db=window.app?.getDatabaseClient?.();if(!db?.channel||browserNotificationChannel)return;
+    browserNotificationChannel=db.channel("juan-workspace-browser-alerts")
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"incoming_orders"},payload=>{const row=payload.new||{};notifyOnce("order-"+(row.id||row.code||Date.now()),"New JUAN PROJECT order",(row.code||"New order")+" · "+(row.title||row.name||"Order request"),"notifNewOrder");})
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"payment_submissions"},payload=>{const row=payload.new||{};notifyOnce("payment-"+(row.id||Date.now()),"Payment submitted","A client payment is waiting for review.","notifPaymentSubmitted");})
+      .subscribe();
+    setInterval(scanDeadlineNotifications,300000);
   }
 
   function updateDataMeta(){
@@ -203,7 +267,7 @@
       const hits=entries.filter(x=>x.text.toLowerCase().includes(q)).slice(0,10);
       box.innerHTML=hits.length?hits.map((x,i)=>'<button data-search-index="'+i+'"><span>'+esc(x.text)+'</span><small>'+esc(x.segment[0].toUpperCase()+x.segment.slice(1))+'</small></button>').join(""):'<div class="jp-settings-no-results">No settings found</div>';
       box.classList.add("open");
-      $$("[data-search-index]",box).forEach(b=>b.onclick=()=>{const hit=hits[Number(b.dataset.searchIndex)];box.classList.remove("open");hit.el.classList.add("jp-settings-search-hit");hit.el.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>hit.el.classList.remove("jp-settings-search-hit"),2200);});
+      $("[data-search-index]",box).forEach(b=>b.onclick=()=>{const hit=hits[Number(b.dataset.searchIndex)];box.classList.remove("open");activateSettingsSegment(hit.segment);requestAnimationFrame(()=>{hit.el.classList.add("jp-settings-search-hit");hit.el.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>hit.el.classList.remove("jp-settings-search-hit"),2200);});});
     });
   }
   function previewFile(file){
@@ -328,7 +392,7 @@
   }
 
   function install(){
-    cleanRootText();applyInterfacePrefs();buildSettings();bindProjectDrafts();fixClientProfileGuard();portalPolish();removeProjectSaveButtons();overviewPolish();
+    cleanRootText();applyInterfacePrefs();buildSettings();bindProjectDrafts();fixClientProfileGuard();portalPolish();removeProjectSaveButtons();overviewPolish();installBrowserNotifications();
     const originalNav=window.app.navigateTo.bind(window.app);
     window.app.navigateTo=function(view){
       const r=originalNav(view);
