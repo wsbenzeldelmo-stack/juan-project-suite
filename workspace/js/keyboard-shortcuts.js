@@ -142,8 +142,17 @@
     if(["ArrowDown","ArrowUp","Enter","Escape"].indexOf(e.key)>=0&&tableNav(e.key,e.shiftKey)){e.preventDefault();}
   },true);
   document.addEventListener("click",function(e){if(!e.target.closest("table")){if(tableRow){tableRow.classList.remove("jp-kb-selected");tableRow=null;}}});
+  function removeVisibleCommandHelpers(){
+    document.querySelectorAll('#jpCommandHelper,.jp-command-helper,[data-command-helper]').forEach(function(node){node.remove();});
+    document.querySelectorAll('button').forEach(function(node){
+      if(node.closest('.jp-command-overlay'))return;
+      var label=String(node.textContent||'').replace(/\s+/g,' ').trim();
+      if(label==='Commands'||(/Commands/i.test(label)&&(/[⌘Ctrl]/.test(label)||/\bK\b/.test(label))))node.remove();
+    });
+  }
   function install(){
-    document.getElementById("jpCommandHelper")?.remove();
+    removeVisibleCommandHelpers();
+    new MutationObserver(removeVisibleCommandHelpers).observe(document.body,{childList:true,subtree:true});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   window.JPKeyboard={openPalette:openPalette,openHelp:openHelp};
