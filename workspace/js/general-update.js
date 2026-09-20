@@ -226,6 +226,11 @@
   }
 
   function install(){
+    document.getElementById("juanSuiteNavGroup")?.remove();
+    document.getElementById("suiteHeaderRequests")?.remove();
+    document.getElementById("suiteHeaderScanner")?.remove();
+    document.querySelectorAll(".suite-order-shortcuts").forEach(function(x){x.remove();});
+    document.getElementById("suiteProfilePreview")?.remove();
     ensureOrdersView();var nav=document.getElementById("workspaceOrdersNav");if(nav){nav.dataset.view="orders";nav.removeAttribute("onclick");}
     var originalNav=window.app.navigateTo.bind(window.app);window.app.navigateTo=function(view){var r=originalNav(view);if(view==="orders")setTimeout(function(){renderOrders(true);},0);if(view==="client-profile")setTimeout(renderEditableClient,0);if(view==="online-portal")setTimeout(ensureAdsTab,0);return r;};
     var openClient=window.app.openClientProfile&&window.app.openClientProfile.bind(window.app);if(openClient)window.app.openClientProfile=function(id){var r=openClient(id);setTimeout(renderEditableClient,0);return r;};
