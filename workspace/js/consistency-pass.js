@@ -529,3 +529,43 @@
   }
   later(install);
 })();
+
+
+/* SEP 21 2026 — compact ID / expanded name+email table columns */
+(function(){
+  "use strict";
+  const label=el=>String(el?.textContent||"").trim().replace(/\s+/g," ").toUpperCase();
+  function ensureCols(table,count){
+    let group=table.querySelector(":scope > colgroup");
+    if(!group){group=document.createElement("colgroup");table.insertBefore(group,table.firstChild);}
+    while(group.children.length<count)group.appendChild(document.createElement("col"));
+    while(group.children.length>count)group.lastElementChild.remove();
+    return [...group.children];
+  }
+  function apply(table){
+    const heads=[...table.querySelectorAll("thead tr:first-child th")];
+    if(heads.length<3)return;
+    const h=heads.map(label),cols=ensureCols(table,heads.length);
+    const set=(i,w)=>{if(i>=0&&cols[i])cols[i].style.setProperty("width",w,"important");};
+    const id=h.findIndex(x=>/^(CLIENT|PROJECT|ORDER|SERVICE|PACKAGE)?\s*ID$/.test(x)||/\bID$/.test(x));
+    const email=h.findIndex(x=>x==="EMAIL"||x.includes("EMAIL ADDRESS"));
+    const projectName=h.findIndex(x=>x==="PROJECT NAME");
+    const clientName=h.findIndex(x=>x==="CLIENT"||x==="CLIENT NAME"||x==="NAME");
+    if(id>=0)set(id,"8%");
+    if(projectName>=0)set(projectName,"24%");
+    if(email>=0)set(email,"34%");
+    if(clientName>=0){
+      const clientActsAsEmail=projectName>=0&&email<0&&h[clientName]==="CLIENT";
+      set(clientName,clientActsAsEmail?"28%":"28%");
+    }
+    if(h.length===3&&id===0&&projectName===1&&clientName===2){
+      set(0,"12%");set(1,"34%");set(2,"54%");
+    }
+    table.classList.toggle("jp-id-name-email-table",id>=0&&(email>=0||clientName>=0));
+  }
+  const run=(root=document)=>root.querySelectorAll?.("table").forEach(apply);
+  let queued=false;
+  const observer=new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;run()})});
+  const start=()=>{run();observer.observe(document.body,{subtree:true,childList:true})};
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();
+})();
