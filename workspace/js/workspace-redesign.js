@@ -434,13 +434,15 @@
       window.JuanSuite.incoming=openOrders;
       window.JuanSuite.scanner=openScanner;
     }
-    window.jpOpenOrders=function(){window.jpToggleQuickActions&&window.jpToggleQuickActions(false);openOrders();};
+    window.jpOpenOrders=function(){
+      window.jpToggleQuickActions&&window.jpToggleQuickActions(false);
+      if(window.app?.navigateTo)return window.app.navigateTo('orders');
+      openOrders();
+    };
     window.jpOpenQrScanner=function(){window.jpToggleQuickActions&&window.jpToggleQuickActions(false);openScanner();};
 
     var orders=by('workspaceOrdersNav');
-    if(orders)orders.onclick=function(e){e.preventDefault();openOrders();};
-    var requestBtn=by('workspaceNewOrderRequests');
-    if(requestBtn)requestBtn.onclick=openOrders;
+    if(orders)orders.onclick=null;
     var scanBtn=by('workspaceNewOrderQrScanner');
     if(scanBtn)scanBtn.onclick=openScanner;
   }
