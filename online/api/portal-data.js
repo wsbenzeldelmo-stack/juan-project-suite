@@ -79,10 +79,22 @@ export default async function handler(req,res){
     }
     const profile={...clientRes.data,profile_photo_url:profilePhotoUrl};
 
+    const [orderByClient,orderByEmail]=await Promise.all([
+      svc.from('incoming_orders').select('id,code,title,status,created_at,updated_at,total,subtotal,discount_amount,rush_fee,deadline,review_note,project_id,client_id,items,client_accepted_at,revised_at,approved_at,converted_at,archived_at').eq('client_id',account.client_id).is('archived_at',null).order('created_at',{ascending:false}),
+      clientRes.data?.email
+        ? svc.from('incoming_orders').select('id,code,title,status,created_at,updated_at,total,subtotal,discount_amount,rush_fee,deadline,review_note,project_id,client_id,items,client_accepted_at,revised_at,approved_at,converted_at,archived_at').ilike('email',String(clientRes.data.email).trim()).is('archived_at',null).order('created_at',{ascending:false})
+        : Promise.resolve({data:[],error:null})
+    ]);
+    if(orderByClient.error)throw orderByClient.error;if(orderByEmail.error)throw orderByEmail.error;
+    const orderMap=new Map();
+    [...(orderByClient.data||[]),...(orderByEmail.data||[])].forEach(o=>orderMap.set(String(o.id),{...o,total:Number(o.total||0),subtotal:Number(o.subtotal||0),discount_amount:Number(o.discount_amount||0),rush_fee:Number(o.rush_fee||0),items:Array.isArray(o.items)?o.items:[]}));
+    const orderRequests=[...orderMap.values()].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+
     return res.status(200).json({
       profile,
       passwordSet:Boolean(account.password_set),
       projects:enriched,
+      orderRequests,
       paymentSettings:settings,
       paymentSubmissions:safeSubs
     });
