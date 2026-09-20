@@ -2005,7 +2005,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
             </div>
             <div id="projectOrderItemsList"></div>
           </div>
-          <div class="project-data-save-row project-data-autosave-row"><span id="projectDataAutosaveStatus" class="project-data-autosave-status">All changes save automatically.</span></div>
+          <div class="project-data-save-row project-data-autosave-row"><span id="projectDataAutosaveStatus" class="project-data-autosave-status">All changes save automatically.</span><button id="saveProjectDataBtn" type="button" class="btn btn-primary btn-sm" onclick="app.saveProjectData({silent:false})">Save Changes</button></div>
         </div>
 
         <div id="projTab-deliverables" class="tab-content active">
@@ -3570,7 +3570,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
               quantity: 1,
               unit_price: due,
               billable: true,
-              counts_as_deliverable: false,
+              counts_as_deliverable: true,
               status: projectStatus === "Completed" ? "Completed" : "Pending",
               progress: projectStatus === "Completed" ? 100 : 0,
               due_date: deadlineDate,
@@ -3581,6 +3581,24 @@ table.jp-packages-table col:nth-child(6){width:7%}
               sort_order: 0
             }]);
             if (itemInsert.error) throw itemInsert.error;
+
+            const deliverableInsert = await supabaseClient.from("deliverables").insert([{
+              id: "hist_del_" + historicalImportSafeId(ref, projectNumber),
+              project_id: projectId,
+              item_name: projectType || title || "Historical Service",
+              completed: projectStatus === "Completed",
+              progress: projectStatus === "Completed" ? 100 : 0,
+              status: projectStatus === "Completed" ? "Completed" : "Pending",
+              completed_at: projectStatus === "Completed"
+                ? new Date((deadlineDate || historicalDate.date) + "T17:00:00+08:00").toISOString()
+                : null,
+              due_date: deadlineDate,
+              client_visible: true,
+              source_type: "ORDER_ITEM",
+              order_item_id: itemId,
+              order_item_occurrence: 1
+            }]);
+            if (deliverableInsert.error) throw deliverableInsert.error;
 
             if (received > 0) {
               const paymentInsert = await supabaseClient.from("payments").insert([{
@@ -6867,9 +6885,10 @@ ${description}`))actionCallback();return;}
       async function syncProjectStructureToDatabase(project, options = {}) {
         if (!supabaseClient || !state.isConnected || !project) return;
         try {
-          await syncProjectCoreToDatabase(project);
+          // Structure is written first. If it fails, financial/core fields remain unchanged.
           await syncProjectItemsToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
           await syncDeliverablesToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
+          await syncProjectCoreToDatabase(project);
         } catch (e) {
           console.warn('Shared Online project sync needs attention:', e?.message || e);
           throw e;
@@ -6886,11 +6905,12 @@ ${description}`))actionCallback();return;}
       async function syncProjectToDatabase(project, options = {}) {
         if (!supabaseClient || !state.isConnected || !project) return;
         try {
-          await syncProjectCoreToDatabase(project);
           if(options.includeStructure===true){
+            // Do not commit changed totals first and then fail while saving their underlying items.
             await syncProjectItemsToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
             await syncDeliverablesToDatabase(project,{allowEmpty:options.allowEmptyStructure===true});
           }
+          await syncProjectCoreToDatabase(project);
           if (!options.quiet) showToast("Project synchronized successfully.");
         } catch (e) {
           console.error("Project sync retry failed:", e);
@@ -7891,7 +7911,32 @@ ${description}`))actionCallback();return;}
       function toLocalDateTimeInput(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);}
       function projectFilesState(proj){const now=Date.now(),unlock=proj.drive_unlock_at?new Date(proj.drive_unlock_at).getTime():null,expires=proj.drive_expires_at?new Date(proj.drive_expires_at).getTime():null;if(expires&&now>expires)return['Expired','expired'];if(!proj.drive_url||(unlock&&now<unlock))return['Locked','locked'];return['Available','available'];}
       function renderProjectFilesAccess(proj){const card=document.getElementById('projectFilesAccessCard');if(!card||!proj)return;const url=document.getElementById('projectFilesDriveUrl'),unlock=document.getElementById('projectFilesUnlockAt'),expires=document.getElementById('projectFilesExpiresAt'),badge=document.getElementById('projectFilesAccessState'),open=document.getElementById('projectFilesOpenDrive');if(document.activeElement!==url)url.value=proj.drive_url||'';if(document.activeElement!==unlock)unlock.value=toLocalDateTimeInput(proj.drive_unlock_at);if(document.activeElement!==expires)expires.value=toLocalDateTimeInput(proj.drive_expires_at);const [label,cls]=projectFilesState(proj);badge.textContent=label;badge.className='portal-drive-state '+cls;if(proj.drive_url){open.href=proj.drive_url;open.classList.remove('hidden')}else open.classList.add('hidden');}
-      async function saveProjectFilesAccess(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const url=document.getElementById('projectFilesDriveUrl')?.value.trim()||'',unlock=document.getElementById('projectFilesUnlockAt')?.value||null,expires=document.getElementById('projectFilesExpiresAt')?.value||null;if(url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(url)){showToast('Enter a valid Google Drive URL.');return}showActionStatus('Saving Project Files','Updating client delivery access…',false);try{await onlinePortalRequest('POST',{action:'save-project-drive-link',projectId:proj.id,url,unlockAt:unlock,expiresAt:expires});proj.drive_url=url||null;proj.drive_unlock_at=unlock?new Date(unlock).toISOString():null;proj.drive_expires_at=expires?new Date(expires).toISOString():null;persistProjectsState();renderProjectFilesAccess(proj);showActionStatus('Project Files Saved','The same folder access is now connected to JUAN PROJECT Online.',true);}catch(e){closeModal('actionStatusModal');showToast(e.message||'Could not save project files.')}setTimeout(()=>closeModal('actionStatusModal'),1050);}
+      async function saveProjectFilesAccess(){
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        const url=document.getElementById('projectFilesDriveUrl')?.value.trim()||'';
+        const unlock=document.getElementById('projectFilesUnlockAt')?.value||null;
+        const expires=document.getElementById('projectFilesExpiresAt')?.value||null;
+        if(url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(url)){showToast('Enter a valid Google Drive URL.');return;}
+        const unlockIso=unlock?new Date(unlock).toISOString():null,expiresIso=expires?new Date(expires).toISOString():null;
+        if(unlockIso&&expiresIso&&new Date(expiresIso)<=new Date(unlockIso)){showToast('Expiry must be after the unlock date.');return;}
+        if(!cloudAvailable()||!(await ensureWorkspaceSyncSession())){showToast('Supabase connection required. Project Files were not saved.');return;}
+        showActionStatus('Saving Project Files','Saving directly to Supabase…',false);
+        try{
+          const updatedAt=new Date().toISOString();
+          const result=await supabaseClient.from('projects').update({
+            drive_url:url||null,drive_unlock_at:unlockIso,drive_expires_at:expiresIso,updated_at:updatedAt
+          }).eq('id',proj.id).select('id').single();
+          if(result.error)throw result.error;
+          proj.drive_url=url||null;proj.drive_unlock_at=unlockIso;proj.drive_expires_at=expiresIso;proj.updated_at=updatedAt;
+          persistProjectsState();renderProjectFilesAccess(proj);
+          try{await onlinePortalRequest('POST',{action:'save-project-drive-link',projectId:proj.id,url,unlockAt:unlock,expiresAt:expires});}
+          catch(portalError){console.warn('Project files saved; portal refresh needs attention:',portalError?.message||portalError);}
+          showActionStatus('Project Files Saved','Saved to Supabase and available to JUAN PROJECT Online.',true);
+        }catch(e){
+          closeModal('actionStatusModal');showToast(`Project Files save failed: ${e?.message||e}`);
+        }
+        setTimeout(()=>closeModal('actionStatusModal'),1050);
+      }
 
       function recalculateProjectFromOrderItems(proj) {
         const items=Array.isArray(proj.project_items)?proj.project_items:[];
@@ -8795,14 +8840,17 @@ ${description}`))actionCallback();return;}
         if (!state.activeProjectId) return;
         const proj = state.projects.find(p => p.id === state.activeProjectId);
         if (!proj) return;
-        proj.notes = document.getElementById("projectNotesTextarea").value.trim();
-        proj.updated_at = new Date().toISOString();
-        persistProjectsState();
-        if (supabaseClient && state.isConnected) {
-          try { const {error}=await supabaseClient.from('projects').update({notes:proj.notes,updated_at:proj.updated_at}).eq('id',proj.id); if(error) throw error; }
-          catch(e){ console.warn('Notes database sync unavailable:',e.message); }
+        const nextNotes=document.getElementById("projectNotesTextarea").value.trim();
+        if(!cloudAvailable()||!(await ensureWorkspaceSyncSession())){showToast('Supabase connection required. Notes were not saved.');return;}
+        const previousNotes=proj.notes||'',updatedAt=new Date().toISOString();
+        try{
+          const result=await supabaseClient.from('projects').update({notes:nextNotes,updated_at:updatedAt}).eq('id',proj.id).select('id').single();
+          if(result.error)throw result.error;
+          proj.notes=nextNotes;proj.updated_at=updatedAt;persistProjectsState();showToast("Notes saved to Supabase.");
+        }catch(e){
+          proj.notes=previousNotes;
+          showToast(`Notes save failed: ${e?.message||e}`);
         }
-        showToast("Notes saved.");
       }
 
       function promptMarkAsDelivered() {
