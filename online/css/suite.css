@@ -10,3 +10,77 @@
 .suite-nav-btn{width:100%;font:inherit;text-align:left;cursor:pointer;border:0}
 .suite-online-quick-actions{margin:12px 0 16px}
 .suite-online-quick-actions .suite-tabs{justify-content:flex-start}
+
+/* Responsive client card + QR · 2026-09-20 */
+.jp-client-card-shell{width:min(760px,100%);margin:0 auto}
+.jp-client-card-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:#edf2ef;margin-bottom:12px}
+.jp-client-card-tabs button{min-height:40px!important;border:0!important;border-radius:11px!important;background:transparent!important;color:#738078!important}
+.jp-client-card-tabs button.active{background:#08b966!important;color:#fff!important}
+#clientCardStage{min-width:0}
+.jp-client-membership-card{
+  width:100%!important;
+  aspect-ratio:1.59/1!important;
+  min-height:0!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  margin:0 auto!important;
+  padding:24px!important;
+  display:grid!important;
+  grid-template-rows:auto 1fr auto!important;
+  overflow:hidden!important;
+  border-radius:22px!important;
+  background:
+    radial-gradient(circle at 100% 0,rgba(255,255,255,.075) 0 22%,transparent 22.2%),
+    linear-gradient(135deg,#0b1712,#172a21)!important;
+  color:#fff!important;
+  box-shadow:0 16px 36px rgba(9,24,17,.16)!important;
+}
+.jp-client-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.jp-client-card-top>div{display:grid}.jp-client-card-top b{font-size:14px}.jp-client-card-top small{color:#32d88b;font-size:9px}
+.jp-client-card-top>span{padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.06em}
+.jp-client-card-person{align-self:center;display:flex;align-items:center;gap:13px;min-width:0}
+.jp-client-card-avatar{width:52px;height:52px;flex:0 0 52px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#0f2118;font-weight:850}
+.jp-client-card-person>div:last-child{display:grid;min-width:0}
+.jp-client-card-person h3{margin:0 0 2px!important;font-size:19px!important;color:#fff!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jp-client-card-person b{font-size:10px}.jp-client-card-person small{font-size:9px;color:#c0cbc5!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jp-client-card-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:13px;border-top:1px solid rgba(255,255,255,.17)}
+.jp-client-card-meta>div{display:grid;gap:3px}.jp-client-card-meta>div:last-child{text-align:right}
+.jp-client-card-meta span{font-size:7px;text-transform:uppercase;letter-spacing:.1em;color:#93a49b}.jp-client-card-meta b{font-size:9px;color:#fff}
+.jp-client-card-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;margin:12px 0 0!important}
+.jp-client-card-actions button{min-height:42px!important;margin:0!important}
+.jp-client-qr-panel{min-height:360px;display:grid;place-items:center;align-content:center;gap:8px;padding:22px;border:1px solid #e2e8e4;border-radius:18px;background:#fff;text-align:center}
+.jp-client-qr-panel .suite-qr{width:min(240px,48vw)!important;height:auto!important;aspect-ratio:1!important;margin:0 auto!important}
+.jp-client-qr-panel h3{margin:3px 0 0!important;font-size:18px!important}.jp-client-qr-panel p{max-width:390px;margin:0!important;color:#748078}
+.jp-client-qr-full{display:grid;place-items:center;text-align:center;gap:7px;padding:10px 0 6px}
+.jp-client-qr-frame{width:min(360px,70vw);aspect-ratio:1;border:1px solid #e1e7e4;border-radius:20px;background:#fff;display:grid;place-items:center;padding:18px;box-sizing:border-box}
+.jp-client-qr-frame .suite-qr{width:100%!important;height:100%!important;margin:0!important}
+.jp-client-qr-full h3{margin:5px 0 0!important}.jp-client-qr-full p{margin:0!important}.jp-client-qr-full small{color:#77827c}
+
+@media(min-width:900px){
+  .suite-panel:has(.jp-client-card-shell){width:min(900px,calc(100vw - 80px))!important;max-height:calc(100dvh - 70px)!important;padding:22px!important}
+  .suite-panel:has(.jp-client-card-shell) .suite-head{margin-bottom:14px!important}
+  .jp-client-card-shell{width:min(720px,100%)!important}
+  .jp-client-membership-card{max-width:680px!important}
+  .jp-client-qr-panel{max-width:680px;margin:0 auto}
+}
+@media(max-width:640px){
+  .suite-overlay{padding:0!important;align-items:stretch!important}
+  .suite-panel:has(.jp-client-card-shell),.suite-panel:has(.jp-client-qr-full){
+    width:100%!important;
+    max-width:none!important;
+    height:100dvh!important;
+    max-height:none!important;
+    border-radius:0!important;
+    padding:16px!important;
+    overflow-y:auto!important;
+  }
+  .jp-client-card-shell{width:100%!important}
+  .jp-client-membership-card{padding:18px!important;border-radius:18px!important}
+  .jp-client-card-avatar{width:44px;height:44px;flex-basis:44px}
+  .jp-client-card-person h3{font-size:15px!important}
+  .jp-client-card-top>span{font-size:7px;padding:5px 8px}
+  .jp-client-qr-panel{min-height:0;padding:18px 12px}
+  .jp-client-qr-panel .suite-qr{width:min(220px,64vw)!important}
+  .jp-client-card-actions{position:sticky!important;bottom:0!important;background:#f8faf9!important;padding-top:8px!important}
+  .jp-client-qr-frame{width:min(280px,72vw)!important;border-radius:17px!important;padding:14px!important}
+}

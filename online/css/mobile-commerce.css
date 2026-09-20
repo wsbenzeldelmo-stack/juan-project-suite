@@ -59,3 +59,152 @@ body.jp-flow-open{overflow:hidden}.jp-flow-layer{position:fixed;inset:0;z-index:
 .jp-receipt-icon-actions{grid-template-columns:repeat(4,52px)!important;justify-content:center!important;gap:10px!important}
 .jp-receipt-icon-actions button{width:52px!important;height:48px!important;min-height:48px!important;border-radius:12px!important;padding:0!important;display:grid!important;place-items:center!important}
 .jp-receipt-icon-actions button svg{width:21px!important;height:21px!important}.jp-receipt-icon-actions button b,.jp-receipt-icon-actions button span{display:none!important}
+
+/* Responsive cart / checkout / tracking · 2026-09-20 */
+.jp-track-layout{display:grid;gap:14px}
+.jp-track-overview{display:grid;align-content:start;gap:10px}
+.jp-track-search-card{display:grid;gap:4px}
+.jp-track-search-card .jp-step-copy{margin-bottom:14px}
+.jp-track-search-card .jp-step-copy h2{font-size:18px;margin:0 0 5px}
+.jp-track-search-fields{display:grid;gap:0}
+
+@media(min-width:900px){
+  .jp-flow-layer{
+    padding:22px!important;
+    box-sizing:border-box!important;
+    display:grid!important;
+    place-items:center!important;
+    background:rgba(232,239,236,.92)!important;
+    overflow:hidden!important;
+  }
+  .jp-flow-phone{
+    width:min(960px,calc(100vw - 56px))!important;
+    max-width:960px!important;
+    min-height:0!important;
+    height:min(820px,calc(100dvh - 44px))!important;
+    margin:0!important;
+    border:1px solid #e1e7e4!important;
+    border-radius:24px!important;
+    box-shadow:0 24px 65px rgba(18,34,26,.12)!important;
+    overflow:hidden!important;
+  }
+  .jp-flow-header{
+    position:relative!important;
+    height:62px!important;
+    padding:11px 20px!important;
+    border-bottom:1px solid #e7ece9!important;
+    background:#fff!important;
+  }
+  .jp-flow-main{
+    min-height:0!important;
+    padding:24px 28px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    scrollbar-width:thin!important;
+    scrollbar-color:#d8dfdb transparent!important;
+  }
+  .jp-flow-main::-webkit-scrollbar{width:7px}.jp-flow-main::-webkit-scrollbar-thumb{background:#d8dfdb;border-radius:999px}
+  .jp-flow-title h1{font-size:25px!important}
+
+  .jp-flow-cart .jp-flow-main{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 300px!important;
+    grid-template-rows:auto auto 1fr auto!important;
+    gap:12px 22px!important;
+    align-content:start!important;
+  }
+  .jp-flow-cart .jp-flow-title{grid-column:1/-1!important;margin-bottom:0!important}
+  .jp-flow-cart .jp-cart-list{grid-column:1!important;grid-row:2/5!important}
+  .jp-flow-cart .jp-promo-row{grid-column:2!important;grid-row:2!important;margin:0!important}
+  .jp-flow-cart .jp-cart-summary{grid-column:2!important;grid-row:3!important;margin:0!important;align-self:start!important;padding:17px!important;border:1px solid #e4e9e6!important;border-radius:16px!important;background:#f8faf9!important}
+  .jp-flow-cart #jpCheckout{grid-column:2!important;grid-row:4!important;align-self:end!important}
+  .jp-cart-item{grid-template-columns:minmax(0,1fr) 36px!important;padding:15px 16px!important;border-radius:16px!important}
+  .jp-cart-copy h3{font-size:13px!important}.jp-cart-copy>b{font-size:12px!important}
+
+  .jp-flow-checkout .jp-flow-main,.jp-flow-terms .jp-flow-main{
+    width:min(760px,100%)!important;
+    margin:0 auto!important;
+    box-sizing:border-box!important;
+  }
+  .jp-flow-checkout .jp-mobile-field input,.jp-flow-checkout .jp-mobile-field textarea,
+  .jp-flow-terms .jp-mobile-field input,.jp-flow-terms .jp-mobile-field textarea{min-height:46px!important}
+  .jp-flow-checkout .jp-review-card{padding:18px!important;border-radius:17px!important}
+  .jp-flow-terms .jp-terms-scroll{height:min(52vh,470px)!important}
+
+  .jp-flow-track .jp-flow-main{padding:24px 28px!important}
+  .jp-flow-track .jp-track-search-card{
+    width:min(720px,100%)!important;
+    margin:0 auto!important;
+    padding:22px!important;
+    border:1px solid #e3e9e6!important;
+    border-radius:18px!important;
+    background:#fff!important;
+    box-shadow:0 4px 16px rgba(24,40,32,.035)!important;
+  }
+  .jp-flow-track .jp-track-search-fields{grid-template-columns:1fr 1fr!important;gap:12px!important}
+  .jp-flow-track .jp-track-layout{
+    grid-template-columns:minmax(280px,.82fr) minmax(360px,1.18fr)!important;
+    gap:18px!important;
+    align-items:start!important;
+  }
+  .jp-flow-track .jp-track-overview{position:sticky!important;top:0!important}
+  .jp-flow-track .jp-track-summary{padding:18px!important;border-radius:17px!important;background:#fff!important}
+  .jp-flow-track .jp-track-timeline{
+    margin:0!important;
+    padding:18px 20px!important;
+    border:1px solid #e4e9e6!important;
+    border-radius:18px!important;
+    background:#fff!important;
+  }
+  .jp-flow-track .jp-track-node{min-height:64px!important}
+  .jp-flow-track .jp-next-step{padding:16px!important;border-radius:16px!important}
+  .jp-flow-track .jp-mobile-primary,.jp-flow-track .jp-mobile-secondary{min-height:46px!important}
+
+  .jp-flow-processing .jp-flow-main,.jp-flow-receipt .jp-flow-main{
+    display:grid!important;
+    place-items:start center!important;
+  }
+  .jp-flow-receipt .jp-receipt-result{max-width:420px!important}
+}
+
+@media(max-width:899px){
+  .jp-flow-layer{overflow:hidden!important;background:#fff!important}
+  .jp-flow-phone{
+    width:100%!important;
+    max-width:none!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    margin:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+  }
+  .jp-flow-header{flex:0 0 auto!important}
+  .jp-flow-main{
+    min-height:0!important;
+    flex:1 1 auto!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:16px 16px calc(22px + env(safe-area-inset-bottom))!important;
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+  }
+  .jp-flow-main::-webkit-scrollbar{display:none!important}
+  .jp-flow-title{margin-bottom:14px!important}
+  .jp-flow-title h1{font-size:25px!important}
+  .jp-cart-item{grid-template-columns:minmax(0,1fr) 32px!important;padding:12px 13px!important}
+  .jp-promo-row{margin:10px 0!important}
+  .jp-mobile-primary,.jp-mobile-secondary{min-height:48px!important}
+  .jp-flow-checkout .jp-mobile-primary,.jp-flow-terms .jp-mobile-primary{
+    position:sticky!important;
+    bottom:0!important;
+    z-index:3!important;
+    box-shadow:0 -10px 18px rgba(255,255,255,.92)!important;
+  }
+  .jp-track-search-card{padding:2px!important}
+  .jp-track-layout{gap:12px!important}
+  .jp-track-timeline{padding:14px 2px!important}
+  .jp-track-node{min-height:61px!important}
+  .jp-track-summary{padding:14px!important}
+  .jp-client-qr-full{padding-bottom:env(safe-area-inset-bottom)!important}
+}

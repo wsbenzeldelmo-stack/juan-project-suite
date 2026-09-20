@@ -565,3 +565,103 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   .app>.page{padding:20px 22px!important}
   .app.route-shop>.page{padding:14px!important}
 }
+
+/* Responsive Online page optimization · 2026-09-20 */
+.jp-guest-desktop-head{display:none}
+
+@media(min-width:900px){
+  .app.guest-mode.route-home .jp-guest-home-centered{
+    width:100%!important;
+    max-width:none!important;
+    min-height:100%!important;
+    height:100%!important;
+    padding:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    grid-template-columns:minmax(300px,.82fr) minmax(420px,1.18fr)!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
+    grid-template-areas:"head head" "hero ad" "hero about"!important;
+    align-content:stretch!important;
+    gap:14px!important;
+  }
+  .jp-guest-desktop-head{
+    grid-area:head;
+    display:block!important;
+    padding:2px 2px 6px!important;
+    text-align:left!important;
+  }
+  .jp-guest-desktop-head>span{font-size:9px;font-weight:850;letter-spacing:.12em;color:#7c8882}
+  .jp-guest-desktop-head h1{margin:4px 0 2px!important;font-size:25px!important;letter-spacing:-.035em!important;color:#131a17}
+  .jp-guest-desktop-head p{margin:0!important;font-size:11px!important;color:#7a8580}
+  .app.guest-mode.route-home .jp-guest-hero{
+    grid-area:hero;
+    width:100%!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    margin:0!important;
+    padding:28px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:center!important;
+    border:1px solid var(--jp-desktop-border)!important;
+    border-radius:var(--jp-desktop-card-radius)!important;
+    background:#fff!important;
+    box-shadow:var(--jp-desktop-card-shadow)!important;
+    text-align:left!important;
+  }
+  .app.guest-mode.route-home .jp-guest-hero h1{font-size:44px!important;line-height:.94!important;margin:8px 0 16px!important}
+  .app.guest-mode.route-home .jp-guest-hero p{font-size:12px!important;max-width:380px!important;margin:0!important}
+  .app.guest-mode.route-home .guest-actions{width:100%!important;max-width:390px!important;margin:22px 0 0!important}
+  .app.guest-mode.route-home .jp-client-login-question{text-align:left!important}
+  .app.guest-mode.route-home #jpAdBannerAnchor{
+    grid-area:ad;
+    width:100%!important;
+    min-width:0!important;
+    margin:0!important;
+    align-self:start!important;
+    overflow:hidden!important;
+    border-radius:var(--jp-desktop-card-radius)!important;
+  }
+  .app.guest-mode.route-home .jp-house-banner{width:100%!important;margin:0!important;border-radius:var(--jp-desktop-card-radius)!important;overflow:hidden!important}
+  .app.guest-mode.route-home .jp-guest-about{
+    grid-area:about;
+    width:100%!important;
+    box-sizing:border-box!important;
+    margin:0!important;
+    padding:15px 18px!important;
+    justify-content:flex-start!important;
+    text-align:left!important;
+    align-self:end!important;
+  }
+
+  .app.route-shop .jp-shop-sticky{padding:18px 20px!important}
+  .app.route-shop .jp-shop-head{gap:10px!important}
+  .app.route-shop .shop-search{min-height:44px!important}
+  .app.route-shop .jp-category-chips{padding-top:10px!important}
+  .app.route-shop .jp-shop-scroll{padding:0!important}
+  .app.route-shop .jp-shop-grid{display:grid!important;grid-template-columns:1fr!important;gap:9px!important}
+  .app.route-shop .jp-shop-card{
+    min-height:86px!important;
+    padding:13px 14px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    align-items:center!important;
+  }
+  .app.route-shop .jp-shop-copy h3{font-size:13px!important;margin:3px 0!important}
+  .app.route-shop .jp-shop-copy p{font-size:9px!important;line-height:1.35!important}
+  .app.route-shop .jp-shop-price b{font-size:12px!important}
+  .app.route-shop .jp-add-cart{min-width:98px!important;min-height:40px!important}
+  .app.route-shop .jp-shop-footer{padding:9px 10px!important}
+  .app.route-shop .jp-mini-cart{min-height:54px!important}
+}
+
+@media(max-width:899px){
+  .jp-guest-desktop-head{display:none!important}
+  .app.guest-mode.route-home .jp-guest-home-centered{width:100%!important;max-width:520px!important}
+  .app.guest-mode.route-home .jp-guest-hero{width:100%!important}
+  .app.route-shop .jp-shop-card{min-width:0!important}
+  .app.route-shop .jp-shop-copy{min-width:0!important}
+  .app.route-shop .jp-shop-copy h3,.app.route-shop .jp-shop-copy p{overflow-wrap:anywhere!important}
+}

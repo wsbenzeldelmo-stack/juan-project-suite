@@ -157,7 +157,7 @@ async function card(){
   const {client:c}=await api({action:'client-card'});
   const link=url('workspace','#client='+c.qr_token);
   let tab='card';
-  open('My Client Card',`<div class="jp-client-card-tabs"><button id="clientCardViewTab" class="active">Card View</button><button id="clientCardQrTab">QR Code</button></div><div id="clientCardStage"></div><div class="suite-tabs jp-client-card-actions"><button id="cardFull">Full-screen QR</button><button id="cardSave">Save Card Image</button></div>`);
+  open('My Client Card',`<div class="jp-client-card-shell"><div class="jp-client-card-tabs"><button id="clientCardViewTab" class="active">Card View</button><button id="clientCardQrTab">QR Code</button></div><div id="clientCardStage"></div><div class="suite-tabs jp-client-card-actions"><button id="cardFull">Full-screen QR</button><button id="cardSave">Save Card Image</button></div></div>`);
   const joined=c.member_since?new Date(c.member_since).toLocaleDateString('en-PH',{year:'numeric',month:'short',day:'numeric'}):'—';
   function draw(){
     const host=by('clientCardStage');if(!host)return;
@@ -169,7 +169,7 @@ async function card(){
   draw();
   by('clientCardViewTab').onclick=()=>{tab='card';draw()};
   by('clientCardQrTab').onclick=()=>{tab='qr';draw()};
-  bind('cardFull',()=>open('Client QR',`<div class="jp-client-qr-full"><img class="suite-qr" style="width:min(70vw,520px);height:auto" src="${qr(link)}" alt="Client QR"><p>${esc(c.name)} · ${esc(c.client_code)}</p></div>`));
+  bind('cardFull',()=>open('Client QR',`<div class="jp-client-qr-full"><div class="jp-client-qr-frame"><img class="suite-qr" src="${qr(link)}" alt="Client QR"></div><h3>${esc(c.client_code)}</h3><p>${esc(c.name)}</p><small>Show this code for JUAN PROJECT client verification.</small></div>`));
   bind('cardSave',async()=>{
     const canvas=document.createElement('canvas');canvas.width=1113;canvas.height=700;
     const x=canvas.getContext('2d');x.fillStyle='#111a16';x.fillRect(0,0,canvas.width,canvas.height);
