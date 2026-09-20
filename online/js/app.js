@@ -140,17 +140,17 @@ const icons={
 };
 const icon=(name,size=20)=>`<svg class="ui-icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||''}</svg>`;
 
-const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation">'+
+const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation"><div class="jp-desktop-nav-brand"><b>JUAN PROJECT</b><span>Online</span><small>Client Portal</small></div><div class="jp-nav-links">'+
   '<button data-r="home" class="'+(state.route==='home'?'active':'')+'">'+icon('home')+'<span>Home</span></button>'+
   '<button data-r="orders" class="'+(['orders','project','invoice'].includes(state.route)?'active':'')+'">'+icon('orders')+'<span>Orders</span></button>'+
   '<button data-r="payment" class="'+(state.route==='payment'?'active':'')+'">'+icon('payment')+'<span>Payment</span></button>'+
   '<button data-r="shop" class="'+(state.route==='shop'?'active':'')+'">'+icon('shop')+'<span>Shop</span></button>'+
-  '<button data-r="account" class="'+(state.route==='account'?'active':'')+'">'+icon('account')+'<span>Account</span></button></nav>'
-  :'<nav class="nav guest-nav" aria-label="Guest navigation">'+
+  '<button data-r="account" class="'+(state.route==='account'?'active':'')+'">'+icon('account')+'<span>Account</span></button></div></nav>'
+  :'<nav class="nav guest-nav" aria-label="Guest navigation"><div class="jp-desktop-nav-brand"><b>JUAN PROJECT</b><span>Online</span><small>Guest Mode</small></div><div class="jp-nav-links">'+
   '<button data-r="home" class="'+(state.route==='home'?'active':'')+'">'+icon('home')+'<span>Home</span></button>'+
   '<button data-r="shop" class="'+(state.route==='shop'?'active':'')+'">'+icon('shop')+'<span>Shop</span></button>'+
   '<button data-guest-action="track">'+icon('search')+'<span>Track</span></button>'+
-  '<button data-guest-action="login">'+icon('account')+'<span>Login</span></button></nav>';
+  '<button data-guest-action="login">'+icon('account')+'<span>Login</span></button></div></nav>';
 
 function welcomeScreen(){
   root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome jp-welcome-simplified"><div class="welcome-copy"><span class="eyebrow">WELCOME</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Choose what you want to do today.</p></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="welcomeLogIn" class="text-button">Log In</button></p></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
@@ -473,7 +473,7 @@ function shop(){
 function findShopItem(key){const [kind,id]=String(key).split(':');if(kind==='Package')return {...state.catalog.packages.find(x=>String(x.id)===String(id)),kind};return {...state.catalog.services.find(x=>String(x.id)===String(id)),kind:'Service'}}
 
 function routePage(){if(state.route==='home')return home();if(state.route==='shop')return shop();if(state.route==='orders')return orders();if(state.route==='project')return project();if(state.route==='payment')return payment();if(state.route==='invoice')return invoice();if(state.route==='account')return account();return home()}
-function render(){root.innerHTML=`<div class="app route-${esc(state.route||'home')}"><main class="page route-${esc(state.route||'home')}">${routePage()}</main>${nav()}${gateOverlay()}${shopOverlay()}${notificationOverlay()}${clientMessageOverlay()}</div>`;bind();window.dispatchEvent(new Event('juan-online-render'));}
+function render(){root.innerHTML=`<div class="app ${isLoggedIn()?'client-mode':'guest-mode'} route-${esc(state.route||'home')}"><main class="page route-${esc(state.route||'home')}">${routePage()}</main>${nav()}${gateOverlay()}${shopOverlay()}${notificationOverlay()}${clientMessageOverlay()}</div>`;bind();window.dispatchEvent(new Event('juan-online-render'));}
 
 function bind(){
   document.querySelectorAll('.nav [data-r]').forEach(b=>b.onclick=()=>{const r=b.dataset.r;if(!isLoggedIn()&&['orders','payment'].includes(r))return gate(r);state.route=r;render()});
