@@ -241,8 +241,12 @@
     scanDeadlineNotifications();
     const db=window.app?.getDatabaseClient?.();if(!db?.channel||browserNotificationChannel)return;
     browserNotificationChannel=db.channel("juan-workspace-browser-alerts")
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"incoming_orders"},payload=>{const row=payload.new||{};notifyOnce("order-"+(row.id||row.code||Date.now()),"New JUAN PROJECT order",(row.code||"New order")+" · "+(row.title||row.name||"Order request"),"notifNewOrder");})
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"payment_submissions"},payload=>{const row=payload.new||{};notifyOnce("payment-"+(row.id||Date.now()),"Payment submitted","A client payment is waiting for review.","notifPaymentSubmitted");})
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"juan_sync_events"},payload=>{
+        const row=payload.new||{},entity=String(row.entity||""),action=String(row.action||"").toUpperCase(),eventKey=String(row.id||row.occurred_at||Date.now());
+        if(entity==="incoming_orders"&&action==="INSERT")notifyOnce("order-"+eventKey,"New JUAN PROJECT order","A new Order Request has been received.","notifNewOrder");
+        if(entity==="payment_submissions"&&action==="INSERT")notifyOnce("payment-submit-"+eventKey,"Payment submitted","A client payment is waiting for review.","notifPaymentSubmitted");
+        if(entity==="payment_submissions"&&action==="UPDATE")notifyOnce("payment-review-"+eventKey,"Payment review updated","A submitted payment changed review status.","notifPaymentApproved");
+      })
       .subscribe();
     setInterval(scanDeadlineNotifications,300000);
   }
