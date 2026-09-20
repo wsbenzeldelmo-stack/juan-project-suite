@@ -34,7 +34,12 @@ function empty(msg){return `<div class="suite-empty">${esc(msg)}</div>`}
 function qr(text){return '/api/qr?text='+encodeURIComponent(text)}
 function download(blob,name){const a=document.createElement('a'),u=URL.createObjectURL(blob);a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 async function img(src){const i=new Image();i.src=src;await i.decode();return i}
-async function shop(){catalog=await T.request('/api/catalog');const items=[...(catalog.services||[]).map(x=>({...x,kind:'service',cost:x.price})),...(catalog.packages||[]).map(x=>({...x,kind:'package',cost:x.new_price??x.selling_price}))];open('Shop & Order Request',`<div class="suite-row"><p class="suite-muted">Choose your services. No account needed.</p><button id="suiteCart" class="primary">Review order (${cart.reduce((s,x)=>s+x.qty,0)})</button></div><label>Search<input id="suiteSearch" placeholder="Service or package name"></label><div id="suiteProducts" class="suite-grid"></div>`);function draw(q=''){by('suiteProducts').innerHTML=items.filter(i=>i.name.toLowerCase().includes(q.toLowerCase())).map(i=>`<article class="suite-card"><small>${esc(i.product_code)} · ${esc(i.kind)}</small><h3>${esc(i.name)}</h3><p class="suite-muted">${esc(i.description||'')}</p><div class="suite-row"><b>${peso(i.cost)}</b><button data-add="${esc(i.id)}">Add to order</button></div></article>`).join('')||empty('No services available. Open Workspace once to load its catalog.');dialog.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const i=items.find(i=>i.id===b.dataset.add);const existing=cart.find(x=>x.id===i.id);if(existing)existing.qty++;else cart.push({id:i.id,type:i.kind,name:i.name,price:Number(i.cost||0),qty:1});persistCart();by('suiteCart').textContent=`Review order (${cart.reduce((s,x)=>s+x.qty,0)})`;toast('Added to your order')})}draw();by('suiteSearch').oninput=e=>draw(e.target.value);bind('suiteCart',checkout)}
+async function shop(){
+  close();
+  const shopButton=document.querySelector('.nav [data-r="shop"]');
+  if(shopButton){shopButton.click();return;}
+  toast('Open Shop from JUAN PROJECT Online.');
+}
 async function addShopItemToOrder(kind,id){
   catalog=await T.request('/api/catalog');
   const isPackage=String(kind||'').toLowerCase()==='package';
@@ -159,7 +164,7 @@ async function card(){
     by('clientCardViewTab')?.classList.toggle('active',tab==='card');by('clientCardQrTab')?.classList.toggle('active',tab==='qr');
     host.innerHTML=tab==='qr'
       ? `<div class="jp-client-qr-panel"><img class="suite-qr" src="${qr(link)}" alt="Client QR for ${esc(c.client_code)}"><h3>${esc(c.client_code)}</h3><p>Show this QR when requesting services or for JUAN PROJECT verification.</p></div>`
-      : `<div class="jp-client-membership-card"><div class="jp-client-card-top"><div><b>JUAN PROJECT</b><small>Online</small></div><span>${esc(c.loyalty_tier||'BRONZE')} MEMBER</span></div><div class="jp-client-card-person"><div class="jp-client-card-avatar">${esc((c.name||'CL').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())}</div><div><h3>${esc(c.name)}</h3><b>${esc(c.client_code)}</b><small>${esc(c.email||'')}</small></div></div><div class="jp-client-card-meta"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Completed Projects</span><b>${Number(c.completed_projects||0)}</b></div></div></div>`;
+      : `<div class="jp-client-membership-card"><div class="jp-client-card-top"><div><b>JUAN PROJECT</b><small>Online</small></div><span>${esc(c.loyalty_tier||'BRONZE')} MEMBER</span></div><div class="jp-client-card-person"><div class="jp-client-card-avatar">${esc((c.name||'CL').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())}</div><div><h3>${esc(c.name)}</h3><b>${esc(c.client_code)}</b><small>${esc(c.email||'')}</small></div></div><div class="jp-client-card-meta"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Membership</span><b>${esc(c.loyalty_tier||'BRONZE')}</b></div></div></div>`;
   }
   draw();
   by('clientCardViewTab').onclick=()=>{tab='card';draw()};
@@ -174,7 +179,7 @@ async function card(){
     x.font='bold 38px system-ui';x.fillText(String(c.name||'Client').slice(0,30),60,370);
     x.font='26px monospace';x.fillText(c.client_code||'',60,420);
     x.font='20px system-ui';x.fillStyle='#cad6d0';x.fillText(String(c.email||'').slice(0,42),60,458);
-    x.fillStyle='#fff';x.font='19px system-ui';x.fillText('Member Since  '+joined,60,585);x.fillText('Completed Projects  '+Number(c.completed_projects||0),630,585);
+    x.fillStyle='#fff';x.font='19px system-ui';x.fillText('Member Since  '+joined,60,585);x.fillText('Membership  '+String(c.loyalty_tier||'BRONZE'),630,585);
     canvas.toBlob(b=>download(b,(c.client_code||'JUAN-CLIENT')+'-card.png'),'image/png',1);
   });
 }
