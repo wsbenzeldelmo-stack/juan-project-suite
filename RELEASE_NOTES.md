@@ -40,3 +40,16 @@ This package includes migration `013_client_id_identity_lock.sql`. Historical ID
 - Prioritizes the uploaded CL-001–CL-046 email mapping for Client Directory and JUAN PROJECT Online. Existing client names are preserved because the source workbook does not include a name column.
 - Portal temporary login details are initialized silently once per master-data version; no mass sync/reboot controls are shown in the UI.
 - Revenue timeline selector, natural table sizing, top-layer action menus, Shop service column proportions, payment account spacing, and invoice wordmark fixes.
+
+
+## 2026-09-20 — Unified Settings and Online Flow Update
+
+- Restored segmented Workspace Settings with persistent keyboard-accessible section navigation.
+- Removed the visible Command Center helper while keeping the keyboard shortcut; successful commands now close after execution.
+- Fixed In-House Ads navigation so the existing campaign manager remains the source of truth.
+- Fixed Recent Projects overflow and constrained Reports to a viewport dashboard with an internally scrollable Recent Payments area.
+- Confirmed Client ID remains system-controlled in client editing; edit payloads do not expose or rewrite the client code.
+- Simplified JUAN PROJECT Online guest entry, Shop categories, package-first ordering, cart presentation, requested-date guidance, and membership card details.
+- Expanded client project tracking through the Delivered stage and aligned the Supabase tracker constraint to 0–7.
+- Added browser notification delivery for live new-order/payment-submission events and foreground deadline reminders when permission is enabled.
+- Passkey/biometric UI now accurately reports unavailable until the Supabase authentication runtime is upgraded; password fallback remains intact.
