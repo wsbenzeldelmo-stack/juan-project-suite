@@ -7814,10 +7814,8 @@ ${description}`))actionCallback();return;}
         }
         target.name=proj.client_name||target.name||'Client';target.email=newEmail;target.phone=proj.client_phone||'';target.address=proj.client_address||'';target.archived_at=null;
         proj.client_id=target.id;syncClientSnapshotToProjects(target);
-        if(previousClientId&&String(previousClientId)!==String(target.id)){
-          const stillUsed=(state.projects||[]).some(p=>!p.deleted&&String(p.id)!==String(proj.id)&&String(p.client_id)===String(previousClientId));
-          if(!stillUsed)state.clients=state.clients.filter(c=>String(c.id)!==String(previousClientId));
-        }
+        // Never remove a client from the Directory just because a project was reassigned.
+        // Client records are independent editable records once they exist in Workspace.
         pruneClientDirectoryToProjects();return target;
       }
       function applyCloudClientReconcile(proj,result,previousClientId){
@@ -7826,10 +7824,7 @@ ${description}`))actionCallback();return;}
         const serverClient={...(localCurrent||{}),...client,email:client.email||'',phone:client.phone||'',address:client.address||''};
         state.clients=state.clients.filter(c=>String(c.id)!==String(serverClient.id));
         state.clients.push(serverClient);proj.client_id=serverClient.id;syncClientSnapshotToProjects(serverClient);
-        if(previousClientId&&String(previousClientId)!==String(serverClient.id)){
-          const stillUsed=(state.projects||[]).some(p=>!p.deleted&&String(p.id)!==String(proj.id)&&String(p.client_id)===String(previousClientId));
-          if(!stillUsed)state.clients=state.clients.filter(c=>String(c.id)!==String(previousClientId));
-        }
+        // Preserve the previous client in the Client Directory after reassignment.
         pruneClientDirectoryToProjects();return serverClient;
       }
       function setProjectDataAutosaveStatus(text,mode=''){
