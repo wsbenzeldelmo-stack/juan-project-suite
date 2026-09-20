@@ -134,3 +134,11 @@ test("JUAN PROJECT Online refreshes and cache-busts in-house ads", async () => {
   assert.match(html, /\/js\/ads\.js\?v=20260920-1900/);
   assert.match(html, /updateViaCache:"none"/);
 });
+
+
+test("Workspace Ads API also permits authenticated permanent deletion", async () => {
+  const api = await read("api/suite.js");
+  assert.doesNotMatch(api, /Only unused draft ads can be permanently deleted/);
+  assert.match(api, /In-house ad permanently deleted/);
+  assert.match(api, /juan-ad-assets/);
+});
