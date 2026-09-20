@@ -71,7 +71,7 @@
 
   function activeViewNav(){
     var active=document.querySelector('.view.active');
-    if(!active||!active.id.indexOf('view-')===0)return null;
+    if(!active||active.id.indexOf('view-')!==0)return null;
     var view=active.id.replace(/^view-/,'');
     return document.querySelector('.nav-item[data-view="'+CSS.escape(view)+'"]');
   }
