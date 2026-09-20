@@ -2868,9 +2868,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
         onlinePortalLoading: false
       };
 
-      // Authoritative client identity mapping from corrected JUAN_PROJECT_PAYMENT_TRACKER_UPDATED(1).csv
+      // Historical identity baseline from corrected JUAN_PROJECT_PAYMENT_TRACKER_UPDATED(2).csv.
+      // Supabase client_code is authoritative at runtime; this map is used only for offline/new-ID floor logic.
       // Source SHA-256: 02c3b0cddef59d007a6ad6503be074775ef111b51165ee4768c1901ef56865ab
-      const CLIENT_MASTER_VERSION = "payment-tracker-client-master-2026-09-20-v1";
+      const CLIENT_MASTER_VERSION = "payment-tracker-client-master-2026-09-20-v2";
       const CLIENT_ID_BY_EMAIL = {"imahemultimediaproductions@gmail.com":"CL-001","yvonnemaedelgado@gmail.com":"CL-002","dkian032@gmail.com":"CL-003","dalumpinesmargaret@gmail.com":"CL-004","trishakayemesana@gmail.com":"CL-005","ardienjamesgais@gmail.com":"CL-006","kztksem88@gmail.com":"CL-007","oliver.villaruel@deped.gov.ph":"CL-008","dimaanolorraine37@gmail.com":"CL-009","janellerinn@gmail.com":"CL-010","ramosdenmar03@gmail.com":"CL-011","nikkazara29@gmail.com":"CL-012","mamadoaalexanderissaiah@gmail.com":"CL-013","earljohnmapa12@gmail.com":"CL-014","sosadanica07@gmail.com":"CL-015","annefelicityrufo1@gmail.com":"CL-016","ashleymaeramos001@gmail.com":"CL-017","leisoriano25@gmail.com":"CL-018","bacalaaj@gmail.com":"CL-019","calmorinjareen@gmail.com":"CL-020","danrowey2009@gmail.com":"CL-021","rapaconnicolo7@gmail.com":"CL-022","apriljoy.tabingo@deped.gov.ph":"CL-023","villegasnathaniel10@gmail.com":"CL-024","michaelquinto33@gmail.com":"CL-025","acunamika67@gmail.com":"CL-026","caliaoalthea6@gmail.com":"CL-027","macarimbangesmail18@gmail.com":"CL-028","santos.amielelijah@gmail.com":"CL-029","joycemagtibay@gmail.com":"CL-030","kyledylan1921@gmail.com":"CL-031","iannebaristol2005@gmail.com":"CL-032","jetcastre5@gmail.com":"CL-033","sittieazhimagyusoph@gmail.com":"CL-034","tjmercado1515@gmail.com":"CL-035","allieyahbautista@gmail.com":"CL-036","scharlesleendon@gmail.com":"CL-037","tagapulot.brianaziv@gmail.com":"CL-038","babonmichaelneil@gmail.com":"CL-039","caliguirankathleengrace@gmail.com":"CL-040","brylevicmudo@gmail.com":"CL-041","sharanfaten9@gmail.com":"CL-042","mykellpatigayon949@gmail.com":"CL-043","barejechad05@gmail.com":"CL-044","christian.aficionado@gmail.com":"CL-045"};
 
       const CLIENT_ID_FLOOR = 45;
@@ -2890,12 +2891,9 @@ table.jp-packages-table col:nth-child(6){width:7%}
       }
 
       function applyKnownClientIdsLocally(){
-        (state.clients||[]).forEach(client=>{
-          const code=CLIENT_ID_BY_EMAIL[normalizeClientIdentityEmail(client?.email)];
-          if(code)client.client_code=code;
-        });
-        // Keep project snapshots aligned with the authoritative directory identity without
-        // guessing or overwriting client names that are not present in the uploaded sheet.
+        // Never rewrite a server client_code from a bundled mapping.
+        // The corrected CSV is reconciled into Supabase, so Supabase is the runtime source of truth.
+        // This prevents stale browser bundles/caches from shifting CL-003+ when historical mappings change.
         const byId=new Map((state.clients||[]).map(c=>[String(c.id),c]));
         (state.projects||[]).forEach(project=>{
           const client=byId.get(String(project?.client_id||''));
