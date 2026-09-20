@@ -9,8 +9,10 @@
   async function api(body){return window.JuanSuiteRuntime.request("/api/suite",body);}
   function event(ad,type,stable){
     try{
-      var viewer=window.JuanSuiteRuntime.session()?.user?.id||visitor(),key=stable?ad.id+":"+type+":"+viewer+":"+session():ad.id+":"+type+":"+viewer+":"+session()+":"+uid();
-      api({action:"ad-event",ad_id:ad.id,visitor_id:visitor(),session_id:session(),event_type:type,event_key:key}).catch(function(){});
+      var logged=window.JuanSuiteRuntime.session()?.user?.id||null;
+      if(!logged&&localStorage.getItem("JUAN_PRIVACY_CONSENT_V1")!=="all")return;
+      var viewer=logged||visitor(),key=stable?ad.id+":"+type+":"+viewer+":"+session():ad.id+":"+type+":"+viewer+":"+session()+":"+uid();
+      api({action:"ad-event",ad_id:ad.id,visitor_id:logged?null:visitor(),session_id:session(),event_type:type,event_key:key}).catch(function(){});
     }catch(_){}
   }
   function destination(ad){
