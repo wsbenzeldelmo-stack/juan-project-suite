@@ -81,8 +81,35 @@
   }
   function trackingLink(token){return location.origin+location.pathname+"#track="+encodeURIComponent(token);}
   function success(o,token){
-    var link=trackingLink(token),html='<div class="jp-success-check">✓</div><div class="jp-success-copy"><h1>Order Request Submitted!</h1><p>Your request has been received.<br>Here’s your receipt.</p></div><div class="jp-receipt-card"><div class="jp-receipt-brand">JUAN PROJECT<small>ORDER REQUEST</small></div><b class="jp-receipt-id">'+esc(o.code)+'</b><span>'+esc(new Date(o.created_at).toLocaleString("en-PH"))+'</span><img src="/api/qr?text='+encodeURIComponent(link)+'" alt="QR code to track '+esc(o.code)+'"><div class="jp-receipt-items">'+(o.items||[]).map(function(i){return '<div><span>'+esc(i.name)+' × '+Number(i.qty||1)+'</span><b>'+peso(Number(i.price||0)*Number(i.qty||1))+'</b></div>';}).join("")+'</div><div class="jp-receipt-sum"><span>Subtotal</span><b>'+peso(o.subtotal)+'</b></div><div class="jp-receipt-sum total"><span>Estimated Total</span><strong>'+peso(o.total)+'</strong></div><div class="jp-receipt-status">'+esc(o.status||"Order Received")+'</div><small class="jp-not-invoice">THIS IS NOT AN INVOICE OR PROOF OF PAYMENT.</small></div><div class="jp-receipt-actions"><button id="jpSaveReceipt">⇩<span>Save Image</span></button><button id="jpShareReceipt">↥<span>Share Image</span></button><button id="jpCopyTrack">⌁<span>Copy Link</span></button><button id="jpTrackReceipt">⌕<span>Track Request</span></button></div><button id="jpDone" class="jp-mobile-primary">Done</button>';
-    shell(html,false);document.getElementById("jpDone").onclick=close;document.getElementById("jpCopyTrack").onclick=async function(){await navigator.clipboard.writeText(link);toast("Tracking link copied");};document.getElementById("jpTrackReceipt").onclick=function(){trackToken(token);};document.getElementById("jpSaveReceipt").onclick=function(){saveReceipt(o,link);};document.getElementById("jpShareReceipt").onclick=function(){shareReceipt(o,link);};
+    var link=trackingLink(token),requested=o.deadline?'<div class="jp-receipt-row"><span>REQUESTED DATE</span><b>'+esc(o.deadline)+'</b></div>':'';
+    var html='<div class="jp-receipt-result">'+
+      '<div class="jp-receipt-confirm">✓ ORDER REQUEST CONFIRMED</div>'+
+      '<article class="jp-receipt-card jp-thermal-receipt">'+
+        '<header class="jp-thermal-head"><b>JUAN PROJECT</b><span>ORDER REQUEST RECEIPT</span><small>'+esc(o.code||"")+'</small></header>'+
+        '<div class="jp-thermal-dash"></div>'+
+        '<div class="jp-thermal-meta"><span>'+esc(new Date(o.created_at).toLocaleString("en-PH"))+'</span><span>'+esc(o.name||"")+'</span>'+(o.title?'<b>'+esc(o.title)+'</b>':'')+'</div>'+
+        '<div class="jp-thermal-dash"></div>'+
+        '<div class="jp-receipt-items">'+(o.items||[]).map(function(i){return '<div><span>'+esc(i.name)+' × '+Number(i.qty||1)+'</span><b>'+peso(Number(i.price||0)*Number(i.qty||1))+'</b></div>';}).join("")+'</div>'+
+        '<div class="jp-thermal-dash"></div>'+
+        '<div class="jp-receipt-row"><span>SUBTOTAL</span><b>'+peso(o.subtotal)+'</b></div>'+
+        requested+
+        '<div class="jp-receipt-row total"><span>ESTIMATED TOTAL</span><strong>'+peso(o.total)+'</strong></div>'+
+        '<div class="jp-thermal-dash"></div>'+
+        '<img class="jp-thermal-qr" src="/api/qr?text='+encodeURIComponent(link)+'" alt="QR code to track '+esc(o.code)+'">'+
+        '<div class="jp-thermal-status"><span>STATUS</span><b>'+esc(o.status||"Order Received")+'</b></div>'+
+        '<small class="jp-thermal-note">Scan the QR or use your Order Request ID to track this request.</small>'+
+        '<div class="jp-thermal-dash"></div>'+
+        '<small class="jp-not-invoice">THIS IS NOT AN INVOICE OR PROOF OF PAYMENT</small>'+
+      '</article>'+
+      '<div class="jp-receipt-actions"><button id="jpSaveReceipt"><b>Save</b><span>Image</span></button><button id="jpShareReceipt"><b>Share</b><span>Receipt</span></button><button id="jpCopyTrack"><b>Copy</b><span>Link</span></button><button id="jpTrackReceipt"><b>Track</b><span>Request</span></button></div>'+
+      '<button id="jpDone" class="jp-mobile-primary">Done</button>'+
+    '</div>';
+    shell(html,false);
+    document.getElementById("jpDone").onclick=close;
+    document.getElementById("jpCopyTrack").onclick=async function(){await navigator.clipboard.writeText(link);toast("Tracking link copied");};
+    document.getElementById("jpTrackReceipt").onclick=function(){trackToken(token);};
+    document.getElementById("jpSaveReceipt").onclick=function(){saveReceipt(o,link);};
+    document.getElementById("jpShareReceipt").onclick=function(){shareReceipt(o,link);};
   }
   function failure(message){var html='<div class="jp-failure">!<h1>Request not submitted</h1><p>'+esc(message)+'</p><button id="jpRetrySubmit" class="jp-mobile-primary">Try Again</button><button id="jpBackReview" class="jp-mobile-secondary">Back to Review</button></div>';shell(html,false);document.getElementById("jpRetrySubmit").onclick=submitOrder;document.getElementById("jpBackReview").onclick=reviewOrder;}
   async function makeReceiptBlob(o,link){
