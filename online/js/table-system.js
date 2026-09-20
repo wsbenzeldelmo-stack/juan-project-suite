@@ -50,6 +50,24 @@
       const hasMenu=[...table.querySelectorAll('tbody tr')].some(r=>r.children[last]?.querySelector('.icon-more-button,.vertical-more,.table-action-button,[aria-label*="action" i]'));
       if(/ACTION/.test(label)||hasMenu)action=last;
     }
+    // Compact identifiers and give client/project names + email columns more room.
+    let cols=table.querySelector(':scope > colgroup');
+    if(!cols){cols=document.createElement('colgroup');table.insertBefore(cols,table.firstChild);}
+    while(cols.children.length<heads.length)cols.appendChild(document.createElement('col'));
+    while(cols.children.length>heads.length)cols.lastElementChild.remove();
+    const col=[...cols.children];
+    const setCol=(i,w)=>{if(i>=0&&col[i])col[i].style.setProperty('width',w,'important');};
+    const idIndex=headers.findIndex(h=>/^(CLIENT|PROJECT|ORDER|SERVICE|PACKAGE)?\s*ID$/.test(h)||/\bID$/.test(h));
+    const projectNameIndex=headers.indexOf('PROJECT NAME');
+    const emailIndex=headers.findIndex(h=>h==='EMAIL'||h.includes('EMAIL ADDRESS'));
+    const clientIndex=headers.findIndex(h=>h==='CLIENT'||h==='CLIENT NAME'||h==='NAME');
+    if(idIndex>=0)setCol(idIndex,'8%');
+    if(projectNameIndex>=0)setCol(projectNameIndex,'24%');
+    if(emailIndex>=0)setCol(emailIndex,'34%');
+    if(clientIndex>=0)setCol(clientIndex,projectNameIndex>=0&&emailIndex<0?'28%':'28%');
+    if(headers.length===3&&idIndex===0&&projectNameIndex===1&&clientIndex===2){setCol(0,'12%');setCol(1,'34%');setCol(2,'54%');}
+    if(idIndex>=0&&(emailIndex>=0||clientIndex>=0))table.classList.add('jp-id-name-email-table');
+
     if(action>=0){
       table.classList.add('jp-has-actions');
       heads[action].textContent='';
