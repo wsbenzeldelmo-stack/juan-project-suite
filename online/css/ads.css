@@ -1,1 +1,19 @@
 .jp-house-banner{width:100%;aspect-ratio:3/1;min-height:0;margin:16px 0 2px;border-radius:13px;background:#eff3f1;overflow:hidden;opacity:0;transition:opacity .28s ease}.jp-house-banner.visible{opacity:1}.jp-banner-click{display:block;width:100%;height:100%;padding:0;border:0;background:transparent}.jp-banner-click img{display:block;width:100%;height:100%;object-fit:cover}.jp-popup-ad-overlay{position:fixed;inset:0;z-index:175000;background:rgba(13,22,18,.55);backdrop-filter:blur(7px);display:grid;place-items:center;padding:20px}.jp-popup-ad{position:relative;width:min(390px,100%);border-radius:18px;background:#fff;box-shadow:0 24px 75px rgba(0,0,0,.24);overflow:hidden}.jp-popup-close{position:absolute;z-index:2;right:9px;top:9px;width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.92);font-size:20px}.jp-popup-image{display:block;width:100%;border:0;background:#fff;padding:0}.jp-popup-image img{display:block;width:100%;height:auto;max-height:70dvh;object-fit:contain}@media(max-width:480px){.jp-house-banner{border-radius:11px;margin:12px 0 0}}
+
+/* In-house ad separation + unified modal close · 2026-09-21 */
+.jp-ad-zone{width:100%;display:none;gap:8px}
+.jp-ad-zone.has-ad{display:grid}
+.jp-ad-separator{display:flex;align-items:center;gap:10px;color:#8a948f;font-size:8px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+.jp-ad-separator::before,.jp-ad-separator::after{content:"";height:1px;flex:1;background:#e6ebe8}
+.jp-ad-zone .jp-house-banner{margin:0}
+.jp-flow-ad-area{margin-top:18px;padding-top:2px}
+.jp-popup-shell{position:relative;width:min(390px,100%)}
+.jp-popup-ad{width:100%}
+.jp-popup-close{position:absolute;z-index:4;right:-12px;top:-12px;width:38px;height:38px;border:1px solid #dde4e0;border-radius:50%;background:#fff;color:#1d2621;display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.jp-popup-close svg{display:block}
+@media(max-width:480px){
+  .jp-ad-zone{gap:6px}
+  .jp-flow-ad-area{margin-top:14px}
+  .jp-popup-shell{width:min(360px,calc(100vw - 38px))}
+  .jp-popup-close{right:-8px;top:-10px}
+}
