@@ -2,7 +2,7 @@
 (function(){
   "use strict";
   var isMac=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent),prefix=isMac?"⌘":"Ctrl";
-  var palette=null,hud=null,sequence=null,sequenceTimer=null,lastFocus=null,commands=[],selected=0,tableRow=null;
+  var palette=null,hud=null,sequence=null,sequenceTimer=null,lastFocus=null,commands=[],selected=0,tableRow=null,paletteRequest=0;
   var inputTags=["INPUT","TEXTAREA","SELECT"];
   function typingTarget(t){return !!t&&(inputTags.indexOf(t.tagName)>=0||t.isContentEditable);}
   function toast(m){if(window.showToast)window.showToast(m);}
@@ -49,7 +49,7 @@
     return out;
   }
   function closePalette(){
-    if(!palette)return;palette.remove();palette=null;commands=[];selected=0;
+    paletteRequest++;document.querySelectorAll(".jp-command-overlay").forEach(function(layer){layer.remove();});palette=null;commands=[];selected=0;
     if(lastFocus&&document.contains(lastFocus))lastFocus.focus();lastFocus=null;
   }
   function trapFocus(e){
@@ -71,7 +71,7 @@
     var rows=filtered(),c=rows[selected];if(!c)return;closePalette();Promise.resolve(c.run()).catch(function(e){toast(e.message||"Command failed");});
   }
   async function openPalette(initial){
-    closeHud();closePalette();lastFocus=document.activeElement;commands=staticCommands().concat(await recordCommands());selected=0;
+    closeHud();closePalette();var request=++paletteRequest;lastFocus=document.activeElement;var dynamicCommands=await recordCommands();if(request!==paletteRequest)return;commands=staticCommands().concat(dynamicCommands);selected=0;
     palette=document.createElement("div");palette.className="jp-command-overlay";palette.innerHTML='<section class="jp-command-palette" role="dialog" aria-modal="false" aria-label="Command Palette"><div class="jp-command-search"><span>⌕</span><input id="jpCommandInput" autocomplete="off" placeholder="Search commands, clients, projects..." aria-label="Search commands"><button type="button" id="jpCommandClose" class="jp-command-close" aria-label="Close command center">×</button></div><div id="jpCommandRows" class="jp-command-rows"></div><footer><span>↑↓ Navigate</span><span>Enter Open</span><span>Esc Close</span></footer></section>';
     document.body.appendChild(palette);palette.querySelector("#jpCommandClose").onclick=closePalette;var input=palette.querySelector("#jpCommandInput");input.value=initial||"";input.oninput=function(){selected=0;drawPalette();};input.onkeydown=function(e){if(e.key==="ArrowDown"){e.preventDefault();selected=Math.min(selected+1,filtered().length-1);drawPalette();}else if(e.key==="ArrowUp"){e.preventDefault();selected=Math.max(0,selected-1);drawPalette();}else if(e.key==="Enter"){e.preventDefault();runSelected();}else if(e.key==="Escape"){e.preventDefault();closePalette();}};drawPalette();requestAnimationFrame(function(){input.focus();input.select();});
   }

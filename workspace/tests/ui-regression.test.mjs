@@ -36,3 +36,11 @@ test("command center is floating, dismissible, and non-modal", async () => {
   assert.match(js, /function nav\(view\)\{closePalette\(\);/);
   assert.match(js, /if\(palette\)\{if\(e\.key==="Escape"\)\{e\.preventDefault\(\);closePalette\(\);return;\}/);
 });
+
+test("repeated command-center opens cannot leave stacked overlays", async () => {
+  const js = await read("js/keyboard-shortcuts.js");
+  assert.match(js, /paletteRequest=0/);
+  assert.match(js, /document\.querySelectorAll\("\.jp-command-overlay"\)\.forEach/);
+  assert.match(js, /var request=\+\+paletteRequest/);
+  assert.match(js, /if\(request!==paletteRequest\)return/);
+});
