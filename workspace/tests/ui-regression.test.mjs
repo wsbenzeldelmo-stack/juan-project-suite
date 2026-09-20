@@ -88,3 +88,21 @@ test("Settings tab activation uses collection selectors and initializes content 
   assert.ok(!js.includes('$(".jp-settings-segment").forEach'));
   assert.ok(js.includes('settingsBuilt=true;bindSettingsTabs();try{bindSettings();}'));
 });
+
+
+test("Settings mirrors the approved reference layout and staged save behavior", async () => {
+  const js = await read("js/consistency-pass.js");
+  const css = await read("css/consistency-pass.css");
+  assert.ok(js.includes('jp-ref-photo-row'));
+  assert.ok(js.includes('jp-settings-action-bar'));
+  assert.ok(js.includes('id="jpSettingsSave"'));
+  assert.ok(js.includes('id="jpSettingsDiscard"'));
+  assert.ok(js.includes('function saveActiveSettings()'));
+  assert.ok(js.includes('function discardActiveSettings()'));
+  assert.ok(js.includes('Save or discard your Settings changes before switching sections.'));
+  assert.ok(js.includes('Device biometric / passkey login'));
+  assert.ok(js.includes('A database-wide delete workflow is not exposed until it can be verified safely.'));
+  assert.match(css, /Reference-aligned Settings UI/);
+  assert.match(css, /\.jp-settings-nav-item\{[^}]*grid-template-columns:4px 24px/);
+  assert.match(css, /\.jp-settings-action-bar\{/);
+});

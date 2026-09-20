@@ -5,7 +5,7 @@
   const SETTINGS_TAB_KEY="JUAN_WORKSPACE_SETTINGS_TAB_V1";
   const SETTINGS_SEGMENTS=["profile","workspace","database","appearance","notifications","data","security","about","danger"];
   const FORM_DRAFT_KEY="JUAN_WORKSPACE_DRAFTS_V2";
-  let settingsBuilt=false, saveTimers=new Map();
+  let settingsBuilt=false, settingsDirty=false, saveTimers=new Map();
 
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
@@ -29,9 +29,9 @@
     return {
       workspaceName:"JUAN PROJECT Workspace",businessName:"JUAN PROJECT",timezone:"Asia/Manila",currency:"PHP",dateFormat:"MMM D, YYYY",
       showBusinessContact:true,includeBranding:true,autoReference:true,reconnectAutomatically:true,showConnectionSidebar:true,notifySyncFailure:true,
-      accent:"mint",density:"comfortable",sidebarSize:"standard",rowHeight:"comfortable",reduceMotion:false,
-      notifNewOrder:true,notifPaymentSubmitted:true,notifPaymentApproved:true,notifDeadline:true,notifOverdue:true,notifClientMessage:true,notifSyncFail:true,
-      browserNotifications:false,notificationSounds:true,deadlineReminderDays:3,facialVerification:false,autoLock:true,autoLockMinutes:30,
+      accent:"mint",theme:"system",density:"comfortable",sidebarSize:"standard",rowHeight:"comfortable",reduceMotion:false,
+      notifNewOrder:true,notifPaymentSubmitted:true,notifPaymentApproved:true,notifPaymentRejected:false,notifDeadline:true,notifOverdue:true,notifDeliverableCompleted:true,notifClientMessage:true,notifSyncFail:true,
+      browserNotifications:false,notificationSounds:true,deadlineReminderDays:3,autoLock:true,autoLockMinutes:30,
       verifyReset:true,verifyDisconnect:true
     };
   }
@@ -58,79 +58,162 @@
     return '<label class="jp-settings-field"><span>'+esc(label)+'</span><input id="'+id+'" class="form-control jp-settings-control" type="'+type+'" value="'+esc(value||"")+'" '+attrs+'></label>';
   }
   function section(id,title,description,content,danger=false){
-    return '<section id="settings-'+id+'" class="jp-settings-segment '+(danger?"danger":"")+'" data-segment="'+id+'"><div class="jp-settings-segment-head"><span>'+esc(title.toUpperCase())+'</span><p>'+esc(description||"")+'</p></div>'+content+'</section>';
+    return '<section id="settings-'+id+'" class="jp-settings-segment '+(danger?"danger":"")+'" data-segment="'+id+'"><header class="jp-settings-segment-head"><h2>'+esc(title)+'</h2><p>'+esc(description||"")+'</p></header>'+content+'</section>';
   }
+  function settingsNavIcon(id){
+    const paths={
+      profile:'<circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.8-4 3-6 6.5-6s5.7 2 6.5 6"></path>',
+      workspace:'<path d="M4 21V5h10v16"></path><path d="M14 9h6v12"></path><path d="M7 8h2M7 12h2M7 16h2M17 12h1M17 16h1"></path>',
+      database:'<ellipse cx="12" cy="5" rx="7" ry="3"></ellipse><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5"></path><path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"></path>',
+      appearance:'<path d="M4 20 16.5 7.5"></path><path d="m14 5 5 5"></path><path d="M6 18 4 20l2-5 10-10 3 3-10 10-3 0Z"></path>',
+      notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path>',
+      data:'<path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v5h5"></path><path d="M10 12h5M10 16h5"></path>',
+      security:'<path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6z"></path><path d="m9.5 12 1.7 1.7 3.6-4"></path>',
+      about:'<circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path>',
+      danger:'<path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="m7 7 1 14h8l1-14"></path><path d="M10 11v6M14 11v6"></path>'
+    };
+    return '<span class="jp-settings-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(paths[id]||paths.about)+'</svg></span>';
+  }
+  function setSettingsDirty(dirty=true){
+    settingsDirty=!!dirty;
+    const state=$("#jpSettingsDirtyState"),save=$("#jpSettingsSave"),discard=$("#jpSettingsDiscard");
+    if(state)state.textContent=settingsDirty?"Unsaved changes":"No unsaved changes";
+    if(save)save.disabled=!settingsDirty;
+    if(discard)discard.disabled=!settingsDirty;
+  }
+  function editableSettingsSegment(id){
+    return ["profile","workspace","database","appearance","notifications","security"].includes(id);
+  }
+
 
   function buildSettings(){
     const view=$("#view-settings");if(!view)return;
     const st=window.app.getWorkspaceState(),p=stored();
     const ownerName=st.ownerName||localStorage.getItem("JUAN_OWNER_NAME")||"BENZEL DELMO";
-    const ownerEmail=st.ownerEmail||localStorage.getItem("JUAN_OWNER_EMAIL")||"ws.benzeldelmo@gmail.com";
-    const ownerPhone=st.ownerPhone||localStorage.getItem("JUAN_OWNER_PHONE")||"0963 705 0477";
-    const ownerAddress=st.ownerAddress||localStorage.getItem("JUAN_OWNER_ADDRESS")||"BATANGAS CITY, BATANGAS";
+    const ownerEmail=st.ownerEmail||localStorage.getItem("JUAN_OWNER_EMAIL")||"";
+    const ownerPhone=st.ownerPhone||localStorage.getItem("JUAN_OWNER_PHONE")||"";
+    const ownerAddress=st.ownerAddress||localStorage.getItem("JUAN_OWNER_ADDRESS")||"";
     const connected=!!st.isConnected;
     const initials=ownerName.split(/\s+/).filter(Boolean).map(x=>x[0]).join("").slice(0,2).toUpperCase()||"BD";
-    const avatar=st.profilePhoto?'<img src="'+esc(st.profilePhoto)+'" alt="Benzel Delmo profile photo">':esc(initials);
+    const avatar=st.profilePhoto?'<img src="'+esc(st.profilePhoto)+'" alt="'+esc(ownerName)+' profile photo">':esc(initials);
+    const browserPermission=("Notification" in window)?Notification.permission:"unsupported";
+    const lastSync=st.lastSuccessfulSync||st.lastSyncAt||st.lastSyncedAt||null;
+    const lastSyncText=lastSync?new Date(lastSync).toLocaleString("en-PH"):"Not recorded";
+    const currentDevice=(navigator.userAgentData?.platform||navigator.platform||"Current device")+" · "+(/Chrome/i.test(navigator.userAgent)?"Chrome":/Safari/i.test(navigator.userAgent)?"Safari":/Firefox/i.test(navigator.userAgent)?"Firefox":"Browser");
+    const themeChoice=p.theme||"system";
 
-    const profile=section("profile","Profile","Account owner and business contact information.",
-      '<div class="card jp-settings-card jp-profile-card"><div class="jp-profile-identity"><div id="jpSettingsAvatar" class="jp-settings-avatar">'+avatar+'</div><div><h3>'+esc(ownerName)+'</h3><p>Workspace Owner</p><div class="jp-inline-actions"><button class="btn btn-secondary btn-sm" id="jpChangePhoto">Change Photo</button><button class="btn btn-danger btn-sm" id="jpRemovePhoto">Remove</button></div></div></div><div class="jp-settings-grid-2">'+
-      field("Account Owner Name","jpOwnerName",ownerName)+field("Email Address","jpOwnerEmail",ownerEmail,"email")+
-      field("Phone Number","jpOwnerPhone",ownerPhone)+
-      '<label class="jp-settings-field wide"><span>Billing Address</span><textarea id="jpOwnerAddress" class="form-control jp-settings-control" rows="2">'+esc(ownerAddress)+'</textarea></label></div><div class="jp-settings-autosave-note">Profile edits save automatically. <span id="jpSettingsSaveState">Saved</span></div></div>');
+    const profile=section("profile","Profile","Manage the identity and contact details used across Workspace.",
+      '<div class="jp-ref-photo-row"><div><h3>Profile photo</h3><div class="jp-ref-photo-person"><div id="jpSettingsAvatar" class="jp-settings-avatar">'+avatar+'</div><div><b>'+esc(ownerName)+'</b><span>Workspace Owner</span><small>JPG, PNG, or WEBP up to 5 MB.</small></div></div></div><div class="jp-inline-actions"><button class="btn btn-secondary" id="jpChangePhoto">Change photo</button><button class="btn btn-danger" id="jpRemovePhoto">Remove</button></div></div>'+
+      '<div class="jp-ref-card"><h3>Personal information</h3><div class="jp-settings-grid-2">'+
+        field("Account owner name","jpOwnerName",ownerName)+field("Email address","jpOwnerEmail",ownerEmail,"email")+
+        field("Phone number","jpOwnerPhone",ownerPhone)+
+        '<label class="jp-settings-field"><span>Role</span><input class="form-control" value="Workspace Owner" readonly aria-readonly="true"></label>'+
+        '<label class="jp-settings-field wide"><span>Billing address</span><textarea id="jpOwnerAddress" class="form-control jp-settings-control" rows="2">'+esc(ownerAddress)+'</textarea></label>'+
+      '</div></div>'+
+      '<div class="jp-ref-card"><h3>Workspace identity</h3><div class="jp-settings-grid-3">'+
+        '<label class="jp-settings-field"><span>Workspace name</span><input class="form-control jp-setting-local" data-key="workspaceName" value="'+esc(p.workspaceName)+'"></label>'+
+        '<label class="jp-settings-field"><span>Display name</span><input class="form-control jp-setting-local" data-key="businessName" value="'+esc(p.businessName)+'"></label>'+
+        '<label class="jp-settings-field"><span>Time zone</span><select class="form-control jp-setting-local" data-key="timezone"><option value="Asia/Manila">Asia/Manila (GMT+8)</option></select></label>'+
+      '</div></div>');
 
-    const workspace=section("workspace","Workspace","Workspace identity, localization, and invoice behavior.",
-      '<div class="card jp-settings-card"><div class="jp-settings-grid-2">'+
-      field("Workspace Name","jpWorkspaceName",p.workspaceName)+field("Business Name","jpBusinessName",p.businessName)+
-      '<label class="jp-settings-field"><span>Time Zone</span><select class="form-control jp-setting-local" data-key="timezone"><option value="Asia/Manila" selected>Asia/Manila (GMT+8)</option></select></label>'+
-      '<label class="jp-settings-field"><span>Currency</span><select class="form-control jp-setting-local" data-key="currency"><option value="PHP" selected>Philippine Peso (PHP ₱)</option></select></label>'+
-      '<label class="jp-settings-field"><span>Date Format</span><select class="form-control jp-setting-local" data-key="dateFormat"><option>MMM D, YYYY</option><option>MM/DD/YYYY</option><option>DD/MM/YYYY</option></select></label></div>'+
-      '<div class="jp-settings-toggle-list">'+toggleRow("Show business contact on invoices","showBusinessContact",p.showBusinessContact)+toggleRow("Include JUAN PROJECT branding","includeBranding",p.includeBranding)+toggleRow("Automatically assign JP reference numbers","autoReference",p.autoReference)+'</div></div>');
+    const workspace=section("workspace","Workspace","Configure the business identity and defaults used throughout JUAN PROJECT Workspace.",
+      '<div class="jp-ref-card"><h3>Business identity</h3><div class="jp-settings-grid-2">'+
+        field("Workspace name","jpWorkspaceName",p.workspaceName)+field("Business name","jpBusinessName",p.businessName)+
+        '<label class="jp-settings-field"><span>Owner</span><input class="form-control" value="'+esc(ownerName)+'" readonly aria-readonly="true"></label>'+
+        field("Business email","jpBusinessEmail",ownerEmail,"email")+
+        field("Business phone","jpBusinessPhone",ownerPhone)+
+        '<label class="jp-settings-field"><span>Business address</span><textarea id="jpBusinessAddress" class="form-control jp-settings-control" rows="2">'+esc(ownerAddress)+'</textarea></label>'+
+      '</div></div>'+
+      '<div class="jp-ref-card"><h3>Regional defaults</h3><div class="jp-settings-grid-3">'+
+        '<label class="jp-settings-field"><span>Time zone</span><select class="form-control jp-setting-local" data-key="timezone"><option value="Asia/Manila">Asia/Manila (GMT+8)</option></select></label>'+
+        '<label class="jp-settings-field"><span>Currency</span><select class="form-control jp-setting-local" data-key="currency"><option value="PHP">Philippine Peso (PHP ₱)</option></select></label>'+
+        '<label class="jp-settings-field"><span>Date format</span><select class="form-control jp-setting-local" data-key="dateFormat"><option value="MMM D, YYYY">MMM DD, YYYY</option><option value="MM/DD/YYYY">MM/DD/YYYY</option><option value="DD/MM/YYYY">DD/MM/YYYY</option></select></label>'+
+      '</div></div>'+
+      '<div class="jp-ref-card"><h3>Document defaults</h3><div class="jp-settings-toggle-list">'+
+        toggleRow("Show business contact on invoices","showBusinessContact",p.showBusinessContact)+
+        toggleRow("Include JUAN PROJECT branding","includeBranding",p.includeBranding)+
+        toggleRow("Automatically assign JP reference numbers","autoReference",p.autoReference)+
+      '</div></div>');
 
-    const database=section("database","Database & Sync","Live Supabase connection and synchronization controls.",
-      '<div class="card jp-settings-card"><div class="jp-db-status-row"><div class="jp-db-live"><i></i><div><b>'+(connected?'Connected · LIVE':'Sign in required')+'</b><small>'+(connected?'Your Workspace data is synchronized with Supabase.':'Connect to load and edit shared business data.')+'</small></div></div><div class="jp-db-meta"><span>Provider<b>Supabase</b></span><span>Project<b>JUAN PROJECT Production</b></span><span>Status<b>'+(connected?'All data synced':'Disconnected')+'</b></span></div></div>'+
-      '<div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpTestDb">Test Connection</button><button class="btn btn-primary" id="jpSyncNow">Sync Now</button><button class="btn btn-secondary" id="jpReconnectDb">Reconnect</button><button class="btn btn-danger" id="jpDisconnectDb">Disconnect</button></div>'+
-      '<div class="jp-credential-note">Deployment credentials are managed through Vercel and are never displayed in Workspace.</div>'+
-      '<div class="jp-settings-toggle-list">'+toggleRow("Reconnect Automatically","reconnectAutomatically",p.reconnectAutomatically)+toggleRow("Show Connection Status in Sidebar","showConnectionSidebar",p.showConnectionSidebar)+toggleRow("Notify Me When Sync Fails","notifySyncFailure",p.notifySyncFailure)+'</div></div>');
+    const database=section("database","Database & Sync","Manage the live Supabase connection and Workspace synchronization.",
+      '<div class="jp-ref-card jp-db-status-card"><div><h3>Database status</h3><div class="jp-db-state"><i class="'+(connected?"live":"offline")+'"></i><strong>'+(connected?"Connected":"Disconnected")+'</strong>'+(connected?'<span>LIVE</span>':'')+'</div><p>'+(connected?"Workspace is reading and writing directly to Supabase.":"Sign in to connect Workspace to Supabase.")+'</p></div><button class="btn btn-secondary" id="jpTestDb">Test connection</button></div>'+
+      '<div class="jp-ref-two-col"><div class="jp-ref-card"><h3>Connection</h3><div class="jp-ref-key-values"><div><span>Provider</span><b>Supabase</b></div><div><span>Project</span><b>JUAN PROJECT Production</b></div><div><span>Last successful sync</span><b>'+esc(lastSyncText)+'</b></div></div><div class="jp-credential-note">Deployment credentials are managed through Vercel and are never displayed in Workspace.</div><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpReconnectDb">Reconnect</button><button class="btn btn-danger" id="jpDisconnectDb">Disconnect</button></div></div>'+
+      '<div class="jp-ref-card"><h3>Synchronization</h3><div class="jp-sync-summary"><strong>'+(connected?"All data synced":"Sync unavailable")+'</strong><small>Projects, clients, invoices, payments, and orders use the shared production database.</small></div><button class="btn btn-secondary btn-block" id="jpSyncNow">Sync now</button></div></div>'+
+      '<div class="jp-ref-card"><h3>Connection behavior</h3><div class="jp-settings-toggle-list">'+toggleRow("Reconnect automatically","reconnectAutomatically",p.reconnectAutomatically)+toggleRow("Show connection status in sidebar","showConnectionSidebar",p.showConnectionSidebar)+toggleRow("Notify me when sync fails","notifySyncFailure",p.notifySyncFailure)+'</div></div>');
 
     const appearance=section("appearance","Appearance","Personalize how JUAN PROJECT Workspace looks and feels.",
-      '<div class="jp-settings-grid-2"><div class="card jp-settings-card"><h3>Theme</h3><div class="jp-theme-options"><button data-theme="light" class="'+(st.themeMode!=="dark"?"active":"")+'"><span class="light-preview"></span><b>Light</b></button><button data-theme="dark" class="'+(st.themeMode==="dark"?"active":"")+'"><span class="dark-preview"></span><b>Dark</b></button><button data-theme="system"><span class="system-preview"></span><b>System</b></button></div><div class="jp-settings-toggle-list">'+toggleRow("Colorful Mode","colorfulMode",st.colorfulMode==="on","Uses stronger status colors for attention states.")+'</div></div>'+
-      '<div class="card jp-settings-card"><h3>Interface</h3><div class="jp-accent-row"><span>Accent color</span><div class="jp-accent-dots"><button data-accent="mint" class="'+(p.accent==="mint"?"active":"")+'"></button><button data-accent="blue"></button><button data-accent="violet"></button><button data-accent="orange"></button><button data-accent="pink"></button></div></div>'+
-      '<div class="jp-settings-grid-2 compact"><label class="jp-settings-field"><span>Density</span><select class="form-control jp-setting-local" data-key="density"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label><label class="jp-settings-field"><span>Sidebar Size</span><select class="form-control jp-setting-local" data-key="sidebarSize"><option value="standard">Standard</option><option value="compact">Compact</option></select></label><label class="jp-settings-field"><span>Table Row Height</span><select class="form-control jp-setting-local" data-key="rowHeight"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label></div>'+
-      '<div class="jp-settings-toggle-list">'+toggleRow("Reduce Motion","reduceMotion",p.reduceMotion,"Minimize animations and transitions across the Workspace.")+'</div></div></div>'+
-      '<div class="card jp-interface-preview"><span class="badge badge-red">Priority</span><span class="badge badge-neutral">In progress</span><span class="badge badge-green">Paid</span><button class="btn btn-primary btn-sm">Primary action</button></div>');
+      '<div class="jp-ref-two-col jp-appearance-top"><div class="jp-ref-card"><h3>Theme</h3><div class="jp-theme-options"><button data-theme="light" class="'+(themeChoice==="light"?"active":"")+'"><span class="light-preview"></span><b>Light</b></button><button data-theme="dark" class="'+(themeChoice==="dark"?"active":"")+'"><span class="dark-preview"></span><b>Dark</b></button><button data-theme="system" class="'+(themeChoice==="system"?"active":"")+'"><span class="system-preview"></span><b>System</b></button></div></div>'+
+      '<div class="jp-ref-card"><h3>Color style</h3><div class="jp-settings-toggle-list">'+toggleRow("Colorful mode","colorfulMode",st.colorfulMode==="on","Uses stronger status colors for overdue, priority, pending, and completed records.")+'</div><div class="jp-accent-row"><span>Accent color</span><div class="jp-accent-dots"><button data-accent="mint" class="'+(p.accent==="mint"?"active":"")+'" aria-label="Mint"></button><button data-accent="blue" class="'+(p.accent==="blue"?"active":"")+'" aria-label="Blue"></button><button data-accent="violet" class="'+(p.accent==="violet"?"active":"")+'" aria-label="Violet"></button><button data-accent="orange" class="'+(p.accent==="orange"?"active":"")+'" aria-label="Orange"></button><button data-accent="pink" class="'+(p.accent==="pink"?"active":"")+'" aria-label="Pink"></button></div></div></div></div>'+
+      '<div class="jp-ref-two-col"><div class="jp-ref-card"><h3>Interface</h3><div class="jp-ref-control-rows">'+
+        '<label><span>Density</span><select class="form-control jp-setting-local" data-key="density"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>'+
+        '<label><span>Sidebar size</span><select class="form-control jp-setting-local" data-key="sidebarSize"><option value="standard">Standard</option><option value="compact">Compact</option></select></label>'+
+        '<label><span>Table row height</span><select class="form-control jp-setting-local" data-key="rowHeight"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>'+
+      '</div><div class="jp-settings-toggle-list">'+toggleRow("Reduce motion","reduceMotion",p.reduceMotion,"Minimize animations and transitions across the Workspace.")+'</div></div>'+
+      '<div class="jp-ref-card"><h3>Preview</h3><p class="jp-ref-card-copy">Here’s how elements will look with your current settings.</p><div class="jp-interface-preview"><span class="badge badge-red">Priority</span><span class="badge badge-neutral">In progress</span><span class="badge badge-green">Paid</span><button class="btn btn-primary btn-sm" type="button">Primary action</button></div></div></div>');
 
-    const notifications=section("notifications","Notifications","Choose which events should get your attention.",
-      '<div class="card jp-settings-card"><div class="jp-settings-toggle-list">'+
-      toggleRow("New order received","notifNewOrder",p.notifNewOrder)+toggleRow("New payment submitted","notifPaymentSubmitted",p.notifPaymentSubmitted)+toggleRow("Payment approved","notifPaymentApproved",p.notifPaymentApproved)+toggleRow("Project deadline approaching","notifDeadline",p.notifDeadline)+toggleRow("Project overdue","notifOverdue",p.notifOverdue)+toggleRow("Client message received","notifClientMessage",p.notifClientMessage)+toggleRow("Database synchronization failure","notifSyncFail",p.notifSyncFail)+toggleRow("Browser notifications","browserNotifications",p.browserNotifications)+toggleRow("Notification sounds","notificationSounds",p.notificationSounds)+'</div>'+
-      '<label class="jp-settings-field jp-reminder-field"><span>Deadline reminder</span><select class="form-control jp-setting-local" data-key="deadlineReminderDays"><option value="1">1 day before</option><option value="3">3 days before</option><option value="5">5 days before</option><option value="7">7 days before</option></select></label><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpSendTestNotification">Send test notification</button></div></div>');
+    const notifications=section("notifications","Notifications","Choose which Workspace events should notify you.",
+      '<div class="jp-ref-card"><h3>Orders & payments</h3><div class="jp-settings-toggle-list">'+
+        toggleRow("New order received","notifNewOrder",p.notifNewOrder,"Get notified when a client places a new order.")+
+        toggleRow("Payment submitted","notifPaymentSubmitted",p.notifPaymentSubmitted,"Get notified when a client submits a payment.")+
+        toggleRow("Payment approved","notifPaymentApproved",p.notifPaymentApproved,"Get notified when a payment is approved.")+
+        toggleRow("Payment rejected","notifPaymentRejected",p.notifPaymentRejected,"Get notified when a payment is rejected.")+
+      '</div></div>'+
+      '<div class="jp-ref-card"><h3>Projects & deadlines</h3><div class="jp-settings-toggle-list">'+
+        '<div class="jp-notification-reminder"><div><b>Project deadline approaching</b><small>Get notified before a project deadline.</small></div><select class="form-control jp-setting-local" data-key="deadlineReminderDays"><option value="1">1 day before</option><option value="3">3 days before</option><option value="5">5 days before</option><option value="7">7 days before</option></select><input type="checkbox" class="jp-setting-toggle jp-setting-local" data-key="notifDeadline" '+(p.notifDeadline?'checked':'')+' aria-label="Project deadline approaching"><i></i></div>'+
+        toggleRow("Project overdue","notifOverdue",p.notifOverdue,"Get notified when a project is overdue.")+
+        toggleRow("Deliverable completed","notifDeliverableCompleted",p.notifDeliverableCompleted,"Get notified when a deliverable is marked complete.")+
+        toggleRow("Client message received","notifClientMessage",p.notifClientMessage,"Get notified when a client sends a message.")+
+      '</div></div>'+
+      '<div class="jp-ref-card"><h3>System notifications</h3><div class="jp-settings-toggle-list">'+
+        toggleRow("Database sync failed","notifSyncFail",p.notifSyncFail,"Get notified when database synchronization fails.")+
+        toggleRow("Browser notifications","browserNotifications",p.browserNotifications,"Permission: "+browserPermission)+
+        toggleRow("Notification sounds","notificationSounds",p.notificationSounds,"Play a sound when a notification is received.")+
+      '</div></div><button class="btn btn-secondary" id="jpSendTestNotification">Send test notification</button>');
 
     const data=section("data","Data Management","Backups, exports, and validated imports.",
-      '<div class="card jp-settings-card"><div class="jp-data-actions"><button class="btn btn-secondary" id="jpExportBackup">Export JSON Backup</button><button class="btn btn-secondary" id="jpRestoreBackup">Restore or Import Data</button><button class="btn btn-secondary" id="jpImportCsv">Import CSV</button><button class="btn btn-secondary" id="jpTemplate">Download Import Template</button><button class="btn btn-secondary" data-export="projects">Export Projects</button><button class="btn btn-secondary" data-export="clients">Export Clients</button><button class="btn btn-secondary" data-export="finance">Export Invoices & Payments</button></div>'+
-      '<input type="file" id="jpBackupInput" accept=".json" hidden><input type="file" id="jpHistoricalInput" accept=".csv,text/csv" hidden>'+
-      '<div class="jp-data-status"><span>Last Backup<b id="jpLastBackup">Not recorded</b></span><span>Last Import Result<b id="jpLastImport">No recent import</b></span></div>'+
-      '<div class="jp-import-area"><div><h3>Import Historical Records</h3><p>Choose a CSV or paste data. Nothing is imported until the preview is validated and confirmed.</p></div><button class="btn btn-secondary" id="jpChooseHistorical">Choose CSV</button><textarea id="legacyPasteData" class="form-control" rows="5" placeholder="Paste historical rows here, including the header row…"></textarea><button class="btn btn-secondary" id="jpPreviewImport">Preview & Validate</button><div id="jpImportPreview"></div></div></div>');
+      '<div class="jp-ref-card"><h3>Backup & restore</h3><div class="jp-data-actions"><button class="btn btn-secondary" id="jpExportBackup">Export JSON Backup</button><button class="btn btn-secondary" id="jpRestoreBackup">Restore or Import Data</button></div><div class="jp-data-status"><span>Last Backup<b id="jpLastBackup">Not recorded</b></span><span>Last Import Result<b id="jpLastImport">No recent import</b></span></div></div>'+
+      '<div class="jp-ref-card"><h3>Historical import</h3><p class="jp-ref-card-copy">Choose a CSV or paste data. Nothing is imported until the preview is validated and confirmed.</p><div class="jp-data-actions"><button class="btn btn-secondary" id="jpChooseHistorical">Choose CSV</button><button class="btn btn-secondary" id="jpTemplate">Download Import Template</button></div><textarea id="legacyPasteData" class="form-control" rows="5" placeholder="Paste historical rows here, including the header row…"></textarea><button class="btn btn-secondary" id="jpPreviewImport">Preview & Validate</button><div id="jpImportPreview"></div></div>'+
+      '<div class="jp-ref-card"><h3>Exports</h3><div class="jp-data-actions"><button class="btn btn-secondary" data-export="projects">Export Projects</button><button class="btn btn-secondary" data-export="clients">Export Clients</button><button class="btn btn-secondary" data-export="finance">Export Invoices & Payments</button></div></div>'+
+      '<input type="file" id="jpBackupInput" accept=".json" hidden><input type="file" id="jpHistoricalInput" accept=".csv,text/csv" hidden><button id="jpImportCsv" type="button" hidden></button>');
 
-    const security=section("security","Security","Sign-in protection and sensitive-action verification.",
-      '<div class="card jp-settings-card"><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpChangePassword">Change Password</button><button class="btn btn-secondary" id="jpActiveSessions">Active Sessions</button><button class="btn btn-secondary" id="jpSignInHistory">Sign-in History</button><button class="btn btn-danger" id="jpLogoutOthers">Log Out Other Sessions</button></div>'+
-      '<div class="jp-settings-toggle-list">'+'<div class="jp-passkey-note"><div><b>Device biometric / passkey login</b><small>Uses supported device authentication such as Face ID, Touch ID, Windows Hello, or Android biometrics. Password sign-in remains the fallback.</small></div><button class="btn btn-secondary btn-sm" type="button" disabled title="This deployment must be upgraded to the passkey-enabled Supabase authentication runtime first.">Not available in this build</button></div>'+toggleRow("Auto-Lock Workspace","autoLock",p.autoLock)+toggleRow("Require verification before resetting data","verifyReset",p.verifyReset)+toggleRow("Require verification before disconnecting the database","verifyDisconnect",p.verifyDisconnect)+'</div>'+
-      '<label class="jp-settings-field jp-reminder-field"><span>Auto-lock duration</span><select class="form-control jp-setting-local" data-key="autoLockMinutes"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></label><div id="jpSecurityInfo" class="jp-inline-info">Current browser session is active.</div></div>');
+    const security=section("security","Security","Protect your account, sessions, and sensitive Workspace actions.",
+      '<div class="jp-ref-card"><h3>Password & sign-in</h3><div class="jp-security-row"><div><b>Password</b><small>Use your Supabase account password to sign in.</small></div><button class="btn btn-secondary" id="jpChangePassword">Change password</button></div><div class="jp-security-row"><div><b>Device biometric / passkey login</b><small>Uses Face ID, Touch ID, Windows Hello, or Android biometrics when passkeys are supported. Password sign-in remains the fallback.</small></div><button class="btn btn-secondary" type="button" disabled title="Passkey authentication is not connected in this build.">Not available</button></div></div>'+
+      '<div class="jp-ref-card"><h3>Workspace lock</h3><div class="jp-settings-toggle-list">'+toggleRow("Auto-lock Workspace","autoLock",p.autoLock)+
+        '<div class="jp-ref-select-row"><span>Lock after inactivity</span><select class="form-control jp-setting-local" data-key="autoLockMinutes"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option></select></div>'+
+        toggleRow("Require verification before resetting data","verifyReset",p.verifyReset)+
+        toggleRow("Require verification before disconnecting database","verifyDisconnect",p.verifyDisconnect)+
+      '</div></div>'+
+      '<div class="jp-ref-two-col"><div class="jp-ref-card"><h3>Active sessions</h3><div class="jp-current-session"><b>'+esc(currentDevice)+'</b><small>Current browser session</small><span>Current</span></div><button class="btn btn-danger btn-block" id="jpLogoutOthers">Sign out other sessions</button></div>'+
+      '<div class="jp-ref-card"><h3>Recent sign-ins</h3><p class="jp-ref-card-copy">Detailed sign-in history is available through the connected Supabase authentication logs.</p><button class="btn btn-secondary" id="jpSignInHistory">View sign-in history</button><div id="jpSecurityInfo" class="jp-inline-info">Current browser session is active.</div></div></div>');
 
-    const about=section("about","About","Application, release, and deployment information.",
-      '<div class="card jp-settings-card"><div class="jp-about-grid"><div><span>Application</span><b>JUAN PROJECT Workspace</b></div><div><span>Version</span><b>V1.3.3.2</b></div><div><span>Developed by</span><b>BENZEL DELMO</b></div><div><span>System</span><b>JUAN PROJECT Management System</b></div><div><span>Build</span><b id="jpBuildInfo">GitHub + Vercel</b></div><div><span>Database</span><b>Supabase Production</b></div></div><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpCheckUpdates">Check for Updates</button><a class="btn btn-secondary" href="/privacy" target="_blank" rel="noopener">Privacy Information</a><button class="btn btn-secondary" id="jpSystemInfo">System Information</button></div><details><summary>Release Notes</summary><p>Consistency and reliability pass: Orders workflow, autosave, Settings control center, command search, tables, client editing, and in-house ads.</p></details></div>');
+    const about=section("about","About","Application details, updates, and system information.",
+      '<div class="jp-ref-card jp-about-hero"><img src="/assets/brand/j-mark.svg" alt="" aria-hidden="true"><div><h3>JUAN PROJECT Workspace</h3><p>JUAN PROJECT Management System</p><span class="jp-version-pill">Version 1.3.3.2</span><b>Developed by BENZEL DELMO</b><small>A centralized workspace for managing projects, clients, orders, payments, and production workflows.</small></div></div>'+
+      '<div class="jp-ref-card jp-update-card"><div><h3>Updates</h3><p>Check the current deployed Workspace build when you need to verify release status.</p></div><button class="btn btn-secondary" id="jpCheckUpdates">Check for updates</button></div>'+
+      '<div class="jp-ref-two-col"><div class="jp-ref-card"><h3>System information</h3><div class="jp-ref-key-values"><div><span>Environment</span><b>Production</b></div><div><span>Deployment</span><b>Vercel</b></div><div><span>Database</span><b>Supabase</b></div><div><span>Build</span><b id="jpBuildInfo">GitHub + Vercel</b></div></div><button class="btn btn-secondary" id="jpSystemInfo">Show device info</button></div>'+
+      '<div class="jp-ref-card"><h3>Resources</h3><div class="jp-resource-list"><a href="/privacy" target="_blank" rel="noopener">Privacy information <span>›</span></a><details><summary>Release notes <span>›</span></summary><p>Settings control center, Online flow, ads navigation, tracker stages, notifications, cache reliability, and client ID protections.</p></details></div></div></div>');
 
-    const danger=section("danger","Danger Zone","Sensitive operations require typed confirmation and verification.",
-      '<div class="card jp-settings-card jp-danger-card"><div class="jp-danger-row"><div><b>Reset Workspace Data</b><small>Reset operational Workspace data using the protected reset workflow.</small></div><button class="btn btn-danger" data-danger="reset">Reset Workspace Data</button></div><div class="jp-danger-row"><div><b>Delete Imported Historical Records</b><small>Remove imported historical project records while preserving the canonical preload reference.</small></div><button class="btn btn-danger" data-danger="historical">Delete Imported Historical Records</button></div><div class="jp-danger-row"><div><b>Clear Cached Data</b><small>Clear browser-only drafts and cached interface preferences.</small></div><button class="btn btn-danger" data-danger="cache">Clear Cached Data</button></div><div class="jp-danger-row"><div><b>Disconnect Database</b><small>End this Workspace database session.</small></div><button class="btn btn-danger" data-danger="disconnect">Disconnect Database</button></div><div class="jp-danger-row"><div><b>Sign Out of Workspace</b><small>End the current Workspace account session.</small></div><button class="btn btn-danger" data-danger="signout">Sign Out of Workspace</button></div></div>',true);
+    const danger=section("danger","Danger Zone","Manage irreversible workspace and data actions.",
+      '<div class="jp-danger-warning"><div class="jp-danger-warning-icon">!</div><div><b>Proceed with caution</b><span>These actions can permanently remove workspace data and cannot be undone.</span></div></div>'+
+      '<div class="jp-danger-list">'+
+        '<div class="jp-danger-row"><div><b>Reset workspace data</b><small>Restore projects, clients, payments, orders, and catalog data using the protected reset workflow.</small></div><button class="btn btn-danger" data-danger="reset">Reset data</button></div>'+
+        '<div class="jp-danger-row"><div><b>Delete historical imports</b><small>Permanently remove records added through CSV or pasted-data imports.</small></div><button class="btn btn-danger" data-danger="historical">Delete imports</button></div>'+
+        '<div class="jp-danger-row"><div><b>Disconnect database</b><small>Remove the active Supabase connection from this Workspace. The remote database is not deleted.</small></div><button class="btn btn-danger" data-danger="disconnect">Disconnect</button></div>'+
+        '<div class="jp-danger-row"><div><b>Delete workspace</b><small>A database-wide delete workflow is not exposed until it can be verified safely.</small></div><button class="btn btn-danger" type="button" disabled title="Protected workspace deletion is not connected in this build.">Unavailable</button></div>'+
+      '</div><div class="jp-danger-confirm-note"><b>Confirmation required</b><span>Destructive actions use protected confirmation before anything is changed.</span></div>',true);
 
     const navItems=[
       ["profile","Profile"],["workspace","Workspace"],["database","Database & Sync"],["appearance","Appearance"],["notifications","Notifications"],["data","Data Management"],["security","Security"],["about","About"],["danger","Danger Zone"]
     ];
-    view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
-      '<div class="jp-settings-layout"><aside id="jpSettingsSegments" class="jp-settings-navigation" role="tablist" aria-label="Settings sections">'+navItems.map(([id,label])=>'<button type="button" role="tab" class="jp-settings-nav-item '+(id==="danger"?"danger":"")+'" data-settings-tab="'+id+'" aria-controls="settings-'+id+'" aria-selected="false" tabindex="-1"><span class="jp-settings-nav-mark" aria-hidden="true"></span><span>'+esc(label)+'</span>'+(id==="database"&&!connected?'<small>Sign in</small>':'')+'</button>').join("")+'</aside><section class="jp-settings-content" aria-live="polite"><div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div></section></div>';
-    settingsBuilt=true;bindSettingsTabs();try{bindSettings();}catch(e){console.error("Settings control binding failed:",e);toast("Some Settings controls could not be initialized.");}
+    const navHtml=navItems.map(([id,label])=>(id==="danger"?'<div class="jp-settings-nav-divider"></div>':'')+'<button type="button" role="tab" class="jp-settings-nav-item '+(id==="danger"?"danger":"")+'" data-settings-tab="'+id+'" aria-controls="settings-'+id+'" aria-selected="false" tabindex="-1"><span class="jp-settings-nav-mark" aria-hidden="true"></span>'+settingsNavIcon(id)+'<span class="jp-settings-nav-label">'+esc(label)+'</span>'+(id==="database"&&!connected?'<small>Sign in</small>':'')+'</button>').join("");
+    view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><span class="jp-settings-search-icon" aria-hidden="true">⌕</span><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
+      '<div class="jp-settings-layout"><aside id="jpSettingsSegments" class="jp-settings-navigation" role="tablist" aria-label="Settings sections">'+navHtml+'</aside><section class="jp-settings-content" aria-live="polite"><div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div><footer id="jpSettingsActionBar" class="jp-settings-action-bar"><span id="jpSettingsDirtyState">No unsaved changes</span><div><button class="btn btn-secondary" id="jpSettingsDiscard" disabled>Discard</button><button class="btn btn-primary" id="jpSettingsSave" disabled>Save changes</button></div></footer></section></div>';
+    settingsBuilt=true;settingsDirty=false;bindSettingsTabs();try{bindSettings();}catch(e){console.error("Settings control binding failed:",e);toast("Some Settings controls could not be initialized.");}
   }
 
-  function activateSettingsSegment(id,{focus=false}={}){
+  function activateSettingsSegment(id,{focus=false,force=false}={}){
     const segment=SETTINGS_SEGMENTS.includes(id)?id:"profile";
+    const current=$(".jp-settings-segment.active")?.dataset.segment;
+    if(settingsDirty&&!force&&current&&current!==segment){toast("Save or discard your Settings changes before switching sections.");return false;}
     localStorage.setItem(SETTINGS_TAB_KEY,segment);
     $$(".jp-settings-nav-item").forEach(btn=>{
       const active=btn.dataset.settingsTab===segment;
@@ -142,10 +225,13 @@
       panel.classList.toggle("active",active);panel.hidden=!active;panel.setAttribute("role","tabpanel");panel.setAttribute("aria-hidden",active?"false":"true");
     });
     const content=$(".jp-settings-content");if(content)content.scrollTop=0;
+    const actionBar=$("#jpSettingsActionBar");if(actionBar)actionBar.hidden=!editableSettingsSegment(segment);
+    if(!settingsDirty)setSettingsDirty(false);
+    return true;
   }
   function bindSettingsTabs(){
     const tabs=$$(".jp-settings-nav-item");if(!tabs.length)return;
-    activateSettingsSegment(localStorage.getItem(SETTINGS_TAB_KEY)||"profile");
+    activateSettingsSegment(localStorage.getItem(SETTINGS_TAB_KEY)||"profile",{force:true});
     tabs.forEach((btn,index)=>{
       btn.addEventListener("click",()=>activateSettingsSegment(btn.dataset.settingsTab));
       btn.addEventListener("keydown",e=>{
@@ -158,6 +244,43 @@
       });
     });
   }
+  async function saveActiveSettings(){
+    const panel=$(".jp-settings-segment.active");if(!panel||!settingsDirty)return;
+    const segment=panel.dataset.segment,prefs={};
+    $$(".jp-setting-local",panel).forEach(el=>{
+      const key=el.dataset.key;if(!key)return;
+      prefs[key]=el.type==="checkbox"?el.checked:(el.type==="number"?Number(el.value):el.value);
+    });
+    if(segment==="appearance"){
+      const theme=$("[data-theme].active",panel)?.dataset.theme||stored().theme||"system";
+      const accent=$(".jp-accent-dots [data-accent].active",panel)?.dataset.accent||stored().accent||"mint";
+      prefs.theme=theme;prefs.accent=accent;
+      const resolved=theme==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):theme;
+      window.app.setThemeMode(resolved);
+    }
+    if(Object.keys(prefs).length)savePrefs(prefs);
+    if(segment==="profile"){
+      await Promise.resolve(window.app.updateOwnerName($("#jpOwnerName")?.value||""));
+      await Promise.resolve(window.app.updateOwnerEmail($("#jpOwnerEmail")?.value||""));
+      await Promise.resolve(window.app.updateOwnerPhone($("#jpOwnerPhone")?.value||""));
+      await Promise.resolve(window.app.updateOwnerAddress($("#jpOwnerAddress")?.value||""));
+    }
+    if(segment==="workspace"){
+      const name=$("#jpWorkspaceName")?.value.trim()||"",business=$("#jpBusinessName")?.value.trim()||"";
+      if(name||business)savePrefs({workspaceName:name||stored().workspaceName,businessName:business||stored().businessName});
+      await Promise.resolve(window.app.updateOwnerEmail($("#jpBusinessEmail")?.value||""));
+      await Promise.resolve(window.app.updateOwnerPhone($("#jpBusinessPhone")?.value||""));
+      await Promise.resolve(window.app.updateOwnerAddress($("#jpBusinessAddress")?.value||""));
+    }
+    if(segment==="notifications"&&prefs.browserNotifications&&"Notification" in window){
+      try{if(Notification.permission==="default")await Notification.requestPermission();installBrowserNotifications();}catch(_){}
+    }
+    setSettingsDirty(false);toast("Settings saved.");
+  }
+  function discardActiveSettings(){
+    const segment=$(".jp-settings-segment.active")?.dataset.segment||"profile";
+    applyInterfacePrefs(stored());settingsBuilt=false;settingsDirty=false;buildSettings();activateSettingsSegment(segment,{force:true});toast("Unsaved Settings changes discarded.");
+  }
 
   function debounce(key,fn,delay=550){
     clearTimeout(saveTimers.get(key));setSettingsStatus("Saving…");
@@ -167,35 +290,24 @@
     const p=stored();
     $$(".jp-setting-local").forEach(el=>{
       const key=el.dataset.key;if(!key)return;
-      if(el.type==="checkbox"){el.checked=!!p[key];}
+      if(el.type==="checkbox")el.checked=!!p[key];
       else if(p[key]!=null)el.value=String(p[key]);
-      el.addEventListener("change",async()=>{
-        const value=el.type==="checkbox"?el.checked:(el.type==="number"?Number(el.value):el.value);
-        if(key==="colorfulMode"){window.app.setColorfulMode(value?"on":"off");savePrefs({[key]:value});return;}
-        savePrefs({[key]:value});
-        if(key==="browserNotifications"&&value&&"Notification" in window){try{if(Notification.permission==="default")await Notification.requestPermission();installBrowserNotifications();}catch(_){}}
-      });
+      el.addEventListener("change",()=>setSettingsDirty(true));
+      if(el.matches("input,textarea"))el.addEventListener("input",()=>setSettingsDirty(true));
     });
-    const profileMap={
-      jpOwnerName:v=>window.app.updateOwnerName(v),
-      jpOwnerEmail:v=>window.app.updateOwnerEmail(v),
-      jpOwnerPhone:v=>window.app.updateOwnerPhone(v),
-      jpOwnerAddress:v=>window.app.updateOwnerAddress(v)
-    };
-    Object.entries(profileMap).forEach(([id,fn])=>{
-      const el=$("#"+id);if(!el)return;el.addEventListener("input",()=>debounce(id,()=>fn(el.value),650));
+    ["jpOwnerName","jpOwnerEmail","jpOwnerPhone","jpOwnerAddress","jpWorkspaceName","jpBusinessName","jpBusinessEmail","jpBusinessPhone","jpBusinessAddress"].forEach(id=>{
+      const el=$("#"+id);if(!el)return;el.addEventListener("input",()=>setSettingsDirty(true));el.addEventListener("change",()=>setSettingsDirty(true));
     });
-    ["jpWorkspaceName","jpBusinessName"].forEach(id=>{const el=$("#"+id);if(el)el.addEventListener("input",()=>debounce(id,()=>{savePrefs({[id==="jpWorkspaceName"?"workspaceName":"businessName"]:el.value.trim()});},500));});
     $("#jpChangePhoto")?.addEventListener("click",()=>window.app.editExistingProfilePhoto());
     $("#jpRemovePhoto")?.addEventListener("click",()=>window.app.removeProfilePhoto());
     $$("#settings-appearance [data-theme]").forEach(b=>b.addEventListener("click",()=>{
-      const mode=b.dataset.theme;
-      if(mode==="system"){
-        const dark=matchMedia("(prefers-color-scheme: dark)").matches;window.app.setThemeMode(dark?"dark":"light");savePrefs({theme:"system"});
-      }else{window.app.setThemeMode(mode);savePrefs({theme:mode});}
-      $$("#settings-appearance [data-theme]").forEach(x=>x.classList.toggle("active",x===b));
+      $$("#settings-appearance [data-theme]").forEach(x=>x.classList.toggle("active",x===b));setSettingsDirty(true);
     }));
-    $$(".jp-accent-dots [data-accent]").forEach(b=>b.addEventListener("click",()=>{$$(".jp-accent-dots button").forEach(x=>x.classList.remove("active"));b.classList.add("active");savePrefs({accent:b.dataset.accent});}));
+    $$(".jp-accent-dots [data-accent]").forEach(b=>b.addEventListener("click",()=>{
+      $$(".jp-accent-dots button").forEach(x=>x.classList.remove("active"));b.classList.add("active");setSettingsDirty(true);
+    }));
+    $("#jpSettingsSave")?.addEventListener("click",()=>saveActiveSettings().catch(e=>{toast(e.message||"Settings could not be saved.");}));
+    $("#jpSettingsDiscard")?.addEventListener("click",discardActiveSettings);
     $("#jpTestDb")?.addEventListener("click",()=>window.app.testDatabaseConnection());
     $("#jpSyncNow")?.addEventListener("click",async()=>{try{await window.app.refreshSharedTest();toast("Workspace synchronized.");}catch(e){toast(e.message);}});
     $("#jpReconnectDb")?.addEventListener("click",()=>window.app.connectDatabaseManually());
@@ -211,13 +323,12 @@
     $$("[data-export]").forEach(b=>b.addEventListener("click",()=>exportCsv(b.dataset.export)));
     $("#jpSendTestNotification")?.addEventListener("click",async()=>{if(!("Notification" in window)){toast("Browser notifications are not supported here.");return;}if(Notification.permission==="default")await Notification.requestPermission();if(Notification.permission==="granted"){new Notification("JUAN PROJECT Workspace",{body:"Browser notifications are working on this device."});toast("Test notification sent.");}else toast("Browser notification permission is not enabled.");});
     $("#jpChangePassword")?.addEventListener("click",changePasswordDialog);
-    $("#jpActiveSessions")?.addEventListener("click",()=>{$("#jpSecurityInfo").textContent="Current browser session is active. Other sessions can be signed out below.";});
     $("#jpSignInHistory")?.addEventListener("click",()=>{$("#jpSecurityInfo").textContent="Sign-in history is available through Supabase authentication logs.";});
     $("#jpLogoutOthers")?.addEventListener("click",async()=>{const db=window.app.getDatabaseClient();if(!db)return;try{await db.auth.signOut({scope:"others"});toast("Other sessions signed out.");}catch(e){toast(e.message);}});
-    $("#jpCheckUpdates")?.addEventListener("click",()=>toast("You are on the current Workspace build in this deployment."));
-    $("#jpSystemInfo")?.addEventListener("click",()=>{$("#jpBuildInfo").textContent=navigator.platform+" · "+navigator.userAgent.split(" ").slice(-2).join(" ");});
+    $("#jpCheckUpdates")?.addEventListener("click",()=>toast("Update status is determined by the current Vercel production deployment."));
+    $("#jpSystemInfo")?.addEventListener("click",()=>{$("#jpBuildInfo").textContent=(navigator.userAgentData?.platform||navigator.platform||"Device")+" · "+navigator.userAgent.split(" ").slice(-2).join(" ");});
     $$("[data-danger]").forEach(b=>b.addEventListener("click",()=>runDanger(b.dataset.danger)));
-    bindSettingsSearch();updateDataMeta();
+    bindSettingsSearch();updateDataMeta();setSettingsDirty(false);
   }
 
   let browserNotificationChannel=null;
@@ -246,7 +357,11 @@
         const row=payload.new||{},entity=String(row.entity||""),action=String(row.action||"").toUpperCase(),eventKey=String(row.id||row.occurred_at||Date.now());
         if(entity==="incoming_orders"&&action==="INSERT")notifyOnce("order-"+eventKey,"New JUAN PROJECT order","A new Order Request has been received.","notifNewOrder");
         if(entity==="payment_submissions"&&action==="INSERT")notifyOnce("payment-submit-"+eventKey,"Payment submitted","A client payment is waiting for review.","notifPaymentSubmitted");
-        if(entity==="payment_submissions"&&action==="UPDATE")notifyOnce("payment-review-"+eventKey,"Payment review updated","A submitted payment changed review status.","notifPaymentApproved");
+        if(entity==="payment_submissions"&&action==="UPDATE"){
+          const status=String(row.status||"").toLowerCase();
+          if(["rejected","declined"].includes(status))notifyOnce("payment-rejected-"+eventKey,"Payment rejected","A submitted payment was rejected.","notifPaymentRejected");
+          else if(["accepted","approved","paid"].includes(status))notifyOnce("payment-approved-"+eventKey,"Payment approved","A submitted payment was approved.","notifPaymentApproved");
+        }
       })
       .subscribe();
     setInterval(scanDeadlineNotifications,300000);
