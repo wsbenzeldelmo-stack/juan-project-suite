@@ -142,3 +142,19 @@ test("Workspace Ads API also permits authenticated permanent deletion", async ()
   assert.match(api, /In-house ad permanently deleted/);
   assert.match(api, /juan-ad-assets/);
 });
+
+
+test("Client Home pins 1800x600 ad and footer above navigation without body whitespace", async () => {
+  const app = await read("../online/js/app.js");
+  const mobile = await read("../online/css/mobile-redesign.css");
+  const ads = await read("../online/css/ads.css");
+  const workspaceAds = await read("js/general-update.js");
+  assert.match(app, /jp-home-bottom-dock/);
+  assert.match(app, /jp-home-footer/);
+  assert.match(app, /route-\$\{esc\(state\.route\|\|'home'\)\}/);
+  assert.match(mobile, /\.app\.route-home\{height:100dvh;min-height:0;padding-bottom:0;overflow:hidden/);
+  assert.match(mobile, /bottom:calc\(66px \+ env\(safe-area-inset-bottom\)\)/);
+  assert.match(ads, /aspect-ratio:3\/1/);
+  assert.match(workspaceAds, /canvas\.width=1800;canvas\.height=600/);
+  assert.match(workspaceAds, /Banner format: 1800 × 600 px/);
+});

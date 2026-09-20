@@ -36,3 +36,15 @@
   body:has(.jp-shop-sticky) .page{height:calc(100dvh - 76px);overflow:hidden;display:flex;flex-direction:column}
   body:has(.jp-shop-sticky) .jp-shop-scroll{overflow:auto;flex:1}
 }
+/* Client Home pinned ad + footer · 2026-09-20 */
+.app.route-home{height:100dvh;min-height:0;padding-bottom:0;overflow:hidden;background:#fff}
+.page.route-home{height:calc(100dvh - 66px - env(safe-area-inset-bottom));min-height:0!important;overflow-y:auto;overscroll-behavior-y:contain;padding:18px 18px calc(196px + env(safe-area-inset-bottom))!important;background:#fff;scrollbar-width:none}
+.page.route-home::-webkit-scrollbar{display:none}
+.jp-home-bottom-dock{position:fixed;z-index:32;left:50%;transform:translateX(-50%);bottom:calc(66px + env(safe-area-inset-bottom));width:min(100%,520px);padding:8px 18px 7px;background:linear-gradient(180deg,rgba(255,255,255,.94),#fff 14%);border-top:1px solid rgba(229,234,231,.72)}
+.jp-home-bottom-dock #jpAdBannerAnchor{width:100%;margin:0}
+.jp-home-footer{display:grid;gap:6px;padding:8px 4px 0;text-align:center}
+.jp-home-footer>div{display:flex;align-items:center;justify-content:center;gap:20px}
+.jp-home-footer a{font-size:10px;font-weight:750;color:#68736d;text-decoration:none}
+.jp-home-footer small{font-size:8.5px;line-height:1.35;color:#8a948f}
+.app.route-home .nav{z-index:40}
+@media(max-width:480px){.page.route-home{padding-left:16px!important;padding-right:16px!important;padding-bottom:calc(188px + env(safe-area-inset-bottom))!important}.jp-home-bottom-dock{padding-left:16px;padding-right:16px}}
