@@ -1556,3 +1556,285 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   .screen-title-icon svg{width:27px!important;height:27px!important}
   .screen-head .screen-title>span:last-child{font-size:28px!important}
 }
+
+
+/* =========================================================
+   SEP 21 FINAL UX OPTIMIZATION
+   spacing · sticky nav · modal close · cart · account · flows
+   ========================================================= */
+:root{
+  --jp-mobile-nav-h:72px;
+  --jp-mobile-gutter:16px;
+  --jp-desktop-outer-y:28px;
+  --jp-desktop-outer-x:30px;
+  --jp-desktop-page-pad:28px;
+}
+
+/* One compact Guest Mode badge, top-right only. */
+.jp-guest-mode-badge{
+  position:absolute;
+  z-index:90;
+  top:16px;
+  right:18px;
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:5px 9px;
+  border:1px solid #dfe8e3;
+  border-radius:999px;
+  background:rgba(255,255,255,.94);
+  color:#557066;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  box-shadow:0 6px 18px rgba(18,40,29,.06);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  pointer-events:none;
+}
+.guest-nav .jp-desktop-nav-brand small{display:none!important}
+
+/* All modal close buttons share one visible, outside-the-card treatment. */
+.payment-reminder-close,
+.sheet-x{
+  width:40px!important;
+  height:40px!important;
+  border:1px solid #dce4e0!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  color:#202824!important;
+  display:grid!important;
+  place-items:center!important;
+  box-shadow:0 8px 24px rgba(22,37,29,.14)!important;
+  z-index:25!important;
+}
+.payment-reminder-close svg,.sheet-x svg{display:block!important;width:20px!important;height:20px!important}
+.payment-reminder-modal,
+.guest-gate-sheet,
+.notification-sheet,
+.shop-detail-sheet,
+.receipt-preview-sheet{
+  overflow:visible!important;
+}
+.payment-reminder-close,
+.guest-gate-sheet .sheet-x,
+.notification-sheet .sheet-x,
+.shop-detail-sheet .sheet-x,
+.receipt-preview-sheet .sheet-x{
+  top:-15px!important;
+  right:-15px!important;
+}
+.client-message-overlay{overflow:auto!important;padding:34px 22px!important}
+.payment-reminder-modal{max-height:none!important}
+
+/* Flow shell close uses the same SVG language without a text × glyph. */
+.jp-flow-header .jp-flow-close{
+  width:38px!important;
+  height:38px!important;
+  border:1px solid transparent!important;
+  border-radius:50%!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.jp-flow-header .jp-flow-close:hover{background:#f2f5f3!important;border-color:#e1e7e4!important}
+.jp-flow-header svg{display:block}
+
+/* Flow content + in-house ad zone. */
+.jp-flow-main{display:flex!important;flex-direction:column!important;min-height:0!important}
+.jp-flow-content{flex:1 0 auto;min-width:0}
+.jp-flow-ad-area{flex:0 0 auto;width:100%}
+
+/* Cute loader, intentionally logo-free. */
+.jp-cute-loader{
+  position:relative;
+  width:84px;
+  height:74px;
+  margin:0 auto 24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+.jp-cute-loader span{
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#19ba75;
+  animation:jpCuteBounce 1s ease-in-out infinite;
+}
+.jp-cute-loader span:nth-child(2){animation-delay:.13s}
+.jp-cute-loader span:nth-child(3){animation-delay:.26s}
+.jp-cute-loader i{
+  position:absolute;
+  left:50%;
+  bottom:3px;
+  width:30px;
+  height:12px;
+  transform:translateX(-50%);
+  border-bottom:3px solid #7bdcae;
+  border-radius:0 0 50% 50%;
+  opacity:.9;
+}
+@keyframes jpCuteBounce{
+  0%,60%,100%{transform:translateY(0) scale(1)}
+  30%{transform:translateY(-12px) scale(1.08)}
+}
+@media(prefers-reduced-motion:reduce){.jp-cute-loader span{animation:none!important}}
+
+/* Account page spacing: card -> status -> following sections. */
+.route-account .membership-card{margin-bottom:18px!important}
+.route-account .account-status-card{margin:0 0 24px!important}
+.route-account .settings-group{margin-top:20px!important}
+.route-account .account-status-card+.settings-group{margin-top:0!important}
+
+/* Receipt fills the transactional viewport; close X replaces redundant Done. */
+.jp-flow-receipt .jp-flow-main{padding-top:12px!important}
+.jp-flow-receipt .jp-flow-content{display:flex;flex-direction:column;justify-content:flex-start}
+.jp-flow-receipt .jp-receipt-result{max-width:430px!important}
+.jp-flow-receipt .jp-thermal-receipt{
+  width:min(100%,372px)!important;
+  min-height:min(650px,calc(100dvh - 240px))!important;
+  padding:26px 20px 28px!important;
+  margin-bottom:14px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+}
+.jp-flow-receipt .jp-thermal-qr{width:144px!important;height:144px!important}
+.jp-flow-receipt .jp-receipt-icon-actions{
+  grid-template-columns:repeat(4,44px)!important;
+  gap:8px!important;
+  margin:2px 0 0!important;
+}
+.jp-flow-receipt .jp-receipt-icon-actions button{
+  width:44px!important;height:42px!important;min-height:42px!important;border-radius:11px!important;
+}
+.jp-flow-receipt .jp-receipt-icon-actions button svg{width:19px!important;height:19px!important}
+
+/* Cart/checkout/tracking: keep content readable and prevent footer collisions. */
+.jp-flow-cart .jp-flow-content,
+.jp-flow-checkout .jp-flow-content,
+.jp-flow-track .jp-flow-content,
+.jp-flow-terms .jp-flow-content{min-width:0}
+.jp-flow-cart .jp-cart-item{min-width:0}
+.jp-flow-cart .jp-cart-copy{min-width:0}
+.jp-flow-cart .jp-cart-copy h3{overflow-wrap:anywhere}
+.jp-flow-cart .jp-cart-summary{padding:2px 0}
+.jp-flow-cart #jpCheckout{margin-top:4px}
+.jp-flow-track .jp-track-summary{min-width:0}
+.jp-flow-track .jp-track-summary h2,
+.jp-flow-track .jp-track-summary p{overflow-wrap:anywhere}
+
+/* MOBILE */
+@media(max-width:899px){
+  html,body,#root{height:100%!important;min-height:100%!important;overflow:hidden!important}
+  .app{
+    height:100dvh!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  .app>.nav{
+    position:fixed!important;
+    left:50%!important;
+    right:auto!important;
+    bottom:0!important;
+    transform:translateX(-50%)!important;
+    width:min(520px,100vw)!important;
+    height:calc(var(--jp-mobile-nav-h) + env(safe-area-inset-bottom))!important;
+    z-index:500!important;
+  }
+  .app>.page{
+    height:calc(100dvh - var(--jp-mobile-nav-h) - env(safe-area-inset-bottom))!important;
+    padding:18px var(--jp-mobile-gutter) 16px!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+  }
+  .screen-head{margin-bottom:16px!important}
+  .jp-guest-mode-badge{
+    top:14px;
+    right:var(--jp-mobile-gutter);
+  }
+  .app.guest-mode.route-shop>.page{padding-top:58px!important}
+  .app.guest-mode.route-home>.page{padding-top:44px!important}
+  .route-account .membership-card{margin-bottom:16px!important}
+  .route-account .account-status-card{margin-bottom:22px!important}
+  .jp-flow-phone{width:100%!important;max-width:520px!important}
+  .jp-flow-main{padding:18px 16px 26px!important}
+  .jp-flow-ad-area{margin-top:16px!important}
+  .payment-reminder-close,
+  .guest-gate-sheet .sheet-x,
+  .notification-sheet .sheet-x,
+  .shop-detail-sheet .sheet-x,
+  .receipt-preview-sheet .sheet-x{top:-12px!important;right:-8px!important}
+}
+
+/* DESKTOP / WEB */
+@media(min-width:900px){
+  html,body,#root{height:100%!important;min-height:100%!important;overflow:hidden!important}
+  #root{
+    padding:var(--jp-desktop-outer-y) var(--jp-desktop-outer-x)!important;
+    box-sizing:border-box!important;
+  }
+  .app{
+    width:min(1240px,calc(100vw - (var(--jp-desktop-outer-x) * 2)))!important;
+    height:calc(100dvh - (var(--jp-desktop-outer-y) * 2))!important;
+    min-height:0!important;
+    gap:20px!important;
+  }
+  .app>.page{padding:var(--jp-desktop-page-pad)!important}
+  .app>.nav{padding:22px 14px!important}
+  .jp-guest-mode-badge{
+    top:calc(var(--jp-desktop-outer-y) + 16px);
+    right:calc(var(--jp-desktop-outer-x) + 18px);
+    position:fixed;
+  }
+
+  /* Web cart behaves like a real desktop sheet instead of a stretched phone. */
+  .jp-flow-layer{
+    padding:24px!important;
+    display:grid!important;
+    place-items:center!important;
+    overflow:auto!important;
+  }
+  .jp-flow-phone{
+    width:min(760px,calc(100vw - 48px))!important;
+    min-height:0!important;
+    height:min(820px,calc(100dvh - 48px))!important;
+    border:1px solid #e2e8e5!important;
+    border-radius:24px!important;
+    overflow:hidden!important;
+    box-shadow:0 24px 70px rgba(20,38,29,.13)!important;
+  }
+  .jp-flow-header{position:relative!important;flex:0 0 66px!important}
+  .jp-flow-main{overflow-y:auto!important;padding:24px 30px 30px!important}
+  .jp-flow-cart .jp-flow-content{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.35fr) minmax(245px,.65fr)!important;
+    gap:24px!important;
+    align-items:start!important;
+  }
+  .jp-flow-cart .jp-flow-title,
+  .jp-flow-cart .jp-cart-list{grid-column:1}
+  .jp-flow-cart .jp-promo-row,
+  .jp-flow-cart .jp-cart-summary,
+  .jp-flow-cart #jpCheckout{grid-column:2}
+  .jp-flow-cart .jp-promo-row{margin-top:54px!important}
+  .jp-flow-cart .jp-cart-summary{
+    margin:0!important;
+    padding:16px!important;
+    border:1px solid #e5eae7!important;
+    border-radius:16px!important;
+    background:#fbfcfb!important;
+  }
+  .jp-flow-cart #jpCheckout{margin-top:0!important}
+  .jp-flow-cart .jp-cart-item{grid-template-columns:minmax(0,1fr) 34px!important;padding:14px!important}
+  .jp-flow-cart .jp-flow-ad-area{margin-top:22px!important}
+  .jp-flow-track .jp-track-layout{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)!important;gap:22px!important}
+  .jp-flow-track .jp-track-timeline{padding:8px 4px!important}
+  .jp-flow-receipt .jp-flow-main{padding-top:18px!important}
+}
+
+@media(min-width:1200px){
+  :root{--jp-desktop-outer-y:32px;--jp-desktop-outer-x:36px;--jp-desktop-page-pad:30px}
+}
