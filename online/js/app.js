@@ -344,7 +344,7 @@ function activityFeed(){
 function home(){
   if(!isLoggedIn()){
     return '<div class="guest-home jp-guest-home-v2 jp-guest-home-centered">'+
-      '<div class="jp-guest-desktop-head"><span>GUEST EXPERIENCE</span><h1>Home</h1><p>Browse creative services, submit an Order Request, or check an existing request.</p></div>'+
+
       '<div class="jp-guest-hero"><span class="eyebrow">WELCOME</span><h1>JUAN PROJECT<br><strong>made simple.</strong></h1><p>Shop creative services or track an existing Order Request.</p><div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="homeLogIn" class="text-button">Log In</button></p></div></div>'+
       '<div id="jpAdBannerAnchor"></div><div class="jp-guest-about"><b>About JUAN PROJECT</b><span>Creative services and project management developed by BENZEL DELMO.</span></div></div>';
   }
