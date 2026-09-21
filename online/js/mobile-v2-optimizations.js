@@ -56,28 +56,51 @@
   function enhanceClientHome(){
     const page=$(".app.client-mode.route-home .page"); if(!page||page.dataset.jpV2==="1")return;
     page.dataset.jpV2="1";
-    const head=$(".dashboard-head",page), projects=state().portal?.projects||[];
+    const head=$(".dashboard-head",page),projects=state().portal?.projects||[],profile=state().portal?.profile||{};
     const due=projects.reduce((s,p)=>s+Math.max(0,Number(p.balance||0)),0),firstDue=projects.find(p=>Number(p.balance||0)>0);
     if(head){
       head.classList.add("jp-home-head-fixed");
-      const wallet=document.createElement("section");wallet.className="jp-home-wallet";
-      wallet.innerHTML='<div><span>BALANCE DUE</span><strong>'+peso(due)+'</strong><small>Across active projects</small></div><button id="jpHomePayNow" '+(due<=0?"disabled":"")+'>Pay Now</button>';
-      head.after(wallet);$("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
+      const identity=$("h1",head),subtitle=$("p",head);
+      if(identity){identity.textContent=profile.email||profile.name||"Client";identity.title=identity.textContent;}
+      subtitle?.remove();
+
+      const balanceHead=document.createElement("div");
+      balanceHead.className="section-head jp-home-balance-head";
+      balanceHead.innerHTML="<h2>Balance</h2>";
+      const wallet=document.createElement("section");
+      wallet.className="jp-home-wallet";
+      wallet.innerHTML='<div><strong>'+peso(due)+'</strong><small>Across active projects</small></div><button id="jpHomePayNow" '+(due<=0?"disabled":"")+'>Pay Now</button>';
+      head.after(balanceHead,wallet);
+      $("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
     }
-    const quick=$(".jp-quick-actions",page),heads=$$(".section-head",page),activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project"),quickHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Quick Actions"),activeCard=activeHead?.nextElementSibling;
-    if(quick&&activeHead&&activeCard){
-      const wrap=document.createElement("div");wrap.className="jp-home-active-full";activeHead.before(wrap);wrap.append(activeHead,activeCard);
-      quickHead?.remove();quick.classList.add("jp-home-four-actions","jp-home-five-actions");
-      const labels=[["clientStartOrder","New Order"],["clientTrackRequest","Track Order"],["clientCardAction","My Rewards"]];
-      labels.forEach(([id,label])=>{const x=$("#"+id,quick);if(x){$("b",x).textContent=label;$("small",x)?.remove();}});
-      const terms=document.createElement("button");terms.className="quick-action";terms.id="clientTermsAction";terms.innerHTML='<span class="ui-icon" aria-hidden="true">§</span><b>Terms</b>';
-      const files=document.createElement("button");files.className="quick-action";files.id="clientFilesAction";files.innerHTML='<span class="ui-icon jp-files-icon" aria-hidden="true">▱</span><b>Files</b>';
-      quick.append(terms,files);
-      $("#clientCardAction",quick).onclick=openRewards;
-      terms.onclick=()=>{location.href="/terms.html"};
-      files.onclick=()=>{const p=(state().portal?.projects||[]).find(x=>x.drive_url);if(p?.drive_url)window.open(p.drive_url,"_blank","noopener");else{$('.nav [data-r="orders"]')?.click();}};
-      wrap.after(quick);
+
+    const quick=$(".jp-quick-actions",page),heads=$$(".section-head",page);
+    const activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project");
+    const activeCard=activeHead?.nextElementSibling;
+    activeCard?.remove();
+    activeHead?.remove();
+
+    const quickHead=$$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
+    if(quick){
+      quick.classList.remove("jp-home-four-actions","jp-home-five-actions");
+      quick.classList.add("jp-home-three-actions");
+      [["clientStartOrder","New Order"],["clientTrackRequest","Track Order"]].forEach(([id,label])=>{
+        const x=$("#"+id,quick);if(x){$("b",x).textContent=label;$("small",x)?.remove();}
+      });
+      const oldThird=$("#clientCardAction",quick);
+      if(oldThird){
+        const files=document.createElement("button");
+        files.className=oldThird.className;
+        files.id="clientFilesAction";
+        files.innerHTML='<span class="ui-icon jp-files-icon" aria-hidden="true">▱</span><b>View Files</b>';
+        oldThird.replaceWith(files);
+        files.onclick=()=>{const p=(state().portal?.projects||[]).find(x=>x.drive_url);if(p?.drive_url)window.open(p.drive_url,"_blank","noopener");else{$('.nav [data-r="orders"]')?.click();}};
+      }
+      quickHead?.classList.add("jp-home-quick-head");
     }
+
+    const recent=$$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Recent Activity");
+    recent?.classList.add("jp-home-recent-head");
     const ad=$("#jpAdBannerAnchor",page);if(ad)ad.classList.add("jp-home-bottom-ad");
   }
 
