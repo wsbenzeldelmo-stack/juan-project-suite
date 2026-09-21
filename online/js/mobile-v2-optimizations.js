@@ -147,11 +147,15 @@
     const chips=$(".jp-category-chips",page);
     if(chips&&!chips.dataset.jpV2){
       chips.dataset.jpV2="1";
-      chips.innerHTML='<button class="'+(shopPrimary==="all"?"active":"")+'" id="jpFilterAll">All</button><button class="'+(shopPrimary==="tv"?"active":"")+'" id="jpFilterTv">TV Broadcasting</button><span class="jp-subfilters '+(shopPrimary==="tv"?"":"hidden")+'"><button class="'+(shopSecondary==="services"?"active":"")+'" id="jpFilterServices">Services</button><button class="'+(shopSecondary==="packages"?"active":"")+'" id="jpFilterPackages">Packages</button></span>';
+      const ids=tvCategoryIds(),hasServices=(state().catalog?.services||[]).some(s=>!ids.length||ids.includes(String(s.category_id))),hasPackages=(state().catalog?.packages||[]).length>0;
+      if(shopPrimary==="tv"&&shopSecondary==="packages"&&!hasPackages)shopSecondary="services";
+      if(shopPrimary==="tv"&&shopSecondary==="services"&&!hasServices)shopSecondary="packages";
+      const subs=(hasServices?'<button class="'+(shopSecondary==="services"?"active":"")+'" id="jpFilterServices">Services</button>':'')+(hasPackages?'<button class="'+(shopSecondary==="packages"?"active":"")+'" id="jpFilterPackages">Packages</button>':'');
+      chips.innerHTML='<button class="'+(shopPrimary==="all"?"active":"")+'" id="jpFilterAll">All</button><button class="'+(shopPrimary==="tv"?"active":"")+'" id="jpFilterTv">TV Broadcasting</button><span class="jp-subfilters '+(shopPrimary==="tv"?"":"hidden")+'">'+subs+'</span>';
       $("#jpFilterAll",chips).onclick=()=>{shopPrimary="all";enhanceShopRefresh()};
       $("#jpFilterTv",chips).onclick=()=>{shopPrimary="tv";shopSecondary="packages";enhanceShopRefresh()};
-      $("#jpFilterServices",chips).onclick=()=>{shopPrimary="tv";shopSecondary="services";enhanceShopRefresh()};
-      $("#jpFilterPackages",chips).onclick=()=>{shopPrimary="tv";shopSecondary="packages";enhanceShopRefresh()};
+      $("#jpFilterServices",chips)?.addEventListener("click",()=>{shopPrimary="tv";shopSecondary="services";enhanceShopRefresh()});
+      $("#jpFilterPackages",chips)?.addEventListener("click",()=>{shopPrimary="tv";shopSecondary="packages";enhanceShopRefresh()});
     }
     $$(".jp-shop-card",page).forEach(c=>{c.classList.add("jp-v2-shop-card");});
     applyShopFilter();
