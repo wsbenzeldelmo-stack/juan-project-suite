@@ -600,3 +600,162 @@
     font-weight:650!important;
   }
 }
+
+
+/* 2026-09-22 simplified account card + QR modal repair */
+
+/* Account card: identity first, remove duplicated membership detail/progress */
+.jp-static-member-card{
+  min-height:0!important;
+  height:auto!important;
+  padding:0!important;
+  border-radius:22px!important;
+}
+.jp-static-member-simple{
+  padding:18px!important;
+  display:grid!important;
+  gap:16px!important;
+}
+.jp-static-member-simple .jp-member-top{
+  margin:0!important;
+}
+.jp-static-member-simple .jp-member-top b{
+  font-size:10px!important;
+  font-weight:750!important;
+  letter-spacing:.13em!important;
+}
+.jp-static-member-simple .jp-member-top span{
+  font-size:8px!important;
+  font-weight:650!important;
+  padding:5px 8px!important;
+}
+.jp-static-member-simple .jp-member-id{
+  margin:0!important;
+  gap:12px!important;
+  min-width:0!important;
+}
+.jp-static-member-simple .jp-fixed-avatar{
+  width:54px!important;
+  height:54px!important;
+  min-width:54px!important;
+  min-height:54px!important;
+  flex:0 0 54px!important;
+}
+.jp-static-member-simple .jp-member-identity{
+  min-width:0!important;
+}
+.jp-static-member-simple .jp-member-identity h2{
+  margin:0 0 3px!important;
+  font-size:16px!important;
+  line-height:1.12!important;
+  font-weight:750!important;
+  letter-spacing:-.02em!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.jp-static-member-simple .jp-member-identity small{
+  font-size:10px!important;
+  font-weight:550!important;
+  opacity:.68!important;
+}
+.jp-static-member-simple .jp-view-qr{
+  justify-self:start!important;
+  min-height:34px!important;
+  height:34px!important;
+  margin:0!important;
+  padding:0 13px!important;
+  border-radius:999px!important;
+  font-size:9px!important;
+  font-weight:700!important;
+}
+.jp-static-member-card .jp-member-meta,
+.jp-static-member-card .jp-member-progress{
+  display:none!important;
+}
+
+/* QR modal: balanced, fully visible, no oversized QR overflow */
+.jp-qr-overlay{
+  padding:
+    max(28px,env(safe-area-inset-top))
+    18px
+    max(28px,env(safe-area-inset-bottom))!important;
+}
+.jp-qr-overlay .jp-v2-modal{
+  width:min(88vw,380px)!important;
+  max-height:min(78dvh,620px)!important;
+  overflow:visible!important;
+  padding:22px!important;
+  border-radius:24px!important;
+}
+.jp-qr-overlay .jp-v2-x{
+  top:-14px!important;
+  left:-14px!important;
+  right:auto!important;
+  width:44px!important;
+  height:44px!important;
+  border-radius:999px!important;
+  border:1px solid #dfe6e2!important;
+  background:rgba(255,255,255,.96)!important;
+  box-shadow:0 7px 20px rgba(18,32,25,.12)!important;
+  font-size:26px!important;
+}
+.jp-qr-modal{
+  display:grid!important;
+  gap:10px!important;
+  min-width:0!important;
+}
+.jp-qr-modal .jp-v2-kicker{
+  font-size:9px!important;
+  font-weight:700!important;
+  letter-spacing:.12em!important;
+  text-transform:none!important;
+}
+.jp-qr-modal h2{
+  margin:0!important;
+  font-size:18px!important;
+  line-height:1.15!important;
+  font-weight:750!important;
+  letter-spacing:-.02em!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.jp-qr-frame{
+  width:100%!important;
+  aspect-ratio:1/1!important;
+  max-width:280px!important;
+  justify-self:center!important;
+  display:grid!important;
+  place-items:center!important;
+  margin:4px 0!important;
+  padding:10px!important;
+  box-sizing:border-box!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  border:1px solid #e4e9e6!important;
+  overflow:hidden!important;
+}
+.jp-qr-frame img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  max-width:100%!important;
+  max-height:100%!important;
+}
+.jp-qr-meta{
+  display:grid!important;
+  gap:3px!important;
+}
+.jp-qr-meta b{
+  font-size:13px!important;
+  font-weight:750!important;
+}
+.jp-qr-meta p{
+  margin:0!important;
+  font-size:9px!important;
+  line-height:1.35!important;
+  font-weight:450!important;
+  color:#7f8984!important;
+}
