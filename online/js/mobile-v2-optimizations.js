@@ -36,7 +36,8 @@
   }
   function openQr(){
     const p=state().portal?.profile||{}, code=referralCode()||String(p.client_code||"JUAN PROJECT CLIENT");
-    overlay('<div class="jp-qr-modal"><span class="jp-v2-kicker">CLIENT QR</span><h2>'+esc(p.name||"JUAN PROJECT Client")+'</h2><img src="/api/qr?text='+encodeURIComponent(code)+'" alt="Client QR code"><b>'+esc(p.client_code||"")+'</b><p>Scan to identify this JUAN PROJECT client.</p></div>',"jp-qr-overlay");
+    const displayName=p.name||p.email||"JUAN PROJECT Client";
+    overlay('<div class="jp-qr-modal"><span class="jp-v2-kicker">Client QR</span><h2>'+esc(displayName)+'</h2><div class="jp-qr-frame"><img src="/api/qr?text='+encodeURIComponent(code)+'" alt="Client QR code"></div><div class="jp-qr-meta"><b>'+esc(p.client_code||"")+'</b><p>Scan to identify this JUAN PROJECT client.</p></div></div>',"jp-qr-overlay");
   }
   function openRewards(){
     const p=state().portal?.profile||{}, m=membership(), code=referralCode();
@@ -142,7 +143,8 @@
       card.classList.add("jp-static-member-card");
       card.removeAttribute("role");card.removeAttribute("tabindex");
       const avatar=p.profile_photo_url?'<img src="'+esc(p.profile_photo_url)+'" alt="">':'<span>'+esc((p.name||p.email||"J").slice(0,1).toUpperCase())+'</span>';
-      card.innerHTML='<div class="jp-static-member-main"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div><h2>'+esc(p.name||"Client")+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><div class="jp-member-meta"><span>Member since <b>'+esc(p.created_at?new Date(p.created_at).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}):"—")+'</b></span><span>Tier <b>'+m.name+'</b></span></div><div class="jp-member-progress"><div><span>Progress</span><b>'+m.pct+'%</b></div><i><em style="width:'+m.pct+'%"></em></i><small>'+(m.next===null?"Highest tier reached":m.remaining+" more completed project"+(m.remaining===1?"":"s")+" to next tier")+'</small></div><button type="button" id="jpViewQr" class="jp-view-qr">View QR</button></div>';
+      const displayName=p.name||p.email||"Client";
+      card.innerHTML='<div class="jp-static-member-main jp-static-member-simple"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div class="jp-member-identity"><h2>'+esc(displayName)+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><button type="button" id="jpViewQr" class="jp-view-qr">View Client QR</button></div>';
       $("#jpViewQr",card)?.addEventListener("click",openQr);
     }
     $$(".settings-group",page).forEach(g=>{if($(".settings-label",g)?.textContent.trim()==="MEMBER BENEFITS")g.remove();});
