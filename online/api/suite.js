@@ -32,7 +32,8 @@ const safeOrder=o=>({
   total:Number(o.total||0),deadline:o.deadline,created_at:o.created_at,status:o.status,
   review_note:o.review_note||'',revised_at:o.revised_at||null,client_accepted_at:o.client_accepted_at||null,approved_at:o.approved_at||null,
   terms_version:o.terms_version||null,terms_accepted_at:o.terms_accepted_at||null,archived_at:o.archived_at||null,converted_at:o.converted_at||null,
-  project_code:o.project_code||null,project_id:o.project_id||null,client_id:o.client_id||null
+  project_code:o.project_code||null,project_id:o.project_id||null,client_id:o.client_id||null,
+  referral_code:o.referral_code||null,referred_by_client_id:o.referred_by_client_id||null
 });
 async function orderView(svc,o){
   const view=safeOrder(o);
@@ -188,6 +189,17 @@ async function submitOrder(b,svc){
   if(name.length>160||email.length>254||String(b.notes||'').length>3000||String(b.title||'').length>160)fail('Please shorten the submitted details.');
   const {data:existing,error:ee}=await svc.from('incoming_orders').select('*').eq('submission_key',key).maybeSingle();if(ee)throw ee;
   if(existing)return {order:safeOrder(existing),token:guestTokenForKey(key),duplicate:true};
+  let referralCode=String(b.referralCode||'').trim().toUpperCase();
+  if(referralCode.startsWith('JUAN-'))referralCode=referralCode.slice(5);
+  let referredByClientId=null,storedReferralCode=null;
+  if(referralCode){
+    const {data:referrer,error:re}=await svc.from('clients').select('id,client_code,email').eq('client_code',referralCode).maybeSingle();
+    if(re)throw re;
+    if(!referrer)fail('Referral code was not found. Check the code and try again.');
+    if(String(referrer.email||'').trim().toLowerCase()===email)fail('You cannot use your own referral code.');
+    referredByClientId=referrer.id;
+    storedReferralCode='JUAN-'+String(referrer.client_code||referralCode).toUpperCase();
+  }
   const requested=Array.isArray(b.items)?b.items:[];if(!requested.length)fail('Choose at least one service or package.');
   const serviceIds=[],packageIds=[];
   requested.forEach(i=>{const kind=String(i.type||i.kind||'service').toLowerCase();(kind==='package'?packageIds:serviceIds).push(String(i.id))});
@@ -219,6 +231,7 @@ async function submitOrder(b,svc){
   const {data,error}=await svc.from('incoming_orders').insert({
     name,email,phone:String(b.phone||''),title,notes:String(b.notes||''),deadline:b.deadline||null,items,
     subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,status:'Order Received',submission_key:key,token_hash:hash(raw),
+    referral_code:storedReferralCode,referred_by_client_id:referredByClientId,
     terms_version:'2026-09-20',terms_accepted_at:now(),terms_acceptance_key:acceptanceKey,
     original_snapshot:{items,subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,deadline:b.deadline||null,title}
   }).select('*').single();
@@ -242,7 +255,7 @@ async function convertOrder(id,svc,adminUser){
     title:o.title,status:'In Progress',delivery_status:'Pending',priority:Number(o.rush_fee||0)>0,
     project_type:hasPackage?'PACKAGE':'SOLO',pricing_version:'v2',
     start_date:today(),deadline_date:o.deadline||null,subtotal_amount:o.subtotal||0,discount_amount:o.discount_amount||0,rush_fee:o.rush_fee||0,total_amount:o.total||0,
-    notes:`Guest order ${o.code||''}`.trim(),tracker_stage:0,milestones:[{stage:0,at:now()}]
+    notes:`Guest order ${o.code||''}`.trim(),tracker_stage:0,milestones:[{stage:0,at:now()}],source_order_id:o.id
   }).select('*').single();
   if(createdProject.error)throw createdProject.error;
   const project=createdProject.data;
