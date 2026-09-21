@@ -268,3 +268,228 @@
 /* Keep motion secondary to clarity */
 .jp-pop-word i{animation:none!important}
 .jp-flip-inner{transition:none!important}
+
+
+/* 2026-09-22 hierarchy, cart, and centered-modal patch */
+
+/* Client Home: clear reading order — greeting > balance > quick actions > activity > ads */
+@media(max-width:899px){
+  .app.client-mode.route-home .page{
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;
+  }
+  .app.client-mode.route-home .dashboard-head{
+    margin-bottom:18px!important;
+    align-items:center!important;
+  }
+  .app.client-mode.route-home .dashboard-head>div:first-child{
+    min-width:0!important;
+    max-width:calc(100% - 104px)!important;
+  }
+  .app.client-mode.route-home .dashboard-head h1,
+  .app.client-mode.route-home .jp-home-head-fixed h1{
+    font-size:clamp(17px,4.7vw,21px)!important;
+    line-height:1.12!important;
+    font-weight:800!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    max-width:100%!important;
+    margin-top:3px!important;
+  }
+  .app.client-mode.route-home .dashboard-head p{display:none!important}
+  .app.client-mode.route-home .section-head{
+    margin:0 0 7px!important;
+  }
+  .app.client-mode.route-home .section-head h2{
+    font-size:15px!important;
+    line-height:1.2!important;
+    font-weight:800!important;
+  }
+  .jp-home-balance-head{margin-top:0!important}
+  .jp-home-wallet{
+    margin:0 0 13px!important;
+    padding:13px 15px!important;
+    border-radius:18px!important;
+  }
+  .jp-home-wallet>div{gap:2px!important}
+  .jp-home-wallet strong{
+    font-size:24px!important;
+    font-weight:800!important;
+    line-height:1.05!important;
+  }
+  .jp-home-wallet small{font-size:9px!important}
+  .jp-home-wallet button{
+    min-height:38px!important;
+    padding:0 15px!important;
+    border-radius:12px!important;
+    font-weight:750!important;
+  }
+  .jp-home-three-actions{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:8px!important;
+    width:100%!important;
+    margin:0 0 13px!important;
+  }
+  .jp-home-three-actions button{
+    min-width:0!important;
+    min-height:38px!important;
+    height:38px!important;
+    padding:0 8px!important;
+    border-radius:999px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:5px!important;
+    white-space:nowrap!important;
+  }
+  .jp-home-three-actions button b{
+    font-size:9px!important;
+    line-height:1!important;
+    font-weight:750!important;
+  }
+  .jp-home-three-actions .ui-icon,
+  .jp-home-three-actions svg{width:14px!important;height:14px!important;font-size:14px!important}
+  .app.client-mode.route-home .activity-card{margin-bottom:18px!important}
+  .app.client-mode.route-home #jpAdBannerAnchor{
+    margin-top:0!important;
+    padding-top:0!important;
+    padding-bottom:8px!important;
+  }
+}
+
+/* Cart: compact, fixed hierarchy, distinct item-name and price weights */
+@media(max-width:899px){
+  .jp-flow-cart .jp-flow-main{
+    display:flex!important;
+    flex-direction:column!important;
+    height:calc(100dvh - 62px)!important;
+    overflow:hidden!important;
+  }
+  .jp-flow-cart .jp-cart-list{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    align-content:start!important;
+    padding-bottom:12px!important;
+  }
+  .jp-flow-cart .jp-cart-copy h3{
+    font-weight:800!important;
+    letter-spacing:-.015em!important;
+  }
+  .jp-flow-cart .jp-cart-copy>b{
+    font-weight:600!important;
+    color:#202722!important;
+  }
+  .jp-flow-cart .jp-qty span{font-weight:600!important}
+  .jp-cart-sticky{
+    flex:0 0 auto!important;
+    background:#fff!important;
+    border-top:1px solid #e5ebe8!important;
+    padding:8px 0 max(8px,env(safe-area-inset-bottom))!important;
+  }
+  .jp-cart-sticky .jp-promo-row{
+    width:100%!important;
+    height:38px!important;
+    min-height:38px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:12px!important;
+    padding:0 12px!important;
+    margin:0 0 6px!important;
+    border-radius:12px!important;
+    background:#fbfcfb!important;
+    border:1px solid #e2e8e5!important;
+    text-align:left!important;
+    pointer-events:none!important;
+    opacity:1!important;
+  }
+  .jp-cart-sticky .jp-promo-row span{
+    font-size:11px!important;
+    font-weight:500!important;
+    line-height:1!important;
+    color:#7d8782!important;
+  }
+  .jp-cart-sticky .jp-promo-row b{
+    font-size:8px!important;
+    font-weight:700!important;
+    line-height:1!important;
+    color:#9aa39f!important;
+    letter-spacing:.08em!important;
+    text-transform:uppercase!important;
+  }
+  .jp-cart-summary>div>span{font-weight:500!important}
+  .jp-cart-summary>div>b{font-weight:600!important}
+  .jp-cart-summary .total>span{font-weight:600!important}
+  .jp-cart-summary .total strong{font-weight:800!important}
+}
+
+/* Product/package modals: centered everywhere with one outside top-left close control */
+#shopOverlay{
+  display:grid!important;
+  place-items:center!important;
+  align-items:center!important;
+  justify-items:center!important;
+  padding:
+    max(24px,env(safe-area-inset-top))
+    18px
+    max(24px,env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+}
+#shopOverlay .shop-detail-sheet{
+  position:relative!important;
+  margin:0!important;
+  inset:auto!important;
+  transform:none!important;
+  max-height:calc(100dvh - max(48px,env(safe-area-inset-top)) - max(48px,env(safe-area-inset-bottom)))!important;
+  overflow-y:auto!important;
+  overflow-x:visible!important;
+}
+#shopOverlay .sheet-x,
+.jp-v2-modal>.jp-v2-x{
+  position:absolute!important;
+  top:-14px!important;
+  left:-14px!important;
+  right:auto!important;
+  width:44px!important;
+  height:44px!important;
+  min-width:44px!important;
+  min-height:44px!important;
+  border:1px solid #dfe6e2!important;
+  border-radius:999px!important;
+  background:rgba(255,255,255,.96)!important;
+  color:#17201c!important;
+  box-shadow:0 7px 20px rgba(18,32,25,.12)!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  font-size:26px!important;
+  line-height:1!important;
+  z-index:50!important;
+}
+#shopOverlay .detail-price,
+#shopOverlay .jp-price-pair,
+#shopOverlay .jp-price-pair b{
+  text-decoration:none!important;
+}
+#shopOverlay .jp-price-pair b{
+  font-weight:800!important;
+  color:var(--jp2-green-dark)!important;
+}
+#shopOverlay .jp-price-pair s{
+  font-weight:500!important;
+  color:#9aa39f!important;
+  text-decoration:line-through!important;
+}
+#shopOverlay .service-detail-meta>div{
+  padding:0!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+}
+#shopOverlay .service-detail-meta>div span{font-weight:500!important}
+#shopOverlay .service-detail-meta>div b{font-weight:700!important}
