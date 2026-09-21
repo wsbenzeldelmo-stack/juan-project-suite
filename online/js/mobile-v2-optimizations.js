@@ -83,6 +83,7 @@
       activeHead.classList.add("jp-home-project-head");
     }
     if(activeCard)activeCard.classList.add("jp-home-project-card");
+    if(head&&activeHead&&activeCard)head.after(activeHead,activeCard);
 
     const quickHead=$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
     if(quick){
