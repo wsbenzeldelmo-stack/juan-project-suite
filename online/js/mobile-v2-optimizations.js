@@ -85,14 +85,14 @@
     page.dataset.jpV2="1";
     const home=$(".jp-guest-home-centered",page); if(!home)return;
     $(".jp-guest-about",home)?.remove();
-    if(!$(".jp-guest-tag",home)){const tag=document.createElement("span");tag.className="jp-guest-tag";tag.textContent="GUEST MODE";home.prepend(tag);}
+    $(".jp-guest-tag",home)?.remove();
     const h=$(".jp-guest-hero h1",home);
     if(h) h.innerHTML='<span class="jp-pop-word">'+["J","U","A","N"," ","P","R","O","J","E","C","T"].map((x,i)=>x===" "?"<i>&nbsp;</i>":'<i style="--i:'+i+'">'+x+"</i>").join("")+'</span><strong>made simple.</strong>';
   }
   function enhanceWelcome(){
     const card=$(".jp-welcome-simplified"); if(!card||card.dataset.jpV2==="1")return; card.dataset.jpV2="1";
     $(".version",card)?.remove();
-    if(!$(".jp-guest-tag",card)){const tag=document.createElement("span");tag.className="jp-guest-tag";tag.textContent="GUEST MODE";card.prepend(tag);}
+    $(".jp-guest-tag",card)?.remove();
     const h=$(".welcome-copy h1",card); if(h)h.innerHTML='<span class="jp-pop-word">'+["J","U","A","N"," ","P","R","O","J","E","C","T"].map((x,i)=>x===" "?"<i>&nbsp;</i>":'<i style="--i:'+i+'">'+x+"</i>").join("")+'</span><strong>made simple.</strong>';
     const p=$(".welcome-copy p",card); if(p)p.textContent="Shop creative services or track an existing Order Request.";
   }
@@ -210,7 +210,8 @@
     enhanceWelcome();enhanceGuestHome();enhanceClientHome();enhanceOrders();enhanceAccount();enhanceShop();enhanceShopModal();enhanceCart();enhanceReceipt();enhancePrivacy();
   }
   window.addEventListener("juan-online-render",()=>setTimeout(apply,0));
-  window.addEventListener("juan-cart-change",()=>setTimeout(apply,0));
-  new MutationObserver(()=>requestAnimationFrame(apply)).observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener("juan-cart-change",()=>setTimeout(()=>{enhanceCart();enhanceShop();},0));
+  let scheduled=false;
+  new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;apply();});}).observe(document.documentElement,{childList:true,subtree:true});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",apply);else apply();
 })();
