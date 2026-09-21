@@ -1,7 +1,7 @@
 /* JUAN PROJECT Online — mobile service-commerce flow */
 (function(){
   "use strict";
-  var CART_KEY="JUAN_ORDER_REQUEST_CART_V1",TERMS_VERSION="2026-09-20",catalog=null,layer=null,checkout={name:"",email:"",title:"",deadline:"",notes:""},lastReceipt=null;
+  var CART_KEY="JUAN_ORDER_REQUEST_CART_V1",TERMS_VERSION="2026-09-20",catalog=null,layer=null,checkout={name:"",email:"",title:"",deadline:"",notes:"",referral:""},lastReceipt=null;
   var T=function(){return window.JuanSuiteRuntime;};
   var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});};
   var peso=function(v){return new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP"}).format(Number(v||0));};
@@ -47,11 +47,11 @@
   }
   function checkoutTwo(){
     var today=new Date(),min=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
-    var html='<div class="jp-step-head"><span>Checkout</span><b>2 / 2</b></div><div class="jp-step-bar"><i style="width:100%"></i></div><div class="jp-step-copy left"><h1>Additional Details</h1><p>These details help JUAN PROJECT understand your request. Optional.</p></div><div class="jp-mobile-field"><label>Project / Output Name</label><input id="jpProjectTitle" value="'+esc(checkout.title)+'" placeholder="e.g. KAMPUS KONEK / CAMPUS PATROL"></div><div class="jp-mobile-field"><label>Requested Date</label><input id="jpRequestedDate" type="date" min="'+min+'" value="'+esc(checkout.deadline)+'"><small>Your requested date is a preference. Standard timeline and rush rules still apply.</small></div><div class="jp-mobile-field"><label>Notes</label><textarea id="jpProjectNotes" maxlength="500" placeholder="Any additional details about your project?">'+esc(checkout.notes)+'</textarea><small>Optional · 500 characters max</small></div><button id="jpReviewOrder" class="jp-mobile-primary">Review Order →</button>';
-    shell(html,true,"checkout");document.getElementById("jpFlowBack").onclick=checkoutOne;document.getElementById("jpReviewOrder").onclick=function(){checkout.title=document.getElementById("jpProjectTitle").value.trim();checkout.deadline=document.getElementById("jpRequestedDate").value;checkout.notes=document.getElementById("jpProjectNotes").value.trim();reviewOrder();};
+    var html='<div class="jp-step-head"><span>Checkout</span><b>2 / 2</b></div><div class="jp-step-bar"><i style="width:100%"></i></div><div class="jp-step-copy left"><h1>Additional Details</h1><p>These details help JUAN PROJECT understand your request. Optional.</p></div><div class="jp-mobile-field"><label>Project / Output Name</label><input id="jpProjectTitle" value="'+esc(checkout.title)+'" placeholder="e.g. KAMPUS KONEK / CAMPUS PATROL"></div><div class="jp-mobile-field"><label>Requested Date</label><input id="jpRequestedDate" type="date" min="'+min+'" value="'+esc(checkout.deadline)+'"><small>Your requested date is a preference. Standard timeline and rush rules still apply.</small></div><div class="jp-mobile-field"><label>Notes</label><textarea id="jpProjectNotes" maxlength="500" placeholder="Any additional details about your project?">'+esc(checkout.notes)+'</textarea><small>Optional · 500 characters max</small></div><div class="jp-mobile-field"><label>Referral Code</label><input id="jpReferralCode" value="'+esc(checkout.referral)+'" placeholder="Optional · e.g. JUAN-CL-035" autocomplete="off"><small>If someone referred you to JUAN PROJECT, enter their code here.</small></div><button id="jpReviewOrder" class="jp-mobile-primary">Review Order →</button>';
+    shell(html,true,"checkout");document.getElementById("jpFlowBack").onclick=checkoutOne;document.getElementById("jpReviewOrder").onclick=function(){checkout.title=document.getElementById("jpProjectTitle").value.trim();checkout.deadline=document.getElementById("jpRequestedDate").value;checkout.notes=document.getElementById("jpProjectNotes").value.trim();checkout.referral=document.getElementById("jpReferralCode").value.trim();reviewOrder();};
   }
   function reviewOrder(){
-    var items=cart(),html='<div class="jp-flow-title"><h1>Review Order</h1></div><section class="jp-review-card"><div class="jp-review-label">Guest Information <button id="jpEditGuest">Edit</button></div><b>'+esc(checkout.name)+'</b><span>'+esc(checkout.email)+'</span></section><section class="jp-review-card"><div class="jp-review-label">Order Summary <span>'+count(items)+' item(s)</span></div>'+items.map(function(i){return '<div class="jp-review-item">'+thumb(i)+'<div><b>'+esc(i.name)+'</b><small>Qty: '+Number(i.qty||1)+'</small></div><strong>'+peso(Number(i.price||0)*Number(i.qty||1))+'</strong></div>';}).join("")+'<div class="jp-review-total"><span>Subtotal</span><b>'+peso(total(items))+'</b></div><div class="jp-review-total final"><span>Estimated Total</span><strong>'+peso(total(items))+'</strong></div></section><div class="jp-terms-note">ⓘ By continuing, you will need to read and agree to the <b>Terms of Service</b> before submitting your Order Request.</div><button id="jpTermsNext" class="jp-mobile-primary">Continue →</button>';
+    var items=cart(),html='<div class="jp-flow-title"><h1>Review Order</h1></div><section class="jp-review-card"><div class="jp-review-label">Guest Information <button id="jpEditGuest">Edit</button></div><b>'+esc(checkout.name)+'</b><span>'+esc(checkout.email)+'</span>'+(checkout.referral?'<small>Referral: '+esc(checkout.referral)+'</small>':'')+'</section><section class="jp-review-card"><div class="jp-review-label">Order Summary <span>'+count(items)+' item(s)</span></div>'+items.map(function(i){return '<div class="jp-review-item">'+thumb(i)+'<div><b>'+esc(i.name)+'</b><small>Qty: '+Number(i.qty||1)+'</small></div><strong>'+peso(Number(i.price||0)*Number(i.qty||1))+'</strong></div>';}).join("")+'<div class="jp-review-total"><span>Subtotal</span><b>'+peso(total(items))+'</b></div><div class="jp-review-total final"><span>Estimated Total</span><strong>'+peso(total(items))+'</strong></div></section><div class="jp-terms-note">ⓘ By continuing, you will need to read and agree to the <b>Terms of Service</b> before submitting your Order Request.</div><button id="jpTermsNext" class="jp-mobile-primary">Continue →</button>';
     shell(html,true,"checkout");document.getElementById("jpFlowBack").onclick=checkoutTwo;document.getElementById("jpEditGuest").onclick=checkoutOne;document.getElementById("jpTermsNext").onclick=termsScreen;
   }
   function termsScreen(){
@@ -69,7 +69,7 @@
     var items=cart(),key=crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();
     processing();
     try{
-      var request={action:"submit-order",key:key,items:items,name:checkout.name,email:checkout.email,title:checkout.title,deadline:checkout.deadline||null,notes:checkout.notes,termsAccepted:true,termsVersion:TERMS_VERSION,website:""};
+      var request={action:"submit-order",key:key,items:items,name:checkout.name,email:checkout.email,title:checkout.title,deadline:checkout.deadline||null,notes:checkout.notes,referralCode:checkout.referral,termsAccepted:true,termsVersion:TERMS_VERSION,website:""};
       var r=await T().request("/api/suite",request);
       await delay(1150);saveCart([]);localStorage.setItem("JUAN_LAST_GUEST_TOKEN",r.token);lastReceipt={order:r.order,token:r.token};success(r.order,r.token);
     }catch(e){await delay(400);failure(e.message||"We could not submit your request.");}
@@ -102,7 +102,7 @@
         requested+
         '<div class="jp-receipt-row total"><span>ESTIMATED TOTAL</span><strong>'+peso(o.total)+'</strong></div>'+
         '<div class="jp-thermal-dash"></div>'+
-        '<div class="jp-thermal-status">*** '+esc(String(o.status||"Order Received").toUpperCase())+' ***</div>'+
+        '<div class="jp-thermal-status">*** ORDER SENT ***</div>'+
         '<div class="jp-thermal-dash"></div>'+
         '<small class="jp-not-invoice">THIS IS NOT AN INVOICE OR PROOF OF PAYMENT.</small>'+
       '</article>'+
@@ -112,10 +112,10 @@
         '<button id="jpCopyTrack" type="button" aria-label="Copy tracking link" title="Copy link">'+copyIcon+'</button>'+
         '<button id="jpTrackReceipt" type="button" aria-label="Track request" title="Track">'+trackIcon+'</button>'+
       '</div>'+
-      '<button id="jpDone" class="jp-mobile-primary">Done</button>'+
+      '<button id="jpDone" class="jp-mobile-primary jp-track-order-primary">Track Order</button>'+
     '</div>';
     shell(html,false,"receipt");
-    document.getElementById("jpDone").onclick=close;
+    document.getElementById("jpDone").onclick=function(){trackToken(token);};
     document.getElementById("jpCopyTrack").onclick=async function(){await navigator.clipboard.writeText(link);toast("Tracking link copied");};
     document.getElementById("jpTrackReceipt").onclick=function(){trackToken(token);};
     document.getElementById("jpSaveReceipt").onclick=function(){saveReceipt(o,link);};
