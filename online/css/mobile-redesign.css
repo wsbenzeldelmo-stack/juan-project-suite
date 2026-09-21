@@ -1753,3 +1753,21 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   .app>.page{padding:20px 22px!important}
   .app>.nav{padding-top:15px!important;padding-bottom:15px!important}
 }
+
+
+/* 2026-09-22 DESKTOP: hide in-house ads */
+@media(min-width:900px){
+  #jpAdBannerAnchor,
+  .jp-home-ad-inline,
+  .jp-home-bottom-ad,
+  .jp-flow-bottom-ad,
+  .jp-auth-bottom-ad,
+  .jp-house-banner,
+  .jp-popup-ad,
+  .jp-popup-ad-overlay,
+  [data-jp-ad],
+  [class*="in-house-ad"],
+  [class*="inhouse-ad"]{
+    display:none!important;
+  }
+}
