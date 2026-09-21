@@ -57,27 +57,24 @@
     const page=$(".app.client-mode.route-home .page"); if(!page||page.dataset.jpV2==="1")return;
     page.dataset.jpV2="1";
     const head=$(".dashboard-head",page), projects=state().portal?.projects||[];
-    const due=projects.reduce((s,p)=>s+Math.max(0,Number(p.balance||0)),0);
-    const firstDue=projects.find(p=>Number(p.balance||0)>0);
+    const due=projects.reduce((s,p)=>s+Math.max(0,Number(p.balance||0)),0),firstDue=projects.find(p=>Number(p.balance||0)>0);
     if(head){
+      head.classList.add("jp-home-head-fixed");
       const wallet=document.createElement("section");wallet.className="jp-home-wallet";
       wallet.innerHTML='<div><span>BALANCE DUE</span><strong>'+peso(due)+'</strong><small>Across active projects</small></div><button id="jpHomePayNow" '+(due<=0?"disabled":"")+'>Pay Now</button>';
-      head.after(wallet);
-      $("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
+      head.after(wallet);$("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
     }
-    const quick=$(".jp-quick-actions",page);
-    const heads=$$(".section-head",page), activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project");
-    const quickHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
-    const activeCard=activeHead?.nextElementSibling;
+    const quick=$(".jp-quick-actions",page),heads=$$(".section-head",page),activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project"),quickHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Quick Actions"),activeCard=activeHead?.nextElementSibling;
     if(quick&&activeHead&&activeCard){
-      const grid=document.createElement("div");grid.className="jp-home-compact-grid";
-      const left=document.createElement("div");left.className="jp-home-active-pane";
-      const right=document.createElement("div");right.className="jp-home-action-rail";
-      activeHead.before(grid); grid.append(left,right); left.append(activeHead,activeCard); right.append(quick); quickHead?.remove();
-      const labels=[["clientStartOrder","New Order"],["clientTrackRequest","Track"],["clientCardAction","JUAN Rewards"]];
-      labels.forEach(([id,label])=>{const b=$("#"+id,right);if(b){const strong=$("b",b);if(strong)strong.textContent=label;$("small",b)?.remove();}});
-      const rewards=$("#clientCardAction",right); if(rewards) rewards.onclick=openRewards;
+      const wrap=document.createElement("div");wrap.className="jp-home-active-full";activeHead.before(wrap);wrap.append(activeHead,activeCard);
+      quickHead?.remove();quick.classList.add("jp-home-four-actions");
+      const labels=[["clientStartOrder","New Order"],["clientTrackRequest","Track Order"],["clientCardAction","My Rewards"]];
+      labels.forEach(([id,label])=>{const x=$("#"+id,quick);if(x){$("b",x).textContent=label;$("small",x)?.remove();}});
+      const terms=document.createElement("button");terms.className="quick-action";terms.id="clientTermsAction";terms.innerHTML='<span class="ui-icon" aria-hidden="true">§</span><b>Terms</b>';quick.append(terms);
+      $("#clientCardAction",quick).onclick=openRewards;terms.onclick=()=>{location.href="/terms.html"};
+      wrap.after(quick);
     }
+    const ad=$("#jpAdBannerAnchor",page);if(ad)ad.classList.add("jp-home-bottom-ad");
   }
 
   function enhanceGuestHome(){
@@ -163,33 +160,31 @@
   function enhanceShopRefresh(){const chips=$(".jp-category-chips");if(chips)chips.dataset.jpV2="";enhanceShop();}
   function enhanceShopModal(){
     const sheet=$(".shop-detail-sheet");if(!sheet||sheet.dataset.jpV2==="1")return;sheet.dataset.jpV2="1";
-    $("#detailClose",sheet)?.remove();
-    const item=state().shopItem;if(!item)return;
-    let qty=1;
-    const add=$("#detailStartProject",sheet);if(add){
-      const controls=document.createElement("div");controls.className="jp-detail-qty";controls.innerHTML='<button type="button">−</button><b>1</b><button type="button">+</button>';
-      add.before(controls);const [minus,plus]=$$("button",controls),val=$("b",controls);
-      minus.onclick=()=>{qty=Math.max(1,qty-1);val.textContent=qty};plus.onclick=()=>{qty=Math.min(100,qty+1);val.textContent=qty};
-      add.onclick=async()=>{add.disabled=true;for(let i=0;i<qty;i++)await window.JPMobileCommerce?.addCatalogItem?.(item.kind,item.id);add.textContent="Added";setTimeout(()=>{add.disabled=false;add.textContent="Add to Cart"},700)};
-    }
+    const item=state().shopItem;if(!item)return;sheet.classList.toggle("jp-package-modal",item.kind==="Package");
+    const add=$("#detailStartProject",sheet);if(!add)return;
+    let qty=0;add.disabled=true;add.textContent="Add to Cart";
+    const price=Number(item.kind==="Package"?(item.new_price??item.original_price??0):(item.price||0)),original=Number(item.original_price||0);
+    const priceBox=$(".detail-price",sheet);if(item.kind==="Package"&&priceBox)priceBox.innerHTML='<span class="jp-price-pair"><i>Original Price<s>'+peso(original)+'</s></i><i>Limited Offer<b>'+peso(price)+'</b></i></span>';
+    const controls=document.createElement("div");controls.className="jp-detail-qty jp-detail-qty-left";controls.innerHTML='<label>Quantity</label><div><button type="button" disabled>−</button><b>0</b><button type="button">+</button></div><small>Turnaround Time<br><strong>Standard timeline applies</strong></small>';
+    add.before(controls);const btns=$$("button",controls),minus=btns[0],plus=btns[1],val=$("b",controls);
+    let rec=null,totalLine=null;
+    function sync(){val.textContent=qty;minus.disabled=qty===0;add.disabled=qty===0;if(rec)rec.hidden=qty===0;if(totalLine){totalLine.hidden=qty===0;totalLine.textContent="Estimated package total "+peso(price*qty);}}
+    minus.onclick=()=>{qty=Math.max(0,qty-1);sync()};plus.onclick=()=>{qty=Math.min(100,qty+1);sync()};
     if(item.kind==="Package"){
-      const packageItems=(state().catalog?.packageItems||[]).filter(x=>String(x.package_id)===String(item.id));
-      const services=state().catalog?.services||[], includedIds=new Set(packageItems.map(x=>String(x.service_id||"")).filter(Boolean));
-      const includedNames=packageItems.map(x=>services.find(s=>String(s.id)===String(x.service_id))?.name||x.item_name).filter(Boolean);
-      const info=document.createElement("section");info.className="jp-package-detail";info.innerHTML='<h3>Package includes</h3><div>'+includedNames.map(x=>'<span>'+esc(x)+'</span>').join("")+'</div>';add?.before(info);
-      const candidates=services.filter(s=>s.active!==false&&!includedIds.has(String(s.id))).sort((a,b)=>{const pa=/opening.*billboard|\bobb\b/i.test(a.name||"")?0:1,pb=/opening.*billboard|\bobb\b/i.test(b.name||"")?0:1;return pa-pb}).slice(0,3);
-      if(candidates.length){
-        const rec=document.createElement("section");rec.className="jp-smart-addons";rec.innerHTML='<h3>Complete your package</h3>'+candidates.map(s=>'<div><span><b>'+esc(s.name)+'</b><small>Recommended solo service</small></span><strong>'+peso(s.price)+'</strong><button data-addon="'+esc(s.id)+'">Add</button></div>').join("");add?.before(rec);
-        $$("[data-addon]",rec).forEach(b=>b.onclick=async()=>{await window.JPMobileCommerce?.addCatalogItem?.("Service",b.dataset.addon);b.textContent="Added";b.disabled=true});
-      }
+      const packageItems=(state().catalog?.packageItems||[]).filter(x=>String(x.package_id)===String(item.id)),services=state().catalog?.services||[],includedIds=new Set(packageItems.map(x=>String(x.service_id||"")).filter(Boolean)),includedNames=packageItems.map(x=>services.find(s=>String(s.id)===String(x.service_id))?.name||x.item_name).filter(Boolean);
+      const info=document.createElement("section");info.className="jp-package-detail";info.innerHTML='<h3>PACKAGE INCLUDES</h3><ul>'+includedNames.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';controls.before(info);
+      const candidates=services.filter(s=>s.active!==false&&!includedIds.has(String(s.id))).sort((a,b)=>(/opening.*billboard|\bobb\b/i.test(a.name||"")?0:1)-(/opening.*billboard|\bobb\b/i.test(b.name||"")?0:1)).slice(0,3);
+      if(candidates.length){rec=document.createElement("section");rec.className="jp-smart-addons";rec.hidden=true;rec.innerHTML='<h3>Suggested Add-ons</h3>'+candidates.map(s=>'<div><b>'+esc(s.name)+'</b><strong>'+peso(s.price)+'</strong><button data-addon="'+esc(s.id)+'">Add</button></div>').join("");add.before(rec);$$("[data-addon]",rec).forEach(b=>b.onclick=async()=>{await window.JPMobileCommerce?.addCatalogItem?.("Service",b.dataset.addon);b.textContent="Added";b.disabled=true});}
+      totalLine=document.createElement("small");totalLine.className="jp-package-total";totalLine.hidden=true;add.before(totalLine);
     }
+    add.onclick=async()=>{if(qty<1)return;add.disabled=true;for(let i=0;i<qty;i++)await window.JPMobileCommerce?.addCatalogItem?.(item.kind,item.id);add.textContent="Added";setTimeout(()=>{add.textContent="Add to Cart";sync()},650)};
+    let login=$(".jp-modal-login-link",sheet);if(!login){login=document.createElement("button");login.className="jp-modal-login-link";login.innerHTML='Already a client? <span>Log in</span>';add.after(login);login.onclick=()=>document.getElementById("homeLogIn")?.click();}
+    sync();
   }
 
   function enhanceCart(){
-    const flow=$(".jp-flow-cart");if(!flow||flow.dataset.jpV2==="1")return;flow.dataset.jpV2="1";
-    const items=(()=>{try{return JSON.parse(localStorage.getItem("JUAN_ORDER_REQUEST_CART_V1")||"[]")}catch{return[]}})();
-    const cards=$$(".jp-cart-list .jp-cart-item",flow);let last="";
-    cards.forEach((card,i)=>{const type=items[i]?.type==="package"?"Packages":"Services";card.dataset.kind=type.toLowerCase();if(type!==last){const h=document.createElement("div");h.className="jp-cart-section-title";h.textContent=type;card.before(h);last=type;}});
+    const flow=$(".jp-flow-cart");if(!flow)return;
+    $$(".jp-cart-section-title",flow).forEach(x=>x.remove());
     const promo=$(".jp-promo-row",flow);if(promo){promo.disabled=true;promo.innerHTML='<span>Have a promo code?</span><b>Available Soon</b>';}
   }
   function enhanceReceipt(){
