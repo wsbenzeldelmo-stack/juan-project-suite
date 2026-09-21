@@ -74,13 +74,16 @@
       $("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
     }
 
-    const quick=$(".jp-quick-actions",page),heads=$$(".section-head",page);
+    const quick=$(".jp-quick-actions",page),heads=$(".section-head",page);
     const activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project");
     const activeCard=activeHead?.nextElementSibling;
-    activeCard?.remove();
-    activeHead?.remove();
+    if(activeHead){
+      const title=$("h2",activeHead); if(title)title.textContent="Project Progress";
+      activeHead.classList.add("jp-home-project-head");
+    }
+    if(activeCard)activeCard.classList.add("jp-home-project-card");
 
-    const quickHead=$$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
+    const quickHead=$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
     if(quick){
       quick.classList.remove("jp-home-four-actions","jp-home-five-actions");
       quick.classList.add("jp-home-three-actions");
