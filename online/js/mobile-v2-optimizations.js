@@ -67,11 +67,15 @@
     const quick=$(".jp-quick-actions",page),heads=$$(".section-head",page),activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project"),quickHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Quick Actions"),activeCard=activeHead?.nextElementSibling;
     if(quick&&activeHead&&activeCard){
       const wrap=document.createElement("div");wrap.className="jp-home-active-full";activeHead.before(wrap);wrap.append(activeHead,activeCard);
-      quickHead?.remove();quick.classList.add("jp-home-four-actions");
+      quickHead?.remove();quick.classList.add("jp-home-four-actions","jp-home-five-actions");
       const labels=[["clientStartOrder","New Order"],["clientTrackRequest","Track Order"],["clientCardAction","My Rewards"]];
       labels.forEach(([id,label])=>{const x=$("#"+id,quick);if(x){$("b",x).textContent=label;$("small",x)?.remove();}});
-      const terms=document.createElement("button");terms.className="quick-action";terms.id="clientTermsAction";terms.innerHTML='<span class="ui-icon" aria-hidden="true">§</span><b>Terms</b>';quick.append(terms);
-      $("#clientCardAction",quick).onclick=openRewards;terms.onclick=()=>{location.href="/terms.html"};
+      const terms=document.createElement("button");terms.className="quick-action";terms.id="clientTermsAction";terms.innerHTML='<span class="ui-icon" aria-hidden="true">§</span><b>Terms</b>';
+      const files=document.createElement("button");files.className="quick-action";files.id="clientFilesAction";files.innerHTML='<span class="ui-icon jp-files-icon" aria-hidden="true">▱</span><b>Files</b>';
+      quick.append(terms,files);
+      $("#clientCardAction",quick).onclick=openRewards;
+      terms.onclick=()=>{location.href="/terms.html"};
+      files.onclick=()=>{const p=(state().portal?.projects||[]).find(x=>x.drive_url);if(p?.drive_url)window.open(p.drive_url,"_blank","noopener");else{$('.nav [data-r="orders"]')?.click();}};
       wrap.after(quick);
     }
     const ad=$("#jpAdBannerAnchor",page);if(ad)ad.classList.add("jp-home-bottom-ad");
@@ -109,18 +113,23 @@
     const page=$(".app.client-mode.route-account .page"); if(!page||page.dataset.jpV2==="1")return;page.dataset.jpV2="1";
     const card=$(".membership-card",page),p=state().portal?.profile||{},m=membership(),code=referralCode();
     if(card){
-      card.classList.add("jp-flip-card"); card.setAttribute("role","button");card.setAttribute("tabindex","0");
+      card.classList.add("jp-static-member-card");
+      card.removeAttribute("role");card.removeAttribute("tabindex");
       const avatar=p.profile_photo_url?'<img src="'+esc(p.profile_photo_url)+'" alt="">':'<span>'+esc((p.name||p.email||"J").slice(0,1).toUpperCase())+'</span>';
-      card.innerHTML='<div class="jp-flip-inner"><section class="jp-flip-face jp-flip-front"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div><h2>'+esc(p.name||"Client")+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><div class="jp-member-meta"><span>Member since <b>'+esc(p.created_at?new Date(p.created_at).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}):"—")+'</b></span><span>Tier <b>'+m.name+'</b></span></div><div class="jp-member-progress"><div><span>Progress</span><b>'+m.pct+'%</b></div><i><em style="width:'+m.pct+'%"></em></i><small>'+(m.next===null?"Highest tier reached":m.remaining+" more completed project"+(m.remaining===1?"":"s")+" to next tier")+'</small></div></section><section class="jp-flip-face jp-flip-back"><b>JUAN PROJECT CLIENT</b><button class="jp-card-qr" type="button"><img src="/api/qr?text='+encodeURIComponent(code||p.client_code||"JUAN PROJECT")+'" alt="Client QR"></button><strong>'+esc(p.client_code||"")+'</strong><small>Tap QR to enlarge</small></section></div>';
-      const flip=()=>card.classList.toggle("is-flipped");card.addEventListener("click",e=>{if(e.target.closest(".jp-card-qr"))return;flip()});card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}});
-      $(".jp-card-qr",card)?.addEventListener("click",e=>{e.stopPropagation();openQr()});
+      card.innerHTML='<div class="jp-static-member-main"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div><h2>'+esc(p.name||"Client")+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><div class="jp-member-meta"><span>Member since <b>'+esc(p.created_at?new Date(p.created_at).toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}):"—")+'</b></span><span>Tier <b>'+m.name+'</b></span></div><div class="jp-member-progress"><div><span>Progress</span><b>'+m.pct+'%</b></div><i><em style="width:'+m.pct+'%"></em></i><small>'+(m.next===null?"Highest tier reached":m.remaining+" more completed project"+(m.remaining===1?"":"s")+" to next tier")+'</small></div><button type="button" id="jpViewQr" class="jp-view-qr">View QR</button></div>';
+      $("#jpViewQr",card)?.addEventListener("click",openQr);
     }
     $$(".settings-group",page).forEach(g=>{if($(".settings-label",g)?.textContent.trim()==="MEMBER BENEFITS")g.remove();});
-    const about=$$(".settings-group",page).find(g=>$(".settings-label",g)?.textContent.trim()==="ABOUT");
-    if(about&&code&&!$("#jpAccountReferral",about)){
+    let about=$$(".settings-group",page).find(g=>["ABOUT","ABOUT & LEGAL"].includes($(".settings-label",g)?.textContent.trim()));
+    if(about){
       $(".settings-label",about).textContent="ABOUT & LEGAL";
-      const list=$(".settings-list",about),row=document.createElement("button");row.id="jpAccountReferral";row.className="settings-row settings-row-button";
-      row.innerHTML='<div><b>Share Referral Code</b><small>'+esc(code)+'</small></div><span>›</span>';row.onclick=shareReferral;list?.prepend(row);
+      const list=$(".settings-list",about);
+      if(list){
+        list.innerHTML='<div class="jp-about-legal-copy"><b>JUAN PROJECT Online</b><span>Developed by BENZEL DELMO</span><span>JUAN PROJECT System 2026</span></div>';
+        if(code){const row=document.createElement("button");row.id="jpAccountReferral";row.className="settings-row settings-row-button";row.innerHTML='<div><b>Share Referral Code</b><small>'+esc(code)+'</small></div><span>›</span>';row.onclick=shareReferral;list.append(row);}
+      }
+    }else{
+      about=document.createElement("div");about.className="settings-group jp-about-legal";about.innerHTML='<div class="settings-label">ABOUT & LEGAL</div><div class="card settings-list"><div class="jp-about-legal-copy"><b>JUAN PROJECT Online</b><span>Developed by BENZEL DELMO</span><span>JUAN PROJECT System 2026</span></div></div>';page.append(about);
     }
   }
 
@@ -131,14 +140,11 @@
     const ids=tvCategoryIds();
     $$(".app.route-shop .jp-shop-card").forEach(card=>{
       const key=$("[data-view-shop]",card)?.dataset.viewShop||"", [kind,id]=key.split(":");
+      const item=kind==="Service"?(state().catalog?.services||[]).find(x=>String(x.id)===String(id)):null;
       let show=true;
-      if(shopPrimary==="tv"){
-        if(shopSecondary==="packages")show=kind==="Package";
-        else{
-          const item=(state().catalog?.services||[]).find(x=>String(x.id)===String(id));
-          show=kind==="Service" && (!ids.length||ids.includes(String(item?.category_id)));
-        }
-      }
+      if(shopPrimary==="tv")show=kind==="Service"&&(!ids.length||ids.includes(String(item?.category_id)));
+      else if(shopPrimary==="services")show=kind==="Service";
+      else if(shopPrimary==="packages")show=kind==="Package";
       card.hidden=!show;
     });
   }
@@ -147,42 +153,47 @@
     const chips=$(".jp-category-chips",page);
     if(chips&&!chips.dataset.jpV2){
       chips.dataset.jpV2="1";
-      const ids=tvCategoryIds(),hasServices=(state().catalog?.services||[]).some(s=>!ids.length||ids.includes(String(s.category_id))),hasPackages=(state().catalog?.packages||[]).length>0;
-      if(shopPrimary==="tv"&&shopSecondary==="packages"&&!hasPackages)shopSecondary="services";
-      if(shopPrimary==="tv"&&shopSecondary==="services"&&!hasServices)shopSecondary="packages";
-      const subs=(hasServices?'<button class="'+(shopSecondary==="services"?"active":"")+'" id="jpFilterServices">Services</button>':'')+(hasPackages?'<button class="'+(shopSecondary==="packages"?"active":"")+'" id="jpFilterPackages">Packages</button>':'');
-      chips.innerHTML='<button class="'+(shopPrimary==="all"?"active":"")+'" id="jpFilterAll">All</button><button class="'+(shopPrimary==="tv"?"active":"")+'" id="jpFilterTv">TV Broadcasting</button><span class="jp-subfilters '+(shopPrimary==="tv"?"":"hidden")+'">'+subs+'</span>';
+      const ids=tvCategoryIds(),hasTv=(state().catalog?.services||[]).some(s=>!ids.length||ids.includes(String(s.category_id))),hasServices=(state().catalog?.services||[]).length>0,hasPackages=(state().catalog?.packages||[]).length>0;
+      chips.innerHTML='<button class="'+(shopPrimary==="all"?"active":"")+'" id="jpFilterAll">All</button>'+(hasTv?'<button class="'+(shopPrimary==="tv"?"active":"")+'" id="jpFilterTv">TV Broadcasting</button>':'')+(hasServices?'<button class="'+(shopPrimary==="services"?"active":"")+'" id="jpFilterServices">Services</button>':'')+(hasPackages?'<button class="'+(shopPrimary==="packages"?"active":"")+'" id="jpFilterPackages">Packages</button>':'');
       $("#jpFilterAll",chips).onclick=()=>{shopPrimary="all";enhanceShopRefresh()};
-      $("#jpFilterTv",chips).onclick=()=>{shopPrimary="tv";shopSecondary="packages";enhanceShopRefresh()};
-      $("#jpFilterServices",chips)?.addEventListener("click",()=>{shopPrimary="tv";shopSecondary="services";enhanceShopRefresh()});
-      $("#jpFilterPackages",chips)?.addEventListener("click",()=>{shopPrimary="tv";shopSecondary="packages";enhanceShopRefresh()});
+      $("#jpFilterTv",chips)?.addEventListener("click",()=>{shopPrimary="tv";enhanceShopRefresh()});
+      $("#jpFilterServices",chips)?.addEventListener("click",()=>{shopPrimary="services";enhanceShopRefresh()});
+      $("#jpFilterPackages",chips)?.addEventListener("click",()=>{shopPrimary="packages";enhanceShopRefresh()});
     }
     $$(".jp-shop-card",page).forEach(c=>{c.classList.add("jp-v2-shop-card");});
     applyShopFilter();
     const cart=$("#shopOrderCart",page);if(cart)cart.classList.add("jp-v2-cart-icon");
   }
+
   function enhanceShopRefresh(){const chips=$(".jp-category-chips");if(chips)chips.dataset.jpV2="";enhanceShop();}
   function enhanceShopModal(){
     const sheet=$(".shop-detail-sheet");if(!sheet||sheet.dataset.jpV2==="1")return;sheet.dataset.jpV2="1";
     const item=state().shopItem;if(!item)return;sheet.classList.toggle("jp-package-modal",item.kind==="Package");
+    $(".detail-copy",sheet)?.remove();$("#detailClose",sheet)?.remove();$("#detailLogIn",sheet)?.remove();
     const add=$("#detailStartProject",sheet);if(!add)return;
-    let qty=0;add.disabled=true;add.textContent="Add to Cart";
+    let qty=1;add.disabled=false;add.textContent="Add to Cart";
     const price=Number(item.kind==="Package"?(item.new_price??item.original_price??0):(item.price||0)),original=Number(item.original_price||0);
-    const priceBox=$(".detail-price",sheet);if(item.kind==="Package"&&priceBox)priceBox.innerHTML='<span class="jp-price-pair"><i>Original Price<s>'+peso(original)+'</s></i><i>Limited Offer<b>'+peso(price)+'</b></i></span>';
-    const controls=document.createElement("div");controls.className="jp-detail-qty jp-detail-qty-left";controls.innerHTML='<label>Quantity</label><div><button type="button" disabled>−</button><b>0</b><button type="button">+</button></div><small>Turnaround Time<br><strong>Standard timeline applies</strong></small>';
-    add.before(controls);const btns=$$("button",controls),minus=btns[0],plus=btns[1],val=$("b",controls);
-    let rec=null,totalLine=null;
-    function sync(){val.textContent=qty;minus.disabled=qty===0;add.disabled=qty===0;if(rec)rec.hidden=qty===0;if(totalLine){totalLine.hidden=qty===0;totalLine.textContent="Estimated package total "+peso(price*qty);}}
-    minus.onclick=()=>{qty=Math.max(0,qty-1);sync()};plus.onclick=()=>{qty=Math.min(100,qty+1);sync()};
-    if(item.kind==="Package"){
-      const packageItems=(state().catalog?.packageItems||[]).filter(x=>String(x.package_id)===String(item.id)),services=state().catalog?.services||[],includedIds=new Set(packageItems.map(x=>String(x.service_id||"")).filter(Boolean)),includedNames=packageItems.map(x=>services.find(s=>String(s.id)===String(x.service_id))?.name||x.item_name).filter(Boolean);
-      const info=document.createElement("section");info.className="jp-package-detail";info.innerHTML='<h3>PACKAGE INCLUDES</h3><ul>'+includedNames.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';controls.before(info);
-      const candidates=services.filter(s=>s.active!==false&&!includedIds.has(String(s.id))).sort((a,b)=>(/opening.*billboard|\bobb\b/i.test(a.name||"")?0:1)-(/opening.*billboard|\bobb\b/i.test(b.name||"")?0:1)).slice(0,3);
-      if(candidates.length){rec=document.createElement("section");rec.className="jp-smart-addons";rec.hidden=true;rec.innerHTML='<h3>Suggested Add-ons</h3>'+candidates.map(s=>'<div><b>'+esc(s.name)+'</b><strong>'+peso(s.price)+'</strong><button data-addon="'+esc(s.id)+'">Add</button></div>').join("");add.before(rec);$$("[data-addon]",rec).forEach(b=>b.onclick=async()=>{await window.JPMobileCommerce?.addCatalogItem?.("Service",b.dataset.addon);b.textContent="Added";b.disabled=true});}
-      totalLine=document.createElement("small");totalLine.className="jp-package-total";totalLine.hidden=true;add.before(totalLine);
+    const priceBox=$(".detail-price",sheet);
+    if(priceBox){
+      priceBox.innerHTML=item.kind==="Package"&&original>price
+        ?'<span class="jp-price-pair"><b>'+peso(price)+'</b><s>'+peso(original)+'</s></span>'
+        :'<span class="jp-price-pair"><b>'+peso(price)+'</b></span>';
     }
-    add.onclick=async()=>{if(qty<1)return;add.disabled=true;for(let i=0;i<qty;i++)await window.JPMobileCommerce?.addCatalogItem?.(item.kind,item.id);add.textContent="Added";setTimeout(()=>{add.textContent="Add to Cart";sync()},650)};
-    let login=$(".jp-modal-login-link",sheet);if(!login){login=document.createElement("button");login.className="jp-modal-login-link";login.innerHTML='Already a client? <span>Log in</span>';add.after(login);login.onclick=()=>document.getElementById("homeLogIn")?.click();}
+    const actionRow=document.createElement("div");actionRow.className="jp-detail-action-row";
+    const controls=document.createElement("div");controls.className="jp-detail-qty jp-detail-qty-inline";controls.innerHTML='<button type="button">−</button><b>1</b><button type="button">+</button>';
+    add.parentNode.insertBefore(actionRow,add);actionRow.append(controls,add);
+    const btns=$$("button",controls),minus=btns[0],plus=btns[1],val=$("b",controls);
+    function sync(){val.textContent=qty;minus.disabled=qty<=1;add.disabled=false;}
+    minus.onclick=()=>{qty=Math.max(1,qty-1);sync()};plus.onclick=()=>{qty=Math.min(100,qty+1);sync()};
+    if(item.kind==="Package"){
+      const packageItems=(state().catalog?.packageItems||[]).filter(x=>String(x.package_id)===String(item.id)),services=state().catalog?.services||[];
+      const includedNames=packageItems.map(x=>services.find(s=>String(s.id)===String(x.service_id))?.name||x.item_name).filter(Boolean);
+      const info=document.createElement("section");info.className="jp-package-detail";info.innerHTML='<h3>PACKAGE INCLUDES</h3><ul>'+includedNames.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>';actionRow.before(info);
+    }
+    add.onclick=async()=>{add.disabled=true;const originalText=add.textContent;for(let i=0;i<qty;i++)await window.JPMobileCommerce?.addCatalogItem?.(item.kind,item.id);add.textContent="Added";setTimeout(()=>{add.textContent=originalText;add.disabled=false},450)};
+    if(!state().portal?.profile){
+      const login=document.createElement("button");login.className="jp-modal-login-link";login.innerHTML='Already a client? <span>Log in</span>';actionRow.after(login);login.onclick=()=>document.getElementById("homeLogIn")?.click();
+    }
     sync();
   }
 
