@@ -33,7 +33,7 @@
     var v=shell(html,true,"cart");document.getElementById("jpFlowBack").onclick=close;
     function updateCartInPlace(){
       var x=cart(),sum=total(x);
-      if(!x.length{return openCart();}
+      if(!x.length){return openCart();}
       v.querySelectorAll(".jp-cart-item").forEach(function(card){var i=Number(card.dataset.cartIndex),item=x[i];if(!item)return;var q=card.querySelector(".jp-qty span");if(q)q.textContent=Number(item.qty||1);});
       var subtotal=v.querySelector(".jp-cart-summary>div:first-child b"),estimated=v.querySelector(".jp-cart-summary .total strong");if(subtotal)subtotal.textContent=peso(sum);if(estimated)estimated.textContent=peso(sum);
     }
