@@ -79,8 +79,13 @@ function unifyExistingSvgs(){
     s.setAttribute('stroke-linecap','round');s.setAttribute('stroke-linejoin','round');
   });
 }
-function run(){normalizeNav();replaceGlyphs();unifyExistingSvgs()}
-const mo=new MutationObserver(()=>requestAnimationFrame(run));
-mo.observe(document.documentElement,{childList:true,subtree:true});
-document.addEventListener('DOMContentLoaded',run);setTimeout(run,0);setTimeout(run,800);setTimeout(run,2200);
+let queued=false;
+function run(){queued=false;normalizeNav();replaceGlyphs();unifyExistingSvgs()}
+function schedule(){if(queued)return;queued=true;requestAnimationFrame(run)}
+document.addEventListener('DOMContentLoaded',schedule);
+document.addEventListener('click',e=>{
+  if(e.target.closest('.nav-item,button,[data-settings-tab],[data-project-tab]'))schedule();
+},true);
+window.addEventListener('juan:realtime-sync',schedule);
+setTimeout(schedule,200);
 })();
