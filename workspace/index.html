@@ -5204,9 +5204,9 @@ ${description}`))actionCallback();return;}
       function getProjectPaid(proj) {return (proj.payments||[]).filter(p=>!p.deleted_at).reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);}
 
       function getProjectBalance(proj) {
-        const stored = Number(proj.pending_amount);
-        if (proj.pending_amount !== undefined && proj.pending_amount !== null && Number.isFinite(stored)) return Math.max(0, stored);
-        return Math.max(0, Number(proj.total_amount || 0) - getProjectPaid(proj));
+        if (!proj) return 0;
+        const authoritativeTotal = Math.max(0, Number(proj.total_amount || 0)) + Math.max(0, Number(proj.late_fee_total || 0));
+        return Math.max(0, authoritativeTotal - getProjectPaid(proj));
       }
 
       function projectIsActiveByPayment(proj) {
@@ -7883,7 +7883,7 @@ ${description}`))actionCallback();return;}
         projectDataAutosaveBusy=true;setProjectDataAutosaveStatus('Saving…','saving');
         const previousClientId=proj.client_id,previousEmail=proj.client_email||'',previousStart=proj.start_date||'',previousDeadline=proj.deadline_date||'';
         try{
-          proj.title=name;proj.client_name=document.getElementById('projectDataClientName')?.value.trim()||'';proj.client_email=email;proj.client_phone=document.getElementById('projectDataClientPhone')?.value.trim()||'';proj.client_address=document.getElementById('projectDataClientAddress')?.value.trim()||'';proj.start_date=document.getElementById('projectDataStartDate')?.value||'';proj.deadline_date=document.getElementById('projectDataDeadline')?.value||'';proj.payment_due_date=proj.deadline_date;proj.invoice_due_date=proj.deadline_date;
+          proj.title=name;proj.client_name=document.getElementById('projectDataClientName')?.value.trim()||'';proj.client_email=email;proj.client_phone=document.getElementById('projectDataClientPhone')?.value.trim()||'';proj.client_address=document.getElementById('projectDataClientAddress')?.value.trim()||'';proj.start_date=document.getElementById('projectDataStartDate')?.value||'';proj.deadline_date=document.getElementById('projectDataDeadline')?.value||'';
           const start=parseDateSafe(proj.start_date),due=parseDateSafe(proj.deadline_date),dateChanged=previousStart!==proj.start_date||previousDeadline!==proj.deadline_date,rushCalc=pricingVersionForProject(proj)==='v2'?calculateRushForProject(proj,proj.start_date,proj.deadline_date):calculateRushFromTimeline(proj.start_date,proj.deadline_date);
           if(dateChanged&&start&&due){proj.rush_days_early=rushCalc.daysEarly;proj.rush_fee=rushCalc.fee;if(Array.isArray(proj.project_items)&&proj.project_items.length)recalculateProjectFromOrderItems(proj);}
           const autoPriority=Number(proj.rush_fee||0)>0||Number(proj.rush_days_early||0)>0||!!(start&&due&&Math.ceil((due-start)/86400000)<14);
@@ -8217,32 +8217,38 @@ ${description}`))actionCallback();return;}
         const items=getProjectListedOrderItems(proj);
         const listedSubtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price??item.unit_price??0))*Math.max(1,Number(item.qty??item.quantity??1)),0);
         const itemsSubtotal=items.length?listedSubtotal:Number(proj.subtotal_amount||0);
-        const maintenance=storedOrAutomaticMaintenanceFee(proj,items,itemsSubtotal);
-        if(maintenance>0&&Math.max(0,Number(proj.system_maintenance_fee||0))!==maintenance)proj.system_maintenance_fee=maintenance;
-        const workloadSurcharge=resolvedWorkloadSurcharge(proj);
+        const maintenance=Math.max(0,Number(proj.system_maintenance_fee||storedOrAutomaticMaintenanceFee(proj,items,itemsSubtotal)||0));
+        const workloadSurcharge=Math.max(0,Number(proj.workload_surcharge||resolvedWorkloadSurcharge(proj)||0));
         const otherFees=Array.isArray(proj.additional_fees)?proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0):0;
         const discounts=Math.max(0,Number(proj.discount_amount||0));
-        const knownAdditional=Math.max(0,Number(proj.rush_fee||0))+workloadSurcharge+maintenance+otherFees;
-        const storedAdditional=Math.max(0,Number(proj.total_amount||0)-itemsSubtotal+discounts);
-        const additionalCharges=Math.max(knownAdditional,storedAdditional);
-        const total=Math.max(0,itemsSubtotal+additionalCharges-discounts);
-        if(total>Number(proj.total_amount||0)+0.005){proj.total_amount=total;proj.pending_amount=Math.max(0,total-getProjectPaid(proj));persistProjectsState();scheduleProjectStructureSync(proj,120);}
+        const rushFee=Math.max(0,Number(proj.rush_fee||0));
+        const calculatedBase=Math.max(0,itemsSubtotal+rushFee+workloadSurcharge+maintenance+otherFees-discounts);
+        const baseTotal=Math.max(0,Number(proj.total_amount||calculatedBase));
+        const lateFees=Math.max(0,Number(proj.late_fee_total||0));
+        const total=baseTotal+lateFees;
         const payments=(proj.payments||[]).filter(p=>!p.deleted_at).slice();
         const totalPaid=payments.reduce((sum,p)=>sum+Number(p.amount_paid||p.amount||0),0);
         const remaining=Math.max(0,total-totalPaid);
-        const rawStatus=getInvoiceStatus(proj,remaining);
+        const backendStatus=String(proj.financial_status||'').trim().toUpperCase();
+        const rawStatus=backendStatus||getInvoiceStatus(proj,remaining);
         const status=rawStatus==='DOWNPAYMENT'?'PARTIALLY PAID':rawStatus;
-        const statusClass=status==='PAID'?'paid':status==='OVERDUE'?'overdue':status==='PARTIALLY PAID'?'partial':'unpaid';
+        const statusClass=status==='PAID'?'paid':status==='OVERDUE'?'overdue':status==='GRACE PERIOD'?'partial':status==='PAYMENT UNDER REVIEW'?'partial':status==='PARTIALLY PAID'?'partial':'unpaid';
+        const due=proj.payment_due_date?parseDateSafe(proj.payment_due_date):null;
+        const grace=proj.grace_period_end?parseDateSafe(proj.grace_period_end):null;
         if(overviewEl)overviewEl.innerHTML=`
-          <div class="payment-status-card ${statusClass}"><div><span>Payment Status</span><strong>${escapeHtml(status)}</strong></div><div class="payment-status-balance"><span>Balance Due</span><strong>${formatCurrency(remaining)}</strong></div></div>
+          <div class="payment-status-card ${statusClass}"><div><span>Payment Status</span><strong>${escapeHtml(status)}</strong><small>${due?'Due '+due.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'Due date will be set by the project lifecycle'}</small></div><div class="payment-status-balance"><span>Balance Due</span><strong>${formatCurrency(remaining)}</strong></div></div>
           <div class="payment-modular-grid">
             <div class="payment-metric-card"><span>Items Subtotal</span><strong>${formatCurrency(itemsSubtotal)}</strong></div>
-            <div class="payment-metric-card"><span>Additional Charges</span><strong>${formatCurrency(additionalCharges)}</strong></div>
+            <div class="payment-metric-card"><span>Rush Fee</span><strong>${formatCurrency(rushFee)}</strong></div>
+            <div class="payment-metric-card"><span>Other Charges</span><strong>${formatCurrency(workloadSurcharge+maintenance+otherFees)}</strong></div>
             <div class="payment-metric-card"><span>Discounts</span><strong>${formatCurrency(discounts)}</strong></div>
-            <div class="payment-metric-card"><span>Total</span><strong>${formatCurrency(total)}</strong></div>
+            <div class="payment-metric-card"><span>Base Total</span><strong>${formatCurrency(baseTotal)}</strong></div>
+            <div class="payment-metric-card ${lateFees>0?'due':''}"><span>Overdue Fees</span><strong>${formatCurrency(lateFees)}</strong></div>
+            <div class="payment-metric-card"><span>Current Total</span><strong>${formatCurrency(total)}</strong></div>
             <div class="payment-metric-card paid"><span>Amount Paid</span><strong>${formatCurrency(totalPaid)}</strong></div>
             <div class="payment-metric-card ${remaining>0?'due':'paid'}"><span>Balance Due</span><strong>${formatCurrency(remaining)}</strong></div>
-          </div>`;
+          </div>
+          <div class="payment-backend-note">Backend-enforced status · ${grace?'Grace period through '+grace.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'No grace-period date assigned'}</div>`;
         if(listEl){
           if(!payments.length){listEl.innerHTML='<div class="payment-history-empty"><strong>No payments recorded</strong><span>Recorded payments will appear here.</span></div>';return;}
           payments.sort((a,b)=>new Date(b.payment_date||b.created_at||0)-new Date(a.payment_date||a.created_at||0));
@@ -8251,7 +8257,7 @@ ${description}`))actionCallback();return;}
         animateNumbersIn(overviewEl);
       }
 
-      /* ==========================================================================
+========================================================================
          INVOICE GENERATOR & EMAIL REMINDERS
          ========================================================================== */
       function renderInvoicePaper(proj) {
