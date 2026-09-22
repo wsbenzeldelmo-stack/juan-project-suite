@@ -318,7 +318,7 @@ export default async function handler(req,res){
       const [submissions,settings,projects,deliverables,payments]=await Promise.all([
         svc.from('payment_submissions').select('*').order('submitted_at',{ascending:false}).limit(100),
         svc.from('payment_settings').select('*').eq('id',1).maybeSingle(),
-        svc.from('projects').select('id,title,client_id,project_code,status,total_amount,deadline_date,drive_url,drive_unlock_at,drive_expires_at').order('project_code',{ascending:true,nullsFirst:false}),
+        svc.from('projects').select('id,title,client_id,project_code,status,total_amount,late_fee_total,financial_status,payment_due_date,grace_period_end,overdue_started_at,deadline_date,drive_url,drive_unlock_at,drive_expires_at').order('project_code',{ascending:true,nullsFirst:false}),
         svc.from('deliverables').select('id,project_id,item_name,client_visible,due_date,completed').order('project_id'),
         svc.from('payments').select('id,project_id,amount_paid,reference_no')
       ]);
@@ -342,7 +342,7 @@ export default async function handler(req,res){
         const duplicatePayment=(payments.data||[]).some(pay=>sanitizeReference(pay.reference_no).toLowerCase()===normalized.toLowerCase()&&normalized);
         const project=(projects.data||[]).find(p=>String(p.id)===String(submission.project_id));
         const paid=(payments.data||[]).filter(p=>String(p.project_id)===String(submission.project_id)).reduce((sum,p)=>sum+Number(p.amount_paid||0),0);
-        const balance=Math.max(0,Number(project?.total_amount||0)-paid);
+        const balance=Math.max(0,Number(project?.total_amount||0)+Number(project?.late_fee_total||0)-paid);
         if(duplicateSubmission||duplicatePayment)verification.checks.push({code:'duplicate',label:'Duplicate reference',ok:false,message:'This reference number is already used by another payment.'});
         else verification.checks.push({code:'duplicate',label:'Duplicate reference',ok:true,message:'Passed'});
         if(Number(submission.submitted_amount||0)>balance+0.01)verification.checks.push({code:'balance',label:'Current balance',ok:false,message:`Submitted amount is greater than the current balance (${balance.toFixed(2)}).`});
@@ -464,6 +464,16 @@ export default async function handler(req,res){
       const upd=await svc.from('portal_accounts').update({portal_enabled:enabled,updated_at:new Date().toISOString()}).eq('auth_user_id',row.auth_user_id);
       if(upd.error)throw upd.error;
       return res.status(200).json({ok:true,enabled});
+    }
+
+    if(body.action==='issue-invoice'){
+      const projectId=String(body.projectId||body.project_id||'').trim();
+      if(!projectId)return res.status(400).json({error:'Project is required.'});
+      const issued=await svc.rpc('issue_juan_invoice',{p_project_id:projectId,p_admin_user:user.id});
+      if(issued.error)throw issued.error;
+      const invoice=await svc.from('invoices').select('*').eq('id',issued.data).single();
+      if(invoice.error)throw invoice.error;
+      return res.status(200).json({ok:true,invoice:invoice.data});
     }
 
     if(body.action==='review-payment'){
