@@ -61,18 +61,9 @@
     return '<section id="settings-'+id+'" class="jp-settings-segment '+(danger?"danger":"")+'" data-segment="'+id+'"><header class="jp-settings-segment-head"><h2>'+esc(title)+'</h2><p>'+esc(description||"")+'</p></header>'+content+'</section>';
   }
   function settingsNavIcon(id){
-    const paths={
-      profile:'<circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.8-4 3-6 6.5-6s5.7 2 6.5 6"></path>',
-      workspace:'<path d="M4 21V5h10v16"></path><path d="M14 9h6v12"></path><path d="M7 8h2M7 12h2M7 16h2M17 12h1M17 16h1"></path>',
-      database:'<ellipse cx="12" cy="5" rx="7" ry="3"></ellipse><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5"></path><path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"></path>',
-      appearance:'<path d="M4 20 16.5 7.5"></path><path d="m14 5 5 5"></path><path d="M6 18 4 20l2-5 10-10 3 3-10 10-3 0Z"></path>',
-      notifications:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path>',
-      data:'<path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v5h5"></path><path d="M10 12h5M10 16h5"></path>',
-      security:'<path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6z"></path><path d="m9.5 12 1.7 1.7 3.6-4"></path>',
-      about:'<circle cx="12" cy="12" r="9"></circle><path d="M12 10v6M12 7h.01"></path>',
-      danger:'<path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="m7 7 1 14h8l1-14"></path><path d="M10 11v6M14 11v6"></path>'
-    };
-    return '<span class="jp-settings-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(paths[id]||paths.about)+'</svg></span>';
+    const map={profile:'user',workspace:'building',database:'database',appearance:'appearance',notifications:'bell',data:'file',security:'shieldCheck',about:'info',danger:'trash'};
+    const icon=window.JuanWorkspaceIcon?window.JuanWorkspaceIcon(map[id]||'info'):'';
+    return '<span class="jp-settings-nav-icon" aria-hidden="true">'+icon+'</span>';
   }
   function setSettingsDirty(dirty=true){
     settingsDirty=!!dirty;
@@ -137,8 +128,8 @@
 
     const database=section("database","Database & Sync","Manage the live Supabase connection and Workspace synchronization.",
       '<div class="jp-ref-card jp-db-status-card"><div><h3>Database status</h3><div class="jp-db-state"><i class="'+(connected?"live":"offline")+'"></i><strong>'+(connected?"Connected":"Disconnected")+'</strong>'+(connected?'<span>LIVE</span>':'')+'</div><p>'+(connected?"Workspace is reading and writing directly to Supabase.":"Sign in to connect Workspace to Supabase.")+'</p></div><button class="btn btn-secondary" id="jpTestDb">Test connection</button></div>'+
-      '<div class="jp-ref-two-col"><div class="jp-ref-card"><h3>Connection</h3><div class="jp-ref-key-values"><div><span>Provider</span><b>Supabase</b></div><div><span>Project</span><b>JUAN PROJECT Production</b></div><div><span>Last successful sync</span><b>'+esc(lastSyncText)+'</b></div></div><div class="jp-credential-note">Deployment credentials are managed through Vercel and are never displayed in Workspace.</div><div class="jp-settings-button-row"><button class="btn btn-secondary" id="jpReconnectDb">Reconnect</button><button class="btn btn-danger" id="jpDisconnectDb">Disconnect</button></div></div>'+
-      '<div class="jp-ref-card"><h3>Synchronization</h3><div class="jp-sync-summary"><strong>'+(connected?"All data synced":"Sync unavailable")+'</strong><small>Projects, clients, invoices, payments, and orders use the shared production database.</small></div><button class="btn btn-secondary btn-block" id="jpSyncNow">Sync now</button></div></div>'+
+      '<div class="jp-ref-two-col"><div class="jp-ref-card"><h3>Connection</h3><div class="jp-ref-key-values"><div><span>Provider</span><b>Supabase</b></div><div><span>Project</span><b>JUAN PROJECT Production</b></div><div><span>Last successful sync</span><b>'+esc(lastSyncText)+'</b></div></div><div class="jp-credential-note">Deployment credentials are managed through Vercel and are never displayed in Workspace.</div><div class="jp-settings-button-row">'+(connected?'<button class="btn btn-danger" id="jpDisconnectDb">Disconnect</button>':'<button class="btn btn-primary" id="jpReconnectDb">Sign In &amp; Connect</button>')+'</div></div>'+
+      '<div class="jp-ref-card"><h3>Synchronization</h3><div class="jp-sync-summary"><strong>'+(connected?"All data synced":"Sync unavailable")+'</strong><small>'+(connected?"Projects, clients, invoices, payments, and orders use the shared production database.":"Connect to Supabase before syncing Workspace data.")+'</small></div><button class="btn btn-secondary btn-block" id="jpSyncNow" '+(connected?'':'disabled')+'>Sync now</button></div></div>'+
       '<div class="jp-ref-card"><h3>Connection behavior</h3><div class="jp-settings-toggle-list">'+toggleRow("Reconnect automatically","reconnectAutomatically",p.reconnectAutomatically)+toggleRow("Show connection status in sidebar","showConnectionSidebar",p.showConnectionSidebar)+toggleRow("Notify me when sync fails","notifySyncFailure",p.notifySyncFailure)+'</div></div>');
 
     const appearance=section("appearance","Appearance","Personalize how JUAN PROJECT Workspace looks and feels.",
@@ -205,7 +196,7 @@
       ["profile","Profile"],["workspace","Workspace"],["database","Database & Sync"],["appearance","Appearance"],["notifications","Notifications"],["data","Data Management"],["security","Security"],["about","About"],["danger","Danger Zone"]
     ];
     const navHtml=navItems.map(([id,label])=>(id==="danger"?'<div class="jp-settings-nav-divider"></div>':'')+'<button type="button" role="tab" class="jp-settings-nav-item '+(id==="danger"?"danger":"")+'" data-settings-tab="'+id+'" aria-controls="settings-'+id+'" aria-selected="false" tabindex="-1"><span class="jp-settings-nav-mark" aria-hidden="true"></span>'+settingsNavIcon(id)+'<span class="jp-settings-nav-label">'+esc(label)+'</span>'+(id==="database"&&!connected?'<small>Sign in</small>':'')+'</button>').join("");
-    view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><span class="jp-settings-search-icon" aria-hidden="true">⌕</span><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
+    view.innerHTML='<header class="jp-settings-header"><div><span class="section-kicker">PREFERENCES</span><h1>Settings</h1><p>Manage your Workspace profile, preferences, and system settings.</p></div><div class="jp-settings-search-wrap"><span class="jp-settings-search-icon" aria-hidden="true">'+(window.JuanWorkspaceIcon?window.JuanWorkspaceIcon('search'):'')+'</span><input id="jpSettingsSearch" class="form-control" placeholder="Search settings" autocomplete="off"><div id="jpSettingsSearchResults" class="jp-settings-search-results"></div></div></header>'+
       '<div class="jp-settings-layout"><aside id="jpSettingsSegments" class="jp-settings-navigation" role="tablist" aria-label="Settings sections">'+navHtml+'</aside><section class="jp-settings-content" aria-live="polite"><div class="jp-settings-scroll">'+profile+workspace+database+appearance+notifications+data+security+about+danger+'</div><footer id="jpSettingsActionBar" class="jp-settings-action-bar"><span id="jpSettingsDirtyState">No unsaved changes</span><div><button class="btn btn-secondary" id="jpSettingsDiscard" disabled>Discard</button><button class="btn btn-primary" id="jpSettingsSave" disabled>Save changes</button></div></footer></section></div>';
     settingsBuilt=true;settingsDirty=false;bindSettingsTabs();try{bindSettings();}catch(e){console.error("Settings control binding failed:",e);toast("Some Settings controls could not be initialized.");}
   }
