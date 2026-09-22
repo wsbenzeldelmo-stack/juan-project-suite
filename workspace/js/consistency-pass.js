@@ -525,7 +525,11 @@
         const active=$(".view.active");if(active?.id==="view-project-details"){e.preventDefault();const st=window.app.getWorkspaceState();Promise.allSettled([window.app.saveProjectData({silent:false}),saveProjectFilesSilent(st.activeProjectId),saveProjectNotesSilent(st.activeProjectId)]);}
       }
     },true);
-    new MutationObserver(()=>{cleanRootText();portalPolish();overviewPolish();}).observe(document.body,{childList:true,subtree:true});
+    window.addEventListener('juan:realtime-sync',()=>requestAnimationFrame(()=>{
+      const active=document.querySelector('.view.active')?.id||'';
+      if(active==='view-online-portal')portalPolish();
+      if(active==='view-my-works')overviewPolish();
+    }));
   }
   later(install);
 })();
