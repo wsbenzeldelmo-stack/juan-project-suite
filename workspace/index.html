@@ -7924,7 +7924,7 @@ ${description}`))actionCallback();return;}
           persistClientsState();persistProjectsState();
           const titleEl=document.getElementById('projDetailTitle'),clientEl=document.getElementById('projDetailClient');
           if(titleEl)titleEl.innerText=proj.title;if(clientEl)clientEl.innerText=[formatProjectId(proj),proj.client_email||'No email'].join('  |  ');
-          renderProjects();renderOverviewDashboard();if(state.activeView==='clients')renderClients();
+          // Keep autosave local to Project Details. Other views render fresh when opened.
           setProjectDataAutosaveStatus('Saved to Supabase','saved');
           if(!silent)showToast('Project data saved to Supabase.');
         }finally{projectDataAutosaveBusy=false;}
