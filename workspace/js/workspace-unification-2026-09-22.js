@@ -87,7 +87,7 @@ async function enhanceFinancialHistory(){
   try{
     const data=await getProjectFinancialHistory(p.id);if(!data)return;
     if(card.dataset.projectId!==String(p.id))return;
-    const ledger=data.ledger||[],invoices=data.invoices||[],body=card.querySelector('.jp-financial-ledger-body');
+    const ledger=data.ledger||[],invoices=data.invoices||[],notifications=data.notifications||[],body=card.querySelector('.jp-financial-ledger-body');
     body.innerHTML=
       '<div class="jp-ledger-summary">'+
         '<div><span>Ledger Entries</span><b>'+ledger.length+'</b></div>'+
@@ -99,7 +99,10 @@ async function enhanceFinancialHistory(){
       ).join('')+'</div>':'<div class="jp-history-empty">No financial ledger entries yet.</div>')+
       (invoices.length?'<div class="jp-issued-invoices"><h4>Invoice Snapshots</h4>'+invoices.slice(0,6).map(inv=>
         '<div class="jp-invoice-snapshot-row"><div><strong>'+esc(inv.invoice_number)+'</strong><small>'+date(inv.issued_at)+' · '+esc(inv.status||'issued')+'</small></div><div><b>'+peso(inv.total)+'</b><small>Balance '+peso(inv.balance)+'</small></div></div>'
-      ).join('')+'</div>':'');
+      ).join('')+'</div>':'')+
+      (notifications.length?'<div class="jp-client-events"><h4>Client & Payment Events</h4><div class="jp-client-event-list">'+notifications.slice(0,10).map(n=>
+        '<div class="jp-client-event"><i class="jp-client-event-dot '+esc(n.severity||'info')+'"></i><div class="jp-client-event-copy"><strong>'+esc(n.title||n.type||'Event')+'</strong><small>'+esc(n.body||'')+'</small></div><time>'+date(n.created_at)+'</time></div>'
+      ).join('')+'</div></div>':'');
     card.dataset.loaded='1';
   }catch(e){
     const body=card.querySelector('.jp-financial-ledger-body');if(body)body.innerHTML='<div class="jp-history-empty">Financial history could not be loaded.</div>';
