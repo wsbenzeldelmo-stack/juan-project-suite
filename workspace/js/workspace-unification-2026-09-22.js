@@ -56,10 +56,71 @@ function cleanEscapedText(scope=document){
   const w=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT);const nodes=[];while(w.nextNode())nodes.push(w.currentNode);
   nodes.forEach(n=>{if(/\\n|\/n/.test(n.nodeValue||'')){n.nodeValue=n.nodeValue.replace(/\\n|\/n/g,' ');n.parentElement?.classList.add('jp-cleaned-escaped-newline')}});
 }
-function enhanceModals(){
-  document.querySelectorAll('[role="dialog"],.modal,.jp-suite-modal,.suite-panel').forEach(d=>{enhanceProjectDialog(d);enhancePaymentReview(d)});
+function activeProject(){
+  const st=state(),id=st.activeProjectId;
+  return (st.projects||[]).find(p=>String(p.id)===String(id))||null;
 }
-function run(){normalizeTables();cleanEscapedText();enhanceModals()}
+function enhanceProjectPage(){
+  const view=document.querySelector('#view-project-details.active');if(!view)return;
+  const p=activeProject();if(!p)return;
+  let panel=document.getElementById('jpProjectFinanceSummary');
+  const wrap=document.createElement('div');wrap.innerHTML=financeHTML(p);
+  const fresh=wrap.firstElementChild;fresh.id='jpProjectFinanceSummary';
+  if(panel) panel.replaceWith(fresh);
+  else{
+    const progress=document.getElementById('projectOverallProgress');
+    const tabs=view.querySelector('.project-details-tabs');
+    if(progress)progress.after(fresh);else if(tabs)tabs.before(fresh);
+  }
+  enhanceInvoiceActions(p);
+}
+async function issueInvoiceSnapshot(project){
+  const rt=window.JuanSuiteRuntime;
+  if(!rt?.request)throw new Error('Workspace API is not ready.');
+  const out=await rt.request('/api/suite',{action:'issue-invoice',project_id:project.id});
+  window.showToast?.('Invoice snapshot issued'+(out?.invoice?.invoice_number?' · '+out.invoice.invoice_number:'')+'.');
+  return out;
+}
+function enhanceInvoiceActions(p){
+  const tab=document.getElementById('projTab-invoice'),bar=tab?.querySelector('.invoice-actions-bar');if(!bar||!p)return;
+  let btn=document.getElementById('jpIssueInvoiceSnapshot');
+  if(!btn){
+    btn=document.createElement('button');btn.id='jpIssueInvoiceSnapshot';btn.className='btn btn-secondary btn-sm';
+    const icon=window.JuanWorkspaceIcon?.('file','sm')||'';
+    btn.innerHTML=icon+'<span>Issue Snapshot</span>';
+    bar.prepend(btn);
+  }
+  btn.onclick=async()=>{
+    if(btn.disabled)return;btn.disabled=true;
+    const old=btn.innerHTML;btn.textContent='Issuing…';
+    try{await issueInvoiceSnapshot(p)}catch(e){window.showToast?.(e?.message||String(e))}
+    finally{btn.disabled=false;btn.innerHTML=old;}
+  };
+}
+function enhancePaymentsPage(){
+  const view=document.querySelector('#view-payments.active');if(!view)return;
+  view.querySelectorAll('tbody tr').forEach(row=>{
+    if(row.dataset.jpFinancialRow==='1')return;
+    row.dataset.jpFinancialRow='1';
+    const cells=[...row.cells];if(cells.length<8)return;
+    const statusCell=cells[7],text=(statusCell?.textContent||'').trim().toUpperCase();
+    if(!text)return;
+    statusCell.classList.add('jp-financial-status-cell',statusClass(text));
+  });
+}
+function enhanceSettingsPage(){
+  const view=document.querySelector('#view-settings.active');if(!view)return;
+  view.querySelectorAll('.jp-settings-segment').forEach(seg=>seg.setAttribute('tabindex','-1'));
+}
+function enhanceModals(){
+  document.querySelectorAll('[role="dialog"],.modal,.jp-suite-modal,.suite-panel,.modal-card').forEach(d=>{enhanceProjectDialog(d);enhancePaymentReview(d)});
+}
+function run(){
+  normalizeTables();cleanEscapedText();enhanceModals();enhanceProjectPage();enhancePaymentsPage();enhanceSettingsPage();
+}
 const mo=new MutationObserver(()=>requestAnimationFrame(run));mo.observe(document.documentElement,{subtree:true,childList:true});
-document.addEventListener('DOMContentLoaded',run);setTimeout(run,500);setTimeout(run,1800);
+document.addEventListener('DOMContentLoaded',run);
+document.addEventListener('click',()=>setTimeout(run,0),true);
+setInterval(()=>{if(document.hidden)return;enhanceProjectPage();enhancePaymentsPage()},2500);
+setTimeout(run,500);setTimeout(run,1800);
 })();
