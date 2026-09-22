@@ -223,3 +223,150 @@ body{overflow-x:hidden!important}
 .jp-issued-invoices .jp-invoice-snapshot-row{border:1px solid var(--jp-border);border-radius:12px}
 .jp-history-loading,.jp-history-empty{padding:18px;border:1px dashed var(--jp-border);border-radius:14px;color:var(--jp-muted);font-size:11px;text-align:center}
 @media(max-width:900px){.jp-ledger-summary{grid-template-columns:1fr}}
+
+
+/* 2026-09-23 continuation: project details, payment states, event timeline */
+#view-project-details .page-header{
+  margin-bottom:16px!important;
+}
+#view-project-details .project-overall-progress{
+  margin-bottom:16px!important;
+}
+#view-project-details .project-details-tabs{
+  margin-bottom:24px!important;
+  padding:4px!important;
+  border-radius:14px!important;
+  background:#f4f6f5!important;
+}
+#view-project-details .project-details-tabs .tab-btn{
+  border:0!important;
+  min-height:38px!important;
+  padding:0 14px!important;
+  background:transparent!important;
+  font-size:11px!important;
+  font-weight:650!important;
+}
+#view-project-details .project-details-tabs .tab-btn.active{
+  background:#fff!important;
+  box-shadow:0 1px 5px rgba(15,23,42,.06)!important;
+}
+#view-project-details .tab-content>.card,
+#view-project-details .project-data-card,
+#view-project-details .project-items-receipt-card{
+  border:1px solid var(--jp-border)!important;
+  box-shadow:none!important;
+}
+#view-project-details .payment-modular-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+#view-project-details .payment-metric-card{
+  min-height:84px!important;
+  border:1px solid var(--jp-border)!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  background:#fff!important;
+}
+#view-project-details .payment-metric-card span{font-size:9px!important}
+#view-project-details .payment-metric-card strong{font-size:15px!important}
+#view-project-details .payment-status-card{
+  border-radius:18px!important;
+  padding:18px!important;
+  margin-bottom:16px!important;
+}
+#view-project-details .payment-status-card.overdue{border-color:#f3c7c3!important;background:#fff8f7!important}
+#view-project-details .payment-status-card.partial{border-color:#f0ddb3!important;background:#fffdf7!important}
+#view-project-details .payment-status-card.paid{border-color:#bde8d2!important;background:#f7fffb!important}
+
+/* Backend financial event timeline */
+.jp-client-events{
+  border-top:1px solid var(--jp-border);
+  padding-top:16px;
+}
+.jp-client-events h4{
+  margin:0 0 8px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--jp-muted);
+}
+.jp-client-event-list{
+  border:1px solid var(--jp-border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.jp-client-event{
+  display:grid;
+  grid-template-columns:10px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:start;
+  padding:11px 13px;
+  border-bottom:1px solid var(--jp-border);
+}
+.jp-client-event:last-child{border-bottom:0}
+.jp-client-event-dot{
+  width:8px;height:8px;border-radius:999px;background:#9aa3a0;margin-top:4px;
+}
+.jp-client-event-dot.success{background:#19ba75}
+.jp-client-event-dot.warning{background:#d99a22}
+.jp-client-event-dot.error{background:#d34a40}
+.jp-client-event-copy{display:grid;gap:2px;min-width:0}
+.jp-client-event-copy strong{font-size:11px}
+.jp-client-event-copy small{font-size:9px;color:var(--jp-muted);line-height:1.35}
+.jp-client-event time{font-size:9px;color:var(--jp-muted);white-space:nowrap}
+
+/* Payments list status semantics */
+#view-payments .badge{
+  border-radius:999px!important;
+  padding:5px 9px!important;
+  font-size:9px!important;
+  font-weight:750!important;
+}
+#view-payments .badge-red{background:#fee9e9!important;color:#b42318!important}
+#view-payments .badge-orange{background:#fff3d6!important;color:#8a6400!important}
+#view-payments .badge-green{background:#e8f8f0!important;color:#087c4a!important}
+
+/* Invoice snapshot presentation */
+#projTab-invoice .invoice-actions-bar{
+  position:sticky;
+  top:0;
+  z-index:5;
+  padding:8px 0;
+  background:var(--bg-page,#f7f8f7);
+}
+#projTab-invoice .invoice-paper{
+  border-radius:18px!important;
+  overflow:hidden!important;
+  box-shadow:0 8px 30px rgba(15,23,42,.06)!important;
+}
+
+/* Settings: maintain one-segment-at-a-time desktop layout */
+#view-settings .jp-settings-layout{
+  min-height:0!important;
+  height:calc(100dvh - 124px)!important;
+}
+#view-settings .jp-settings-navigation{
+  align-self:stretch!important;
+  overflow:auto!important;
+}
+#view-settings .jp-settings-content{
+  height:100%!important;
+}
+#view-settings .jp-settings-scroll{
+  padding-bottom:88px!important;
+}
+
+/* Modal close remains outside top-right and never clips */
+.modal-card,.jp-suite-modal,.suite-panel,.jp-settings-modal{
+  overflow:visible!important;
+}
+.jp-settings-modal-x{
+  position:absolute!important;
+  top:-16px!important;
+  right:-16px!important;
+  left:auto!important;
+}
+@media(max-width:1100px){
+  #view-project-details .payment-modular-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
