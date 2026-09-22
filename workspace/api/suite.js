@@ -385,14 +385,14 @@ export default async function handler(req,res){
       await audit(svc,'Order '+status,o.code,user.id);return res.status(200).json({ok:true});
     }
     if(action==='approve-order'){
-      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
-      if(!o||o.project_id||o.archived_at)fail('Order request is missing, archived, or already converted.');
-      const normalizedEmail=String(o.email||'').trim().toLowerCase();
-      let {data:client,error:ce}=await svc.from('clients').select('*').eq('email',normalizedEmail).limit(1).maybeSingle();if(ce)throw ce;
-      if(!client){const created=await svc.from('clients').insert({id:randomUUID(),name:o.name,email:normalizedEmail,phone:o.phone||null}).select('*').single();if(created.error)throw created.error;client=created.data}
-      const {data:updated,error:ue}=await svc.from('incoming_orders').update({status:'Approved',approved_at:now(),client_id:client.id,review_note:String(b.note||o.review_note||'')}).eq('id',o.id).select('*').single();
-      if(ue)throw ue;await audit(svc,'Order approved for entry',o.code,user.id);
-      return res.status(200).json({order:safeOrder(updated),client});
+      const {data:approved,error}=await svc.rpc('approve_juan_order_request',{p_order_id:b.id,p_admin_user:user.id,p_note:String(b.note||'')});
+      if(error)throw error;
+      const [{data:client,error:ce},{data:o,error:oe}]=await Promise.all([
+        svc.from('clients').select('*').eq('id',approved.client_id).single(),
+        svc.from('incoming_orders').select('*').eq('id',approved.order_id).single()
+      ]);
+      if(ce)throw ce;if(oe)throw oe;
+      return res.status(200).json({order:safeOrder(o),client});
     }
     if(action==='archive-order'){
       const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;if(!o)fail('Order not found.',404);
@@ -401,14 +401,23 @@ export default async function handler(req,res){
       await audit(svc,'Order archived',o.code,user.id);return res.status(200).json({ok:true});
     }
     if(action==='link-order-project'){
-      const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.order_id).maybeSingle();if(error)throw error;if(!o)fail('Order request not found.',404);
-      const {data:p,error:pe}=await svc.from('projects').select('id,client_id,project_code,source_order_id').eq('id',b.project_id).maybeSingle();if(pe)throw pe;if(!p)fail('Project not found.',404);
-      if(o.client_id&&String(o.client_id)!==String(p.client_id))fail('Order request and project client do not match.');
-      const proj=await svc.from('projects').update({source_order_id:o.id}).eq('id',p.id);if(proj.error)throw proj.error;
-      const updated=await svc.from('incoming_orders').update({status:'Project Created',project_id:p.id,client_id:p.client_id,converted_at:now()}).eq('id',o.id).select('*').single();if(updated.error)throw updated.error;
-      await audit(svc,'Order converted to project',o.code,user.id);return res.status(200).json({order:safeOrder(updated.data),project:p});
+      const {data:linked,error}=await svc.rpc('link_juan_order_project',{p_order_id:b.order_id,p_project_id:b.project_id,p_admin_user:user.id});
+      if(error)throw error;
+      const [{data:o,error:oe},{data:p,error:pe}]=await Promise.all([
+        svc.from('incoming_orders').select('*').eq('id',linked.order_id).single(),
+        svc.from('projects').select('*').eq('id',linked.project_id).single()
+      ]);
+      if(oe)throw oe;if(pe)throw pe;
+      return res.status(200).json({order:safeOrder(o),project:p});
     }
     if(action==='convert')fail('Direct conversion is disabled. Approve the request, preload it into New Order, then create the project.',409);
+    if(action==='issue-invoice'){
+      const projectId=String(b.project_id||b.projectId||'').trim();if(!projectId)fail('Project is required.');
+      const {data,error}=await svc.rpc('issue_juan_invoice',{p_project_id:projectId,p_admin_user:user.id});
+      if(error)throw error;
+      const invoice=await svc.from('invoices').select('*').eq('id',data).single();if(invoice.error)throw invoice.error;
+      return res.status(200).json({ok:true,invoice:invoice.data});
+    }
     if(action==='review-payment'){
       const decision=String(b.decision||b.status||'');const reason=String(b.reason||b.note||'');
       const {data,error}=await svc.rpc('review_juan_payment_submission',{p_submission_id:b.id||b.submissionId,p_decision:decision,p_admin_user:user.id,p_reason:reason||null});
@@ -420,7 +429,7 @@ export default async function handler(req,res){
       if('tracker_stage'in u){
         const stage=Number(u.tracker_stage);if(!Number.isInteger(stage)||stage<0||stage>=STAGES.length)fail('Invalid project stage.');
         patch.tracker_stage=stage;patch.milestones=[...(Array.isArray(p.milestones)?p.milestones:[]),{stage,at:now()}];
-        patch.status=stage===6?'Completed':'In Progress';patch.delivery_status=stage===6?'Delivered':'Pending';
+        patch.status=stage>=6?'Completed':'In Progress';patch.delivery_status=stage===7?'Delivered':'Pending';
       }
       if(patch.drive_url&&!/^https:\/\/(drive|docs)\.google\.com\//i.test(patch.drive_url))fail('Use a Google Drive URL.');
       const up=await svc.from('projects').update(patch).eq('id',p.id);if(up.error)throw up.error;
