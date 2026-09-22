@@ -59,23 +59,29 @@
     page.dataset.jpV2="1";
     const head=$(".dashboard-head",page),projects=state().portal?.projects||[],profile=state().portal?.profile||{};
     const due=projects.reduce((s,p)=>s+Math.max(0,Number(p.balance||0)),0),firstDue=projects.find(p=>Number(p.balance||0)>0);
+
+    function dueMeta(project){
+      if(!project)return null;
+      const raw=project.payment_due_date||project.balance_due_date||project.due_date||project.deadline_date||null;
+      if(!raw)return null;
+      const d=new Date(raw); if(Number.isNaN(d.getTime()))return null;
+      const today=new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
+      const days=Math.floor((today-d)/86400000);
+      let label="Due",cls="normal";
+      if(days>0&&days<=3){label="Grace Period";cls="grace";}
+      else if(days>3){label="Overdue";cls="overdue";}
+      else if(days===0){label="Due Today";cls="due";}
+      return {date:d,label,cls};
+    }
+
     if(head){
       head.classList.add("jp-home-head-fixed");
       const identity=$("h1",head),subtitle=$("p",head);
       if(identity){identity.textContent=profile.email||profile.name||"Client";identity.title=identity.textContent;}
       subtitle?.remove();
-
-      const balanceHead=document.createElement("div");
-      balanceHead.className="section-head jp-home-balance-head";
-      balanceHead.innerHTML="<h2>Balance</h2>";
-      const wallet=document.createElement("section");
-      wallet.className="jp-home-wallet";
-      wallet.innerHTML='<div><strong>'+peso(due)+'</strong><small>Across active projects</small></div><button id="jpHomePayNow" '+(due<=0?"disabled":"")+'>Pay Now</button>';
-      head.after(balanceHead,wallet);
-      $("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
     }
 
-    const quick=$(".jp-quick-actions",page),heads=$(".section-head",page);
+    const heads=$$(".section-head",page);
     const activeHead=heads.find(h=>$("h2",h)?.textContent.trim()==="Active Project");
     const activeCard=activeHead?.nextElementSibling;
     if(activeHead){
@@ -83,30 +89,33 @@
       activeHead.classList.add("jp-home-project-head");
     }
     if(activeCard)activeCard.classList.add("jp-home-project-card");
-    if(head&&activeHead&&activeCard)head.after(activeHead,activeCard);
 
-    const quickHead=$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
-    if(quick){
-      quick.classList.remove("jp-home-four-actions","jp-home-five-actions");
-      quick.classList.add("jp-home-three-actions");
-      [["clientStartOrder","New Order"],["clientTrackRequest","Track Order"]].forEach(([id,label])=>{
-        const x=$("#"+id,quick);if(x){$("b",x).textContent=label;$("small",x)?.remove();}
-      });
-      const oldThird=$("#clientCardAction",quick);
-      if(oldThird){
-        const files=document.createElement("button");
-        files.className=oldThird.className;
-        files.id="clientFilesAction";
-        files.innerHTML='<span class="ui-icon jp-files-icon" aria-hidden="true">▱</span><b>View Files</b>';
-        oldThird.replaceWith(files);
-        files.onclick=()=>{const p=(state().portal?.projects||[]).find(x=>x.drive_url);if(p?.drive_url)window.open(p.drive_url,"_blank","noopener");else{$('.nav [data-r="orders"]')?.click();}};
+    const quick=$(".jp-quick-actions",page);
+    const quickHead=$$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Quick Actions");
+    quick?.remove();
+    quickHead?.remove();
+
+    const balanceHead=document.createElement("div");
+    balanceHead.className="section-head jp-home-balance-head";
+    balanceHead.innerHTML="<h2>Balance</h2>";
+    const wallet=document.createElement("section");
+    wallet.className="jp-home-wallet";
+    const dm=dueMeta(firstDue);
+    const dueRow=dm?'<div class="jp-home-due-row"><span>Due '+esc(dm.date.toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}))+'</span><b class="jp-due-tag '+dm.cls+'">'+esc(dm.label)+'</b></div>':"";
+    wallet.innerHTML='<div class="jp-home-wallet-copy"><strong>'+peso(due)+'</strong><small>Across active projects</small>'+dueRow+'</div><button id="jpHomePayNow" '+(due<=0?"disabled":"")+'>Pay Now</button>';
+
+    if(head){
+      if(activeHead&&activeCard){
+        head.after(activeHead,activeCard,balanceHead,wallet);
+      }else{
+        head.after(balanceHead,wallet);
       }
-      quickHead?.classList.add("jp-home-quick-head");
     }
+    $("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
 
     const recent=$$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Recent Activity");
     recent?.classList.add("jp-home-recent-head");
-    const ad=$("#jpAdBannerAnchor",page);if(ad)ad.classList.add("jp-home-bottom-ad");
+    const ad=$("#jpAdBannerAnchor",page);if(ad)ad.classList.add("jp-home-bottom-ad","jp-home-ad-sticky");
   }
 
   function enhanceGuestHome(){
@@ -145,10 +154,23 @@
       card.removeAttribute("role");card.removeAttribute("tabindex");
       const avatar=p.profile_photo_url?'<img src="'+esc(p.profile_photo_url)+'" alt="">':'<span>'+esc((p.name||p.email||"J").slice(0,1).toUpperCase())+'</span>';
       const displayName=p.name||p.email||"Client";
-      card.innerHTML='<div class="jp-static-member-main jp-static-member-simple"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div class="jp-member-identity"><h2>'+esc(displayName)+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><button type="button" id="jpViewQr" class="jp-view-qr">View Client QR</button></div>';
+      card.innerHTML='<div class="jp-static-member-main jp-static-member-simple"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div class="jp-member-identity"><h2>'+esc(displayName)+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><button type="button" id="jpViewQr" class="jp-view-qr">View QR</button></div>';
       $("#jpViewQr",card)?.addEventListener("click",openQr);
     }
+
+    $(".account-status-card",page)?.remove();
     $$(".settings-group",page).forEach(g=>{if($(".settings-label",g)?.textContent.trim()==="MEMBER BENEFITS")g.remove();});
+
+    const accountGroup=$$(".settings-group",page).find(g=>$(".settings-label",g)?.textContent.trim()==="ACCOUNT");
+    const notify=$("#enableBrowserNotifications",page);
+    if(accountGroup&&notify){
+      const notifyGroup=document.createElement("div");
+      notifyGroup.className="settings-group jp-notification-settings";
+      notifyGroup.innerHTML='<div class="settings-label">NOTIFICATIONS</div><div class="card settings-list"></div>';
+      $(".settings-list",notifyGroup).append(notify);
+      accountGroup.after(notifyGroup);
+    }
+
     let about=$$(".settings-group",page).find(g=>["ABOUT","ABOUT & LEGAL"].includes($(".settings-label",g)?.textContent.trim()));
     if(about){
       $(".settings-label",about).textContent="ABOUT & LEGAL";
