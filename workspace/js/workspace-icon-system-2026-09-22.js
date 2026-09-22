@@ -30,7 +30,14 @@ const paths={
   project:'<rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 9h8M8 13h5M8 17h3"></path>',
   wallet:'<path d="M4 6h14a2 2 0 0 1 2 2v10H4a2 2 0 0 1-2-2V6z"></path><path d="M4 6V4h12"></path><path d="M16 12h4"></path>',
   clock:'<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
-  grid:'<rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect>'
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect>',
+  user:'<circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.8-4 3-6 6.5-6s5.7 2 6.5 6"></path>',
+  building:'<path d="M4 21V5h10v16"></path><path d="M14 9h6v12"></path><path d="M7 8h2M7 12h2M7 16h2M17 12h1M17 16h1"></path>',
+  database:'<ellipse cx="12" cy="5" rx="7" ry="3"></ellipse><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5"></path><path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"></path>',
+  appearance:'<path d="M4 20 16.5 7.5"></path><path d="m14 5 5 5"></path><path d="M6 18 4 20l2-5 10-10 3 3-10 10-3 0Z"></path>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path>',
+  shieldCheck:'<path d="M12 3 5 6v5c0 5 3 8 7 10 4-2 7-5 7-10V6z"></path><path d="m9.5 12 1.7 1.7 3.6-4"></path>',
+  search:'<circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>'
 };
 function svg(name,cls=''){return '<svg class="jp-family-icon '+cls+'" viewBox="0 0 24 24" aria-hidden="true">'+(paths[name]||paths.project)+'</svg>'}
 window.JuanWorkspaceIcon=(name,cls='')=>svg(name,cls);
