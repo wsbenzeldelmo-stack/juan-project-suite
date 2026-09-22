@@ -18,7 +18,8 @@ export default async function handler(req,res){
     if(!receiptPath)return res.status(400).json({error:'Upload your payment receipt before submitting.'});
     if(!receiptPath.startsWith(user.id+'/'))return res.status(403).json({error:'Invalid receipt path.'});
 
-    const pr=await svc.from('projects').select('id,client_id,total_amount').eq('id',projectId).eq('client_id',acc.client_id).maybeSingle();
+    await svc.rpc('refresh_juan_project_financials',{p_project_id:projectId});
+    const pr=await svc.from('projects').select('id,client_id,total_amount,late_fee_total,financial_status,payment_due_date,grace_period_end').eq('id',projectId).eq('client_id',acc.client_id).maybeSingle();
     if(pr.error||!pr.data)return res.status(404).json({error:'Project not found.'});
     const filename=receiptPath.slice((user.id+'/').length);if(!filename||filename.includes('/'))return res.status(403).json({error:'Invalid receipt path.'});
     const listed=await svc.storage.from('payment-receipts').list(user.id,{search:filename,limit:10});
@@ -26,7 +27,9 @@ export default async function handler(req,res){
 
     const existing=await svc.from('payments').select('amount_paid').eq('project_id',projectId);
     if(existing.error)throw existing.error;
-    const paid=(existing.data||[]).reduce((s,p)=>s+Number(p.amount_paid||0),0),balance=Math.max(0,Number(pr.data.total_amount||0)-paid),netAmount=amount;
+    const paid=(existing.data||[]).reduce((s,p)=>s+Number(p.amount_paid||0),0);
+    const authoritativeTotal=Number(pr.data.total_amount||0)+Number(pr.data.late_fee_total||0);
+    const balance=Math.max(0,authoritativeTotal-paid),netAmount=amount;
     if(amount>balance+0.01)return res.status(400).json({error:`Amount is greater than the current balance (${balance.toFixed(2)}).`});
 
     const duplicateSubmission=await svc.from('payment_submissions').select('id').ilike('reference_number',referenceNumber).in('status',['pending','accepted','approved']).limit(1);
