@@ -370,3 +370,91 @@ body{overflow-x:hidden!important}
 @media(max-width:1100px){
   #view-project-details .payment-modular-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+
+
+/* 2026-09-23 project tabs + overdue policy control */
+/* Project Details tabs: compact segmented navigation, no empty full-width bar */
+#view-project-details .project-details-tabs{
+  display:inline-flex!important;
+  width:max-content!important;
+  max-width:100%!important;
+  min-height:44px!important;
+  align-items:center!important;
+  gap:4px!important;
+  padding:4px!important;
+  margin:0 0 24px!important;
+  border:1px solid var(--jp-border)!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  scrollbar-width:none!important;
+}
+#view-project-details .project-details-tabs::-webkit-scrollbar{display:none!important}
+#view-project-details .project-details-tabs .tab-btn{
+  flex:0 0 auto!important;
+  min-height:36px!important;
+  height:36px!important;
+  padding:0 14px!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:10px!important;
+  background:transparent!important;
+  color:#747b78!important;
+  font-size:10px!important;
+  font-weight:650!important;
+  white-space:nowrap!important;
+  box-shadow:none!important;
+}
+#view-project-details .project-details-tabs .tab-btn:after,
+#view-project-details .project-details-tabs .tab-btn:before{display:none!important}
+#view-project-details .project-details-tabs .tab-btn:hover{
+  background:#f5f7f6!important;
+  color:#303733!important;
+}
+#view-project-details .project-details-tabs .tab-btn.active{
+  background:#eafaf2!important;
+  color:#0b9e61!important;
+  box-shadow:none!important;
+}
+
+/* Per-project overdue fee policy */
+.payment-monitoring-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:24px!important;
+}
+.project-overdue-policy{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-width:320px;
+  justify-content:flex-end;
+}
+.project-overdue-policy>div{
+  display:grid;
+  gap:2px;
+  text-align:right;
+}
+.project-overdue-policy strong{
+  font-size:11px;
+  font-weight:750;
+  color:var(--text-primary);
+}
+.project-overdue-policy small{
+  font-size:9px;
+  color:var(--text-tertiary);
+  line-height:1.35;
+}
+.project-overdue-policy .toggle-switch{flex:0 0 auto}
+#projectOverdueFeesToggle:disabled + .toggle-slider{
+  opacity:.5!important;
+  cursor:wait!important;
+}
+@media(max-width:900px){
+  #view-project-details .project-details-tabs{width:100%!important}
+  .payment-monitoring-head{align-items:flex-start!important;flex-direction:column!important}
+  .project-overdue-policy{min-width:0;width:100%;justify-content:space-between}
+  .project-overdue-policy>div{text-align:left}
+}
