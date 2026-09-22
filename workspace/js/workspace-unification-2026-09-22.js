@@ -60,6 +60,51 @@ function activeProject(){
   const st=state(),id=st.activeProjectId;
   return (st.projects||[]).find(p=>String(p.id)===String(id))||null;
 }
+const financeHistoryCache=new Map();
+async function getProjectFinancialHistory(projectId){
+  const now=Date.now(),cached=financeHistoryCache.get(projectId);
+  if(cached&&now-cached.at<20000)return cached.data;
+  const rt=window.JuanSuiteRuntime;if(!rt?.request)return null;
+  const data=await rt.request('/api/suite',{action:'project-financial-history',project_id:projectId});
+  financeHistoryCache.set(projectId,{at:now,data});return data;
+}
+function ledgerLabel(type){
+  const map={payment:'Payment',overdue_fee:'Overdue Fee',adjustment:'Adjustment',discount:'Discount',refund:'Refund',reversal:'Reversal',rush_fee:'Rush Fee',maintenance_fee:'Maintenance Fee',workload_surcharge:'Workload Surcharge'};
+  return map[type]||String(type||'Entry').replace(/_/g,' ');
+}
+async function enhanceFinancialHistory(){
+  const tab=document.getElementById('projTab-payment-tracker');
+  if(!tab||!tab.classList.contains('active'))return;
+  const p=activeProject();if(!p)return;
+  let card=document.getElementById('jpFinancialLedgerCard');
+  if(!card){
+    card=document.createElement('section');card.id='jpFinancialLedgerCard';card.className='card jp-financial-ledger-card';
+    card.innerHTML='<div class="card-header"><div><div class="section-kicker">AUDIT</div><h3 class="card-title">Financial Ledger</h3></div></div><div class="jp-financial-ledger-body"><div class="jp-history-loading">Loading backend ledger…</div></div>';
+    tab.append(card);
+  }
+  if(card.dataset.projectId===String(p.id)&&card.dataset.loaded==='1')return;
+  card.dataset.projectId=String(p.id);card.dataset.loaded='0';
+  try{
+    const data=await getProjectFinancialHistory(p.id);if(!data)return;
+    if(card.dataset.projectId!==String(p.id))return;
+    const ledger=data.ledger||[],invoices=data.invoices||[],body=card.querySelector('.jp-financial-ledger-body');
+    body.innerHTML=
+      '<div class="jp-ledger-summary">'+
+        '<div><span>Ledger Entries</span><b>'+ledger.length+'</b></div>'+
+        '<div><span>Issued Invoices</span><b>'+invoices.filter(x=>x.status!=='void').length+'</b></div>'+
+        '<div><span>Latest Invoice</span><b>'+esc(invoices[0]?.invoice_number||'—')+'</b></div>'+
+      '</div>'+
+      (ledger.length?'<div class="jp-ledger-list">'+ledger.slice(0,12).map(x=>
+        '<div class="jp-ledger-row"><div><strong>'+esc(ledgerLabel(x.entry_type))+'</strong><small>'+esc(x.note||'Backend financial event')+' · '+date(x.occurred_at)+'</small></div><b class="'+(x.direction==='credit'?'credit':'debit')+'">'+(x.direction==='credit'?'- ':'+ ')+peso(x.amount)+'</b></div>'
+      ).join('')+'</div>':'<div class="jp-history-empty">No financial ledger entries yet.</div>')+
+      (invoices.length?'<div class="jp-issued-invoices"><h4>Invoice Snapshots</h4>'+invoices.slice(0,6).map(inv=>
+        '<div class="jp-invoice-snapshot-row"><div><strong>'+esc(inv.invoice_number)+'</strong><small>'+date(inv.issued_at)+' · '+esc(inv.status||'issued')+'</small></div><div><b>'+peso(inv.total)+'</b><small>Balance '+peso(inv.balance)+'</small></div></div>'
+      ).join('')+'</div>':'');
+    card.dataset.loaded='1';
+  }catch(e){
+    const body=card.querySelector('.jp-financial-ledger-body');if(body)body.innerHTML='<div class="jp-history-empty">Financial history could not be loaded.</div>';
+  }
+}
 function enhanceProjectPage(){
   const view=document.querySelector('#view-project-details.active');if(!view)return;
   const p=activeProject();if(!p)return;
@@ -116,11 +161,11 @@ function enhanceModals(){
   document.querySelectorAll('[role="dialog"],.modal,.jp-suite-modal,.suite-panel,.modal-card').forEach(d=>{enhanceProjectDialog(d);enhancePaymentReview(d)});
 }
 function run(){
-  normalizeTables();cleanEscapedText();enhanceModals();enhanceProjectPage();enhancePaymentsPage();enhanceSettingsPage();
+  normalizeTables();cleanEscapedText();enhanceModals();enhanceProjectPage();enhancePaymentsPage();enhanceSettingsPage();enhanceFinancialHistory();
 }
 const mo=new MutationObserver(()=>requestAnimationFrame(run));mo.observe(document.documentElement,{subtree:true,childList:true});
 document.addEventListener('DOMContentLoaded',run);
 document.addEventListener('click',()=>setTimeout(run,0),true);
-setInterval(()=>{if(document.hidden)return;enhanceProjectPage();enhancePaymentsPage()},2500);
+setInterval(()=>{if(document.hidden)return;enhanceProjectPage();enhancePaymentsPage();enhanceFinancialHistory()},2500);
 setTimeout(run,500);setTimeout(run,1800);
 })();
