@@ -184,7 +184,7 @@ async function recordAdEvent(b,req,svc){
 async function submitOrder(b,svc){
   const name=String(b.name||'').trim(),email=String(b.email||'').trim().toLowerCase(),key=String(b.key||'').trim();
   if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!key)fail('Name and a valid email address are required.');
-  if(b.termsAccepted!==true||String(b.termsVersion||'')!=='2026-09-20')fail('Please read and accept the current JUAN PROJECT Online Terms of Service.');
+  if(b.termsAccepted!==true||String(b.termsVersion||'')!=='2026-09-22')fail('Please read and accept the current JUAN PROJECT Online Terms of Service.');
   if(name.length>160||email.length>254||String(b.notes||'').length>3000||String(b.title||'').length>160)fail('Please shorten the submitted details.');
   const {data:existing,error:ee}=await svc.from('incoming_orders').select('*').eq('submission_key',key).maybeSingle();if(ee)throw ee;
   if(existing)return {order:safeOrder(existing),token:guestTokenForKey(key),duplicate:true};
@@ -215,11 +215,11 @@ async function submitOrder(b,svc){
     rush=Math.ceil(Math.max(0,standardDays-days)/4)*500;
   }
   const raw=guestTokenForKey(key),initialTotal=subtotal+rush;
-  const acceptanceKey=hash(`${email}|${key}|2026-09-20`);
+  const acceptanceKey=hash(`${email}|${key}|2026-09-22`);
   const {data,error}=await svc.from('incoming_orders').insert({
     name,email,phone:String(b.phone||''),title,notes:String(b.notes||''),deadline:b.deadline||null,items,
     subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,status:'Order Received',submission_key:key,token_hash:hash(raw),
-    terms_version:'2026-09-20',terms_accepted_at:now(),terms_acceptance_key:acceptanceKey,
+    terms_version:'2026-09-22',terms_accepted_at:now(),terms_acceptance_key:acceptanceKey,
     original_snapshot:{items,subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,deadline:b.deadline||null,title}
   }).select('*').single();
   if(error)throw error;await audit(svc,'Guest order received',data.code);return {order:safeOrder(data),token:raw};
@@ -327,14 +327,14 @@ export default async function handler(req,res){
       const {user,account}=await clientContext(req,svc);await enforceRateLimit(req,svc,'client-card-user',user.id,40,900);
       let {data:c,error}=await svc.from('clients').select('*').eq('id',account.client_id).single();if(error)throw error;
       if(!c.qr_token){const q=token().slice(0,32);const up=await svc.from('clients').update({qr_token:q}).eq('id',c.id).select('*').single();if(up.error)throw up.error;c=up.data}
-      const {data:projects,error:pe}=await svc.from('projects').select('id,total_amount,status,delivery_status').eq('client_id',c.id);if(pe)throw pe;
+      const {data:projects,error:pe}=await svc.from('projects').select('id,total_amount,late_fee_total,status,delivery_status').eq('client_id',c.id);if(pe)throw pe;
       const ids=(projects||[]).map(p=>p.id);
       let pays=[];
       if(ids.length){const pr=await svc.from('payments').select('project_id,amount_paid,deleted_at').in('project_id',ids);if(pr.error)throw pr.error;pays=pr.data||[]}
       const completed=(projects||[]).filter(p=>{
         const delivered=['completed','delivered'].includes(String(p.status||'').toLowerCase())||String(p.delivery_status||'').toLowerCase()==='delivered';
         const paid=pays.filter(x=>String(x.project_id)===String(p.id)&&!x.deleted_at).reduce((sum,x)=>sum+Number(x.amount_paid||0),0);
-        return delivered&&paid+0.005>=Number(p.total_amount||0);
+        return delivered&&paid+0.005>=Number(p.total_amount||0)+Number(p.late_fee_total||0);
       }).length;
       const loyalty=completed>=4?'PLATINUM':completed>=3?'GOLD':completed>=2?'SILVER':'BRONZE';
       return res.status(200).json({client:{name:c.name,client_code:c.client_code,qr_token:c.qr_token,classification:c.classification||'New',loyalty_tier:loyalty,completed_projects:completed,member_since:c.created_at}});
