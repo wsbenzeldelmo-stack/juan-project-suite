@@ -152,7 +152,9 @@
   }
   function install(){
     removeVisibleCommandHelpers();
-    new MutationObserver(removeVisibleCommandHelpers).observe(document.body,{childList:true,subtree:true});
+    document.addEventListener('click',function(e){
+      if(e.target.closest('.nav-item,[data-settings-tab]'))requestAnimationFrame(removeVisibleCommandHelpers);
+    },true);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
   window.JPKeyboard={openPalette:openPalette,openHelp:openHelp};
