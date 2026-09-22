@@ -163,12 +163,37 @@ function enhanceSettingsPage(){
 function enhanceModals(){
   document.querySelectorAll('[role="dialog"],.modal,.jp-suite-modal,.suite-panel,.modal-card').forEach(d=>{enhanceProjectDialog(d);enhancePaymentReview(d)});
 }
+let scheduled=false;
 function run(){
-  normalizeTables();cleanEscapedText();enhanceModals();enhanceProjectPage();enhancePaymentsPage();enhanceSettingsPage();enhanceFinancialHistory();
+  scheduled=false;
+  const active=document.querySelector('.view.active')?.id||'';
+  cleanEscapedText(document.querySelector('.view.active')||document);
+  normalizeTables(document.querySelector('.view.active')||document);
+  enhanceModals();
+  if(active==='view-project-details'){enhanceProjectPage();enhanceFinancialHistory();}
+  else if(active==='view-payments')enhancePaymentsPage();
+  else if(active==='view-settings')enhanceSettingsPage();
 }
-const mo=new MutationObserver(()=>requestAnimationFrame(run));mo.observe(document.documentElement,{subtree:true,childList:true});
-document.addEventListener('DOMContentLoaded',run);
-document.addEventListener('click',()=>setTimeout(run,0),true);
-setInterval(()=>{if(document.hidden)return;enhanceProjectPage();enhancePaymentsPage();enhanceFinancialHistory()},2500);
-setTimeout(run,500);setTimeout(run,1800);
+function scheduleRun(){
+  if(scheduled)return;scheduled=true;requestAnimationFrame(run);
+}
+function patchAppHooks(){
+  const app=window.app;if(!app||app.__jpPerformanceHooks)return;
+  app.__jpPerformanceHooks=true;
+  ['navigateTo','openProjectDetails','switchProjectTab','renderPaymentsView','renderProjects','renderClients'].forEach(name=>{
+    const fn=app[name];if(typeof fn!=='function')return;
+    app[name]=function(...args){
+      const out=fn.apply(this,args);
+      Promise.resolve(out).finally(scheduleRun);
+      return out;
+    };
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{patchAppHooks();scheduleRun();});
+document.addEventListener('click',e=>{
+  if(e.target.closest('.nav-item,[data-project-tab],[data-settings-tab],[role="dialog"],.icon-more-button,.table-action-button'))scheduleRun();
+},true);
+window.addEventListener('juan:realtime-sync',scheduleRun);
+window.addEventListener('focus',()=>{if(!document.hidden)scheduleRun();});
+setTimeout(()=>{patchAppHooks();scheduleRun();},250);
 })();
