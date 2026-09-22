@@ -458,3 +458,28 @@ body{overflow-x:hidden!important}
   .project-overdue-policy{min-width:0;width:100%;justify-content:space-between}
   .project-overdue-policy>div{text-align:left}
 }
+
+
+/* 2026-09-23 performance pass */
+/* Keep interaction feedback fast and avoid GPU-heavy effects across the whole app. */
+.modal-overlay,.jp-suite-overlay,.suite-overlay,[class*="modal-overlay"]{
+  backdrop-filter:blur(6px)!important;
+  -webkit-backdrop-filter:blur(6px)!important;
+}
+.card,.table-card,.jp-ref-card,.payment-metric-card{
+  box-shadow:none!important;
+}
+.sidebar,.main-content,.view,.card,.data-table,.unified-table,.jp-system-table{
+  transform:none;
+  will-change:auto!important;
+}
+.data-table tr,.unified-table tr,.jp-system-table tr,
+.data-table td,.unified-table td,.jp-system-table td{
+  transition:none!important;
+}
+.view:not(.active){content-visibility:hidden!important}
+.view.active{content-visibility:visible!important}
+#view-project-details .tab-content:not(.active){display:none!important}
+@media(prefers-reduced-motion:no-preference){
+  .btn,.nav-item,.tab-btn,.jp-settings-nav-item{transition:background-color .12s ease,color .12s ease,border-color .12s ease!important}
+}
