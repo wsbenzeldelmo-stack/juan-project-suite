@@ -185,7 +185,7 @@ async function recordAdEvent(b,req,svc){
 async function submitOrder(b,svc){
   const name=String(b.name||'').trim(),email=String(b.email||'').trim().toLowerCase(),key=String(b.key||'').trim();
   if(!name||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!key)fail('Name and a valid email address are required.');
-  if(b.termsAccepted!==true||String(b.termsVersion||'')!=='2026-09-20')fail('Please read and accept the current JUAN PROJECT Online Terms of Service.');
+  if(b.termsAccepted!==true||String(b.termsVersion||'')!=='2026-09-22')fail('Please read and accept the current JUAN PROJECT Online Terms of Service.');
   if(name.length>160||email.length>254||String(b.notes||'').length>3000||String(b.title||'').length>160)fail('Please shorten the submitted details.');
   const {data:existing,error:ee}=await svc.from('incoming_orders').select('*').eq('submission_key',key).maybeSingle();if(ee)throw ee;
   if(existing)return {order:safeOrder(existing),token:guestTokenForKey(key),duplicate:true};
@@ -227,12 +227,12 @@ async function submitOrder(b,svc){
     rush=Math.ceil(Math.max(0,standardDays-days)/4)*500;
   }
   const raw=guestTokenForKey(key),initialTotal=subtotal+rush;
-  const acceptanceKey=hash(`${email}|${key}|2026-09-20`);
+  const acceptanceKey=hash(`${email}|${key}|2026-09-22`);
   const {data,error}=await svc.from('incoming_orders').insert({
     name,email,phone:String(b.phone||''),title,notes:String(b.notes||''),deadline:b.deadline||null,items,
     subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,status:'Order Received',submission_key:key,token_hash:hash(raw),
     referral_code:storedReferralCode,referred_by_client_id:referredByClientId,
-    terms_version:'2026-09-20',terms_accepted_at:now(),terms_acceptance_key:acceptanceKey,
+    terms_version:'2026-09-22',terms_accepted_at:now(),terms_acceptance_key:acceptanceKey,
     original_snapshot:{items,subtotal,discount_amount:0,rush_fee:rush,total:initialTotal,deadline:b.deadline||null,title}
   }).select('*').single();
   if(error)throw error;await audit(svc,'Guest order received',data.code);return {order:safeOrder(data),token:raw};
