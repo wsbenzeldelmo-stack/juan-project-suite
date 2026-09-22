@@ -1,0 +1,136 @@
+/* JUAN PROJECT Workspace — 2026-09-22 UI unification pass */
+:root{
+  --jp8-1:8px;--jp8-2:16px;--jp8-3:24px;--jp8-4:32px;
+  --jp-surface:#fff;--jp-border:#e7ebe9;--jp-muted:#7b8492;--jp-green:#19ba75;
+  --jp-warning:#a46300;--jp-danger:#b42318;
+}
+html,body{margin:0!important;padding:0!important}
+body{overflow-x:hidden!important}
+.app-container{min-height:100dvh!important}
+.sidebar{
+  top:0!important;left:0!important;bottom:0!important;
+  padding:16px!important;width:256px!important;
+}
+.brand{padding:0 8px 16px!important}
+.nav-menu{margin-top:8px!important;gap:4px!important}
+.nav-divider{margin:8px!important}
+.main-content{
+  margin-left:256px!important;
+  width:calc(100% - 256px)!important;
+  max-width:none!important;
+  padding:24px 32px 40px!important;
+}
+.page-header{margin-bottom:24px!important;align-items:center!important}
+.page-title{font-size:28px!important;font-weight:750!important}
+.card{border-radius:20px!important;padding:24px!important}
+.card-header{margin-bottom:16px!important}
+
+/* Global 8px rhythm */
+.view>*,.settings-grid,.order-grid,.catalog-grid{row-gap:24px}
+.form-group{margin-bottom:16px!important}
+.btn,.form-control,input,select,textarea{border-radius:12px!important}
+
+/* Tables — one shared system */
+.table-responsive,.table-card,.portal-payment-review-table-wrap{
+  overflow:visible!important;max-height:none!important;
+}
+.data-table,.unified-table,.jp-static-table,.jp-system-table,.portal-payment-review-table{
+  width:100%!important;table-layout:fixed!important;border-collapse:separate!important;border-spacing:0!important;
+}
+.data-table th,.unified-table th,.jp-static-table th,.jp-system-table th,.portal-payment-review-table th{
+  height:40px!important;padding:0 14px!important;font-size:10px!important;font-weight:650!important;
+  letter-spacing:.05em!important;text-transform:uppercase!important;color:var(--jp-muted)!important;background:#f7f8fa!important;
+}
+.data-table td,.unified-table td,.jp-static-table td,.jp-system-table td,.portal-payment-review-table td{
+  min-height:56px!important;padding:12px 14px!important;font-size:12px!important;vertical-align:middle!important;
+}
+.data-table th:last-child,.unified-table th:last-child,.jp-static-table th:last-child,.jp-system-table th:last-child,.portal-payment-review-table th:last-child{
+  font-size:0!important;color:transparent!important;width:5%!important;text-align:center!important;
+}
+.data-table td:last-child,.unified-table td:last-child,.jp-static-table td:last-child,.jp-system-table td:last-child,.portal-payment-review-table td:last-child{
+  width:5%!important;text-align:center!important;
+}
+#view-clients table th:last-child,#view-clients table td:last-child{width:3%!important}
+
+/* Payment review exact proportions */
+.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:16%!important}
+.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:30%!important}
+.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:18%!important}
+.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:12%!important}
+.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:11%!important}
+.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:13%!important}
+.portal-payment-review-table th:nth-child(7),.portal-payment-review-table td:nth-child(7){width:5%!important}
+
+/* Unified vertical ellipsis controls */
+.icon-more-button,.vertical-more,.table-action-button,.jp-icon-button{
+  width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;
+  border:0!important;background:transparent!important;border-radius:8px!important;
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  color:#6b7280!important;padding:0!important;
+}
+.icon-more-button:hover,.vertical-more:hover,.table-action-button:hover,.jp-icon-button:hover{background:#f2f4f3!important;color:#1f2937!important}
+
+/* Modal system */
+.modal-overlay,.jp-suite-overlay,.suite-overlay,[class*="modal-overlay"]{
+  backdrop-filter:blur(14px)!important;-webkit-backdrop-filter:blur(14px)!important;
+  background:rgba(15,23,42,.34)!important;
+}
+.modal,.jp-suite-modal,.suite-panel,[role="dialog"]{
+  border-radius:24px!important;
+}
+.jp-suite-modal,.suite-panel,.modal-content,.modal{
+  position:relative!important;overflow:visible!important;
+}
+.jp-suite-close,.suite-head [data-close],.modal-close,.close-modal,[aria-label="Close"]{
+  position:absolute!important;top:-16px!important;right:-16px!important;left:auto!important;
+  width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;
+  border:0!important;background:var(--jp-surface)!important;border-radius:999px!important;
+  box-shadow:0 10px 28px rgba(15,23,42,.16)!important;display:grid!important;place-items:center!important;
+  z-index:30!important;font-size:20px!important;line-height:1!important;
+}
+.jp-suite-head .jp-suite-close,.suite-head [data-close]{margin:0!important}
+
+/* Settings stays segmented and viewport-conscious */
+#view-settings.active{height:calc(100dvh - 48px)!important;overflow:hidden!important}
+#view-settings .jp-settings-shell{height:100%!important;min-height:0!important}
+#view-settings .jp-settings-content{min-height:0!important;overflow:auto!important;padding-right:8px!important}
+#view-settings .jp-settings-segment{padding-bottom:32px!important}
+#view-settings .jp-ref-card{border-radius:18px!important;margin-top:16px!important}
+
+/* Finance status components injected by workspace-unification.js */
+.jp-finance-summary{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;
+  margin:0 0 24px;padding:16px;border:1px solid var(--jp-border);border-radius:18px;background:#fbfcfb;
+}
+.jp-finance-cell{min-width:0;display:grid;gap:4px}
+.jp-finance-cell span{font-size:9px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--jp-muted)}
+.jp-finance-cell strong{font-size:14px;font-weight:750;color:#19211d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jp-finance-cell.balance strong{font-size:20px;color:var(--jp-green)}
+.jp-finance-tag{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:5px 9px;border-radius:999px;font-size:9px;font-weight:750;background:#e9f9f2;color:#087c4a}
+.jp-finance-tag.grace{background:#fff3d6;color:var(--jp-warning)}
+.jp-finance-tag.overdue{background:#fee9e9;color:var(--jp-danger)}
+.jp-finance-tag.review{background:#eef2ff;color:#4754a4}
+.jp-late-fee-row{color:var(--jp-danger)!important}
+
+/* Project details finance tab/card helpers */
+.jp-project-finance-panel{margin:0 0 24px}
+.jp-project-finance-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.jp-project-finance-note{font-size:10px;color:var(--jp-muted);line-height:1.45;margin-top:8px}
+
+/* Payment review financial context */
+.jp-payment-review-finance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 16px}
+.jp-payment-review-finance>div{padding:12px;border:1px solid var(--jp-border);border-radius:14px;background:#fbfcfb}
+.jp-payment-review-finance span{display:block;font-size:9px;color:var(--jp-muted);margin-bottom:3px}
+.jp-payment-review-finance b{font-size:13px}
+
+/* Remove escaped newline artifacts visually if legacy content leaks */
+.jp-cleaned-escaped-newline{white-space:normal!important}
+
+/* no inner scroll tables on desktop */
+@media(min-width:1024px){
+  .table-responsive,.jp-system-table-wrap,.portal-payment-review-table-wrap{overflow:visible!important}
+}
+@media(max-width:1100px){
+  .jp-finance-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .main-content{padding:24px!important}
+}
