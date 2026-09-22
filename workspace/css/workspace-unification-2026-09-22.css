@@ -196,3 +196,30 @@ body{overflow-x:hidden!important}
   .sidebar{transform:none!important}
   .main-content{min-height:100dvh!important}
 }
+
+
+/* Project financial ledger / immutable invoice snapshot history */
+.jp-financial-ledger-card{margin-top:24px!important}
+.jp-financial-ledger-body{display:grid;gap:16px}
+.jp-ledger-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.jp-ledger-summary>div{
+  padding:12px 14px;border:1px solid var(--jp-border);border-radius:14px;background:#fbfcfb;display:grid;gap:3px
+}
+.jp-ledger-summary span{font-size:9px;color:var(--jp-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:650}
+.jp-ledger-summary b{font-size:14px}
+.jp-ledger-list{border:1px solid var(--jp-border);border-radius:14px;overflow:hidden}
+.jp-ledger-row,.jp-invoice-snapshot-row{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-bottom:1px solid var(--jp-border)
+}
+.jp-ledger-row:last-child,.jp-invoice-snapshot-row:last-child{border-bottom:0}
+.jp-ledger-row>div,.jp-invoice-snapshot-row>div{display:grid;gap:2px;min-width:0}
+.jp-ledger-row strong,.jp-invoice-snapshot-row strong{font-size:12px}
+.jp-ledger-row small,.jp-invoice-snapshot-row small{font-size:9px;color:var(--jp-muted)}
+.jp-ledger-row>b{font-size:12px;white-space:nowrap}
+.jp-ledger-row>b.credit{color:#087c4a}.jp-ledger-row>b.debit{color:#9a5b00}
+.jp-issued-invoices{display:grid;gap:8px}
+.jp-issued-invoices h4{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--jp-muted);margin:0}
+.jp-issued-invoices{border-top:1px solid var(--jp-border);padding-top:16px}
+.jp-issued-invoices .jp-invoice-snapshot-row{border:1px solid var(--jp-border);border-radius:12px}
+.jp-history-loading,.jp-history-empty{padding:18px;border:1px dashed var(--jp-border);border-radius:14px;color:var(--jp-muted);font-size:11px;text-align:center}
+@media(max-width:900px){.jp-ledger-summary{grid-template-columns:1fr}}
