@@ -2036,8 +2036,12 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
         <div id="projTab-payment-tracker" class="tab-content">
           <div class="card mb-6">
-            <div class="card-header">
-              <h3 class="card-title">Payment & Calculations</h3>
+            <div class="card-header payment-monitoring-head">
+              <div><div class="section-kicker">FINANCE</div><h3 class="card-title">Payment & Calculations</h3></div>
+              <div class="project-overdue-policy">
+                <div><strong>Overdue Fees</strong><small>Apply the standard overdue-fee policy to this project.</small></div>
+                <label class="toggle-switch" title="Apply overdue fees to this project"><input type="checkbox" id="projectOverdueFeesToggle" onchange="app.setProjectOverdueFeesEnabled(this.checked)"><span class="toggle-slider"></span></label>
+              </div>
             </div>
             <div id="paymentCalculationsOverview"></div>
           </div>
@@ -8224,7 +8228,29 @@ ${description}`))actionCallback();return;}
         });
       }
 
+      async function setProjectOverdueFeesEnabled(enabled){
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        const toggle=document.getElementById('projectOverdueFeesToggle');if(toggle)toggle.disabled=true;
+        const previous=proj.overdue_fees_enabled!==false;
+        try{
+          const rt=window.JuanSuiteRuntime;if(!rt?.request)throw new Error('Workspace API is not ready.');
+          const out=await rt.request('/api/suite',{action:'set-overdue-fees',project_id:proj.id,enabled:!!enabled});
+          Object.assign(proj,out?.project||{overdue_fees_enabled:!!enabled});
+          proj.overdue_fees_enabled=!!enabled;
+          persistProjectsState();
+          renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();
+          showToast(enabled?'Overdue fees enabled for this project.':'Overdue fees disabled. Existing overdue fees for this project were waived.');
+        }catch(e){
+          proj.overdue_fees_enabled=previous;
+          if(toggle){toggle.checked=previous;toggle.disabled=false;}
+          showToast(e?.message||'Could not update overdue-fee policy.');
+        }
+      }
+
       function renderPaymentTracker(proj) {
+        const overdueFeesEnabled=proj.overdue_fees_enabled!==false;
+        const overdueToggle=document.getElementById('projectOverdueFeesToggle');
+        if(overdueToggle){overdueToggle.checked=overdueFeesEnabled;overdueToggle.disabled=false;}
         const overviewEl=document.getElementById('paymentCalculationsOverview'),listEl=document.getElementById('paymentHistoryList');
         const items=getProjectListedOrderItems(proj);
         const listedSubtotal=items.reduce((sum,item)=>sum+Math.max(0,Number(item.price??item.unit_price??0))*Math.max(1,Number(item.qty??item.quantity??1)),0);
@@ -8255,12 +8281,12 @@ ${description}`))actionCallback();return;}
             <div class="payment-metric-card"><span>Other Charges</span><strong>${formatCurrency(workloadSurcharge+maintenance+otherFees)}</strong></div>
             <div class="payment-metric-card"><span>Discounts</span><strong>${formatCurrency(discounts)}</strong></div>
             <div class="payment-metric-card"><span>Base Total</span><strong>${formatCurrency(baseTotal)}</strong></div>
-            <div class="payment-metric-card ${lateFees>0?'due':''}"><span>Overdue Fees</span><strong>${formatCurrency(lateFees)}</strong></div>
+            <div class="payment-metric-card ${lateFees>0?'due':''}"><span>Overdue Fees</span><strong>${overdueFeesEnabled?formatCurrency(lateFees):'Disabled'}</strong></div>
             <div class="payment-metric-card"><span>Current Total</span><strong>${formatCurrency(total)}</strong></div>
             <div class="payment-metric-card paid"><span>Amount Paid</span><strong>${formatCurrency(totalPaid)}</strong></div>
             <div class="payment-metric-card ${remaining>0?'due':'paid'}"><span>Balance Due</span><strong>${formatCurrency(remaining)}</strong></div>
           </div>
-          <div class="payment-backend-note">Backend-enforced status · ${grace?'Grace period through '+grace.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'No grace-period date assigned'}</div>`;
+          <div class="payment-backend-note">Backend-enforced status · ${overdueFeesEnabled?'Overdue fees enabled':'Overdue fees disabled for this project'} · ${grace?'Grace period through '+grace.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'No grace-period date assigned'}</div>`;
         if(listEl){
           if(!payments.length){listEl.innerHTML='<div class="payment-history-empty"><strong>No payments recorded</strong><span>Recorded payments will appear here.</span></div>';return;}
           payments.sort((a,b)=>new Date(b.payment_date||b.created_at||0)-new Date(a.payment_date||a.created_at||0));
@@ -9300,6 +9326,7 @@ ${description}`))actionCallback();return;}
         updateTaskStatus,
         deleteTask,
         renderPaymentsView,
+        setProjectOverdueFeesEnabled,
         renderReportsView,
         setReportsRange,
         retryReports,
