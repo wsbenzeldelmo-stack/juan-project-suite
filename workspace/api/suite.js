@@ -160,7 +160,7 @@ async function publicAds(req,svc){
   if(adsRes.error)throw adsRes.error;if(settingsRes.error)throw settingsRes.error;
   const instant=Date.now();
   const adSettings=settingsRes.data||{enabled:true,rotation_seconds:8,transition:'fade'};
-  const ads=(adSettings.enabled===false?[]:(adsRes.data||[])).filter(a=>{
+  const eligible=(adSettings.enabled===false?[]:(adsRes.data||[])).filter(a=>{
     if(a.enabled===false)return false;
     if(!['all',audience].includes(a.audience||'all'))return false;
     if(!['published','scheduled'].includes(String(a.status||'draft')))return false;
@@ -168,7 +168,9 @@ async function publicAds(req,svc){
     if(start&&start>instant)return false;
     if(!a.no_expiration&&end&&end<=instant)return false;
     return true;
-  }).map(a=>({...a,effective_status:'published',start:a.start_at||a.start_date,end:a.end_at||a.end_date}));
+  });
+  let popupSeen=0;
+  const ads=eligible.filter(a=>String(a.ad_type||'banner')!=='popup'||popupSeen++<1).map(a=>({...a,effective_status:'published',start:a.start_at||a.start_date,end:a.end_at||a.end_date}));
   return {ads,settings:adSettings,client_id:clientId};
 }
 async function recordAdEvent(b,req,svc){
@@ -347,12 +349,16 @@ export default async function handler(req,res){
 
     if(action==='dashboard')return res.status(200).json(await dashboard(svc));
     if(action==='ad-dashboard'){
-      const [ads,settings]=await Promise.all([
-        svc.from('promotions').select('*').order('created_at',{ascending:false}),
-        svc.from('ad_settings').select('*').eq('id',1).maybeSingle()
-      ]);
-      if(ads.error)throw ads.error;if(settings.error)throw settings.error;
-      return res.status(200).json({ads:ads.data||[],settings:settings.data||{enabled:true,rotation_seconds:8,transition:'fade',max_active_popups:1,auto_archive_expired:true}});
+      const settings=await svc.from('ad_settings').select('*').eq('id',1).maybeSingle();
+      if(settings.error)throw settings.error;
+      const cfg=settings.data||{enabled:true,rotation_seconds:8,transition:'fade',max_active_popups:1,auto_archive_expired:true};
+      if(cfg.auto_archive_expired!==false){
+        const expired=await svc.from('promotions').update({status:'archived',enabled:false,archived_at:now()}).lt('end_at',now()).eq('no_expiration',false).neq('status','archived');
+        if(expired.error)throw expired.error;
+      }
+      const ads=await svc.from('promotions').select('*').order('created_at',{ascending:false});
+      if(ads.error)throw ads.error;
+      return res.status(200).json({ads:ads.data||[],settings:cfg});
     }
     if(action==='revise-order'){
       const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
