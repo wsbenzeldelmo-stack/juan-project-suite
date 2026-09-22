@@ -1,0 +1,36 @@
+/* JUAN PROJECT Workspace — unified icon family */
+:root{--jp-icon-stroke:1.8}
+.jp-family-icon,.icon-svg{
+  width:18px;height:18px;display:inline-block;flex:0 0 auto;
+  fill:none;stroke:currentColor;stroke-width:var(--jp-icon-stroke);
+  stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;
+}
+.jp-family-icon.sm,.icon-svg.sm{width:14px;height:14px}
+.jp-family-icon.lg,.icon-svg.lg{width:22px;height:22px}
+.nav-item .icon{width:20px;height:20px;display:grid!important;place-items:center!important}
+.nav-item .icon .jp-family-icon{width:19px;height:19px}
+button .jp-family-icon,.btn .jp-family-icon,.jp-btn .jp-family-icon{
+  margin-right:7px;
+}
+button.jp-icon-button .jp-family-icon,
+.icon-more-button .jp-family-icon,
+.vertical-more .jp-family-icon,
+.table-action-button .jp-family-icon,
+.jp-suite-close .jp-family-icon,
+[data-close] .jp-family-icon,
+.jp-summary-icon .jp-family-icon{
+  margin-right:0!important;
+}
+.jp-summary-icon{
+  display:grid!important;place-items:center!important;
+}
+.jp-summary-icon .jp-family-icon{width:17px;height:17px}
+.jp-suite-close,.suite-head [data-close],.modal-close,.close-modal,[aria-label="Close"]{
+  font-size:0!important;
+}
+.jp-suite-close .jp-family-icon,.suite-head [data-close] .jp-family-icon,[aria-label="Close"] .jp-family-icon{
+  width:18px;height:18px;
+}
+.jp-icon-text{
+  display:inline-flex;align-items:center;gap:7px;
+}
