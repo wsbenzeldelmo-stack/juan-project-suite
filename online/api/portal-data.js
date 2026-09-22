@@ -25,15 +25,17 @@ export default async function handler(req,res){
     const projects=projectsRes.data||[];
     const ids=projects.map(p=>p.id);
 
-    let items=[],deliverables=[],payments=[],subs=[];
+    let items=[],deliverables=[],payments=[],subs=[],notifications=[],invoices=[];
     if(ids.length){
-      const [i,d,p,s]=await Promise.all([
+      const [i,d,pay,s,n,inv]=await Promise.all([
         svc.from('project_items').select('*').in('project_id',ids),
         svc.from('deliverables').select('*').in('project_id',ids),
         svc.from('payments').select('*').in('project_id',ids),
-        svc.from('payment_submissions').select('*').eq('client_id',account.client_id).order('submitted_at',{ascending:false})
+        svc.from('payment_submissions').select('*').eq('client_id',account.client_id).order('submitted_at',{ascending:false}),
+        svc.from('client_notifications').select('*').eq('client_id',account.client_id).order('created_at',{ascending:false}).limit(100),
+        svc.from('invoices').select('id,invoice_number,project_id,status,total,amount_paid,balance,due_date,issued_at,voided_at').eq('client_id',account.client_id).order('issued_at',{ascending:false}).limit(100)
       ]);
-      items=i.data||[];deliverables=d.data||[];payments=p.data||[];subs=s.data||[];
+      items=i.data||[];deliverables=d.data||[];payments=pay.data||[];subs=s.data||[];notifications=n.data||[];invoices=inv.data||[];
     }
 
     const settings=(await svc.from('payment_settings').select('id,method_label,account_name,account_number,qr_image_url,instructions').eq('id',1).maybeSingle()).data||null;
@@ -54,15 +56,20 @@ export default async function handler(req,res){
       const maintenance=storedMaintenance>0?storedMaintenance:maintenanceFeeForSubtotal(subtotal);
       const discount=Math.max(0,Number(p.discount_amount||0));
       const knownTotal=Math.max(0,subtotal-discount+Math.max(0,Number(p.rush_fee||0))+Math.max(0,Number(p.workload_surcharge||0))+maintenance);
-      const total=Math.max(Math.max(0,Number(p.total_amount||0)),knownTotal),balance=Math.max(0,total-amountPaid);
+      const baseTotal=Math.max(Math.max(0,Number(p.total_amount||0)),knownTotal);
+      const lateFee=Math.max(0,Number(p.late_fee_total||0));
+      const totalWithFees=baseTotal+lateFee;
+      const balance=Math.max(0,totalWithFees-amountPaid);
       const delivered=String(p.delivery_status||'').toLowerCase()==='delivered'||['completed','delivered'].includes(String(p.status||'').toLowerCase());
       return {
         ...p,status:delivered?'Delivered':p.status,delivery_status:delivered?'Delivered':(p.delivery_status||'Pending'),
-        system_maintenance_fee:maintenance,total_amount:total,
+        system_maintenance_fee:maintenance,base_total_amount:baseTotal,total_amount:totalWithFees,late_fee_total:lateFee,
         items:its,deliverables:ds,payments:pays,amount_paid:amountPaid,balance,
         files_locked:balance>0&&!p.files_override,
         drive_url:(balance<=0||p.files_override)?(p.drive_url||null):null,
-        payment_status:balance<=0?'PAID':amountPaid>0?'PARTIALLY PAID':(p.deadline_date&&new Date(p.deadline_date)<new Date()?'OVERDUE':'UNPAID')
+        payment_status:p.financial_status||(balance<=0?'PAID':amountPaid>0?'PARTIALLY PAID':'UNPAID'),
+        grace_period_end:p.grace_period_end||null,overdue_started_at:p.overdue_started_at||null,
+        backend_progress:ds.length?Math.round(ds.filter(d=>d.completed||Number(d.progress||0)>=100).length*100/ds.length):0
       };
     });
 
@@ -96,7 +103,9 @@ export default async function handler(req,res){
       projects:enriched,
       orderRequests,
       paymentSettings:settings,
-      paymentSubmissions:safeSubs
+      paymentSubmissions:safeSubs,
+      notifications,
+      invoices
     });
   }catch(e){return sendError(res,e)}
 }
