@@ -53,8 +53,10 @@ function normalizeTables(scope=document){
   });
 }
 function cleanEscapedText(scope=document){
+  if(scope?.dataset?.jpTextCleaned==='1')return;
   const w=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT);const nodes=[];while(w.nextNode())nodes.push(w.currentNode);
   nodes.forEach(n=>{if(/\\n|\/n/.test(n.nodeValue||'')){n.nodeValue=n.nodeValue.replace(/\\n|\/n/g,' ');n.parentElement?.classList.add('jp-cleaned-escaped-newline')}});
+  if(scope?.dataset)scope.dataset.jpTextCleaned='1';
 }
 function activeProject(){
   const st=state(),id=st.activeProjectId;
@@ -111,14 +113,17 @@ async function enhanceFinancialHistory(){
 function enhanceProjectPage(){
   const view=document.querySelector('#view-project-details.active');if(!view)return;
   const p=activeProject();if(!p)return;
+  const sig=[p.id,p.total_amount,p.late_fee_total,p.financial_status,p.payment_due_date,p.grace_period_end,p.overdue_started_at,(p.payments||[]).length].join('|');
   let panel=document.getElementById('jpProjectFinanceSummary');
-  const wrap=document.createElement('div');wrap.innerHTML=financeHTML(p);
-  const fresh=wrap.firstElementChild;fresh.id='jpProjectFinanceSummary';
-  if(panel) panel.replaceWith(fresh);
-  else{
-    const progress=document.getElementById('projectOverallProgress');
-    const tabs=view.querySelector('.project-details-tabs');
-    if(progress)progress.after(fresh);else if(tabs)tabs.before(fresh);
+  if(!panel||panel.dataset.signature!==sig){
+    const wrap=document.createElement('div');wrap.innerHTML=financeHTML(p);
+    const fresh=wrap.firstElementChild;fresh.id='jpProjectFinanceSummary';fresh.dataset.signature=sig;
+    if(panel)panel.replaceWith(fresh);
+    else{
+      const progress=document.getElementById('projectOverallProgress');
+      const tabs=view.querySelector('.project-details-tabs');
+      if(progress)progress.after(fresh);else if(tabs)tabs.before(fresh);
+    }
   }
   enhanceInvoiceActions(p);
 }
