@@ -134,3 +134,65 @@ body{overflow-x:hidden!important}
   .jp-finance-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
   .main-content{padding:24px!important}
 }
+
+
+/* Project Details — backend financial lifecycle surfaced consistently */
+#view-project-details #jpProjectFinanceSummary{margin:16px 0 24px!important}
+#view-project-details #jpProjectFinanceSummary .jp-finance-summary{
+  grid-template-columns:1.2fr 1fr 1fr 1fr!important;
+  margin-bottom:8px!important;
+}
+#view-project-details .project-details-tabs{margin-top:0!important}
+.payment-status-card small{
+  display:block;margin-top:4px;font-size:10px!important;font-weight:500!important;color:var(--text-tertiary)!important;
+}
+.payment-backend-note{
+  margin-top:10px;padding:8px 10px;border-radius:10px;background:#f7f9f8;
+  color:var(--jp-muted);font-size:9px;line-height:1.4;
+}
+.payment-metric-card.due strong{color:var(--jp-danger)!important}
+.jp-financial-status-cell{font-weight:700!important}
+.jp-financial-status-cell.grace{color:var(--jp-warning)!important}
+.jp-financial-status-cell.overdue{color:var(--jp-danger)!important}
+.jp-financial-status-cell.review{color:#4754a4!important}
+
+/* Invoice toolbar */
+#projTab-invoice .invoice-actions-bar{
+  display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important;
+}
+#jpIssueInvoiceSnapshot{order:-1}
+#jpIssueInvoiceSnapshot:disabled{opacity:.55!important;cursor:wait!important}
+
+/* Modal geometry: one centered system with internal scrolling when content is long */
+.modal-backdrop,.jp-suite-overlay,.suite-overlay{
+  align-items:center!important;justify-content:center!important;padding:32px!important;
+}
+.modal-card,.jp-suite-modal,.suite-panel{
+  max-height:calc(100dvh - 64px)!important;
+}
+.modal-card>.modal-body,.jp-suite-body,.suite-panel{
+  scrollbar-width:thin;
+}
+.modal-card>.modal-body,.jp-suite-body{
+  overflow-y:auto!important;overscroll-behavior:contain;
+}
+
+/* Reduce visual weight and preserve desktop viewport */
+#view-settings .jp-settings-shell{gap:24px!important}
+#view-settings .jp-settings-nav{border-radius:20px!important}
+#view-settings .jp-settings-segment-head{margin-bottom:16px!important}
+#view-settings .jp-settings-segment-head h2{font-size:22px!important}
+#view-settings .jp-settings-segment-head p{font-size:11px!important}
+#view-settings .jp-ref-card{padding:20px!important}
+
+/* Consistent compact page shell */
+.view-toolbar,.unified-toolbar{margin-bottom:16px!important;gap:8px!important}
+.tabs-nav,.portal-tabs{gap:8px!important}
+.tabs-nav .tab-btn,.portal-tabs button{min-height:40px!important;border-radius:12px!important}
+.status-badge,.project-tag,.jp-status{border-radius:999px!important}
+
+/* Ensure fixed sidebar never develops top offset from legacy CSS */
+@media(min-width:901px){
+  .sidebar{transform:none!important}
+  .main-content{min-height:100dvh!important}
+}
