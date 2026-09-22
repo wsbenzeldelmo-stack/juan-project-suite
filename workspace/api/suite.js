@@ -433,6 +433,19 @@ export default async function handler(req,res){
       const {data,error}=await svc.rpc('review_juan_payment_submission',{p_submission_id:b.id||b.submissionId,p_decision:decision,p_admin_user:user.id,p_reason:reason||null});
       if(error)throw error;await audit(svc,'Payment '+data,String(b.id||b.submissionId),user.id);return res.status(200).json({ok:true,status:data});
     }
+    if(action==='set-overdue-fees'){
+      const projectId=String(b.project_id||b.projectId||'').trim();
+      if(!projectId)fail('Project is required.');
+      const enabled=b.enabled===true||b.enabled==='true';
+      const updated=await svc.from('projects').update({overdue_fees_enabled:enabled,updated_at:now()}).eq('id',projectId).select('id').single();
+      if(updated.error)throw updated.error;
+      const refreshed=await svc.rpc('refresh_juan_project_financials',{p_project_id:projectId});
+      if(refreshed.error)throw refreshed.error;
+      const project=await svc.from('projects').select('id,overdue_fees_enabled,late_fee_total,financial_status,payment_due_date,grace_period_end,overdue_started_at,total_amount').eq('id',projectId).single();
+      if(project.error)throw project.error;
+      await audit(svc,enabled?'Overdue fees enabled':'Overdue fees disabled',projectId,user.id);
+      return res.status(200).json({ok:true,project:project.data,financial:refreshed.data});
+    }
     if(action==='save-project'){
       const {data:p,error}=await svc.from('projects').select('*').eq('id',b.id).single();if(error)throw error;
       const u=b.updates||{},patch={};if('drive_url'in u)patch.drive_url=String(u.drive_url||'')||null;if('files_override'in u)patch.files_override=!!u.files_override;
