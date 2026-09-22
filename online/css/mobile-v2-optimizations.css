@@ -759,3 +759,197 @@
   font-weight:450!important;
   color:#7f8984!important;
 }
+
+
+/* 2026-09-22 unified mobile design-system pass */
+:root{
+  --jp-space-1:4px;
+  --jp-space-2:8px;
+  --jp-space-3:16px;
+  --jp-space-4:24px;
+  --jp-space-5:32px;
+  --jp-radius-sm:12px;
+  --jp-radius-md:16px;
+  --jp-radius-lg:24px;
+}
+
+/* Shared mobile rhythm */
+@media(max-width:899px){
+  .app>.page{padding-left:24px!important;padding-right:24px!important}
+  .section-head{margin-bottom:8px!important}
+  .card{border-radius:24px}
+  .settings-group{margin-top:24px!important}
+  .settings-label{margin-bottom:8px!important}
+  .settings-row{padding:16px!important}
+  .btn,.input{border-radius:12px!important}
+
+  /* Home order: Project Progress > Balance > Recent Activity > fixed ad */
+  .app.client-mode.route-home .page{
+    display:block!important;
+    height:calc(100dvh - var(--bottom-nav-height,84px))!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding-top:8px!important;
+    padding-bottom:calc(168px + env(safe-area-inset-bottom))!important;
+  }
+  .app.client-mode.route-home .dashboard-head{margin-bottom:24px!important}
+  .app.client-mode.route-home .jp-home-project-head{margin:0 0 8px!important}
+  .app.client-mode.route-home .jp-home-project-card{margin:0 0 24px!important}
+  .app.client-mode.route-home .jp-home-balance-head{margin:0 0 8px!important}
+  .app.client-mode.route-home .jp-home-wallet{
+    min-height:112px!important;
+    margin:0 0 24px!important;
+    padding:24px!important;
+    border-radius:24px!important;
+    gap:16px!important;
+  }
+  .jp-home-wallet-copy{display:grid!important;gap:4px!important;min-width:0!important}
+  .app.client-mode.route-home .jp-home-wallet strong{font-size:28px!important;font-weight:800!important;line-height:1!important}
+  .app.client-mode.route-home .jp-home-wallet small{font-size:10px!important;font-weight:450!important}
+  .app.client-mode.route-home .jp-home-wallet button{
+    min-height:56px!important;
+    height:56px!important;
+    padding:0 24px!important;
+    border-radius:16px!important;
+    font-size:14px!important;
+    font-weight:750!important;
+  }
+  .jp-home-due-row{display:flex!important;align-items:center!important;gap:8px!important;margin-top:8px!important}
+  .jp-home-due-row>span{font-size:9px!important;font-weight:550!important;color:#6f7a74!important;letter-spacing:0!important}
+  .jp-due-tag{font-size:8px!important;font-weight:750!important;padding:4px 8px!important;border-radius:999px!important;background:#eaf9f2!important;color:#087c4a!important}
+  .jp-due-tag.grace{background:#fff4d8!important;color:#8a6400!important}
+  .jp-due-tag.overdue{background:#fee9e9!important;color:#b42318!important}
+  .jp-due-tag.due{background:#fff1dc!important;color:#9a5b00!important}
+  .app.client-mode.route-home .jp-home-recent-head{margin:0 0 8px!important}
+  .app.client-mode.route-home .activity-card{margin:0 0 24px!important}
+  .app.client-mode.route-home .jp-quick-actions,
+  .app.client-mode.route-home .jp-home-quick-head{display:none!important}
+
+  /* Sticky in-house ad directly above bottom navigation */
+  .app.client-mode.route-home #jpAdBannerAnchor.jp-home-ad-sticky{
+    position:fixed!important;
+    left:24px!important;
+    right:24px!important;
+    bottom:calc(var(--bottom-nav-height,84px) + env(safe-area-inset-bottom))!important;
+    z-index:90!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fff!important;
+    border-radius:16px!important;
+    overflow:hidden!important;
+  }
+  .app.client-mode.route-home #jpAdBannerAnchor.jp-home-ad-sticky .jp-house-banner{
+    margin:0!important;
+    border-radius:16px!important;
+    box-shadow:0 -8px 24px rgba(18,32,25,.06)!important;
+  }
+
+  /* Home typography hierarchy */
+  .app.client-mode.route-home .dashboard-head>div:first-child>span{font-size:10px!important;font-weight:500!important}
+  .app.client-mode.route-home .dashboard-head h1{font-size:20px!important;font-weight:800!important;letter-spacing:-.02em!important}
+  .app.client-mode.route-home .section-head h2{font-size:15px!important;font-weight:750!important;letter-spacing:-.01em!important;text-transform:none!important}
+  .app.client-mode.route-home .activity-row b{font-weight:700!important}
+  .app.client-mode.route-home .activity-row small{font-weight:450!important}
+
+  /* Account: identity card, bottom-right QR, compact settings */
+  .app.route-account .page{padding-bottom:calc(128px + env(safe-area-inset-bottom))!important}
+  .jp-static-member-card{height:auto!important;min-height:0!important;overflow:visible!important}
+  .jp-static-member-simple{
+    position:relative!important;
+    min-height:164px!important;
+    padding:24px!important;
+    padding-bottom:64px!important;
+    gap:16px!important;
+  }
+  .jp-static-member-simple .jp-member-id{margin:0!important}
+  .jp-static-member-simple .jp-view-qr{
+    position:absolute!important;
+    right:24px!important;
+    bottom:24px!important;
+    justify-self:auto!important;
+    min-height:36px!important;
+    height:36px!important;
+    margin:0!important;
+    padding:0 16px!important;
+    border-radius:999px!important;
+    font-size:9px!important;
+    font-weight:700!important;
+  }
+  .app.route-account .screen-head{margin-bottom:24px!important}
+  .app.route-account .screen-title{font-size:30px!important}
+  .app.route-account .password-settings{padding:16px!important}
+  .app.route-account .settings-password-copy{margin-bottom:16px!important}
+  .app.route-account .settings-password-form{gap:8px!important}
+  .app.route-account .settings-password-form .input{height:48px!important;min-height:48px!important}
+  .app.route-account #changePass{height:44px!important;min-height:44px!important}
+  .jp-notification-settings{margin-top:24px!important}
+  .jp-about-legal-copy{padding:16px!important;gap:4px!important}
+
+  /* Product/package modal hierarchy + breathing room */
+  #shopOverlay{padding:max(32px,env(safe-area-inset-top)) 24px max(32px,env(safe-area-inset-bottom))!important}
+  #shopOverlay .shop-detail-sheet{
+    padding:24px!important;
+    border-radius:24px!important;
+    max-height:calc(100dvh - 64px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  }
+  #shopOverlay .shop-kind{margin-bottom:8px!important;font-size:9px!important;font-weight:650!important}
+  #shopOverlay .sheet-title{margin:0 0 16px!important;font-size:22px!important;font-weight:800!important}
+  #shopOverlay .detail-price{margin-bottom:16px!important}
+  #shopOverlay .jp-price-pair{display:flex!important;gap:12px!important;align-items:baseline!important;margin:0!important}
+  #shopOverlay .jp-price-pair b{font-size:26px!important;font-weight:800!important}
+  #shopOverlay .jp-price-pair s{font-size:13px!important;font-weight:500!important}
+  #shopOverlay .service-detail-meta{gap:16px!important;margin:0 0 24px!important}
+  #shopOverlay .service-detail-meta>div{padding:0!important}
+  #shopOverlay .service-detail-meta span{font-size:9px!important;font-weight:500!important}
+  #shopOverlay .service-detail-meta b{font-size:10px!important;font-weight:650!important}
+  #shopOverlay .jp-package-detail{margin:0 0 24px!important}
+  #shopOverlay .jp-package-detail h3{margin:0 0 8px!important;font-size:12px!important;font-weight:750!important}
+  #shopOverlay .jp-package-detail ul{gap:8px!important}
+  #shopOverlay .jp-package-detail li{font-size:11px!important;font-weight:500!important}
+  #shopOverlay .jp-detail-action-row{margin-top:16px!important;gap:8px!important}
+  #shopOverlay .jp-detail-qty-inline,
+  #shopOverlay .jp-detail-action-row #detailStartProject{height:48px!important;min-height:48px!important}
+
+  /* One close treatment for every dismissible modal: icon-only, outside top-right */
+  .jp-v2-modal>.jp-v2-x,
+  .overlay .sheet>.sheet-x,
+  #shopOverlay .sheet-x,
+  .jp-popup-ad>.jp-popup-close{
+    position:absolute!important;
+    top:-16px!important;
+    right:-16px!important;
+    left:auto!important;
+    width:44px!important;
+    height:44px!important;
+    min-width:44px!important;
+    min-height:44px!important;
+    padding:0!important;
+    border:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+    border-radius:0!important;
+    color:#17201c!important;
+    font-size:28px!important;
+    line-height:1!important;
+    display:grid!important;
+    place-items:center!important;
+    z-index:60!important;
+  }
+  .jp-popup-ad{overflow:visible!important}
+
+  /* Keep cart monetary hierarchy */
+  .jp-flow-cart .jp-cart-copy>b{color:var(--jp2-green-dark)!important;font-weight:650!important}
+}
+
+/* Shared modal X at larger breakpoints too */
+.jp-v2-modal>.jp-v2-x,
+.overlay .sheet>.sheet-x,
+#shopOverlay .sheet-x,
+.jp-popup-ad>.jp-popup-close{
+  top:-16px!important;
+  right:-16px!important;
+  left:auto!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
