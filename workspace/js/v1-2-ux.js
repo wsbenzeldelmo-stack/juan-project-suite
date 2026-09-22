@@ -109,6 +109,5 @@
     wrapAsync('saveInvoicePDF','Preparing invoice…','Formatting the JUAN PROJECT invoice for export.');
   }
   document.addEventListener('DOMContentLoaded',()=>setTimeout(install,120));
-  const observer=new MutationObserver(()=>{setupValidation();decorateSnapshot();upgradeEmptyStates();improveAccessibility()});
-  document.addEventListener('DOMContentLoaded',()=>observer.observe(document.body,{childList:true,subtree:true}));
+  window.addEventListener('juan:realtime-sync',()=>requestAnimationFrame(()=>{decorateSnapshot();upgradeEmptyStates();}));
 })();
