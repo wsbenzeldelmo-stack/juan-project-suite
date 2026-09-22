@@ -51,10 +51,10 @@ function iconOnly(el,name){
   if(!el||el.dataset.jpIconFamily==='1')return;
   el.dataset.jpIconFamily='1';el.innerHTML=svg(name);el.classList.add('jp-family-icon-button');
 }
-function replaceGlyphs(){
-  document.querySelectorAll('.jp-suite-close,[data-close],.jp-settings-modal-x,.modal-close,.close-modal,[aria-label="Close"]').forEach(el=>iconOnly(el,'x'));
-  document.querySelectorAll('.icon-more-button,.vertical-more,.table-action-button,.jp-icon-button').forEach(el=>iconOnly(el,'more'));
-  document.querySelectorAll('button,a').forEach(el=>{
+function replaceGlyphs(scope=document){
+  scope.querySelectorAll('.jp-suite-close,[data-close],.jp-settings-modal-x,.modal-close,.close-modal,[aria-label="Close"]').forEach(el=>iconOnly(el,'x'));
+  scope.querySelectorAll('.icon-more-button,.vertical-more,.table-action-button,.jp-icon-button').forEach(el=>iconOnly(el,'more'));
+  scope.querySelectorAll('button,a').forEach(el=>{
     if(el.closest('.nav-item'))return;
     const raw=(el.textContent||'').trim();
     if(raw==='←'||raw==='← Back'||raw.startsWith('← Back')){const txt=raw.replace(/^←\s*/,'');el.innerHTML=svg('arrowLeft')+(txt?'<span>'+txt+'</span>':'');return}
@@ -66,21 +66,26 @@ function replaceGlyphs(){
     if(raw.includes('✓ Completed')){el.innerHTML=svg('check')+'<span>Completed</span>';return}
     if(raw==='View All →'){el.innerHTML='<span>View All</span>'+svg('arrowRight');return}
   });
-  document.querySelectorAll('.jp-summary-icon').forEach(el=>{
+  scope.querySelectorAll('.jp-summary-icon').forEach(el=>{
     const row=el.closest('.jp-client-summary-row'),label=(row?.querySelector('span')?.textContent||'').trim();
     const name=label==='Total Projects'?'grid':label==='Total Project Value'?'wallet':label==='Total Paid'?'check':label==='Outstanding Balance'?'clock':null;
     if(name)el.innerHTML=svg(name);
   });
-  document.querySelectorAll('.jp-scanner-support').forEach(el=>{if(el.textContent.trim().startsWith('ⓘ'))el.innerHTML=svg('info')+'<span>'+el.textContent.trim().replace(/^ⓘ\s*/,'')+'</span>'});
+  scope.querySelectorAll('.jp-scanner-support').forEach(el=>{if(el.textContent.trim().startsWith('ⓘ'))el.innerHTML=svg('info')+'<span>'+el.textContent.trim().replace(/^ⓘ\s*/,'')+'</span>'});
 }
-function unifyExistingSvgs(){
-  document.querySelectorAll('svg.icon-svg').forEach(s=>{
+function unifyExistingSvgs(scope=document){
+  scope.querySelectorAll('svg.icon-svg').forEach(s=>{
     s.setAttribute('fill','none');s.setAttribute('stroke','currentColor');s.setAttribute('stroke-width','1.8');
     s.setAttribute('stroke-linecap','round');s.setAttribute('stroke-linejoin','round');
   });
 }
 let queued=false;
-function run(){queued=false;normalizeNav();replaceGlyphs();unifyExistingSvgs()}
+function run(){
+  queued=false;normalizeNav();
+  const active=document.querySelector('.view.active');
+  if(active){replaceGlyphs(active);unifyExistingSvgs(active);}
+  document.querySelectorAll('[role="dialog"],.modal.show,.jp-suite-overlay,.suite-overlay').forEach(scope=>{replaceGlyphs(scope);unifyExistingSvgs(scope)});
+}
 function schedule(){if(queued)return;queued=true;requestAnimationFrame(run)}
 document.addEventListener('DOMContentLoaded',schedule);
 document.addEventListener('click',e=>{
