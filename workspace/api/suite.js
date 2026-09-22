@@ -159,7 +159,8 @@ async function publicAds(req,svc){
   ]);
   if(adsRes.error)throw adsRes.error;if(settingsRes.error)throw settingsRes.error;
   const instant=Date.now();
-  const ads=(adsRes.data||[]).filter(a=>{
+  const adSettings=settingsRes.data||{enabled:true,rotation_seconds:8,transition:'fade'};
+  const ads=(adSettings.enabled===false?[]:(adsRes.data||[])).filter(a=>{
     if(a.enabled===false)return false;
     if(!['all',audience].includes(a.audience||'all'))return false;
     if(!['published','scheduled'].includes(String(a.status||'draft')))return false;
@@ -168,7 +169,7 @@ async function publicAds(req,svc){
     if(!a.no_expiration&&end&&end<=instant)return false;
     return true;
   }).map(a=>({...a,effective_status:'published',start:a.start_at||a.start_date,end:a.end_at||a.end_date}));
-  return {ads,settings:settingsRes.data||{rotation_seconds:8,transition:'fade'},client_id:clientId};
+  return {ads,settings:adSettings,client_id:clientId};
 }
 async function recordAdEvent(b,req,svc){
   const adId=String(b.ad_id||''),eventType=String(b.event_type||''),visitorId=String(b.visitor_id||'').slice(0,120),sessionId=String(b.session_id||'').slice(0,120);
@@ -207,12 +208,14 @@ async function submitOrder(b,svc){
   });
   const title=String(b.title||'').trim()||items[0]?.name||'Order Request';
   const subtotal=Math.round(items.reduce((s,i)=>s+i.price*i.qty,0)*100)/100;
-  const hasPackage=items.some(i=>i.type==='package'),standardDays=hasPackage?14:10;
+  const standardDays=14;
+  const deliverableCount=items.reduce((sum,i)=>sum+(String(i.type||'').toLowerCase()==='package'?Math.max(1,(Array.isArray(i.includedItems)?i.includedItems.length:0))*Math.max(1,Number(i.qty||1)):Math.max(1,Number(i.qty||1))),0);
+  const rushRate=deliverableCount<=3?500:deliverableCount<=7?800:deliverableCount<=11?1000:1200;
   let rush=0;
   if(b.deadline){
     const deadline=new Date(String(b.deadline)+'T00:00:00');if(Number.isNaN(deadline.getTime()))fail('Invalid requested date.');
     const start=new Date(today()+'T00:00:00'),days=Math.round((deadline-start)/86400000);if(days<0)fail('Requested date cannot be in the past.');
-    rush=Math.ceil(Math.max(0,standardDays-days)/4)*500;
+    rush=Math.ceil(Math.max(0,standardDays-days)/4)*rushRate;
   }
   const raw=guestTokenForKey(key),initialTotal=subtotal+rush;
   const acceptanceKey=hash(`${email}|${key}|2026-09-22`);
@@ -241,7 +244,7 @@ async function convertOrder(id,svc,adminUser){
     id:pId,client_id:client.id,client_name:client.name,client_email:client.email,client_phone:client.phone,
     title:o.title,status:'In Progress',delivery_status:'Pending',priority:Number(o.rush_fee||0)>0,
     project_type:hasPackage?'PACKAGE':'SOLO',pricing_version:'v2',
-    start_date:today(),deadline_date:o.deadline||null,subtotal_amount:o.subtotal||0,discount_amount:o.discount_amount||0,rush_fee:o.rush_fee||0,total_amount:o.total||0,
+    start_date:today(),deadline_date:o.deadline||null,subtotal_amount:o.subtotal||0,discount_amount:o.discount_amount||0,rush_fee:o.rush_fee||0,calculated_rush_fee:o.rush_fee||0,rush_fee_enabled:true,total_amount:o.total||0,
     notes:`Guest order ${o.code||''}`.trim(),tracker_stage:0,milestones:[{stage:0,at:now()}]
   }).select('*').single();
   if(createdProject.error)throw createdProject.error;
@@ -344,15 +347,12 @@ export default async function handler(req,res){
 
     if(action==='dashboard')return res.status(200).json(await dashboard(svc));
     if(action==='ad-dashboard'){
-      const [ads,settings,events]=await Promise.all([
+      const [ads,settings]=await Promise.all([
         svc.from('promotions').select('*').order('created_at',{ascending:false}),
-        svc.from('ad_settings').select('*').eq('id',1).maybeSingle(),
-        svc.from('ad_events').select('ad_id,event_type,created_at').order('created_at',{ascending:false}).limit(5000)
+        svc.from('ad_settings').select('*').eq('id',1).maybeSingle()
       ]);
-      if(ads.error)throw ads.error;if(settings.error)throw settings.error;if(events.error)throw events.error;
-      const stats={};
-      (events.data||[]).forEach(e=>{const s=stats[e.ad_id]||(stats[e.ad_id]={impression:0,click:0,dismiss:0});if(e.event_type in s)s[e.event_type]++});
-      return res.status(200).json({ads:ads.data||[],settings:settings.data||{rotation_seconds:8,transition:'fade'},stats});
+      if(ads.error)throw ads.error;if(settings.error)throw settings.error;
+      return res.status(200).json({ads:ads.data||[],settings:settings.data||{enabled:true,rotation_seconds:8,transition:'fade',max_active_popups:1,auto_archive_expired:true}});
     }
     if(action==='revise-order'){
       const {data:o,error}=await svc.from('incoming_orders').select('*').eq('id',b.id).maybeSingle();if(error)throw error;
@@ -433,6 +433,20 @@ export default async function handler(req,res){
       const {data,error}=await svc.rpc('review_juan_payment_submission',{p_submission_id:b.id||b.submissionId,p_decision:decision,p_admin_user:user.id,p_reason:reason||null});
       if(error)throw error;await audit(svc,'Payment '+data,String(b.id||b.submissionId),user.id);return res.status(200).json({ok:true,status:data});
     }
+    if(action==='set-rush-fees'){
+      const projectId=String(b.project_id||b.projectId||'').trim();if(!projectId)fail('Project is required.');
+      const enabled=b.enabled===true||b.enabled==='true';
+      const current=await svc.from('projects').select('id,rush_fee,calculated_rush_fee,total_amount').eq('id',projectId).single();
+      if(current.error)throw current.error;
+      const calculated=Math.max(0,Number(current.data.calculated_rush_fee??current.data.rush_fee??0));
+      const previousApplied=Math.max(0,Number(current.data.rush_fee||0));
+      const nextApplied=enabled?calculated:0;
+      const nextTotal=Math.max(0,Number(current.data.total_amount||0)-previousApplied+nextApplied);
+      const updated=await svc.from('projects').update({rush_fee_enabled:enabled,rush_fee:nextApplied,total_amount:nextTotal,updated_at:now()}).eq('id',projectId).select('id,rush_fee_enabled,calculated_rush_fee,rush_fee,rush_days_early,total_amount,pricing_version').single();
+      if(updated.error)throw updated.error;
+      await audit(svc,enabled?'Rush fee enabled':'Rush fee waived',projectId,user.id);
+      return res.status(200).json({ok:true,project:updated.data});
+    }
     if(action==='set-overdue-fees'){
       const projectId=String(b.project_id||b.projectId||'').trim();
       if(!projectId)fail('Project is required.');
@@ -500,7 +514,10 @@ export default async function handler(req,res){
     }
     if(action==='ad-settings'){
       const seconds=Math.max(3,Math.min(120,Math.trunc(Number(b.rotation_seconds||8))));
-      const {data,error}=await svc.from('ad_settings').upsert({id:1,rotation_seconds:seconds,transition:'fade',updated_at:now()},{onConflict:'id'}).select('*').single();
+      const enabled=b.enabled===undefined?true:(b.enabled===true||b.enabled==='true');
+      const maxPopups=Math.max(1,Math.min(1,Math.trunc(Number(b.max_active_popups||1))));
+      const autoArchive=b.auto_archive_expired===undefined?true:(b.auto_archive_expired===true||b.auto_archive_expired==='true');
+      const {data,error}=await svc.from('ad_settings').upsert({id:1,enabled,rotation_seconds:seconds,transition:'fade',max_active_popups:maxPopups,auto_archive_expired:autoArchive,updated_at:now()},{onConflict:'id'}).select('*').single();
       if(error)throw error;return res.status(200).json({ok:true,settings:data});
     }
     if(action==='archive-ad'){
