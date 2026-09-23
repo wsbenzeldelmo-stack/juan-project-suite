@@ -474,17 +474,17 @@
     /* UNIFIED MODAL / POPUP SYSTEM */
     .modal-backdrop {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
       display: flex; align-items: center; justify-content: center; z-index: 1000;
       opacity: 0; pointer-events: none; transition: opacity var(--transition-fast);
       padding: 16px;
     }
     .modal-backdrop.active { opacity: 1; pointer-events: auto; }
-    .modal-card { background: var(--bg-card); color: var(--text-primary); border-radius: var(--radius-xl); width: 100%; max-width: 520px; padding: 28px; box-shadow: var(--shadow-modal); transform: scale(0.96); transition: transform var(--transition-fast), background-color 0.2s ease, color 0.2s ease; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-subtle); }
+    .modal-card { position:relative; background: var(--bg-card); color: var(--text-primary); border-radius: var(--radius-xl); width: 100%; max-width: 520px; padding: 28px; box-shadow: var(--shadow-modal); transform: scale(0.96); transition: transform var(--transition-fast), background-color 0.2s ease, color 0.2s ease; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-subtle); }
     .modal-backdrop.active .modal-card { transform: scale(1); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-right:46px; }
     .modal-title { font-size: 20px; font-weight: 700; }
-    .modal-close { background: none; border: none; font-size: 18px; color: var(--text-tertiary); cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center; }
+    .modal-close { width:40px; height:40px; min-width:40px; min-height:40px; background:transparent; border:0; border-radius:0; font-size:22px; line-height:1; color:#111; cursor:pointer; padding:0; display:grid; place-items:center; position:absolute; top:10px; right:10px; z-index:4; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 
     /* Data Tables Container */
@@ -494,7 +494,7 @@
     .data-table th { color: var(--text-tertiary); font-size: 12px; text-transform: uppercase; }
 
     /* Notifications & Toasts */
-    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 48px); }
+    .toast-container { position: fixed; top: calc(env(safe-area-inset-top) + 12px); right: 20px; bottom: auto; z-index: 300000; display: flex; flex-direction: column; gap: 8px; max-width: calc(100vw - 48px); }
     .toast { background: var(--text-primary); color: var(--bg-card); padding: 12px 20px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; box-shadow: var(--shadow-modal); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
     .hidden { display: none !important; }
@@ -1566,7 +1566,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 #destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
-  <link rel="stylesheet" href="/css/general-update.css?v=20260920-1805">
+  <link rel="stylesheet" href="/css/general-update.css?v=20260923-ui2">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
   <link rel="stylesheet" href="/css/consistency-pass.css?v=20260920-1840">
   <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260923-1208">
@@ -2111,10 +2111,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
           </div>
         </header>
 
-        <div class="card">
+        <div class="card deadline-calendar-card">
           <div class="calendar-header-title mb-4" id="calendarMonthYearHeader">August 2026</div>
           <div class="calendar-grid-header">
-            <div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div><div>SUN</div>
+            <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
           </div>
           <div class="calendar-grid-cells" id="calendarGridCells"></div>
         </div>
@@ -5328,8 +5328,8 @@ ${description}`))actionCallback();return;}
       }
       function renderOverviewMiniCalendar(){
         const box=document.getElementById('overviewMiniCalendar'),title=document.getElementById('overviewCalendarTitle'); if(!box)return; const now=new Date(),y=now.getFullYear(),m=now.getMonth(); if(title)title.textContent=now.toLocaleDateString('en-PH',{month:'long',year:'numeric'});
-        const first=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate(),deadlines=new Map(); state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.deadline_date&&String(p.deadline_date).slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`).forEach(p=>{const day=Number(String(p.deadline_date).slice(8,10));if(!deadlines.has(day))deadlines.set(day,[]);deadlines.get(day).push(p)});
-        let h=['M','T','W','T','F','S','S'].map(x=>`<div class="overview-cal-head">${x}</div>`).join(''); for(let i=0;i<first;i++)h+='<div></div>'; for(let d=1;d<=days;d++){const ps=deadlines.get(d)||[],isToday=d===now.getDate();h+=`<div class="overview-cal-day ${isToday?'today':''} ${ps.length?'has-deadline':''}" ${ps.length?`onclick="app.openProjectDetails('${ps[0].id}')" title="${escapeHtml(ps.map(p=>p.title).join(', '))}"`:''}>${d}${ps.length?'<span class="overview-cal-dot"></span>':''}</div>`} box.innerHTML=h;
+        const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),deadlines=new Map(); state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.deadline_date&&String(p.deadline_date).slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`).forEach(p=>{const day=Number(String(p.deadline_date).slice(8,10));if(!deadlines.has(day))deadlines.set(day,[]);deadlines.get(day).push(p)});
+        let h=['S','M','T','W','T','F','S'].map(x=>`<div class="overview-cal-head">${x}</div>`).join(''); for(let i=0;i<first;i++)h+='<div></div>'; for(let d=1;d<=days;d++){const ps=deadlines.get(d)||[],isToday=d===now.getDate();h+=`<div class="overview-cal-day ${isToday?'today':''} ${ps.length?'has-deadline':''}" ${ps.length?`onclick="app.openProjectDetails('${ps[0].id}')" title="${escapeHtml(ps.map(p=>p.title).join(', '))}"`:''}>${d}${ps.length?'<span class="overview-cal-dot"></span>':''}</div>`} box.innerHTML=h;
       }
 
       function renderOverviewDashboard() {
@@ -8571,42 +8571,42 @@ ${description}`))actionCallback();return;}
       /* ==========================================================================
          CALENDAR TRUE BOX/GRID LAYOUT
          ========================================================================== */
+      function philippineHoliday(dateStr){
+        const fixed={
+          "01-01":"New Year's Day","04-09":"Araw ng Kagitingan","05-01":"Labor Day","06-12":"Independence Day",
+          "08-21":"Ninoy Aquino Day","11-01":"All Saints' Day","11-30":"Bonifacio Day","12-08":"Immaculate Conception",
+          "12-25":"Christmas Day","12-30":"Rizal Day","12-31":"Last Day of the Year"
+        };
+        const md=String(dateStr).slice(5),year=Number(String(dateStr).slice(0,4));
+        if(fixed[md])return fixed[md];
+        const heroesDate=new Date(year,7,31);while(heroesDate.getDay()!==1)heroesDate.setDate(heroesDate.getDate()-1);
+        const heroes=`${year}-08-${String(heroesDate.getDate()).padStart(2,'0')}`;
+        if(dateStr===heroes)return "National Heroes Day";
+        const special2026={"2026-02-17":"Chinese New Year","2026-04-02":"Maundy Thursday","2026-04-03":"Good Friday"};
+        return special2026[dateStr]||"";
+      }
       function renderCalendar() {
-        const cells = document.getElementById("calendarGridCells");
-        const header = document.getElementById("calendarMonthYearHeader");
-        if (!cells || !header) return;
-
-        const curr = state.calendarDate;
-        header.innerText = curr.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-        cells.innerHTML = "";
-        const year = curr.getFullYear();
-        const month = curr.getMonth();
-
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        const startOffset = (firstDay + 6) % 7;
-
-        for (let i = 0; i < startOffset; i++) {
-          cells.innerHTML += `<div class="calendar-cell text-muted" style="opacity:0.2;"></div>`;
+        const cells=document.getElementById("calendarGridCells"),header=document.getElementById("calendarMonthYearHeader");
+        if(!cells||!header)return;
+        const curr=state.calendarDate,year=curr.getFullYear(),month=curr.getMonth();
+        header.innerText=curr.toLocaleDateString('en-PH',{month:'long',year:'numeric'});
+        const firstDay=new Date(year,month,1).getDay(),daysInMonth=new Date(year,month+1,0).getDate(),prevDays=new Date(year,month,0).getDate();
+        const today=new Date(),todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        let html="";
+        for(let slot=0;slot<42;slot++){
+          const relative=slot-firstDay+1;
+          let cellYear=year,cellMonth=month,day=relative,muted=false;
+          if(relative<1){cellMonth=month-1;if(cellMonth<0){cellMonth=11;cellYear--;}day=prevDays+relative;muted=true;}
+          else if(relative>daysInMonth){cellMonth=month+1;if(cellMonth>11){cellMonth=0;cellYear++;}day=relative-daysInMonth;muted=true;}
+          const dateStr=`${cellYear}-${String(cellMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          const holiday=philippineHoliday(dateStr),matchingProjects=state.projects.filter(p=>!p.deleted&&p.deadline_date===dateStr),isToday=dateStr===todayStr;
+          const shown=matchingProjects.slice(0,2),more=matchingProjects.length-shown.length;
+          html+=`<div class="calendar-cell ${muted?'outside-month':''} ${isToday?'today':''} ${holiday?'holiday':''} ${matchingProjects.length?'has-deadline':''}">
+            <div class="calendar-cell-top"><span class="cell-day-num">${day}</span>${holiday?`<span class="calendar-holiday-label" title="${escapeHtml(holiday)}">${escapeHtml(holiday)}</span>`:''}</div>
+            <div class="calendar-cell-events">${shown.map(p=>`<button class="calendar-event-tag" onclick="app.openProjectDetails('${p.id}')" title="${escapeHtml(p.title||p.client_name||'Project')}">${escapeHtml(formatProjectId(p))} · ${escapeHtml(p.title||p.client_name||'Project')}</button>`).join("")}${more>0?`<span class="calendar-more">+${more} more</span>`:''}</div>
+          </div>`;
         }
-
-        const todayStr = new Date().toISOString().split("T")[0];
-
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          const isToday = dateStr === todayStr;
-
-          const matchingProjects = state.projects.filter(p => !p.deleted && p.deadline_date === dateStr);
-
-          cells.innerHTML += `
-            <div class="calendar-cell ${isToday ? 'today' : ''}">
-              <div class="cell-day-num">${d}</div>
-              ${matchingProjects.map(p => `<div class="calendar-event-tag" onclick="app.openProjectDetails('${p.id}')">${escapeHtml(formatProjectId(p))} · ${escapeHtml(p.title||p.client_name||'Project')}</div>`).join("")}
-            </div>
-          `;
-        }
+        cells.innerHTML=html;
       }
 
       function changeCalendarMonth(delta) {
@@ -10273,7 +10273,7 @@ ${description}`))actionCallback();return;}
 <script src="/js/jsQR.js"></script>
 <script type="module" src="/js/suite-prod.js"></script>
 <script type="module" src="/js/workspace-redesign.js"></script>
-<script type="module" src="/js/general-update.js?v=20260923-0225"></script>
+<script type="module" src="/js/general-update.js?v=20260923-ui2"></script>
 <script type="module" src="/js/keyboard-shortcuts.js?v=20260923-0105"></script>
 <script src="/js/workspace-icon-system-2026-09-22.js?v=20260923-0225"></script>
   <script src="/js/consistency-pass.js?v=20260923-0225"></script>
