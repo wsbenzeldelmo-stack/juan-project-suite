@@ -1564,16 +1564,47 @@ table.jp-packages-table col:nth-child(6){width:7%}
   box-sizing:border-box!important;
 }
 #destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
+
+/* First-open Workspace splash */
+.workspace-boot-splash{
+  position:fixed;inset:0;z-index:500000;display:grid;place-items:center;
+  padding:24px;background:#f5f8f6;opacity:1;visibility:visible;
+  transition:opacity .18s ease,visibility .18s ease;
+}
+.workspace-boot-splash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+.workspace-boot-card{
+  width:min(420px,calc(100vw - 40px));display:grid;justify-items:center;text-align:center;gap:14px;
+  padding:30px 30px 26px;border:1px solid rgba(17,24,39,.07);border-radius:24px;background:#fff;
+  box-shadow:0 24px 70px rgba(20,43,34,.10)
+}
+.workspace-boot-logo{display:block;width:min(250px,72%);height:auto;object-fit:contain}
+.workspace-boot-copy{display:grid;gap:4px}
+.workspace-boot-copy strong{font-family:"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif;font-size:18px;font-weight:700;letter-spacing:-.02em;color:#111820}
+.workspace-boot-copy span{font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif;font-size:11px;font-weight:400;color:#7a8580}
+.workspace-boot-progress{width:148px;height:4px;border-radius:999px;background:#edf2ef;overflow:hidden}
+.workspace-boot-progress span{display:block;width:42%;height:100%;border-radius:inherit;background:#19ba75;animation:workspaceBootTrack 1.05s ease-in-out infinite}
+@keyframes workspaceBootTrack{0%{transform:translateX(-110%)}100%{transform:translateX(240%)}}
+@media(prefers-reduced-motion:reduce){.workspace-boot-progress span{animation:none;width:100%}.workspace-boot-splash{transition:none}}
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
   <link rel="stylesheet" href="/css/general-update.css?v=20260923-ui2">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
-  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260920-1840">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260923-1208">
+  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-settings-top-1">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-settings-top-1">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
   <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
 <body>
+  <div id="workspaceBootSplash" class="workspace-boot-splash" aria-live="polite" aria-busy="true" aria-label="Opening JUAN PROJECT Workspace">
+    <div class="workspace-boot-card">
+      <img class="workspace-boot-logo" src="/assets/brand/juan-project-workspace-master.png" alt="JUAN PROJECT Workspace">
+      <div class="workspace-boot-copy">
+        <strong>JUAN PROJECT Workspace</strong>
+        <span>Preparing your workspace…</span>
+      </div>
+      <div class="workspace-boot-progress" aria-hidden="true"><span></span></div>
+    </div>
+  </div>
 
   <div class="app-container">
     <!-- SIDEBAR -->
@@ -3223,7 +3254,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           supabaseClient=window.JuanTest.client; window.supabaseClient=supabaseClient; state.isConnected=true;
           hideWorkspaceAuthGate(); updateConnectionStatus('connected','● SHARED TEST DATA');
           updateManualDatabasePanel('Both apps are connected to one shared test server. Supabase will be configured at redeployment.');
-          await loadDatabaseData(); await startWorkspaceRealtimeSync(); setWorkspaceLoading(false); return;
+          await loadDatabaseData(); await startWorkspaceRealtimeSync(); setWorkspaceLoading(false); finishWorkspaceBoot(); return;
         }
         // Business records are loaded only from Supabase.
         // On refresh, keep one stable render path so the current UI does not flash and
@@ -3239,6 +3270,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           updateManualDatabasePanel('Supabase deployment configuration is unavailable.');
           renderCurrentView();
           setWorkspaceLoading(false);
+          finishWorkspaceBoot();
           showWorkspaceAuthGate('Database connection is required.');
           return;
         }
@@ -3250,6 +3282,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           showWorkspaceAuthGate('Sign in to load JUAN PROJECT Workspace from Supabase.');
         }
         setWorkspaceLoading(false);
+        finishWorkspaceBoot();
       }
 
 
@@ -4352,6 +4385,13 @@ table.jp-packages-table col:nth-child(6){width:7%}
         }catch(e){console.warn('Workspace profile fallback load unavailable:',e?.message||e);}
       }
 
+      let workspaceBootStartedAt=performance.now();
+      function finishWorkspaceBoot(){
+        const splash=document.getElementById('workspaceBootSplash');if(!splash)return;
+        const elapsed=performance.now()-workspaceBootStartedAt,wait=Math.max(0,700-elapsed);
+        setTimeout(()=>{splash.classList.add('is-hidden');splash.setAttribute('aria-busy','false');setTimeout(()=>splash.remove(),220);},wait);
+      }
+
       function setWorkspaceLoading(loading) {
         const shell=document.getElementById('workspaceLoadingSkeleton');
         if(shell)shell.classList.toggle('hidden',!loading);
@@ -5218,6 +5258,9 @@ ${description}`))actionCallback();return;}
 
       function navigateTo(viewId) {
         state.activeView = viewId;
+        const mainContent=document.querySelector('.main-content');
+        if(mainContent)mainContent.scrollTop=0;
+        window.scrollTo?.({top:0,left:0,behavior:'instant'});
         document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
         document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
 
@@ -5228,6 +5271,11 @@ ${description}`))actionCallback();return;}
         if (navItem) navItem.classList.add("active");
 
         renderCurrentView();
+        requestAnimationFrame(()=>{
+          const mainContent=document.querySelector('.main-content');
+          if(mainContent)mainContent.scrollTop=0;
+          window.scrollTo?.({top:0,left:0,behavior:'instant'});
+        });
       }
 
       function renderCurrentView() {
