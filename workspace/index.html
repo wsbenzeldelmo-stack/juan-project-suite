@@ -4913,14 +4913,13 @@ ${description}`))actionCallback();return;}
       }
 
 
-      const WORKSPACE_RESET_PIN = "729333";
       const WORKSPACE_SENSITIVE_AUTH_KEY = "JUAN_WORKSPACE_SENSITIVE_AUTH_V1";
       const WORKSPACE_SENSITIVE_AUTH_WINDOW_MS = 5 * 60 * 1000;
 
       function sensitiveAuthFresh(){
         try{
           const saved=JSON.parse(sessionStorage.getItem(WORKSPACE_SENSITIVE_AUTH_KEY)||"null");
-          return !!saved&&saved.userId&&Number(saved.verifiedAt)>0&&(Date.now()-Number(saved.verifiedAt)<WORKSPACE_SENSITIVE_AUTH_WINDOW_MS);
+          const fresh=!!saved&&saved.userId&&Number(saved.verifiedAt)>0&&(Date.now()-Number(saved.verifiedAt)<WORKSPACE_SENSITIVE_AUTH_WINDOW_MS);if(!fresh)sessionStorage.removeItem(WORKSPACE_SENSITIVE_AUTH_KEY);return fresh;
         }catch(_){return false;}
       }
       async function markSensitiveAuthFresh(){
@@ -4972,13 +4971,9 @@ ${description}`))actionCallback();return;}
       }
 
       function openResetDataModal(){
-        const error=document.getElementById('resetDataPinError');if(error)error.classList.add('hidden');markSecurePinInvalid('resetDataPinDigits',false);openModal('resetDataPinModal');setupSecurePinBoxes('resetDataPinDigits','resetDataPinInput',confirmResetDataPin);
+        requestDestructivePin('Reset Workspace Data','Reset all Workspace data and restore the preloaded dataset?',()=>showConfirmationDialog('Reset all workspace data?','This will remove your current projects, clients, payments, catalog changes, templates, tasks, and cart data, then restore the preloaded workspace dataset. This action cannot be undone unless you exported a backup.','Reset Data',performResetWorkspaceData));
       }
-      function confirmResetDataPin(){
-        const input=document.getElementById('resetDataPinInput'),error=document.getElementById('resetDataPinError');const pin=String(input?.value||'').replace(/\D/g,'').slice(0,6);
-        if(pin!==WORKSPACE_RESET_PIN){markSecurePinInvalid('resetDataPinDigits',true);if(error)error.classList.remove('hidden');document.querySelector('#resetDataPinDigits .secure-pin-digit')?.focus();return;}
-        markSecurePinInvalid('resetDataPinDigits',false);if(error)error.classList.add('hidden');closeModal('resetDataPinModal');showConfirmationDialog('Reset all workspace data?','This will remove your current projects, clients, payments, catalog changes, templates, tasks, and cart data, then restore the preloaded workspace dataset. This action cannot be undone unless you exported a backup.','Reset Data',performResetWorkspaceData);
-      }
+      function confirmResetDataPin(){openResetDataModal();}
       function performResetWorkspaceData(){
         const operationalKeys=[
           'JUAN_PROJECTS_LOCAL',
@@ -7958,6 +7953,7 @@ ${description}`))actionCallback();return;}
       }
       async function saveProjectData(options={}){
         const silent=options?.silent===true,proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||projectDataAutosaveBusy)return;
+        if(options?.authorized!==true&&!sensitiveAuthFresh()){requestDestructivePin('Confirm Project Changes','Save changes to this project information?',()=>saveProjectData({...options,authorized:true}));return;}
         const name=document.getElementById('projectDataProjectName')?.value.trim()||'',email=document.getElementById('projectDataClientEmail')?.value.trim()||'';
         if(!name){setProjectDataAutosaveStatus('Project name is required.','error');return}
         if(!validProjectClientEmail(email)){setProjectDataAutosaveStatus('Enter a valid email address.','error');return}
@@ -8192,8 +8188,9 @@ ${description}`))actionCallback();return;}
         document.getElementById('projectOrderItemPrice').value=Math.max(0,Number(item.price||0));
         setProjectOrderItemType(item.type||'SOLO');document.getElementById('projectOrderItemSuggestions')?.classList.remove('open');openModal('projectOrderItemModal');
       }
-      function saveProjectOrderItem(){
+      function saveProjectOrderItem(authorized=false){
         const proj=state.projects.find(p=>p.id===state.activeProjectId); if(!proj)return;
+        if(!authorized){requestDestructivePin('Confirm Order Item Changes','Save this order item change?',()=>saveProjectOrderItem(true));return;}
         if(!Array.isArray(proj.project_items)) proj.project_items=[];
         const name=document.getElementById('projectOrderItemName').value.trim();
         const qty=Math.max(1,Math.round(Number(document.getElementById('projectOrderItemQty').value||1)));
@@ -8218,8 +8215,10 @@ ${description}`))actionCallback();return;}
       }
       function selectProjectDeliverableSuggestion(index){const x=(state.projectDeliverableSuggestionCache||[])[Number(index)];if(!x)return;state.projectDeliverableSelected=x;document.getElementById('projectDeliverableName').value=x.name;document.getElementById('projectDeliverableSuggestions')?.classList.remove('open');}
       function openProjectDeliverableModal(){state.projectDeliverableSelected=null;const input=document.getElementById('projectDeliverableName');if(input)input.value='';document.getElementById('projectDeliverableSuggestions')?.classList.remove('open');openModal('projectDeliverableModal');setTimeout(()=>renderProjectDeliverableSuggestions(''),30);}
-      function saveProjectDeliverable(){
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const name=document.getElementById('projectDeliverableName').value.trim();if(!name){showToast('Deliverable name is required.');return;}if(!Array.isArray(proj.deliverables))proj.deliverables=[];
+      function saveProjectDeliverable(authorized=false){
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        if(!authorized){requestDestructivePin('Confirm Deliverable Changes','Add this deliverable to the project?',()=>saveProjectDeliverable(true));return;}
+        const name=document.getElementById('projectDeliverableName').value.trim();if(!name){showToast('Deliverable name is required.');return;}if(!Array.isArray(proj.deliverables))proj.deliverables=[];
         const selected=state.projectDeliverableSelected&&String(state.projectDeliverableSelected.name||'').toLowerCase()===name.toLowerCase()?state.projectDeliverableSelected:null;const baseId=`del_manual_${proj.id}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
         if(selected?.type==='PACKAGE'&&Array.isArray(selected.includedServiceNames)&&selected.includedServiceNames.length){const parent={id:baseId,item_name:name,name,source_type:'MANUAL',is_group:true,completed:false,progress:0,status:'Pending'};proj.deliverables.push(parent,...selected.includedServiceNames.map((n,i)=>({id:`${baseId}_child_${i}`,item_name:n,name:n,source_type:'MANUAL',parent_id:baseId,package_name:name,completed:false,progress:0,status:'Pending'})));}else proj.deliverables.push({id:baseId,item_name:name,name,source_type:'MANUAL',completed:false,progress:0,status:'Pending',completed_at:null});
         proj.updated_at=new Date().toISOString();persistProjectsState();scheduleProjectStructureSync(proj,50);closeModal('projectDeliverableModal');renderProjectDeliverablesList(proj);renderOverviewDashboard();showToast('Deliverable added.');
