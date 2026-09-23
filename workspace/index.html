@@ -44,7 +44,7 @@
       --status-gray: #8e8e93;
 
       /* System Typography */
-      --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, sans-serif;
+      --font-system: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont;
       
       /* Strict Corner Radius Scale */
       --radius-sm: 8px;    /* Compact controls, tags, badges */
@@ -1571,6 +1571,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <link rel="stylesheet" href="/css/consistency-pass.css?v=20260920-1840">
   <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260923-1208">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
+  <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
 <body>
 
@@ -1609,7 +1610,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
       </nav>
 
       <div class="user-profile">
-        <img id="sidebarAvatar" class="user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'><rect width='38' height='38' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='sans-serif' font-size='14' font-weight='bold'>BD</text></svg>" alt="Profile Photo">
+        <img id="sidebarAvatar" class="user-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'><rect width='38' height='38' fill='%2319ba75'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='SF Pro Text' font-size='14' font-weight='bold'>BD</text></svg>" alt="Profile Photo">
         <div class="user-info">
           <div class="user-name" id="sidebarUserName">Your Business Name</div>
           <div class="user-role">Account Owner</div>
@@ -4276,7 +4277,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         const email=document.getElementById('ownerEmailInput');if(email)email.value=state.ownerEmail||'';
 
         const initials=ownerName.split(/\s+/).filter(Boolean).map(n=>n[0]).join('').slice(0,2).toUpperCase()||'JP';
-        const fallback=`data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect width='128' height='128' rx='64' fill='%2319ba75'/><text x='50%' y='53%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Arial,sans-serif' font-size='44' font-weight='700'>${encodeURIComponent(initials)}</text></svg>`;
+        const fallback=`data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><rect width='128' height='128' rx='64' fill='%2319ba75'/><text x='50%' y='53%' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='SF Pro Text' font-size='44' font-weight='700'>${encodeURIComponent(initials)}</text></svg>`;
         const photo=String(state.profilePhoto||'').trim();
         const avatarSrc=photo||fallback;
         const sidebarAvatar=document.getElementById('sidebarAvatar');
@@ -9942,7 +9943,7 @@ ${description}`))actionCallback();return;}
           el.style.objectFit="cover";
           el.style.borderRadius="50%";
         }else{
-          const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="#19ba75"/><text x="32" y="37" text-anchor="middle" font-family="Arial,sans-serif" font-size="21" font-weight="700" fill="white">${initials()}</text></svg>`;
+          const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" rx="32" fill="#19ba75"/><text x="32" y="37" text-anchor="middle" font-family="SF Pro Text" font-size="21" font-weight="700" fill="white">${initials()}</text></svg>`;
           el.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
         }
       }else{

@@ -1,0 +1,88 @@
+/* JUAN PROJECT Workspace — SF Pro typography authority
+   SF Pro is the only visual type system. Hierarchy comes from weight,
+   size, spacing, and color rather than mixing typefaces. */
+:root{
+  --font-sf-text:"SF Pro Text","SF Pro Display",-apple-system,BlinkMacSystemFont;
+  --font-sf-display:"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont;
+  --font-system:var(--font-sf-text);
+  --fw-regular:400;
+  --fw-medium:500;
+  --fw-semibold:600;
+  --fw-bold:700;
+  --fw-heavy:800;
+}
+
+/* Reset legacy intermediate weights first so every screen follows one scale. */
+body,
+body *{
+  font-family:var(--font-sf-text)!important;
+  font-weight:var(--fw-regular)!important;
+}
+
+h1,h2,h3,h4,h5,h6,
+.page-title,.card-title,.modal-title,
+.brand-title,.brand-subtitle-large,
+.metric-value,.kpi-value,.mini-stat .value,.report-stat .value,
+.summary-total,.calendar-header-title,
+.current-project-name,.history-card-title,.project-row-title{
+  font-family:var(--font-sf-display)!important;
+}
+
+/* 400 — reading text, table data, values, form content */
+body,p,td,small,
+.form-control,.compact-sort,input,textarea,select,option,
+.catalog-desc,.history-card-sub,.attention-sub,
+.project-detail-inline-meta,.jp-ref-card-copy,
+.portal-note span,.portal-project-sub{
+  font-weight:var(--fw-regular)!important;
+}
+
+/* 500 — navigation and secondary hierarchy */
+.nav-item,.greeting-subtitle,.segment,.tab-btn,.btn-text,
+.user-role,.text-secondary,.text-muted,
+.jp-client-info-row span,.review-detail-line>span,
+.typeahead-option span,.typeahead-empty{
+  font-weight:var(--fw-medium)!important;
+}
+
+/* 600 — controls, labels, table headers and normal emphasis */
+button,.btn,label,.form-label,th,strong,b,
+.nav-item.active,.segment.active,.tab-btn.active,
+.user-name,.catalog-title,.cart-item-name,
+.filter-pill,.invoice-table th,
+.current-project-progress span,.deadline-chip small,
+.project-metric-value,.project-row-progress span,
+.jp-client-info-row b,.report-status-legend-v2 b,
+.attention-title,.history-detail-value,
+.table-progress span,.catalog-inclusion-count,
+.review-detail-row>span,.assistant-quick button{
+  font-weight:var(--fw-semibold)!important;
+}
+
+/* 700 — primary headings, metrics, IDs, labels and statuses */
+h1,h2,h3,h4,h5,h6,
+.page-title,.card-title,.modal-title,
+.metric-value,.kpi-value,.mini-stat .value,.report-stat .value,
+.summary-total,.catalog-current-price,
+.calendar-header-title,.current-project-name,
+.history-card-title,.project-row-title,
+.section-kicker,.metric-label,.kpi-label,
+.badge,.invoice-label,.invoice-number,.invoice-status,
+.nav-section-label,.calendar-grid-header,.attention-date,
+.project-ref,.project-metric-label,.sync-metric span,
+.unified-table th,.portal-tabs button,
+.portal-summary-card span,.portal-status,
+.project-tag,.review-status-pill,.review-check-badge{
+  font-weight:var(--fw-bold)!important;
+}
+
+/* 800 — reserved for brand and exceptional high-emphasis UI */
+.brand-subtitle-large,
+.workspace-loader-kicker,
+.jp-client-profile-avatar,
+.report-donut-v2 strong,
+.sync-queue-icon{
+  font-weight:var(--fw-heavy)!important;
+}
+
+.brand-title{font-weight:var(--fw-bold)!important;}

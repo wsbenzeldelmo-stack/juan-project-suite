@@ -166,3 +166,20 @@ test("legacy sidebar enhancement preserves In-House Ads and future navigation it
   assert.ok(js.includes("const placed=new Set()"));
   assert.ok(js.includes("if(!placed.has(key))menu.append(el)"));
 });
+
+
+test("Workspace typography is SF Pro only and uses weight hierarchy", async () => {
+  const html = await read("index.html");
+  const css = await read("css/typography-sf-pro.css");
+  assert.match(html, /typography-sf-pro\.css\?v=20260923-1/);
+  assert.match(html, /--font-system: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont;/);
+  assert.doesNotMatch(html, /\bInter\b/);
+  assert.doesNotMatch(html, /font-family=['"]Arial/);
+  assert.doesNotMatch(html, /font-family=['"]sans-serif/);
+  assert.match(css, /--fw-regular:400/);
+  assert.match(css, /--fw-medium:500/);
+  assert.match(css, /--fw-semibold:600/);
+  assert.match(css, /--fw-bold:700/);
+  assert.match(css, /--fw-heavy:800/);
+  assert.match(css, /body \*\{[\s\S]*font-weight:var\(--fw-regular\)!important/);
+});
