@@ -981,7 +981,7 @@
     .table-container,.projects-table-shell,.portal-table-wrap{border-radius:var(--radius-md)!important;overflow:visible!important}
     table{border-collapse:collapse!important;width:100%!important;table-layout:auto!important}
     th,td{vertical-align:middle}
-    .workspace-loading-shell{position:relative!important;inset:auto!important;z-index:auto!important;display:block!important;padding:0!important;background:transparent!important;backdrop-filter:none!important}
+    .workspace-loading-shell{position:relative!important;inset:auto!important;z-index:auto!important;padding:0!important;background:transparent!important;backdrop-filter:none!important}.workspace-loading-shell.hidden{display:none!important}
     .workspace-loader-card{width:100%!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;gap:12px!important;padding:16px!important;border:1px solid var(--border-subtle)!important;border-radius:var(--radius-md)!important;background:var(--bg-card)!important;box-shadow:none!important}
     .workspace-loader-mark{width:20px!important;height:20px!important;flex:0 0 20px;border:3px solid rgba(25,186,117,.18)!important;border-top-color:var(--primary-mint-dark)!important;border-radius:50%!important;animation:spin .75s linear infinite!important}
     .workspace-loader-copy strong{font-size:14px!important}.workspace-loader-copy span{font-size:12px!important}
@@ -1569,7 +1569,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <link rel="stylesheet" href="/css/general-update.css?v=20260920-1805">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
   <link rel="stylesheet" href="/css/consistency-pass.css?v=20260920-1840">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260923-0230">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260923-1208">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
 </head>
 <body>
@@ -3223,16 +3223,30 @@ table.jp-packages-table col:nth-child(6){width:7%}
           await loadDatabaseData(); await startWorkspaceRealtimeSync(); setWorkspaceLoading(false); return;
         }
         // Business records are loaded only from Supabase.
+        // On refresh, keep one stable render path so the current UI does not flash and
+        // then get replaced by an empty pre-auth render.
         state.projects=[];state.clients=[];
         supabaseClient=null;state.isConnected=false;
         updateConnectionStatus("connecting","CONNECTING...");
-        hydrateManualDatabaseFields();installWorkspaceActivityTracking();renderTemplatesDropdown();renderCurrentView();setWorkspaceLoading(false);
-        void (async()=>{
-          const ready=await initializeEnvironmentVariables();
-          if(!ready){updateConnectionStatus('error','○ DATABASE UNAVAILABLE');updateManualDatabasePanel('Supabase deployment configuration is unavailable.');showWorkspaceAuthGate('Database connection is required.');return;}
-          const restored=await initSupabase(true);
-          if(!restored){updateConnectionStatus('error','○ SIGN IN REQUIRED');updateManualDatabasePanel('Sign in to load live Workspace data.');showWorkspaceAuthGate('Sign in to load JUAN PROJECT Workspace from Supabase.');}
-        })();
+        hydrateManualDatabaseFields();installWorkspaceActivityTracking();renderTemplatesDropdown();
+        setWorkspaceLoading(true);
+        const ready=await initializeEnvironmentVariables();
+        if(!ready){
+          updateConnectionStatus('error','○ DATABASE UNAVAILABLE');
+          updateManualDatabasePanel('Supabase deployment configuration is unavailable.');
+          renderCurrentView();
+          setWorkspaceLoading(false);
+          showWorkspaceAuthGate('Database connection is required.');
+          return;
+        }
+        const restored=await initSupabase(true);
+        if(!restored){
+          updateConnectionStatus('error','○ SIGN IN REQUIRED');
+          updateManualDatabasePanel('Sign in to load live Workspace data.');
+          renderCurrentView();
+          showWorkspaceAuthGate('Sign in to load JUAN PROJECT Workspace from Supabase.');
+        }
+        setWorkspaceLoading(false);
       }
 
 
@@ -10262,7 +10276,7 @@ ${description}`))actionCallback();return;}
 <script type="module" src="/js/keyboard-shortcuts.js?v=20260923-0105"></script>
 <script src="/js/workspace-icon-system-2026-09-22.js?v=20260923-0225"></script>
   <script src="/js/consistency-pass.js?v=20260923-0225"></script>
-  <script src="/js/workspace-unification-2026-09-22.js?v=20260923-0112"></script>
+  <script src="/js/workspace-unification-2026-09-22.js?v=20260923-1208"></script>
 </body>
 </html>
 <style id="v111-maintenance-patch">
