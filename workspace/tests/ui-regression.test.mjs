@@ -211,3 +211,38 @@ test("maintenance fee follows subtotal-ending-99 rule everywhere", async () => {
   assert.match(online, /return Math\.abs\(Math\.round\(value\)\)%100===99\?26:25/);
   assert.match(online, /fullySettled=storedTotal>0&&paid>=storedTotal-0\.005/);
 });
+
+
+test("2026-09-23 consolidated UI update keeps modal, ads, home and calendar rules aligned", async () => {
+  const ws = await read("index.html");
+  const general = await read("js/general-update.js");
+  const generalCss = await read("css/general-update.css");
+  const online = await read("../online/js/app.js");
+  const onlineAds = await read("../online/js/ads.js");
+  const onlineCss = await read("../online/css/app.css");
+  const onlineAdsCss = await read("../online/css/ads.css");
+
+  assert.doesNotMatch(onlineCss, /SF Pro Rounded|ui-rounded/);
+  assert.match(onlineCss, /SF Pro Text/);
+  assert.match(online, /Balance Due/);
+  assert.match(online, /Project Progress/);
+  assert.match(online, /scheduleClientMessageAfterAds/);
+  assert.match(online, /animatePaymentReminderBalance/);
+  assert.match(onlineAds, /juan-ad-popup-settled/);
+  assert.match(onlineAds, /__JUAN_AD_POPUP_ACTIVE/);
+  assert.match(onlineAdsCss, /jp-popup-close[\s\S]*background:transparent/);
+
+  assert.match(general, /Delete Campaign/);
+  assert.match(general, /JUAN PROJECT Page/);
+  assert.match(general, /External Website/);
+  assert.match(general, /jp-field-error/);
+  assert.match(general, /Delete permanently/);
+  assert.match(generalCss, /jp-general-x[\s\S]*background:transparent/);
+
+  assert.match(ws, /<div>SUN<\/div><div>MON<\/div>/);
+  assert.match(ws, /function philippineHoliday/);
+  assert.match(ws, /for\(let slot=0;slot<42;slot\+\+\)/);
+  assert.match(generalCss, /deadline-calendar-card/);
+  assert.match(generalCss, /report-recent-v2[\s\S]*border-bottom-left-radius:18px/);
+  assert.match(ws, /toast-container \{ position: fixed; top:/);
+});
