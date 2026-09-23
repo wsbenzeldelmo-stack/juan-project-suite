@@ -49,7 +49,7 @@
 @media(max-width:340px){.page{padding-left:11px;padding-right:11px}.payment-card{padding:11px}.payment-summary{grid-template-columns:1fr}.payment-summary .balance{grid-column:auto}.receipt-upload-actions{align-items:flex-start;flex-direction:column}.brand-logo{max-width:170px}}
 
 /* V1.3.3 — mobile-first touch polish, bank tiles, profile photo, invoice states */
-:root{--jp-rounded:"SF Pro Rounded",ui-rounded,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}html,body,button,input,select,textarea{font-family:var(--jp-rounded)}
+:root{--jp-font:"SF Pro Text","SF Pro Display",-apple-system,BlinkMacSystemFont}html,body,button,input,select,textarea{font-family:var(--jp-font)}
 button,.btn,.icon-button,.nav button,.shop-row,.project-button,.settings-row{touch-action:manipulation}.btn{min-height:46px;font-size:12px}.icon-button{min-width:44px;min-height:44px}.nav button{min-height:58px}.nav .ui-icon{width:22px;height:22px}.ui-icon{flex:0 0 auto}
 .institution-logo-tile{--institution-tile:#f3f6f5;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;overflow:hidden;background:var(--institution-tile);border:1px solid rgba(17,24,39,.06);padding:5px;box-sizing:border-box}.institution-logo-tile img{width:100%!important;height:100%!important;object-fit:contain!important;border:0!important;border-radius:0!important;background:transparent!important}.institution-logo-tile.preview{width:46px;height:46px;border-radius:13px}.institution-preview{grid-template-columns:46px minmax(0,1fr)}.institution-option{grid-template-columns:40px minmax(0,1fr)}
 .bank-meta{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;margin-top:4px}.bank-meta>div{padding:10px 12px!important;border:1px solid #edf0ef!important;border-radius:10px!important;background:#f6f8f7!important}.bank-meta span{display:block;line-height:1.25}.bank-meta b{display:block;margin-top:4px!important;line-height:1.35;overflow-wrap:anywhere}
@@ -127,3 +127,28 @@ button,.btn,.icon-button,.nav button,.shop-row,.project-button,.settings-row{tou
 @media(max-width:520px){.membership-card{padding:17px}.membership-details{align-items:flex-start}.membership-actions{flex-wrap:wrap}}
 
 .shop-request-note{display:block;margin-top:10px;color:var(--muted);font-size:10px;line-height:1.45}.shop-hero>.btn{margin-top:16px}
+
+/* 2026-09-23 UI reliability + compact Client Home */
+#toast.toast{z-index:300000!important;top:calc(env(safe-area-inset-top) + 12px)!important;bottom:auto!important;left:50%!important;right:auto!important;transform:translate(-50%,-12px)!important;filter:none!important;backdrop-filter:none!important;max-width:min(430px,calc(100vw - 24px))!important}
+#toast.toast.show{transform:translate(-50%,0)!important}
+.overlay{z-index:180000;background:rgba(16,23,20,.46);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);transition:background-color .15s ease,backdrop-filter .15s ease}
+.sheet,.payment-reminder-modal{position:relative;padding-top:56px}
+.sheet-x,.payment-reminder-close{position:absolute!important;top:10px!important;right:10px!important;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#111!important;box-shadow:none!important;display:grid!important;place-items:center!important;padding:0!important;z-index:5!important}
+.sheet-header-left{padding-right:42px}
+.client-mode.route-home .page{min-height:100dvh;padding-bottom:calc(78px + env(safe-area-inset-bottom) + 18px)}
+.home-priority-head{margin-top:10px}
+.home-balance-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:17px 18px}
+.home-balance-card>div{display:grid;gap:2px}.home-balance-card span{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}.home-balance-card b{font-size:28px;line-height:1.05;letter-spacing:-.035em}.home-balance-card small{font-size:10px;color:var(--muted);margin-top:3px}.home-balance-card.has-balance{border-color:rgba(32,223,141,.28);background:linear-gradient(145deg,#fff,#f2fcf7)}.home-balance-card.settled b{color:var(--green-dark)}
+.jp-home-ad-inline{position:relative!important;inset:auto!important;z-index:auto!important;display:block;width:100%;margin-top:14px;padding-bottom:2px}
+.home-activity-card{overflow:hidden}
+.section-head .text-button.compact{font-size:10px;min-height:32px}
+@media(max-width:480px) and (max-height:760px){
+  .client-mode.route-home .page{overflow-y:auto;overscroll-behavior:contain;padding-top:12px}
+  .client-mode.route-home .dashboard-head{margin-bottom:8px}
+  .client-mode.route-home .section-head{margin-top:12px;margin-bottom:7px}
+  .client-mode.route-home .home-balance-card,.client-mode.route-home .active-project{padding:13px 14px}
+  .client-mode.route-home .home-balance-card b{font-size:24px}
+  .client-mode.route-home .home-activity-card .activity-row:nth-child(n+3){display:none}
+  .client-mode.route-home .home-activity-card.expanded .activity-row{display:grid}
+}
+@media(prefers-reduced-motion:reduce){.payment-reminder-modal,.overlay{animation:none!important;transition:none!important}}
