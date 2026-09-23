@@ -2587,20 +2587,19 @@ table.jp-packages-table col:nth-child(6){width:7%}
   </div>
 
 
-  <!-- PIN-PROTECTED DESTRUCTIVE ACTIONS -->
+  <!-- PASSWORD-PROTECTED SENSITIVE ACTIONS -->
   <div class="modal-backdrop" id="destructivePinModal">
     <div class="modal-card compact-validation-modal reset-pin-modal">
+      <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('destructivePinModal')">×</button>
       <div class="validation-graphic reset-lock-graphic"><svg class="icon-svg lg" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg></div>
-      <div class="validation-copy"><h3 class="modal-title" id="destructivePinTitle">Confirm deletion</h3><p id="destructivePinDescription">Enter your 6-digit PIN to continue.</p></div>
-      <div class="form-group reset-pin-field"><label class="form-label" for="destructivePinInput">PIN Code</label><div class="secure-pin-grid" id="destructivePinDigits" aria-label="6-digit secure PIN">
-<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 1">
-<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 2">
-<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 3">
-<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 4">
-<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 5">
-<input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 6">
-</div><input type="hidden" id="destructivePinInput"><span class="inline-error hidden" id="destructivePinError">Incorrect PIN.</span></div>
-      <div class="modal-footer validation-actions"><button class="btn btn-secondary" onclick="app.closeModal('destructivePinModal')">Cancel</button><button class="btn btn-danger" onclick="app.confirmDestructivePin()">Continue</button></div>
+      <div class="validation-copy"><h3 class="modal-title" id="destructivePinTitle">Confirm sensitive action</h3><p id="destructivePinDescription">Enter your Workspace password to continue.</p></div>
+      <div class="form-group reset-pin-field">
+        <label class="form-label" for="destructivePinInput">Workspace Password</label>
+        <input class="form-control" type="password" id="destructivePinInput" autocomplete="current-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter'){event.preventDefault();app.confirmDestructivePin();}">
+        <span class="inline-error hidden" id="destructivePinError">Password could not be verified.</span>
+        <small class="text-muted">After verification, sensitive actions stay unlocked for 5 minutes on this tab.</small>
+      </div>
+      <div class="modal-footer validation-actions"><button class="btn btn-secondary" onclick="app.closeModal('destructivePinModal')">Cancel</button><button class="btn btn-danger" id="destructivePinContinue" onclick="app.confirmDestructivePin()">Continue</button></div>
     </div>
   </div>
 
@@ -2888,7 +2887,8 @@ table.jp-packages-table col:nth-child(6){width:7%}
         calendarDate: new Date(),
         onlinePortalTab: "accounts",
         onlinePortalData: null,
-        onlinePortalLoading: false
+        onlinePortalLoading: false,
+        projectDeliverableSelection: {}
       };
 
       // Historical identity baseline from corrected JUAN_PROJECT_PAYMENT_TRACKER_UPDATED(3).csv.
@@ -2991,6 +2991,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
       async function expireWorkspaceCloudSession() {
         if (!workspaceCloudIntent() || !workspaceIdleExpired()) return;
+        clearSensitiveAuth();
         try { await supabaseClient?.auth?.signOut(); } catch (_) {}
         clearWorkspaceCloudMemory();
         supabaseClient = null;
@@ -3119,6 +3120,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
       }
 
       async function disconnectDatabase() {
+        clearSensitiveAuth();
         stopWorkspaceRealtimeSync();try{await supabaseClient?.auth?.signOut();}catch(_){}
         clearWorkspaceCloudMemory();supabaseClient=null;state.isConnected=false;state.projects=[];state.clients=[];
         localStorage.removeItem('JUAN_PROJECTS_LOCAL');localStorage.removeItem('JUAN_CLIENTS_LOCAL');localStorage.removeItem('JUAN_OFFLINE_SYNC_QUEUE_V133');
@@ -4912,35 +4914,61 @@ ${description}`))actionCallback();return;}
 
 
       const WORKSPACE_RESET_PIN = "729333";
+      const WORKSPACE_SENSITIVE_AUTH_KEY = "JUAN_WORKSPACE_SENSITIVE_AUTH_V1";
+      const WORKSPACE_SENSITIVE_AUTH_WINDOW_MS = 5 * 60 * 1000;
 
-      function setupSecurePinBoxes(groupId,hiddenId,submitFn){
-        const group=document.getElementById(groupId),hidden=document.getElementById(hiddenId);if(!group||!hidden)return;
-        const boxes=[...group.querySelectorAll('.secure-pin-digit')];
-        const sync=()=>{hidden.value=boxes.map(b=>String(b.value||'').replace(/\D/g,'').slice(0,1)).join('');};
-        boxes.forEach((box,index)=>{
-          box.value='';box.classList.remove('is-invalid');
-          box.oninput=e=>{e.target.value=String(e.target.value||'').replace(/\D/g,'').slice(-1);sync();if(e.target.value&&index<boxes.length-1)boxes[index+1].focus();};
-          box.onkeydown=e=>{if(e.key==='Backspace'&&!box.value&&index>0){boxes[index-1].value='';boxes[index-1].focus();sync();}if(e.key==='ArrowLeft'&&index>0)boxes[index-1].focus();if(e.key==='ArrowRight'&&index<boxes.length-1)boxes[index+1].focus();if(e.key==='Enter'){e.preventDefault();submitFn();}};
-          box.onpaste=e=>{const digits=(e.clipboardData?.getData('text')||'').replace(/\D/g,'').slice(0,6);if(!digits)return;e.preventDefault();digits.split('').forEach((d,i)=>{if(boxes[i])boxes[i].value=d;});sync();boxes[Math.min(digits.length,boxes.length)-1]?.focus();};
-        });
-        hidden.value='';setTimeout(()=>boxes[0]?.focus(),70);
+      function sensitiveAuthFresh(){
+        try{
+          const saved=JSON.parse(sessionStorage.getItem(WORKSPACE_SENSITIVE_AUTH_KEY)||"null");
+          return !!saved&&saved.userId&&Number(saved.verifiedAt)>0&&(Date.now()-Number(saved.verifiedAt)<WORKSPACE_SENSITIVE_AUTH_WINDOW_MS);
+        }catch(_){return false;}
       }
-      function markSecurePinInvalid(groupId,invalid=true){document.querySelectorAll(`#${groupId} .secure-pin-digit`).forEach(x=>x.classList.toggle('is-invalid',invalid));}
+      async function markSensitiveAuthFresh(){
+        const session=(await supabaseClient?.auth?.getSession())?.data?.session;
+        if(!session?.user?.id)return false;
+        sessionStorage.setItem(WORKSPACE_SENSITIVE_AUTH_KEY,JSON.stringify({userId:session.user.id,verifiedAt:Date.now()}));
+        return true;
+      }
+      function clearSensitiveAuth(){sessionStorage.removeItem(WORKSPACE_SENSITIVE_AUTH_KEY);}
 
       function requestDestructivePin(title,description,callback){
         state.pendingDestructiveAction=typeof callback==='function'?callback:null;
-        const titleEl=document.getElementById('destructivePinTitle'),desc=document.getElementById('destructivePinDescription'),error=document.getElementById('destructivePinError');
-        if(titleEl)titleEl.textContent=title||'Confirm deletion';
-        if(desc)desc.textContent=(description||'This action changes or removes saved data.')+' Enter your 6-digit PIN to continue.';
-        if(error)error.classList.add('hidden');markSecurePinInvalid('destructivePinDigits',false);openModal('destructivePinModal');
-        setupSecurePinBoxes('destructivePinDigits','destructivePinInput',confirmDestructivePin);
+        if(sensitiveAuthFresh()){
+          const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;
+          if(action)Promise.resolve().then(action);
+          return;
+        }
+        const titleEl=document.getElementById('destructivePinTitle'),desc=document.getElementById('destructivePinDescription'),error=document.getElementById('destructivePinError'),input=document.getElementById('destructivePinInput');
+        if(titleEl)titleEl.textContent=title||'Confirm sensitive action';
+        if(desc)desc.textContent=(description||'This action changes or removes saved data.')+' Enter your Workspace password to continue.';
+        if(error){error.classList.add('hidden');error.textContent='Password could not be verified.';}
+        if(input){input.value='';input.classList.remove('is-invalid');}
+        openModal('destructivePinModal');setTimeout(()=>input?.focus(),70);
       }
 
-      function confirmDestructivePin(){
-        const hidden=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError');
-        const pin=String(hidden?.value||'').replace(/\D/g,'').slice(0,6);
-        if(pin!==WORKSPACE_RESET_PIN){markSecurePinInvalid('destructivePinDigits',true);if(error)error.classList.remove('hidden');document.querySelector('#destructivePinDigits .secure-pin-digit')?.focus();return;}
-        markSecurePinInvalid('destructivePinDigits',false);if(error)error.classList.add('hidden');const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;closeModal('destructivePinModal');if(action)action();
+      async function confirmDestructivePin(){
+        const input=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError'),btn=document.getElementById('destructivePinContinue');
+        const password=String(input?.value||'');
+        if(!password){if(error){error.textContent='Enter your Workspace password.';error.classList.remove('hidden');}input?.classList.add('is-invalid');input?.focus();return;}
+        try{
+          if(btn){btn.disabled=true;btn.textContent='Verifying…';}
+          const session=(await supabaseClient?.auth?.getSession())?.data?.session;
+          const email=String(session?.user?.email||'').trim().toLowerCase();
+          if(!email)throw new Error('Your Workspace session is unavailable. Sign in again.');
+          const loginRes=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+          const loginJson=await loginRes.json().catch(()=>({}));
+          if(!loginRes.ok)throw new Error(loginJson.error||'Password is incorrect.');
+          const setRes=await supabaseClient.auth.setSession({access_token:loginJson.access_token,refresh_token:loginJson.refresh_token});
+          if(setRes.error)throw setRes.error;
+          if(!(await verifyWorkspaceAdmin()))throw new Error('This account is not authorized for JUAN PROJECT Workspace.');
+          await markSensitiveAuthFresh();
+          if(error)error.classList.add('hidden');input?.classList.remove('is-invalid');
+          const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;closeModal('destructivePinModal');
+          if(action)await action();
+        }catch(e){
+          if(error){error.textContent=e?.message||'Password could not be verified.';error.classList.remove('hidden');}
+          input?.classList.add('is-invalid');input?.select();
+        }finally{if(btn){btn.disabled=false;btn.textContent='Continue';}}
       }
 
       function openResetDataModal(){
@@ -5035,6 +5063,7 @@ ${description}`))actionCallback();return;}
       }
 
       async function adminSignOut() {
+        clearSensitiveAuth();
         stopWorkspaceRealtimeSync();
         try { await supabaseClient?.auth.signOut(); } catch (_) {}
         clearWorkspaceCloudMemory();
@@ -5289,8 +5318,17 @@ ${description}`))actionCallback();return;}
         document.querySelectorAll('.popover-wrap[data-floating-open="1"]').forEach(wrap=>{
           if(exceptId&&wrap.id===exceptId)return;
           const panel=document.querySelector(`.jp-floating-action-menu[data-owner="${CSS.escape(wrap.id)}"]`);
-          if(panel){panel.style.display='';panel.style.position='';panel.style.left='';panel.style.top='';panel.style.zIndex='';panel.classList.remove('jp-floating-action-menu');panel.removeAttribute('data-owner');wrap.appendChild(panel);}
+          if(panel){
+            panel.style.display='';panel.style.position='';panel.style.left='';panel.style.top='';panel.style.zIndex='';
+            panel.classList.remove('jp-floating-action-menu');panel.removeAttribute('data-owner');
+            if(document.body.contains(wrap))wrap.appendChild(panel);else panel.remove();
+          }
           wrap.classList.remove('open');wrap.removeAttribute('data-floating-open');
+        });
+        document.querySelectorAll('.jp-floating-action-menu[data-owner]').forEach(panel=>{
+          const owner=panel.getAttribute('data-owner');
+          if(exceptId&&owner===exceptId)return;
+          if(!owner||!document.getElementById(owner))panel.remove();
         });
       }
 
@@ -6842,53 +6880,54 @@ ${description}`))actionCallback();return;}
         project.project_items=rows.map(r=>({...r,qty:r.quantity,price:r.unit_price,type:r.item_type}));
       }
 
+      function normalizeProjectDeliverableHierarchy(project){
+        if(!project)return [];
+        const rows=Array.isArray(project.deliverables)?project.deliverables:[];
+        const byId=new Map();
+        rows.forEach((d,i)=>{
+          d.id=String(d.id||`del_${project.id}_${i}`);
+          d.item_name=d.item_name||d.name||'Deliverable';d.name=d.name||d.item_name;
+          d.completed=!!d.completed||String(d.status||'').toLowerCase()==='completed';
+          d.progress=d.completed?100:Number(d.progress||0);d.status=d.completed?'Completed':(d.status||'Pending');
+          byId.set(String(d.id),d);
+        });
+        const additions=[],orphanGroups=new Map();
+        rows.forEach(child=>{
+          const pid=String(child.parent_id||'');if(!pid||byId.has(pid))return;
+          if(!orphanGroups.has(pid)){
+            const relatedItem=(project.project_items||[]).find(i=>String(i.id||'')===String(child.order_item_id||''));
+            const name=child.package_name||relatedItem?.name||'Package';
+            orphanGroups.set(pid,{id:pid,item_name:name,name,source_type:child.source_type||'ORDER_ITEM',order_item_id:child.order_item_id||relatedItem?.id||null,order_item_occurrence:Number(child.order_item_occurrence||1),is_group:true,group_key:child.parent_key||child.group_key||pid,parent_key:'',parent_id:null,package_name:name,completed:false,progress:0,status:'Pending',completed_at:null,due_date:child.due_date||project.deadline_date||null,client_visible:child.client_visible!==false});
+          }
+        });
+        orphanGroups.forEach(group=>{byId.set(String(group.id),group);additions.push(group);});
+        if(additions.length)rows.unshift(...additions);
+        rows.filter(d=>d.is_group).forEach(parent=>{
+          const children=rows.filter(c=>String(c.parent_id||'')===String(parent.id));
+          if(children.length){parent.completed=children.every(c=>c.completed);parent.progress=Math.round(children.reduce((s,c)=>s+(c.completed?100:Number(c.progress||0)),0)/children.length);parent.status=parent.completed?'Completed':'Pending';}
+        });
+        project.deliverables=rows;
+        return rows;
+      }
+
       async function syncDeliverablesToDatabase(project, options = {}) {
         if (!supabaseClient || !state.isConnected || !project) return;
-        const localRows = (Array.isArray(project.deliverables) ? project.deliverables : []).filter(d => !d.is_group);
-        const existingRes = await supabaseClient.from('deliverables').select('id,shared_drive_url,client_visible,due_date,source_type,order_item_id,order_item_occurrence,parent_id,parent_key,package_name,child_index').eq('project_id', project.id);
-        if (existingRes.error) throw existingRes.error;
-        const existingRows = existingRes.data || [];
-        if (!localRows.length && existingRows.length && options.allowEmpty !== true) {
-          console.warn(`Protected ${project.id}: refused to erase ${existingRows.length} cloud deliverable(s) from an empty local snapshot.`);
-          return;
-        }
-        const existing = new Map(existingRows.map(row => [String(row.id), row]));
-        const del = await supabaseClient.from('deliverables').delete().eq('project_id', project.id);
-        if (del.error) throw del.error;
-        if (!localRows.length) return;
-        const usedDatabaseIds = new Set();
-        const rows = localRows.map((d, index) => {
-          let id = String(d.id || `del_${project.id}_${Date.now()}_${index}`);
-          if(usedDatabaseIds.has(id)){
-            id = `${id}_${d.child_index ?? index}`;
-            d.id = id;
-          }
-          usedDatabaseIds.add(id);
-          const previous = existing.get(id) || {};
-          return {
-            id,
-            project_id: project.id,
-            item_name: d.item_name || d.name || 'Deliverable',
-            completed: Boolean(d.completed),
-            progress: Number(d.completed ? 100 : (d.progress || 0)),
-            status: d.status || (d.completed ? 'Completed' : 'Pending'),
-            completed_at: d.completed_at || null,
-            due_date: d.due_date || previous.due_date || project.deadline_date || null,
-            shared_drive_url: d.shared_drive_url || previous.shared_drive_url || null,
-            client_visible: d.client_visible !== undefined ? d.client_visible !== false : previous.client_visible !== false,
-            source_type: d.source_type || previous.source_type || null,
-            order_item_id: d.order_item_id || previous.order_item_id || null,
-            order_item_occurrence: Number(d.order_item_occurrence || previous.order_item_occurrence || 1),
-            parent_id: d.parent_id || previous.parent_id || null,
-            parent_key: d.parent_key || previous.parent_key || null,
-            group_key: d.group_key || previous.group_key || null,
-            is_group: d.is_group === true || previous.is_group === true,
-            package_name: d.package_name || previous.package_name || null,
-            child_index: d.child_index === undefined || d.child_index === null ? (previous.child_index ?? null) : Number(d.child_index)
-          };
+        const localRows=normalizeProjectDeliverableHierarchy(project);
+        const existingRes=await supabaseClient.from('deliverables').select('id,shared_drive_url,client_visible,due_date,source_type,order_item_id,order_item_occurrence,parent_id,parent_key,group_key,is_group,package_name,child_index').eq('project_id',project.id);
+        if(existingRes.error)throw existingRes.error;
+        const existingRows=existingRes.data||[];
+        if(!localRows.length&&existingRows.length&&options.allowEmpty!==true){console.warn(`Protected ${project.id}: refused to erase ${existingRows.length} cloud deliverable(s) from an empty local snapshot.`);return;}
+        if(!localRows.length){if(options.allowEmpty===true){const del=await supabaseClient.from('deliverables').delete().eq('project_id',project.id);if(del.error)throw del.error;}return;}
+        const existing=new Map(existingRows.map(row=>[String(row.id),row])),usedDatabaseIds=new Set();
+        const rows=localRows.map((d,index)=>{
+          let id=String(d.id||`del_${project.id}_${Date.now()}_${index}`);if(usedDatabaseIds.has(id)){id=`${id}_${d.child_index??index}`;d.id=id;}usedDatabaseIds.add(id);
+          const previous=existing.get(id)||{};
+          return {id,project_id:project.id,item_name:d.item_name||d.name||'Deliverable',completed:Boolean(d.completed),progress:Number(d.completed?100:(d.progress||0)),status:d.status||(d.completed?'Completed':'Pending'),completed_at:d.completed_at||null,due_date:d.due_date||previous.due_date||project.deadline_date||null,shared_drive_url:d.shared_drive_url||previous.shared_drive_url||null,client_visible:d.client_visible!==undefined?d.client_visible!==false:previous.client_visible!==false,source_type:d.source_type||previous.source_type||null,order_item_id:d.order_item_id||previous.order_item_id||null,order_item_occurrence:Number(d.order_item_occurrence||previous.order_item_occurrence||1),parent_id:d.parent_id||null,parent_key:d.parent_key||null,group_key:d.group_key||null,is_group:d.is_group===true,package_name:d.package_name||previous.package_name||null,child_index:d.child_index===undefined||d.child_index===null?(previous.child_index??null):Number(d.child_index)};
         });
-        const inserted = await supabaseClient.from('deliverables').insert(rows);
-        if (inserted.error) throw inserted.error;
+        const upserted=await supabaseClient.from('deliverables').upsert(rows,{onConflict:'id'});if(upserted.error)throw upserted.error;
+        const keep=new Set(rows.map(r=>String(r.id))),stale=existingRows.filter(r=>!keep.has(String(r.id))),staleChildren=stale.filter(r=>r.parent_id),staleParents=stale.filter(r=>!r.parent_id);
+        if(staleChildren.length){const del=await supabaseClient.from('deliverables').delete().in('id',staleChildren.map(r=>r.id));if(del.error)throw del.error;}
+        if(staleParents.length){const del=await supabaseClient.from('deliverables').delete().in('id',staleParents.map(r=>r.id));if(del.error)throw del.error;}
       }
 
       async function syncProjectCoreToDatabase(project) {
@@ -7964,18 +8003,42 @@ ${description}`))actionCallback();return;}
 
       function renderProjectDeliverablesList(proj) {
         const container=document.getElementById('projectDeliverablesList');if(!container)return;
-        const ds=Array.isArray(proj.deliverables)?proj.deliverables:[];ds.forEach((d,i)=>{d.id=d.id||`del_${proj.id}_${i}`;d.item_name=d.item_name||d.name||'Deliverable';d.completed=!!d.completed||String(d.status||'').toLowerCase()==='completed';d.progress=d.completed?100:Number(d.progress||0);d.status=d.completed?'Completed':'Pending';});
-        ds.filter(d=>d.is_group).forEach(parent=>{const children=ds.filter(c=>String(c.parent_id||'')===String(parent.id));if(children.length){parent.completed=children.every(c=>c.completed);parent.progress=Math.round(children.reduce((s,c)=>s+(c.completed?100:Number(c.progress||0)),0)/children.length);parent.status=parent.completed?'Completed':'Pending';}});
-        const countable=ds.filter(d=>!d.is_group),completed=countable.filter(d=>d.completed).length,percent=countable.length?Math.round(completed/countable.length*100):0;const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v};setText('projDetailProgressCount',`${completed} / ${countable.length} completed`);setText('projDetailProgressPercent',`${percent}%`);const bar=document.getElementById('projDetailProgressBar');if(bar)bar.style.width=`${percent}%`;const overallBar=document.getElementById('projectOverallProgressBar'),overallPct=document.getElementById('projectOverallProgressPercent'),overallCount=document.getElementById('projectOverallProgressCount');if(overallBar)overallBar.style.width=`${percent}%`;if(overallPct)overallPct.textContent=`${percent}%`;if(overallCount)overallCount.textContent=`${completed} / ${countable.length}`;
-        if(!ds.length){const hasValue=Number(proj.total_amount||0)>0,hasItems=Array.isArray(proj.project_items)&&proj.project_items.length>0;container.innerHTML=hasValue&&!hasItems?`<div class="empty-compact-state"><strong>Project structure needs recovery</strong><span>This project has a financial total, but its order items and deliverables are missing from this copy. The system will preserve any structure found in another browser or in Supabase instead of erasing it.</span></div>`:`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;renderProjectFilesAccess(proj);return;}
-        const roots=ds.filter(d=>!d.parent_id);const row=(d,child=false)=>{const menuId=`deliverableMenu_${String(d.id).replace(/[^a-zA-Z0-9_-]/g,'')}`,progress=d.is_group?Number(d.progress||0):(d.completed?100:Number(d.progress||0));return `<div class="deliverable-checklist-row ${child?'deliverable-child-row':''} ${d.completed?'is-complete':''}"><button type="button" class="deliverable-check ${d.completed?'checked':''}" aria-pressed="${d.completed?'true':'false'}" onclick="app.toggleDeliverable('${proj.id}','${String(d.id).replace(/'/g,"\'")}')"><svg class="icon-svg sm" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button><div class="deliverable-checklist-copy"><strong>${escapeHtml(d.item_name)}</strong>${d.is_group?`<span>${ds.filter(c=>String(c.parent_id||'')===String(d.id)).filter(c=>c.completed).length}/${ds.filter(c=>String(c.parent_id||'')===String(d.id)).length} included items</span>`:''}</div><div class="deliverable-item-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${Math.round(progress)}%</span></div><div class="popover-wrap" id="${menuId}"><button class="icon-more-button" onclick="event.stopPropagation();app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action text-danger" onclick="event.stopPropagation();app.deleteProjectDeliverable('${String(d.id).replace(/'/g,"\'")}')">Remove Deliverable</button></div></div></div>`};
-        container.innerHTML=`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;renderProjectFilesAccess(proj);
+        closeFloatingActionMenus();
+        const ds=normalizeProjectDeliverableHierarchy(proj),selection=state.projectDeliverableSelection||{};
+        Object.keys(selection).forEach(id=>{if(!ds.some(d=>String(d.id)===String(id)))delete selection[id];});state.projectDeliverableSelection=selection;
+        const countable=ds.filter(d=>!d.is_group),completed=countable.filter(d=>d.completed).length,percent=countable.length?Math.round(completed/countable.length*100):0;
+        const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v};setText('projDetailProgressCount',`${completed} / ${countable.length} completed`);setText('projDetailProgressPercent',`${percent}%`);
+        const bar=document.getElementById('projDetailProgressBar');if(bar)bar.style.width=`${percent}%`;const overallBar=document.getElementById('projectOverallProgressBar'),overallPct=document.getElementById('projectOverallProgressPercent'),overallCount=document.getElementById('projectOverallProgressCount');if(overallBar)overallBar.style.width=`${percent}%`;if(overallPct)overallPct.textContent=`${percent}%`;if(overallCount)overallCount.textContent=`${completed} / ${countable.length}`;
+        if(!ds.length){container.innerHTML=`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;renderProjectFilesAccess(proj);return;}
+        const roots=ds.filter(d=>!d.parent_id),selectedIds=Object.keys(selection).filter(id=>selection[id]),selectedCount=selectedIds.length;
+        const row=(d,child=false)=>{
+          const menuId=`deliverableMenu_${String(d.id).replace(/[^a-zA-Z0-9_-]/g,'')}`,progress=d.is_group?Number(d.progress||0):(d.completed?100:Number(d.progress||0)),checked=!!selection[String(d.id)],children=d.is_group?ds.filter(c=>String(c.parent_id||'')===String(d.id)):[];
+          return `<div class="deliverable-checklist-row ${child?'deliverable-child-row':''} ${d.is_group?'deliverable-package-row':''} ${d.completed?'is-complete':''}">
+            <label class="deliverable-select" title="Select for deletion"><input type="checkbox" ${checked?'checked':''} onchange="app.toggleProjectDeliverableSelection('${String(d.id).replace(/'/g,"\'")}',this.checked)"><span></span></label>
+            <button type="button" class="deliverable-check ${d.completed?'checked':''}" aria-pressed="${d.completed?'true':'false'}" onclick="app.toggleDeliverable('${proj.id}','${String(d.id).replace(/'/g,"\'")}')"><svg class="icon-svg sm" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
+            <div class="deliverable-checklist-copy"><strong>${escapeHtml(d.item_name)}</strong>${d.is_group?`<span>${children.filter(c=>c.completed).length}/${children.length} included items · Package</span>`:child?`<span>${escapeHtml(d.package_name||'Package inclusion')}</span>`:''}</div>
+            <div class="deliverable-item-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${Math.round(progress)}%</span></div>
+            <div class="popover-wrap" id="${menuId}"><button class="icon-more-button" onclick="event.stopPropagation();app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action text-danger" onclick="event.stopPropagation();app.deleteProjectDeliverable('${String(d.id).replace(/'/g,"\'")}')">Remove Deliverable</button></div></div>
+          </div>`;
+        };
+        const toolbar=`<div class="deliverable-batch-toolbar ${selectedCount?'active':''}"><div><strong>${selectedCount?selectedCount+' selected':'Select deliverables'}</strong><span>${selectedCount?'Delete several items in one action.':'Use the checkboxes to select multiple deliverables.'}</span></div><div class="deliverable-batch-actions"><button class="btn btn-secondary btn-sm" onclick="app.selectAllProjectDeliverables()">Select All</button><button class="btn btn-secondary btn-sm" ${selectedCount?'':'disabled'} onclick="app.clearProjectDeliverableSelection()">Clear</button><button class="btn btn-danger btn-sm" ${selectedCount?'':'disabled'} onclick="app.deleteSelectedProjectDeliverables()">Delete Selected</button></div></div>`;
+        container.innerHTML=toolbar+`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block ${root.is_group?'package-group':''}">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).sort((a,b)=>Number(a.child_index??999)-Number(b.child_index??999)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;
+        renderProjectFilesAccess(proj);
       }
+      function toggleProjectDeliverableSelection(delId,checked){
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        const ds=normalizeProjectDeliverableHierarchy(proj),selected=state.projectDeliverableSelection||(state.projectDeliverableSelection={}),row=ds.find(d=>String(d.id)===String(delId));if(!row)return;
+        const ids=[String(row.id),...(row.is_group?ds.filter(c=>String(c.parent_id||'')===String(row.id)).map(c=>String(c.id)):[])];ids.forEach(id=>{if(checked)selected[id]=true;else delete selected[id];});renderProjectDeliverablesList(proj);
+      }
+      function clearProjectDeliverableSelection(){state.projectDeliverableSelection={};const proj=state.projects.find(p=>p.id===state.activeProjectId);if(proj)renderProjectDeliverablesList(proj);}
+      function selectAllProjectDeliverables(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;state.projectDeliverableSelection={};normalizeProjectDeliverableHierarchy(proj).forEach(d=>state.projectDeliverableSelection[String(d.id)]=true);renderProjectDeliverablesList(proj);}
+      function deleteSelectedProjectDeliverables(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const selectedIds=Object.keys(state.projectDeliverableSelection||{}).filter(id=>state.projectDeliverableSelection[id]);if(!selectedIds.length)return;requestDestructivePin('Delete Selected Deliverables',`Delete ${selectedIds.length} selected deliverable${selectedIds.length===1?'':'s'}? Linked order items are removed when their parent deliverable is selected.`,()=>removeProjectDeliverablesByIds(proj,selectedIds));}
       function toLocalDateTimeInput(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);}
       function projectFilesState(proj){const now=Date.now(),unlock=proj.drive_unlock_at?new Date(proj.drive_unlock_at).getTime():null,expires=proj.drive_expires_at?new Date(proj.drive_expires_at).getTime():null;if(expires&&now>expires)return['Expired','expired'];if(!proj.drive_url||(unlock&&now<unlock))return['Locked','locked'];return['Available','available'];}
       function renderProjectFilesAccess(proj){const card=document.getElementById('projectFilesAccessCard');if(!card||!proj)return;const url=document.getElementById('projectFilesDriveUrl'),unlock=document.getElementById('projectFilesUnlockAt'),expires=document.getElementById('projectFilesExpiresAt'),badge=document.getElementById('projectFilesAccessState'),open=document.getElementById('projectFilesOpenDrive');if(document.activeElement!==url)url.value=proj.drive_url||'';if(document.activeElement!==unlock)unlock.value=toLocalDateTimeInput(proj.drive_unlock_at);if(document.activeElement!==expires)expires.value=toLocalDateTimeInput(proj.drive_expires_at);const [label,cls]=projectFilesState(proj);badge.textContent=label;badge.className='portal-drive-state '+cls;if(proj.drive_url){open.href=proj.drive_url;open.classList.remove('hidden')}else open.classList.add('hidden');}
-      async function saveProjectFilesAccess(){
+      async function saveProjectFilesAccess(authorized=false){
         const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        if(!authorized){requestDestructivePin('Confirm Project Changes','Save changes to this project\'s file access information?',()=>saveProjectFilesAccess(true));return;}
         const url=document.getElementById('projectFilesDriveUrl')?.value.trim()||'';
         const unlock=document.getElementById('projectFilesUnlockAt')?.value||null;
         const expires=document.getElementById('projectFilesExpiresAt')?.value||null;
@@ -8161,10 +8224,22 @@ ${description}`))actionCallback();return;}
         if(selected?.type==='PACKAGE'&&Array.isArray(selected.includedServiceNames)&&selected.includedServiceNames.length){const parent={id:baseId,item_name:name,name,source_type:'MANUAL',is_group:true,completed:false,progress:0,status:'Pending'};proj.deliverables.push(parent,...selected.includedServiceNames.map((n,i)=>({id:`${baseId}_child_${i}`,item_name:n,name:n,source_type:'MANUAL',parent_id:baseId,package_name:name,completed:false,progress:0,status:'Pending'})));}else proj.deliverables.push({id:baseId,item_name:name,name,source_type:'MANUAL',completed:false,progress:0,status:'Pending',completed_at:null});
         proj.updated_at=new Date().toISOString();persistProjectsState();scheduleProjectStructureSync(proj,50);closeModal('projectDeliverableModal');renderProjectDeliverablesList(proj);renderOverviewDashboard();showToast('Deliverable added.');
       }
+      function removeProjectDeliverablesByIds(proj,ids){
+        if(!proj||!Array.isArray(proj.deliverables))return;
+        closeFloatingActionMenus();
+        const ds=normalizeProjectDeliverableHierarchy(proj),selected=new Set((ids||[]).map(String)),orderIds=new Set();
+        ds.forEach(d=>{if(!selected.has(String(d.id)))return;if(!d.parent_id&&d.order_item_id)orderIds.add(String(d.order_item_id));if(d.is_group)ds.filter(c=>String(c.parent_id||'')===String(d.id)).forEach(c=>selected.add(String(c.id)));});
+        if(orderIds.size&&Array.isArray(proj.project_items)){proj.project_items=proj.project_items.filter(i=>!orderIds.has(String(i.id)));recalculateProjectFromOrderItems(proj);}
+        proj.deliverables=ds.filter(d=>!selected.has(String(d.id))&&!orderIds.has(String(d.order_item_id||'')));
+        proj.updated_at=new Date().toISOString();state.projectDeliverableSelection={};persistProjectsState();
+        scheduleProjectStructureSync(proj,50,{allowEmptyStructure:(proj.project_items||[]).length===0&&(proj.deliverables||[]).filter(d=>!d.is_group).length===0});
+        renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast(`${selected.size} deliverable${selected.size===1?'':'s'} removed.`);
+      }
       function deleteProjectDeliverable(delId){
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||!Array.isArray(proj.deliverables))return;const del=proj.deliverables.find(d=>String(d.id)===String(delId));if(!del)return;const linked=del.order_item_id&&Array.isArray(proj.project_items)?proj.project_items.find(i=>String(i.id)===String(del.order_item_id)):null;
-        const remove=()=>{if(del.parent_id){proj.deliverables=proj.deliverables.filter(d=>String(d.id)!==String(delId));}else if(linked){proj.project_items=proj.project_items.filter(i=>String(i.id)!==String(del.order_item_id));recalculateProjectFromOrderItems(proj);syncProjectDeliverablesFromOrderItems(proj);}else{const childIds=new Set(proj.deliverables.filter(d=>String(d.parent_id||'')===String(delId)).map(d=>String(d.id)));proj.deliverables=proj.deliverables.filter(d=>String(d.id)!==String(delId)&&!childIds.has(String(d.id)));}proj.updated_at=new Date().toISOString();persistProjectsState();scheduleProjectStructureSync(proj,50,{allowEmptyStructure:(proj.project_items||[]).length===0&&(proj.deliverables||[]).filter(d=>!d.is_group).length===0});renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast('Deliverable removed.');};
-        requestDestructivePin('Remove Deliverable',linked?`Remove "${del.item_name||del.name||'this deliverable'}"? Its linked order item will also be removed.`:`Remove "${del.item_name||del.name||'this deliverable'}"?`,remove);
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||!Array.isArray(proj.deliverables))return;closeFloatingActionMenus();
+        const del=normalizeProjectDeliverableHierarchy(proj).find(d=>String(d.id)===String(delId));if(!del)return;
+        const linked=!del.parent_id&&del.order_item_id&&Array.isArray(proj.project_items)?proj.project_items.find(i=>String(i.id)===String(del.order_item_id)):null;
+        requestDestructivePin('Remove Deliverable',linked?`Remove "${del.item_name||del.name||'this deliverable'}"? Its linked order item will also be removed.`:`Remove "${del.item_name||del.name||'this deliverable'}"?`,()=>removeProjectDeliverablesByIds(proj,[String(del.id)]));
       }
       function toggleAssistant(force){
         const panel=document.getElementById('assistantPanel'); if(!panel)return; const open=typeof force==='boolean'?force:!panel.classList.contains('open'); panel.classList.toggle('open',open); panel.setAttribute('aria-hidden',open?'false':'true'); if(open)setTimeout(()=>document.getElementById('assistantInput')?.focus(),120);
@@ -8740,7 +8815,8 @@ ${description}`))actionCallback();return;}
         openModal("editClientModal");
       }
 
-      async function submitEditClient() {
+      async function submitEditClient(authorized=false) {
+        if(!authorized){requestDestructivePin('Confirm Client Changes','Save changes to this client record?',()=>submitEditClient(true));return;}
         const clientId = document.getElementById("editClientId").value;
         const nameInput = document.getElementById("editClientName");
         const emailInput = document.getElementById("editClientEmail");
@@ -9410,6 +9486,10 @@ ${description}`))actionCallback();return;}
         selectProjectDeliverableSuggestion,
         saveProjectDeliverable,
         deleteProjectDeliverable,
+        toggleProjectDeliverableSelection,
+        clearProjectDeliverableSelection,
+        selectAllProjectDeliverables,
+        deleteSelectedProjectDeliverables,
         toggleAssistant,
         assistantQuick,
         sendAssistantMessage,
