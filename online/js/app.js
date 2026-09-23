@@ -237,7 +237,11 @@ function scheduleClientMessageAfterAds(){
   if(window.__JUAN_ADS_READY&&!window.__JUAN_AD_POPUP_ACTIVE){setTimeout(release,240);return;}
   const settled=()=>{window.removeEventListener('juan-ad-popup-settled',settled);setTimeout(release,240);};
   window.addEventListener('juan-ad-popup-settled',settled,{once:true});
-  window.__juanBalanceFallback=setTimeout(()=>{window.removeEventListener('juan-ad-popup-settled',settled);release();},1800);
+  const fallback=()=>{
+    if(window.__JUAN_AD_POPUP_ACTIVE){window.__juanBalanceFallback=setTimeout(fallback,500);return;}
+    window.removeEventListener('juan-ad-popup-settled',settled);release();
+  };
+  window.__juanBalanceFallback=setTimeout(fallback,1800);
 }
 function animatePaymentReminderBalance(){
   const el=document.querySelector('.payment-reminder-amount[data-balance]');if(!el)return;
@@ -374,7 +378,7 @@ function home(){
   const projectCard=p?'<div class="section-head"><h2>Project Progress</h2></div><button class="card active-project project-button" data-open="'+esc(p.id)+'"><div class="card-topline"><span class="project-code">'+esc(p.project_code||p.id)+'</span><span class="status-dot-label">'+esc(effectiveProjectStatus(p))+'</span></div><div class="project-name">'+esc(p.title||'Untitled Project')+'</div><div class="progress"><span style="width:'+pStats.pct+'%"></span></div><div class="meta"><span>'+pStats.done+'/'+pStats.total+' deliverables</span><b>'+pStats.pct+'%</b></div><div class="card-action-row"><span>View project details</span>'+icon('chevron',16)+'</div></button>':'<div class="section-head"><h2>Project Progress</h2></div><div class="card empty guided-empty"><b>No active project right now</b><span>Your next JUAN PROJECT project will appear here.</span><button id="homeShop" class="btn primary small">Browse Services</button></div>';
   return '<div class="dashboard-head"><div><span>Good day,</span><h1>'+esc((profile.name||'Client').split(/\s+/)[0])+'!</h1><p>Let’s bring your ideas to life.</p></div><div class="dashboard-actions"><button id="notificationBtn" class="icon-button" aria-label="Notifications">'+icon('bell',19)+'</button><button id="topAccount" class="avatar top-avatar" aria-label="Account">'+avatar+'</button></div></div>'+
     balanceCard+projectCard+
-    '<div class="section-head"><h2>Recent Activity</h2><button id="homeActivityAll" class="text-button compact">See All</button></div><div class="card activity-card home-activity-card">'+(feed.slice(0,4).map(x=>'<div class="activity-row"><div class="activity-icon">'+icon(x.icon,15)+'</div><div><b>'+esc(x.title)+'</b><small>'+esc(x.sub)+' · '+esc(fmtDate(x.date))+'</small></div></div>').join('')||'<div class="empty compact-empty">No recent activity yet.</div>')+'</div>'+
+    '<div class="section-head"><h2>Recent Activity</h2><button id="homeActivityAll" class="text-button compact">See All</button></div><div class="card activity-card home-activity-card">'+(feed.slice(0,8).map(x=>'<div class="activity-row"><div class="activity-icon">'+icon(x.icon,15)+'</div><div><b>'+esc(x.title)+'</b><small>'+esc(x.sub)+' · '+esc(fmtDate(x.date))+'</small></div></div>').join('')||'<div class="empty compact-empty">No recent activity yet.</div>')+'</div>'+
     '<div id="jpAdBannerAnchor" class="jp-home-ad-inline"></div>';
 }
 function orders(){
