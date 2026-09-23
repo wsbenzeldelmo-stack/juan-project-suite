@@ -6491,11 +6491,10 @@ ${description}`))actionCallback();return;}
       function pricingRushRate(items=[],projectNo=null){if(Number(projectNo)<51)return 500;const count=countDeliverablesFromItems(items);return count<=3?500:count<=7?800:count<=11?1000:1200;}
       function calculateRushForProject(projectOrItems,startValue,deadlineValue,projectNo=null){const items=Array.isArray(projectOrItems)?projectOrItems:(projectOrItems?.project_items||[]),no=projectNo??(Array.isArray(projectOrItems)?null:projectNumber(projectOrItems));const start=parseDateSafe(startValue),due=parseDateSafe(deadlineValue);const standard=pricingStandardDays(items,no);if(!start||!due)return {duration:null,daysEarly:0,fee:0,standard,deliverableCount:countDeliverablesFromItems(items),rate:pricingRushRate(items,no)};const duration=Math.max(0,Math.round((due-start)/86400000)),daysEarly=Math.max(0,standard-duration),rate=pricingRushRate(items,no),fee=daysEarly>0?Math.ceil(daysEarly/4)*rate:0;return {duration,daysEarly,fee,standard,deliverableCount:countDeliverablesFromItems(items),rate};}
       function nextProjectNumber(){const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite);return used.length?Math.max(...used)+1:1;}
-      function projectHasPackageItems(items=[]){return (items||[]).some(i=>String(i.type||'').toUpperCase()==='PACKAGE'||String(i.product_code||'').toUpperCase().startsWith('PKG-'));}
       function automaticMaintenanceFee(items=[],projectNo=null,explicitSubtotal=null){
         const subtotal=explicitSubtotal!==null&&explicitSubtotal!==undefined?Number(explicitSubtotal):(items||[]).reduce((sum,i)=>sum+Math.max(0,Number(i?.price||0))*Math.max(1,Number(i?.qty||1)),0);
         if(!(subtotal>0))return 0;
-        if(Number(projectNo)>=54)return projectHasPackageItems(items)?31:30;
+        // Canonical rule: subtotal ending in 99 gets ₱26; every other positive subtotal gets ₱25.
         return Math.abs(Math.round(subtotal))%100===99?26:25;
       }
       function storedOrAutomaticMaintenanceFee(proj,items=[],explicitSubtotal=null){
@@ -6504,11 +6503,11 @@ ${description}`))actionCallback();return;}
         // Older projects may have a persisted 0 because the maintenance-fee field was added
         // after the project was created. Treat zero as missing for active/unpaid projects so
         // the canonical ₱25 / ₱26 rule is restored instead of silently dropping the fee.
-        if(stored>0)return stored;
         const auto=automaticMaintenanceFee(items,projectNumber(proj),explicitSubtotal);
         const paid=Math.max(0,getProjectPaid(proj)),existingTotal=Math.max(0,Number(proj?.total_amount||0));
-        // Preserve truly historical fully-settled records that intentionally had no fee.
+        // Fully settled historical projects keep their stored fee so a rule change never recreates a balance.
         if(storedDefined&&existingTotal>0&&paid>=existingTotal-0.005)return stored;
+        // Unpaid and partially paid projects always follow the current subtotal-based rule.
         return auto;
       }
       function maintenanceFeeForRecalculation(proj,items=[],explicitSubtotal=null){
@@ -8008,8 +8007,9 @@ ${description}`))actionCallback();return;}
         proj.subtotal_amount=subtotal;
         const discount=Math.max(0,Number(proj.discount_amount||0));
         const isV2=pricingVersionForProject(proj)==='v2';
-        if(isV2){const rc=calculateRushForProject(proj,proj.start_date,proj.deadline_date);proj.rush_days_early=rc.daysEarly;proj.calculated_rush_fee=rc.fee;proj.rush_fee_enabled=proj.rush_fee_enabled!==false;proj.rush_fee=proj.rush_fee_enabled?rc.fee:0;proj.system_maintenance_fee=automaticMaintenanceFee(items,projectNumber(proj),subtotal);proj.pricing_version='v2';}
-        else{proj.pricing_version='legacy';if(proj.system_maintenance_fee===undefined||proj.system_maintenance_fee===null)proj.system_maintenance_fee=automaticMaintenanceFee(items,projectNumber(proj),subtotal);}
+        if(isV2){const rc=calculateRushForProject(proj,proj.start_date,proj.deadline_date);proj.rush_days_early=rc.daysEarly;proj.calculated_rush_fee=rc.fee;proj.rush_fee_enabled=proj.rush_fee_enabled!==false;proj.rush_fee=proj.rush_fee_enabled?rc.fee:0;proj.pricing_version='v2';}
+        else{proj.pricing_version='legacy';}
+        proj.system_maintenance_fee=maintenanceFeeForRecalculation(proj,items,subtotal);
         const rush=Math.max(0,Number(proj.rush_fee||0)),maintenance=Math.max(0,Number(proj.system_maintenance_fee||0)),workload=resolvedWorkloadSurcharge(proj),otherFees=Array.isArray(proj.additional_fees)?proj.additional_fees.reduce((sum,f)=>sum+Math.max(0,Number(f?.amount||0)),0):0;
         proj.total_amount=Math.max(0,subtotal-discount+rush+workload+maintenance+otherFees);
         proj.pending_amount=Math.max(0,proj.total_amount-getProjectPaid(proj));

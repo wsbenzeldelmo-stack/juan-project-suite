@@ -198,3 +198,16 @@ test("legacy Workspace layers do not reintroduce non-SF fonts", async () => {
   assert.doesNotMatch(files, /\bsystem-ui\b/);
   assert.match(files, /SF Pro/);
 });
+
+
+test("maintenance fee follows subtotal-ending-99 rule everywhere", async () => {
+  const workspace = await read("index.html");
+  const online = await read("../online/js/app.js");
+  assert.match(workspace, /return Math\.abs\(Math\.round\(subtotal\)\)%100===99\?26:25/);
+  assert.doesNotMatch(workspace, /projectNo\)>=54/);
+  assert.doesNotMatch(workspace, /\?31:30/);
+  assert.match(workspace, /Unpaid and partially paid projects always follow the current subtotal-based rule/);
+  assert.match(workspace, /proj\.system_maintenance_fee=maintenanceFeeForRecalculation\(proj,items,subtotal\)/);
+  assert.match(online, /return Math\.abs\(Math\.round\(value\)\)%100===99\?26:25/);
+  assert.match(online, /fullySettled=storedTotal>0&&paid>=storedTotal-0\.005/);
+});

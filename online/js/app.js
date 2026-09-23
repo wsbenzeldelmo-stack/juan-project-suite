@@ -439,7 +439,7 @@ function maintenanceFeeForSubtotal(subtotal){
 }
 function clientInvoiceFees(p,subtotal,discount,storedTotal){
   const rows=[],add=(label,amount)=>{amount=Math.max(0,Number(amount||0));if(amount>0)rows.push({label,amount})};
-  const baseRush=Math.max(0,Number(p.rush_fee||0)),workload=Math.max(0,Number(p.workload_surcharge||0)),storedMaintenance=Math.max(0,Number(p.system_maintenance_fee||0)),maintenance=storedMaintenance>0?storedMaintenance:maintenanceFeeForSubtotal(subtotal);
+  const baseRush=Math.max(0,Number(p.rush_fee||0)),workload=Math.max(0,Number(p.workload_surcharge||0)),storedMaintenance=Math.max(0,Number(p.system_maintenance_fee||0)),paid=Math.max(0,Number(p.amount_paid||0)),fullySettled=storedTotal>0&&paid>=storedTotal-0.005,maintenance=fullySettled?storedMaintenance:maintenanceFeeForSubtotal(subtotal);
   let rushDisplay=baseRush+workload;
   const others=[];if(Array.isArray(p.additional_fees))p.additional_fees.forEach(f=>{const amount=Math.max(0,Number(f?.amount||0));if(amount>0)others.push({label:String(f?.label||f?.name||'Additional Fee'),amount})});
   const explicitOther=others.reduce((sum,f)=>sum+f.amount,0),expected=Math.max(0,subtotal+rushDisplay+maintenance+explicitOther-discount),legacyDelta=storedTotal>expected+0.005?storedTotal-expected:0;
