@@ -183,3 +183,18 @@ test("Workspace typography is SF Pro only and uses weight hierarchy", async () =
   assert.match(css, /--fw-heavy:800/);
   assert.match(css, /body \*\{[\s\S]*font-weight:var\(--fw-regular\)!important/);
 });
+
+
+test("legacy Workspace layers do not reintroduce non-SF fonts", async () => {
+  const files = [
+    await read("css/redesign-2026-09-20.css"),
+    await read("css/suite.css"),
+    await read("js/suite-prod.js")
+  ].join("\n");
+  assert.doesNotMatch(files, /\bInter\b/);
+  assert.doesNotMatch(files, /\bArial\b/);
+  assert.doesNotMatch(files, /\bHelvetica\b/);
+  assert.doesNotMatch(files, /\bmonospace\b/);
+  assert.doesNotMatch(files, /\bsystem-ui\b/);
+  assert.match(files, /SF Pro/);
+});
