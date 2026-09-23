@@ -4386,8 +4386,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
       }
 
       let workspaceBootStartedAt=performance.now();
+      const workspaceBootFailsafe=setTimeout(()=>finishWorkspaceBoot(),8000);
       function finishWorkspaceBoot(){
         const splash=document.getElementById('workspaceBootSplash');if(!splash)return;
+        clearTimeout(workspaceBootFailsafe);
         const elapsed=performance.now()-workspaceBootStartedAt,wait=Math.max(0,700-elapsed);
         setTimeout(()=>{splash.classList.add('is-hidden');splash.setAttribute('aria-busy','false');setTimeout(()=>splash.remove(),220);},wait);
       }
