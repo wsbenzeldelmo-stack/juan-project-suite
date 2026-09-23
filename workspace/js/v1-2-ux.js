@@ -11,6 +11,7 @@
     calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
     pricelist:'<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M8 8a4 4 0 0 1 8 0"/>',
     'online-portal':'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h5"/><path d="M15 15h4v3h-4z"/>',
+    'in-house-ads':'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h6M7 13h4"/><path d="m17 9 .7 1.4 1.6.2-1.2 1.1.3 1.6-1.4-.8-1.4.8.3-1.6-1.2-1.1 1.6-.2z"/>',
     settings:'<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.3 3.1a7 7 0 0 0-1.7 1l-2.4-1-2 3.4L5.1 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a7 7 0 0 0 1.7 1l.3 3.1h5l.3-3.1a7 7 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/>'
   };
   const descriptions={
@@ -23,6 +24,7 @@
     calendar:'Review project deadlines and operational dates in a single schedule.',
     pricelist:'Manage the shared JUAN PROJECT catalog used by Workspace and Online.',
     'online-portal':'Manage client accounts, payment reviews, project Drive access, and payment setup.',
+    'in-house-ads':'Create, schedule, publish, pause, archive, and remove In-House Ads.',
     settings:'Manage Workspace profile, preferences, and system settings.'
   };
   const labels={work:'WORK',finance:'FINANCE',operations:'OPERATIONS',system:'SYSTEM'};
@@ -35,12 +37,16 @@
     const items={};
     qa('.nav-item',menu).forEach(el=>{const key=el.dataset.view||el.id;if(key)items[key]=el});
     menu.innerHTML='';
-    const append=(label,views)=>{menu.append(makeLabel(label));views.forEach(v=>{const el=items[v];if(el)menu.append(el)})};
+    const placed=new Set();
+    const append=(label,views)=>{menu.append(makeLabel(label));views.forEach(v=>{const el=items[v];if(el){menu.append(el);placed.add(v)}})};
     append(labels.work,['my-works','projects','clients','new-order','orders']);
     if(items['new-order'])items['new-order'].classList.remove('workspace-primary-action');
     append(labels.finance,['payments','reports']);
-    append(labels.operations,['calendar','pricelist','online-portal']);
+    append(labels.operations,['calendar','pricelist','online-portal','in-house-ads']);
     append(labels.system,['settings']);
+    // Never delete newly added navigation destinations just because this legacy enhancer
+    // does not know about them yet. Preserve any remaining items after the known groups.
+    Object.entries(items).forEach(([key,el])=>{if(!placed.has(key))menu.append(el)});
     qa('.nav-item',menu).forEach(el=>{const key=el.dataset.view||el.id,ic=q('.icon',el),path=iconPaths[key];if(ic&&path)ic.innerHTML=svg(path);el.setAttribute('aria-label',el.textContent.trim())});
   }
 

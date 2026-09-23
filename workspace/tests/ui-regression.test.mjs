@@ -158,3 +158,11 @@ test("Client Home pins 1800x600 ad and footer above navigation without body whit
   assert.match(workspaceAds, /canvas\.width=1800;canvas\.height=600/);
   assert.match(workspaceAds, /Banner format: 1800 × 600 px/);
 });
+
+
+test("legacy sidebar enhancement preserves In-House Ads and future navigation items", async () => {
+  const js = await read("js/v1-2-ux.js");
+  assert.ok(js.includes("append(labels.operations,['calendar','pricelist','online-portal','in-house-ads'])"));
+  assert.ok(js.includes("const placed=new Set()"));
+  assert.ok(js.includes("if(!placed.has(key))menu.append(el)"));
+});
