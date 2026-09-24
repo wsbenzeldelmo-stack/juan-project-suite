@@ -8362,33 +8362,178 @@ ${description}`))actionCallback();return;}
         if(cloudAvailable())await flushOfflineSyncQueue();
       }
 
+      const WORKSPACE_PAYMENT_INSTITUTIONS=[
+        {code:'gcash',name:'GCash',type:'E-Wallet',logo:'/assets/payment-institutions/gcash.png',placeholder:'13-digit reference',numeric:true,max:13,pattern:/^\d{13}$/},
+        {code:'maya',name:'Maya',type:'E-Wallet',logo:'/assets/payment-institutions/maya.png',placeholder:'12-character reference',max:12,pattern:/^[A-Za-z0-9]{12}$/},
+        {code:'bdo',name:'BDO Unibank',type:'Bank',logo:'/assets/payment-institutions/bdo.png',placeholder:'Receipt reference',max:32,pattern:/^(MA_PC-[A-Za-z0-9]{8}-\d{6,8}|FT-[A-Za-z0-9]{8}-\d{6,8})$/},
+        {code:'bpi',name:'BPI',type:'Bank',logo:'/assets/payment-institutions/bpi.png',placeholder:'13-character reference',max:13,pattern:/^[A-Za-z0-9]{13}$/},
+        {code:'gotyme',name:'GoTyme Bank',type:'Bank / E-Wallet',logo:'/assets/payment-institutions/gotyme.png',placeholder:'12–15 character reference',max:15,pattern:/^[A-Za-z0-9]{12,15}$/},
+        {code:'landbank',name:'LandBank',type:'Bank',logo:'/assets/payment-institutions/landbank.png',placeholder:'14–15 digit reference',numeric:true,max:15,pattern:/^\d{14,15}$/},
+        {code:'maribank',name:'MariBank',type:'Bank',logo:'/assets/payment-institutions/maribank.png',placeholder:'6–12 digit reference',numeric:true,max:12,pattern:/^\d{6,12}$/},
+        {code:'metrobank',name:'Metrobank',type:'Bank',logo:'/assets/payment-institutions/metrobank.png',placeholder:'12-digit reference',numeric:true,max:12,pattern:/^\d{12}$/},
+        {code:'pnb',name:'PNB',type:'Bank',logo:'/assets/payment-institutions/pnb.png',placeholder:'14–15 digit reference',numeric:true,max:15,pattern:/^\d{14,15}$/},
+        {code:'unionbank',name:'UnionBank',type:'Bank',logo:'/assets/payment-institutions/unionbank.png',placeholder:'Transaction reference',max:15,pattern:/^(UBP?)?[A-Za-z0-9]{10,15}$/},
+        {code:'others',name:'Others',type:'Bank / E-Wallet',logo:'/assets/payment-institutions/others.svg',placeholder:'Reference / Transaction ID',max:24,pattern:/^[A-Za-z0-9_-]{6,24}$/}
+      ];
+      function workspacePaymentInstitution(value){
+        const q=String(value||'').trim().toLowerCase();if(!q)return null;
+        return WORKSPACE_PAYMENT_INSTITUTIONS.find(x=>x.code===q||x.name.toLowerCase()===q)||null;
+      }
+      function renderWorkspacePaymentInstitutionOptions(query=''){
+        const host=document.getElementById('paymentInstitutionOptions');if(!host)return;
+        const q=String(query||'').trim().toLowerCase();
+        const rows=WORKSPACE_PAYMENT_INSTITUTIONS.filter(x=>!q||x.name.toLowerCase().includes(q)||x.type.toLowerCase().includes(q));
+        host.innerHTML=rows.map(x=>`<button type="button" class="workspace-institution-option" role="option" onclick="app.selectWorkspacePaymentInstitution('${x.code}')"><span class="workspace-institution-logo"><img src="${x.logo}" alt=""></span><span><strong>${escapeHtml(x.name)}</strong><small>${escapeHtml(x.type)}</small></span></button>`).join('')||'<div class="workspace-institution-empty">No matching bank or e-wallet.</div>';
+      }
+      function toggleWorkspacePaymentInstitutionPicker(force){
+        const menu=document.getElementById('paymentInstitutionMenu'),btn=document.getElementById('paymentInstitutionButton');if(!menu)return;
+        const open=typeof force==='boolean'?force:menu.classList.contains('hidden');
+        menu.classList.toggle('hidden',!open);btn?.setAttribute('aria-expanded',open?'true':'false');
+        if(open){renderWorkspacePaymentInstitutionOptions(document.getElementById('paymentInstitutionSearch')?.value||'');setTimeout(()=>document.getElementById('paymentInstitutionSearch')?.focus(),30);}
+      }
+      function filterWorkspacePaymentInstitutions(value){renderWorkspacePaymentInstitutionOptions(value);}
+      function applyWorkspaceReferenceGuide(inst){
+        const input=document.getElementById('paymentRefInput'),guide=document.getElementById('paymentRefGuide');if(!input)return;
+        input.placeholder=inst?.placeholder||'Reference / Transaction ID';input.maxLength=inst?.max||32;input.inputMode=inst?.numeric?'numeric':'text';
+        input.oninput=()=>{
+          const raw=String(input.value||'');
+          input.value=inst?.numeric?raw.replace(/\D/g,'').slice(0,inst.max||32):raw.replace(/[^A-Za-z0-9_-]/g,'').slice(0,inst?.max||32);
+          document.getElementById('paymentRefError').textContent='';
+          input.classList.remove('is-invalid');
+        };
+        if(guide)guide.textContent='Use the reference shown on the receipt.';
+      }
+      function selectWorkspacePaymentInstitution(code,otherName=''){
+        const inst=workspacePaymentInstitution(code)||WORKSPACE_PAYMENT_INSTITUTIONS[0];
+        const hidden=document.getElementById('paymentMethodInput'),content=document.getElementById('paymentInstitutionButtonContent'),preview=document.getElementById('paymentInstitutionPreview'),other=document.getElementById('paymentOtherInstitutionField'),otherInput=document.getElementById('paymentOtherInstitutionInput');
+        if(hidden)hidden.value=inst.code;
+        if(content)content.innerHTML=`<span class="workspace-institution-logo compact"><img src="${inst.logo}" alt=""></span><span><strong>${escapeHtml(inst.name)}</strong><small>${escapeHtml(inst.type)}</small></span>`;
+        if(preview){preview.classList.remove('hidden');preview.innerHTML=`<span class="workspace-institution-logo"><img src="${inst.logo}" alt=""></span><div><strong>${escapeHtml(inst.name)}</strong><span>${escapeHtml(inst.type)}</span></div>`;}
+        other?.classList.toggle('hidden',inst.code!=='others');
+        if(otherInput){otherInput.classList.remove('is-invalid');if(otherName)otherInput.value=otherName;}
+        applyWorkspaceReferenceGuide(inst);toggleWorkspacePaymentInstitutionPicker(false);
+      }
+      function validateWorkspacePaymentReference(code,value){
+        const clean=String(value||'').replace(/\s+/g,'').trim();if(!clean)return {ok:true,clean};
+        const inst=workspacePaymentInstitution(code);return {ok:!!inst&&inst.pattern.test(clean),clean};
+      }
+      function renderWorkspacePaymentReceiptState(){
+        const draft=state.paymentReceiptDraft||{},name=document.getElementById('paymentReceiptName'),actions=document.getElementById('paymentReceiptActions'),error=document.getElementById('paymentReceiptError');
+        if(name)name.textContent=draft.filename||'No receipt attached';
+        if(actions)actions.classList.toggle('hidden',!(draft.filename||draft.path||draft.file));
+        if(error)error.textContent='';
+      }
+      function handleWorkspacePaymentReceipt(file){
+        if(!file)return;
+        const error=document.getElementById('paymentReceiptError');if(error)error.textContent='';
+        if(!['image/jpeg','image/png','application/pdf'].includes(file.type)){if(error)error.textContent='Choose a JPG, PNG, or PDF file.';return;}
+        if(file.size>5*1024*1024){if(error)error.textContent='Choose a file up to 5 MB.';return;}
+        const old=state.paymentReceiptDraft||{};if(old.previewUrl&&String(old.previewUrl).startsWith('blob:'))URL.revokeObjectURL(old.previewUrl);
+        state.paymentReceiptDraft={...old,file,filename:file.name,previewUrl:URL.createObjectURL(file),previewType:file.type,removed:false};
+        renderWorkspacePaymentReceiptState();
+      }
+      function removeWorkspacePaymentReceipt(){
+        const old=state.paymentReceiptDraft||{};if(old.previewUrl&&String(old.previewUrl).startsWith('blob:'))URL.revokeObjectURL(old.previewUrl);
+        state.paymentReceiptDraft={path:null,filename:'',file:null,previewUrl:'',previewType:'',removed:true,previousPath:old.previousPath||old.path||null};
+        const input=document.getElementById('paymentReceiptInput');if(input)input.value='';
+        renderWorkspacePaymentReceiptState();
+      }
+      async function workspaceReceiptSignedUrl(path){
+        if(!path||!supabaseClient)return null;
+        const signed=await supabaseClient.storage.from('payment-receipts').createSignedUrl(path,900);if(signed.error)throw signed.error;
+        return signed.data?.signedUrl||null;
+      }
+      function showWorkspaceReceiptPreview(url,type,name){
+        const body=document.getElementById('workspaceReceiptPreviewBody'),title=document.getElementById('workspaceReceiptPreviewTitle');if(!body||!url)return;
+        if(title)title.textContent=name||'Receipt Preview';
+        body.innerHTML=String(type||'').includes('pdf')||/\.pdf(?:$|\?)/i.test(String(url))?`<iframe class="workspace-receipt-frame" src="${url}" title="Payment receipt PDF"></iframe>`:`<img class="workspace-receipt-image" src="${url}" alt="Payment receipt preview">`;
+        openModal('paymentReceiptPreviewModal');
+      }
+      async function previewWorkspacePaymentReceipt(){
+        try{
+          const draft=state.paymentReceiptDraft||{},url=draft.previewUrl||await workspaceReceiptSignedUrl(draft.path);
+          if(!url){showToast('No receipt is attached.');return;}
+          showWorkspaceReceiptPreview(url,draft.previewType||draft.filename,draft.filename||'Receipt Preview');
+        }catch(e){showToast(e?.message||'Receipt preview is unavailable.');}
+      }
+      async function viewPaymentReceipt(paymentId){
+        const proj=state.projects.find(p=>p.id===state.activeProjectId),payment=(proj?.payments||[]).find(p=>String(p.id)===String(paymentId));
+        if(!payment?.receipt_path){showToast('No receipt is attached to this payment.');return;}
+        try{const url=await workspaceReceiptSignedUrl(payment.receipt_path);showWorkspaceReceiptPreview(url,payment.receipt_filename||payment.receipt_path,payment.receipt_filename||'Receipt Preview');}
+        catch(e){showToast(e?.message||'Receipt preview is unavailable.');}
+      }
+      async function uploadWorkspacePaymentReceipt(file){
+        if(!file)return null;if(!supabaseClient)throw new Error('Database connection is required.');
+        const session=(await supabaseClient.auth.getSession())?.data?.session;if(!session?.user?.id)throw new Error('Sign in before uploading a receipt.');
+        const safe=String(file.name||'receipt').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-80);
+        const path=`${session.user.id}/workspace-${Date.now()}-${safe}`;
+        const uploaded=await supabaseClient.storage.from('payment-receipts').upload(path,file,{upsert:false,contentType:file.type||'application/octet-stream'});if(uploaded.error)throw uploaded.error;
+        return path;
+      }
+
       function openRecordPaymentModal(paymentId=null) {
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;state.editingPaymentId=paymentId||null;const payment=paymentId?(proj.payments||[]).find(p=>String(p.id)===String(paymentId)):null;
-        document.getElementById('recordPaymentModalTitle').textContent=payment?'Edit Payment':'Record Payment';document.getElementById('recordPaymentSaveBtn').textContent=payment?'Review Changes':'Continue';document.getElementById('paymentAmountInput').value=payment?Number(payment.amount_paid||payment.amount||0):'';document.getElementById('paymentDateInput').value=payment?.payment_date||new Date().toISOString().split('T')[0];document.getElementById('paymentMethodInput').value=payment?.payment_method||payment?.method||'GCash';document.getElementById('paymentRefInput').value=payment?.reference_no||payment?.reference_number||'';document.getElementById('paymentNotesInput').value=payment?.notes||'';document.getElementById('paymentAmountError').innerText='';document.getElementById('paymentDateError').innerText='';openModal('recordPaymentModal');
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        state.editingPaymentId=paymentId||null;const payment=paymentId?(proj.payments||[]).find(p=>String(p.id)===String(paymentId)):null;
+        document.getElementById('recordPaymentModalTitle').textContent=payment?'Edit Payment':'Record Payment';
+        document.getElementById('recordPaymentSaveBtn').textContent=payment?'Review Changes':'Continue';
+        document.getElementById('paymentAmountInput').value=payment?Number(payment.amount_paid||payment.amount||0):'';
+        document.getElementById('paymentDateInput').value=payment?.payment_date||new Date().toISOString().split('T')[0];
+        document.getElementById('paymentRefInput').value=payment?.reference_no||payment?.reference_number||'';
+        document.getElementById('paymentNotesInput').value=payment?.notes||'';
+        document.getElementById('paymentAmountError').innerText='';document.getElementById('paymentDateError').innerText='';document.getElementById('paymentRefError').innerText='';
+        const legacyMethod=payment?.payment_method||payment?.method||'',matched=workspacePaymentInstitution(payment?.sender_institution||legacyMethod)||(payment?WORKSPACE_PAYMENT_INSTITUTIONS.at(-1):WORKSPACE_PAYMENT_INSTITUTIONS[0]);
+        const otherName=matched.code==='others'&&legacyMethod&&!workspacePaymentInstitution(legacyMethod)?legacyMethod:'';
+        document.getElementById('paymentInstitutionSearch').value='';
+        if(document.getElementById('paymentOtherInstitutionInput'))document.getElementById('paymentOtherInstitutionInput').value=otherName;
+        selectWorkspacePaymentInstitution(matched.code,otherName);
+        state.paymentReceiptDraft={path:payment?.receipt_path||null,previousPath:payment?.receipt_path||null,filename:payment?.receipt_filename||'',file:null,previewUrl:'',previewType:payment?.receipt_filename||'',removed:false};
+        const receiptInput=document.getElementById('paymentReceiptInput');if(receiptInput)receiptInput.value='';
+        renderWorkspacePaymentReceiptState();openModal('recordPaymentModal');
       }
 
       async function submitPaymentRecord() {
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const amountInput=document.getElementById('paymentAmountInput'),dateInput=document.getElementById('paymentDateInput'),errAmount=document.getElementById('paymentAmountError'),errDate=document.getElementById('paymentDateError');errAmount.innerText='';errDate.innerText='';amountInput.classList.remove('is-invalid');dateInput.classList.remove('is-invalid');
-        const draft={amount:Number(amountInput.value),payment_date:dateInput.value,payment_method:document.getElementById('paymentMethodInput').value,reference_no:document.getElementById('paymentRefInput').value.trim(),notes:document.getElementById('paymentNotesInput').value.trim(),editingId:state.editingPaymentId||null};let valid=true;if(!Number.isFinite(draft.amount)||draft.amount<=0){errAmount.innerText='Payment amount must be greater than ₱0.';amountInput.classList.add('is-invalid');valid=false}if(!draft.payment_date){errDate.innerText='Payment date is required.';dateInput.classList.add('is-invalid');valid=false}if(!valid)return;
-        closeModal('recordPaymentModal');showConfirmationDialog(draft.editingId?'Confirm Payment Changes':'Confirm Payment',`${formatCurrency(draft.amount)} · ${formatProjectDate(draft.payment_date)} · ${draft.payment_method}`,'Confirm',()=>finalizePaymentRecord(proj,draft));
+        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
+        const amountInput=document.getElementById('paymentAmountInput'),dateInput=document.getElementById('paymentDateInput'),refInput=document.getElementById('paymentRefInput'),errAmount=document.getElementById('paymentAmountError'),errDate=document.getElementById('paymentDateError'),errRef=document.getElementById('paymentRefError');
+        errAmount.innerText='';errDate.innerText='';errRef.innerText='';amountInput.classList.remove('is-invalid');dateInput.classList.remove('is-invalid');refInput.classList.remove('is-invalid');document.getElementById('paymentOtherInstitutionInput')?.classList.remove('is-invalid');
+        const code=document.getElementById('paymentMethodInput').value,inst=workspacePaymentInstitution(code),otherName=document.getElementById('paymentOtherInstitutionInput')?.value.trim()||'',refCheck=validateWorkspacePaymentReference(code,refInput.value);
+        const draft={amount:Number(amountInput.value),payment_date:dateInput.value,payment_method:code==='others'?(otherName||'Other Bank / E-Wallet'):(inst?.name||'Payment'),sender_institution:code,reference_no:refCheck.clean,notes:document.getElementById('paymentNotesInput').value.trim(),editingId:state.editingPaymentId||null,receiptDraft:{...(state.paymentReceiptDraft||{})}};
+        let valid=true;
+        if(!Number.isFinite(draft.amount)||draft.amount<=0){errAmount.innerText='Enter an amount greater than ₱0.';amountInput.classList.add('is-invalid');valid=false}
+        if(!draft.payment_date){errDate.innerText='Choose the payment date.';dateInput.classList.add('is-invalid');valid=false}
+        if(code==='others'&&!otherName){document.getElementById('paymentOtherInstitutionInput')?.classList.add('is-invalid');valid=false}
+        if(!refCheck.ok){errRef.innerText='Check the reference format for the selected sender.';refInput.classList.add('is-invalid');valid=false}
+        if(!valid)return;
+        closeModal('recordPaymentModal');
+        showConfirmationDialog(draft.editingId?'Confirm Payment Changes':'Confirm Payment',`${formatCurrency(draft.amount)} · ${formatProjectDate(draft.payment_date)} · ${draft.payment_method}`,'Confirm',()=>finalizePaymentRecord(proj,draft));
       }
       async function finalizePaymentRecord(proj,draft){
-        showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,250));
+        showActionStatus('Processing Payment','Saving payment details…',false);await new Promise(r=>setTimeout(r,180));
+        let newReceiptPath=draft.receiptDraft?.path||null,oldReceiptPath=draft.receiptDraft?.previousPath||null;
         try{
-          let record;
+          if(draft.receiptDraft?.file)newReceiptPath=await uploadWorkspacePaymentReceipt(draft.receiptDraft.file);
+          if(draft.receiptDraft?.removed)newReceiptPath=null;
+          const receiptFilename=draft.receiptDraft?.filename||null;let record;
           if(draft.editingId){
             record=(proj.payments||[]).find(p=>String(p.id)===String(draft.editingId)&&!p.deleted_at);if(!record)throw new Error('Payment record was not found.');
             const before={...record};
             if(supabaseClient&&state.isConnected){
-              const audit=await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(draft.editingId),project_id:String(proj.id),action:'EDIT',before_value:before,after_value:{amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}}]);if(audit.error)console.warn('Payment audit sync unavailable:',audit.error.message);
-              const updated=await supabaseClient.from('payments').update({amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()}).eq('id',draft.editingId).is('deleted_at',null).select('*').single();if(updated.error)throw updated.error;Object.assign(record,updated.data,{amount:updated.data.amount_paid});
-            }else Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes,updated_at:new Date().toISOString()});
+              const after={amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,sender_institution:draft.sender_institution,reference_no:draft.reference_no,notes:draft.notes,receipt_path:newReceiptPath,receipt_filename:receiptFilename};
+              const audit=await supabaseClient.from('payment_audit_logs').insert([{payment_id:String(draft.editingId),project_id:String(proj.id),action:'EDIT',before_value:before,after_value:after}]);if(audit.error)console.warn('Payment audit sync unavailable:',audit.error.message);
+              const updated=await supabaseClient.from('payments').update({...after,updated_at:new Date().toISOString()}).eq('id',draft.editingId).is('deleted_at',null).select('*').single();if(updated.error)throw updated.error;
+              Object.assign(record,updated.data,{amount:updated.data.amount_paid});
+            }else Object.assign(record,{amount_paid:draft.amount,amount:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,sender_institution:draft.sender_institution,reference_no:draft.reference_no,notes:draft.notes,receipt_path:newReceiptPath,receipt_filename:receiptFilename,updated_at:new Date().toISOString()});
           }else{
             if(!supabaseClient||!state.isConnected)throw new Error('Connect to the database before recording a confirmed payment.');
-            const inserted=await supabaseClient.from('payments').insert([{project_id:proj.id,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,reference_no:draft.reference_no,notes:draft.notes}]).select('*').single();if(inserted.error)throw inserted.error;record={...inserted.data,amount:inserted.data.amount_paid};if(!proj.payments)proj.payments=[];proj.payments.push(record);
+            const inserted=await supabaseClient.from('payments').insert([{project_id:proj.id,client_id:proj.client_id||null,amount_paid:draft.amount,payment_date:draft.payment_date,payment_method:draft.payment_method,sender_institution:draft.sender_institution,reference_no:draft.reference_no,notes:draft.notes,receipt_path:newReceiptPath,receipt_filename:receiptFilename}]).select('*').single();
+            if(inserted.error)throw inserted.error;record={...inserted.data,amount:inserted.data.amount_paid};if(!proj.payments)proj.payments=[];proj.payments.push(record);
           }
-          proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();showActionStatus('Payment Successful',draft.editingId?'Payment changes were saved.':'Payment was recorded successfully.',true);state.editingPaymentId=null;setTimeout(()=>closeModal('actionStatusModal'),850);
-        }catch(e){console.error('Payment save failed:',e);closeModal('actionStatusModal');showToast(`Payment could not be saved: ${e?.message||e}`);}
+          if(oldReceiptPath&&oldReceiptPath!==newReceiptPath&&supabaseClient)await supabaseClient.storage.from('payment-receipts').remove([oldReceiptPath]).catch(()=>{});
+          proj.pending_amount=Math.max(0,Number(proj.total_amount||0)-getProjectPaid(proj));proj.payment_status=getProjectPaymentStatus(proj);persistProjectsState();renderPaymentTracker(proj);renderInvoicePaper(proj);renderPaymentsView();renderOverviewDashboard();
+          showActionStatus('Payment Successful',draft.editingId?'Payment changes were saved.':'Payment was recorded successfully.',true);state.editingPaymentId=null;state.paymentReceiptDraft=null;setTimeout(()=>closeModal('actionStatusModal'),700);
+        }catch(e){
+          if(newReceiptPath&&newReceiptPath!==oldReceiptPath&&draft.receiptDraft?.file&&supabaseClient)await supabaseClient.storage.from('payment-receipts').remove([newReceiptPath]).catch(()=>{});
+          console.error('Payment save failed:',e);closeModal('actionStatusModal');showToast(`Payment could not be saved: ${e?.message||e}`);
+        }
       }
 
       function deletePaymentRecord(paymentId){
@@ -9448,6 +9593,13 @@ ${description}`))actionCallback();return;}
         saveInvoiceImage,
         toggleDeliverable,
         openRecordPaymentModal,
+        toggleWorkspacePaymentInstitutionPicker,
+        filterWorkspacePaymentInstitutions,
+        selectWorkspacePaymentInstitution,
+        handleWorkspacePaymentReceipt,
+        previewWorkspacePaymentReceipt,
+        removeWorkspacePaymentReceipt,
+        viewPaymentReceipt,
         submitPaymentRecord,
         finalizePaymentRecord,
         deletePaymentRecord,
