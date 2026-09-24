@@ -2441,17 +2441,46 @@ table.jp-packages-table col:nth-child(6){width:7%}
           <span id="paymentDateError" class="inline-error"></span>
         </div>
         <div class="form-group">
-          <label class="form-label">Payment Method *</label>
-          <select class="form-control" id="paymentMethodInput">
-            <option value="GCash">GCash</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Cash">Cash</option>
-            <option value="Other">Other</option>
-          </select>
+          <label class="form-label">Sending Bank / E-Wallet *</label>
+          <div class="workspace-institution-picker">
+            <input type="hidden" id="paymentMethodInput" value="gcash">
+            <button type="button" class="form-control workspace-institution-trigger" id="paymentInstitutionButton" aria-haspopup="listbox" aria-expanded="false" onclick="app.toggleWorkspacePaymentInstitutionPicker()">
+              <span id="paymentInstitutionButtonContent">Select sending bank or e-wallet</span>
+              <span class="workspace-institution-chevron">⌄</span>
+            </button>
+            <div class="workspace-institution-menu hidden" id="paymentInstitutionMenu">
+              <input class="form-control" id="paymentInstitutionSearch" autocomplete="off" placeholder="Search bank or e-wallet" oninput="app.filterWorkspacePaymentInstitutions(this.value)">
+              <div id="paymentInstitutionOptions" class="workspace-institution-options" role="listbox"></div>
+            </div>
+          </div>
+          <div id="paymentInstitutionPreview" class="workspace-institution-preview hidden"></div>
+        </div>
+        <div class="form-group hidden" id="paymentOtherInstitutionField">
+          <label class="form-label">Bank / E-Wallet Name</label>
+          <input type="text" class="form-control" id="paymentOtherInstitutionInput" placeholder="Enter institution name">
         </div>
         <div class="form-group">
           <label class="form-label">Reference Number</label>
-          <input type="text" class="form-control" id="paymentRefInput" placeholder="Ref / Txn ID">
+          <input type="text" class="form-control" id="paymentRefInput" autocomplete="off" placeholder="Reference / Transaction ID">
+          <span id="paymentRefError" class="inline-error"></span>
+          <small id="paymentRefGuide" class="text-muted">Use the reference shown on the receipt.</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Receipt / Proof of Payment <span class="text-muted">(Optional)</span></label>
+          <input type="file" id="paymentReceiptInput" accept="image/jpeg,image/png,application/pdf" hidden onchange="app.handleWorkspacePaymentReceipt(this.files?.[0])">
+          <div class="workspace-receipt-upload">
+            <button type="button" class="btn btn-secondary" onclick="document.getElementById('paymentReceiptInput').click()">Upload receipt</button>
+            <div class="workspace-receipt-meta">
+              <strong id="paymentReceiptName">No receipt attached</strong>
+              <span>JPG, PNG, or PDF · max 5 MB</span>
+            </div>
+            <div class="workspace-receipt-actions hidden" id="paymentReceiptActions">
+              <button type="button" class="btn btn-text btn-sm" onclick="app.previewWorkspacePaymentReceipt()">Preview</button>
+              <button type="button" class="btn btn-text btn-sm" onclick="document.getElementById('paymentReceiptInput').click()">Replace</button>
+              <button type="button" class="btn btn-text btn-sm text-danger" onclick="app.removeWorkspacePaymentReceipt()">Remove</button>
+            </div>
+          </div>
+          <span id="paymentReceiptError" class="inline-error"></span>
         </div>
         <div class="form-group">
           <label class="form-label">Notes</label>
@@ -2462,6 +2491,19 @@ table.jp-packages-table col:nth-child(6){width:7%}
         <button class="btn btn-secondary" onclick="app.closeModal('recordPaymentModal')">Cancel</button>
         <button class="btn btn-primary" id="recordPaymentSaveBtn" onclick="app.submitPaymentRecord()">Continue</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="paymentReceiptPreviewModal">
+    <div class="modal-card modal-wide workspace-receipt-preview-modal">
+      <div class="modal-header">
+        <div>
+          <div class="section-kicker">PAYMENT RECEIPT</div>
+          <h3 class="modal-title" id="workspaceReceiptPreviewTitle">Receipt Preview</h3>
+        </div>
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('paymentReceiptPreviewModal')">×</button>
+      </div>
+      <div class="modal-body" id="workspaceReceiptPreviewBody"></div>
     </div>
   </div>
 
