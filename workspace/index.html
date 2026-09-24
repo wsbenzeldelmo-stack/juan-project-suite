@@ -2196,6 +2196,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
           <div class="portal-summary-grid" id="onlinePortalAccountSummary"></div>
           <div class="view-toolbar unified-toolbar portal-toolbar">
             <input id="onlinePortalAccountSearch" class="form-control" placeholder="Search client ID, name, or email…">
+            <div class="toolbar-actions"><div class="filter-pills" id="onlinePortalAccountFilters" aria-label="Client access filter"></div></div>
           </div>
           <div class="card table-card"><div class="table-responsive"><table class="data-table unified-table portal-client-access-table"><thead><tr><th>Client ID</th><th>Email</th><th>Portal Status</th><th>Password</th><th>Last Login</th><th class="table-actions-col" aria-label="Row actions"></th></tr></thead><tbody id="onlinePortalAccountRows"></tbody></table></div></div>
         </div>
@@ -2912,6 +2913,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         packageBuilderSelectedNames: [],
         calendarDate: new Date(),
         onlinePortalTab: "accounts",
+        onlinePortalAccountFilter: "active",
         onlinePortalData: null,
         onlinePortalLoading: false,
         projectDeliverableSelection: {}
@@ -5402,15 +5404,17 @@ ${description}`))actionCallback();return;}
       document.addEventListener('click',()=>closeFloatingActionMenus());
       window.addEventListener('resize',()=>closeFloatingActionMenus());
       window.addEventListener('scroll',()=>closeFloatingActionMenus(),true);
-      function renderOverviewCurrentProjects(){
+      function renderOverviewCurrentProjects(showAll=false){
         const box=document.getElementById('overviewCurrentProjects'); if(!box)return;
-        const active=state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.delivery_status!=="Delivered"&&!p.archived_at).sort(compareProjectPriority);
+        const allActive=state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.delivery_status!=="Delivered"&&!p.archived_at).sort(compareProjectPriority);
+        const active=showAll?allActive:allActive.slice(0,3);
         box.innerHTML=active.map(p=>{const tag=projectDeadlineTag(p),priority=projectIsPriority(p),ds=(p.deliverables||[]).filter(d=>!d.is_group),done=ds.filter(d=>d.completed).length,prog=ds.length?Math.round(done/ds.length*100):getProjectProgress(p),bal=getProjectBalance(p);return `<div class="current-project-card" onclick="app.openProjectDetails('${p.id}')"><div class="current-project-top"><div class="current-project-copy"><div class="project-ref-row"><span class="project-ref">${formatProjectId(p)}</span></div><div class="current-project-name">${escapeHtml(p.title||'Untitled Project')}</div><div class="current-project-client">${escapeHtml(p.client_name||'No client')}</div></div><div class="current-project-right"><div class="current-project-tag-stack">${priority?'<span class="project-tag priority">PRIORITY</span>':''}<span class="project-tag ${tag.cls}">${escapeHtml(tag.label)}</span></div><div class="current-project-balance">Balance: <strong>${formatCurrency(bal)}</strong></div></div></div><div class="current-project-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${prog}%"></div></div><span>${done}/${ds.length||0}</span></div></div>`}).join('')||`<div class="empty-compact-state"><strong>No current projects</strong><span>Active projects will appear here.</span></div>`;
       }
 
-      function renderOverviewUpcomingDeadlines(){
+      function renderOverviewUpcomingDeadlines(showAll=false){
         const box=document.getElementById('overviewUpcomingDeadlines'); if(!box)return;
-        const items=state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.delivery_status!=="Delivered"&&p.deadline_date).sort(compareProjectPriority);
+        const allItems=state.projects.filter(p=>!p.deleted&&p.status!=="Completed"&&p.delivery_status!=="Delivered"&&p.deadline_date).sort(compareProjectPriority);
+        const items=showAll?allItems:allItems.slice(0,4);
         const card=box.closest('.card');if(card)card.style.display='flex';
         box.innerHTML=items.length?items.map(p=>{const tag=projectDeadlineTag(p);return `<div class="attention-row" onclick="app.openProjectDetails('${p.id}')"><div class="attention-date">${escapeHtml(parseDateSafe(p.deadline_date)?.toLocaleDateString('en-PH',{month:'short',day:'numeric'})||'—')}</div><div><div class="attention-title">${escapeHtml(p.title)}</div><div class="attention-sub">${escapeHtml(formatProjectId(p)+' • '+(p.client_name||'Project'))}</div></div><span class="project-tag ${tag.cls}">${escapeHtml(tag.label)}</span></div>`}).join(''):`<div class="empty-compact-state"><strong>No upcoming deadlines</strong><span>Nothing needs deadline attention right now.</span></div>`;
       }
@@ -5701,8 +5705,8 @@ ${description}`))actionCallback();return;}
       }
       function openOverviewListModal(type){
         const title=document.getElementById('overviewListModalTitle'),body=document.getElementById('overviewListModalBody');if(!title||!body)return;
-        if(type==='deadlines'){renderOverviewUpcomingDeadlines();title.textContent='Upcoming Deadlines';body.innerHTML=document.getElementById('overviewUpcomingDeadlines')?.innerHTML||'';}
-        else{renderOverviewCurrentProjects();title.textContent='Current Projects';body.innerHTML=document.getElementById('overviewCurrentProjects')?.innerHTML||'';}
+        if(type==='deadlines'){renderOverviewUpcomingDeadlines(true);title.textContent='Upcoming Deadlines';body.innerHTML=document.getElementById('overviewUpcomingDeadlines')?.innerHTML||'';renderOverviewUpcomingDeadlines();}
+        else{renderOverviewCurrentProjects(true);title.textContent='Current Projects';body.innerHTML=document.getElementById('overviewCurrentProjects')?.innerHTML||'';renderOverviewCurrentProjects();}
         openModal('overviewListModal');
       }
       function renderOverviewUpcomingEvents(){
@@ -9255,7 +9259,17 @@ ${description}`))actionCallback();return;}
         const data=state.onlinePortalData||{clientAccounts:[],clients:[],projects:[],submissions:[],settings:null};
         const accounts=data.clientAccounts||[];
         const query=String(document.getElementById("onlinePortalAccountSearch")?.value||"").trim().toLowerCase();
-        const filtered=accounts.filter(x=>!query||[x.client_code,x.name,x.email].some(v=>String(v||"").toLowerCase().includes(query)));
+        const accountFilter=state.onlinePortalAccountFilter||"active";
+        const filterHost=document.getElementById("onlinePortalAccountFilters");
+        if(filterHost){
+          const filterOptions=[["active","Active Accounts"],["all","All Accounts"]];
+          filterHost.innerHTML=filterOptions.map(([key,label])=>`<button type="button" class="filter-pill ${accountFilter===key?'active':''}" data-account-filter="${key}">${label}</button>`).join("");
+          filterHost.querySelectorAll("[data-account-filter]").forEach(btn=>btn.onclick=()=>{state.onlinePortalAccountFilter=btn.dataset.accountFilter||"active";renderOnlinePortalData();});
+        }
+        const filtered=accounts.filter(x=>{
+          if(accountFilter==="active"&&x.status!=="active")return false;
+          return !query||[x.client_code,x.name,x.email].some(v=>String(v||"").toLowerCase().includes(query));
+        });
         const active=accounts.filter(x=>x.status==="active").length;
         const temp=accounts.filter(x=>x.status==="temporary_password").length;
         const needs=accounts.filter(x=>["needs_account","auth_unlinked","missing_email","duplicate_email","missing_client_id"].includes(x.status)).length;
@@ -10646,6 +10660,327 @@ ${description}`))actionCallback();return;}
   }
   .jp-system-table{min-width:780px!important}
   .jp-services-table,.jp-packages-table,.catalog-services-table,.catalog-packages-table{min-width:920px!important}
+}
+</style>
+
+<style id="jp-workspace-fixed-pages-20260924-v1">
+/* Authoritative desktop page model:
+   page shells do not scroll; page headers stay at the top;
+   only table/data regions receive vertical scrolling. */
+@media (min-width:1024px){
+  .main-content{position:relative!important}
+
+  /* Headers stay pinned to the top of every page, including detail/workflow pages that may still use main scrolling. */
+  .main-content>.view>.page-header,
+  #view-settings>.jp-settings-header,
+  #view-in-house-ads .jp-ads-heading{
+    position:sticky!important;
+    top:0!important;
+    z-index:80!important;
+    flex:0 0 auto!important;
+    margin-top:0!important;
+    padding-top:0!important;
+    background:var(--bg-app)!important;
+  }
+
+  /* These management pages are viewport pages, never document-scroll pages. */
+  body:has(#view-my-works.active) .main-content,
+  body:has(#view-projects.active) .main-content,
+  body:has(#view-clients.active) .main-content,
+  body:has(#view-orders.active) .main-content,
+  body:has(#view-payments.active) .main-content,
+  body:has(#view-reports.active) .main-content,
+  body:has(#view-calendar.active) .main-content,
+  body:has(#view-pricelist.active) .main-content,
+  body:has(#view-online-portal.active) .main-content,
+  body:has(#view-in-house-ads.active) .main-content,
+  body:has(#view-settings.active) .main-content{
+    overflow:hidden!important;
+  }
+
+  #view-my-works.active,
+  #view-projects.active,
+  #view-clients.active,
+  #view-orders.active,
+  #view-payments.active,
+  #view-reports.active,
+  #view-calendar.active,
+  #view-pricelist.active,
+  #view-online-portal.active,
+  #view-in-house-ads.active,
+  #view-settings.active{
+    height:100%!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-start!important;
+    align-content:initial!important;
+    overflow:hidden!important;
+  }
+
+  /* Remove the erroneous vertical displacement/blank area. */
+  #view-my-works.active>*:first-child,
+  #view-projects.active>*:first-child,
+  #view-clients.active>*:first-child,
+  #view-orders.active>*:first-child,
+  #view-payments.active>*:first-child,
+  #view-reports.active>*:first-child,
+  #view-calendar.active>*:first-child,
+  #view-pricelist.active>*:first-child,
+  #view-online-portal.active>*:first-child,
+  #view-in-house-ads.active>*:first-child,
+  #view-settings.active>*:first-child{
+    margin-top:0!important;
+  }
+
+  /* Normal management-page header rhythm. */
+  #view-my-works>.page-header,
+  #view-projects>.page-header,
+  #view-clients>.page-header,
+  #view-orders>.page-header,
+  #view-payments>.page-header,
+  #view-reports>.page-header,
+  #view-calendar>.page-header,
+  #view-pricelist>.page-header,
+  #view-online-portal>.page-header{
+    margin-bottom:16px!important;
+  }
+
+  /* Projects / Clients / Orders / Payments: toolbar fixed, table owns remaining viewport. */
+  #view-projects>.view-toolbar,
+  #view-clients>.view-toolbar,
+  #view-orders>.view-toolbar,
+  #view-payments>.view-toolbar{
+    flex:0 0 auto!important;
+    margin-bottom:12px!important;
+  }
+  #view-projects>.table-card,
+  #view-orders>.table-card,
+  #view-payments>.table-card,
+  #view-clients>#clientsListGrid,
+  #view-clients>#clientsListGrid>.table-card{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  #view-clients>#clientsListGrid{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  #view-projects>.table-card,
+  #view-orders>.table-card,
+  #view-payments>.table-card,
+  #view-clients>#clientsListGrid>.table-card{
+    display:flex!important;
+    flex-direction:column!important;
+  }
+
+  /* Any management table uses its wrapper as the scroll surface, never the page. */
+  #view-projects .table-responsive,
+  #view-clients .table-responsive,
+  #view-orders .table-responsive,
+  #view-payments .table-responsive,
+  #view-pricelist .table-responsive,
+  #view-online-portal .table-responsive,
+  #view-online-portal .portal-payment-review-table-wrap,
+  #view-in-house-ads .jp-ad-table-wrap,
+  #view-reports .table-responsive{
+    min-height:0!important;
+    overflow:auto!important;
+    overscroll-behavior:contain!important;
+    scrollbar-gutter:stable!important;
+  }
+  #view-projects>.table-card>.table-responsive,
+  #view-clients>#clientsListGrid>.table-card>.table-responsive,
+  #view-orders>.table-card>.table-responsive,
+  #view-payments>.table-card>.table-responsive{
+    flex:1 1 auto!important;
+  }
+
+  /* Keep table column labels visible while rows scroll. */
+  #view-projects thead th,
+  #view-clients thead th,
+  #view-orders thead th,
+  #view-payments thead th,
+  #view-pricelist thead th,
+  #view-online-portal thead th,
+  #view-in-house-ads thead th,
+  #view-reports thead th{
+    position:sticky!important;
+    top:0!important;
+    z-index:12!important;
+  }
+
+  /* Overview is a single fixed dashboard. Full project/deadline lists live in Expand modals. */
+  #view-my-works.active{height:100%!important}
+  #overviewDashboard{flex:1 1 auto!important;height:auto!important;min-height:0!important;overflow:hidden!important}
+  #overviewCurrentProjects,
+  #overviewUpcomingDeadlines{
+    overflow:hidden!important;
+    -webkit-mask-image:none!important;
+    mask-image:none!important;
+    padding-right:2px!important;
+  }
+
+  /* Shop: header/toolbar fixed; only the two catalog tables scroll. */
+  #view-pricelist>.catalog-toolbar{flex:0 0 auto!important;margin-bottom:12px!important}
+  #view-pricelist>.catalog-manager-main{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    display:grid!important;
+    grid-template-rows:minmax(0,1fr) minmax(0,1fr)!important;
+    gap:12px!important;
+    overflow:hidden!important;
+  }
+  #view-pricelist .table-card{
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  #view-pricelist .catalog-table-heading{flex:0 0 auto!important}
+  #view-pricelist .table-responsive{flex:1 1 auto!important}
+  #view-pricelist .catalog-manager-simple .table-card + .table-card{margin-top:0!important}
+
+  /* Online Portal: fixed header/introduction/tabs; active table panel gets remaining height. */
+  #view-online-portal>.online-portal-intro,
+  #view-online-portal>.portal-tabs,
+  #view-online-portal>#onlinePortalLoading,
+  #view-online-portal>#onlinePortalError{
+    flex:0 0 auto!important;
+  }
+  #view-online-portal>.online-portal-intro{margin-bottom:12px!important}
+  #view-online-portal>.portal-tabs{margin-bottom:12px!important}
+  #view-online-portal>.portal-panel:not(.hidden){
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  #view-online-portal .portal-summary-grid,
+  #view-online-portal .portal-toolbar,
+  #view-online-portal .portal-note{
+    flex:0 0 auto!important;
+  }
+  #view-online-portal .portal-toolbar{margin-bottom:12px!important}
+  #view-online-portal .portal-panel>.table-card{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  #view-online-portal .portal-panel>.table-card>.table-responsive,
+  #view-online-portal .portal-panel>.table-card>.portal-payment-review-table-wrap{
+    flex:1 1 auto!important;
+  }
+  #onlinePortalSettingsPanel:not(.hidden){
+    overflow:hidden!important;
+  }
+  #onlinePortalSettingsPanel>.card{
+    margin:0!important;
+    max-height:100%!important;
+  }
+
+  /* Ads: fixed heading + controls; campaign table is the only scroll region. */
+  #view-in-house-ads>#jpAdsAdmin,
+  #view-in-house-ads .jp-ads-page{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:100%!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+  #view-in-house-ads>#jpAdsAdmin{display:flex!important;flex-direction:column!important}
+  #view-in-house-ads .jp-ads-page{
+    display:grid!important;
+    grid-template-rows:auto minmax(0,1fr) auto!important;
+    gap:12px!important;
+  }
+  #view-in-house-ads .jp-ads-heading{margin:0!important}
+  #view-in-house-ads .jp-ad-management{
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  #view-in-house-ads .jp-ad-toolbar{flex:0 0 auto!important}
+  #view-in-house-ads .jp-ad-table-wrap{flex:1 1 auto!important}
+
+  /* Settings: fixed header and segmented body. No page or settings-panel scrolling. */
+  #view-settings>.jp-settings-header{
+    margin:0 0 12px!important;
+    flex:0 0 auto!important;
+  }
+  #view-settings>.jp-settings-layout{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    height:auto!important;
+    overflow:hidden!important;
+  }
+  #view-settings .jp-settings-navigation{
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  #view-settings .jp-settings-content{
+    min-height:0!important;
+    height:auto!important;
+    overflow:hidden!important;
+  }
+  #view-settings .jp-settings-scroll{
+    min-height:0!important;
+    height:100%!important;
+    overflow:hidden!important;
+    padding:14px 16px!important;
+  }
+  #view-settings .jp-settings-segment.active{
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+    align-content:start!important;
+    gap:10px!important;
+  }
+  #view-settings .jp-settings-segment-head{margin:0 0 10px!important}
+  #view-settings .jp-settings-segment-head h2{font-size:24px!important}
+  #view-settings .jp-ref-card,
+  #view-settings .jp-ref-photo-row,
+  #view-settings .jp-danger-list,
+  #view-settings .jp-danger-confirm-note{
+    padding:12px 14px!important;
+    margin-top:0!important;
+  }
+  #view-settings .jp-settings-action-bar{min-height:52px!important;padding:8px 14px!important}
+  #view-settings .jp-settings-toggle-row{min-height:36px!important;padding:6px 0!important}
+  #view-settings .jp-theme-options button{min-height:112px!important}
+  #view-settings .jp-theme-options button>span{height:64px!important}
+
+  /* Reports and Calendar remain fixed-page surfaces. */
+  #view-reports>#reportsContent,
+  #view-calendar>.deadline-calendar-card{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  #view-reports>#reportsContent{display:flex!important;flex-direction:column!important}
+
+  /* Compact a little more on short desktop windows rather than introducing page scroll. */
+  @media (max-height:780px){
+    .main-content{padding-top:20px!important;padding-bottom:20px!important}
+    #view-settings .jp-settings-scroll{padding:10px 12px!important}
+    #view-settings .jp-settings-segment.active{gap:7px!important}
+    #view-settings .jp-settings-segment-head{margin-bottom:6px!important}
+    #view-settings .jp-ref-card,
+    #view-settings .jp-ref-photo-row,
+    #view-settings .jp-danger-list,
+    #view-settings .jp-danger-confirm-note{padding:9px 12px!important}
+    #view-settings .jp-settings-action-bar{min-height:44px!important;padding:6px 12px!important}
+    #view-settings .jp-theme-options button{min-height:90px!important}
+    #view-settings .jp-theme-options button>span{height:48px!important}
+  }
 }
 </style>
 
