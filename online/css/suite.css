@@ -84,3 +84,16 @@
   .jp-client-card-actions{position:sticky!important;bottom:0!important;background:#f8faf9!important;padding-top:8px!important}
   .jp-client-qr-frame{width:min(280px,72vw)!important;border-radius:17px!important;padding:14px!important}
 }
+
+/* 2026-09-24 suite modal close alignment */
+.suite-panel{position:relative!important}
+.suite-head{position:relative!important;padding-right:40px!important}
+.suite-head [data-close]{
+  position:absolute!important;top:0!important;right:0!important;
+  width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;
+  padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;color:#172c22!important;font-size:21px!important;line-height:1!important;
+  display:grid!important;place-items:center!important;
+}
+.suite-head [data-close]:hover{background:transparent!important;opacity:.62!important}
+.suite-head [data-close]:focus-visible{outline:2px solid var(--suite-accent)!important;outline-offset:2px!important}
