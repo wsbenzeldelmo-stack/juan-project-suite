@@ -477,8 +477,9 @@ body{overflow-x:hidden!important}
 .data-table td,.unified-table td,.jp-system-table td{
   transition:none!important;
 }
-.view:not(.active){content-visibility:hidden!important}
-.view.active{content-visibility:visible!important}
+/* Inactive routes must never reserve layout space. */
+.main-content>.view:not(.active){display:none!important;content-visibility:hidden!important}
+.main-content>.view.active{content-visibility:visible!important}
 #view-project-details .tab-content:not(.active){display:none!important}
 @media(prefers-reduced-motion:no-preference){
   .btn,.nav-item,.tab-btn,.jp-settings-nav-item{transition:background-color .12s ease,color .12s ease,border-color .12s ease!important}
