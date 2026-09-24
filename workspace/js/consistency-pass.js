@@ -97,7 +97,7 @@
       '<div class="jp-ref-photo-row"><div><h3>Profile photo</h3><div class="jp-ref-photo-person"><div id="jpSettingsAvatar" class="jp-settings-avatar">'+avatar+'</div><div><b>'+esc(ownerName)+'</b><span>Workspace Owner</span><small>JPG, PNG, or WEBP up to 5 MB.</small></div></div></div><div class="jp-inline-actions"><button class="btn btn-secondary" id="jpChangePhoto">Change photo</button><button class="btn btn-danger" id="jpRemovePhoto">Remove</button></div></div>'+
       '<div class="jp-ref-card"><h3>Personal information</h3><div class="jp-settings-grid-2">'+
         field("Account owner name","jpOwnerName",ownerName)+field("Email address","jpOwnerEmail",ownerEmail,"email")+
-        field("Phone number","jpOwnerPhone",ownerPhone)+
+        field("Phone number","jpOwnerPhone",ownerPhone,"tel",'inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX"')+
         '<label class="jp-settings-field"><span>Role</span><input class="form-control" value="Workspace Owner" readonly aria-readonly="true"></label>'+
         '<label class="jp-settings-field wide"><span>Billing address</span><textarea id="jpOwnerAddress" class="form-control jp-settings-control" rows="2">'+esc(ownerAddress)+'</textarea></label>'+
       '</div></div>'+
@@ -112,7 +112,7 @@
         field("Workspace name","jpWorkspaceName",p.workspaceName)+field("Business name","jpBusinessName",p.businessName)+
         '<label class="jp-settings-field"><span>Owner</span><input class="form-control" value="'+esc(ownerName)+'" readonly aria-readonly="true"></label>'+
         field("Business email","jpBusinessEmail",ownerEmail,"email")+
-        field("Business phone","jpBusinessPhone",ownerPhone)+
+        field("Business phone","jpBusinessPhone",ownerPhone,"tel",'inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX"')+
         '<label class="jp-settings-field"><span>Business address</span><textarea id="jpBusinessAddress" class="form-control jp-settings-control" rows="2">'+esc(ownerAddress)+'</textarea></label>'+
       '</div></div>'+
       '<div class="jp-ref-card"><h3>Regional defaults</h3><div class="jp-settings-grid-3">'+
