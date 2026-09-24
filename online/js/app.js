@@ -168,7 +168,7 @@ function welcomeScreen(){
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
   document.getElementById('welcomeTrack').onclick=()=>window.JPMobileCommerce?.openTrack?.();
   window.dispatchEvent(new Event('juan-online-render'));
-  requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
+  
 }
 
 function enterGuest(){state.route='home';state.gateOpen=false;render()}
@@ -208,16 +208,16 @@ async function renderPortalLoadError(error){
   document.getElementById('portalRetry').onclick=()=>loadPortal();
   document.getElementById('portalGuest').onclick=()=>{state.portal=null;state.route='home';render()};
   document.getElementById('portalLogout').onclick=async()=>{stopPortalRealtimeSync();try{await signOut()}catch(_){}localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
-  requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
+  
 }
 
 async function loadPortal(){
   try{
     state.portal=await getPortal();
-    if(!state.portal.passwordSet){stopPortalRealtimeSync();renderSetPassword();requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());return;}
+    if(!state.portal.passwordSet){stopPortalRealtimeSync();renderSetPassword();return;}
     state.clientMessage=null;state.pendingClientMessage=pickClientMessage();
     state.route='home';render();scheduleClientMessageAfterAds();
-    requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
+    
     await startPortalRealtimeSync();
   }catch(e){stopPortalRealtimeSync();state.portal=null;renderPortalLoadError(e)}
 }
@@ -685,22 +685,17 @@ function bind(){
 (async()=>{
   // V1.3.3.2: paint the first useful screen before any network request.
   if(window.JuanTest?.session()){localStorage.setItem(REMEMBERED_CLIENT_KEY,'1');}
-  // New/no-remembered visitors open directly in Guest Mode.
+  // Always paint a usable storefront immediately. Remembered sessions restore
+  // in the background and replace it with the client portal when ready.
   const remembered=localStorage.getItem(REMEMBERED_CLIENT_KEY)==='1';
-  if(!remembered){
-    // First opening OR no remembered client: storefront → Shop / Track / Client Login.
-    welcomeScreen();
-  } else {
-    // Returning client: keep the branded loading state visible while the persisted
-    // Supabase session restores. Do not flash an empty portal or login screen.
-  }
+  welcomeScreen();
 
   // Public catalog never blocks guest UI.
   getCatalog().then(c=>{state.catalog=c;state.catalogLoaded=true;if(!isLoggedIn()&&state.route==='shop')render();}).catch(e=>console.warn('Catalog unavailable:',e?.message||e));
 
   if(remembered){
     try{await getSupabase();const s=await session();if(s)await loadPortal();else{localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;welcomeScreen()}}
-    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);state.portal=null;renderPortalLoadError(e);requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.())}
+    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);state.portal=null;renderPortalLoadError(e);}
   }
 })();
 
