@@ -208,3 +208,8 @@ body.jp-flow-open{overflow:hidden}.jp-flow-layer{position:fixed;inset:0;z-index:
   .jp-track-summary{padding:14px!important}
   .jp-client-qr-full{padding-bottom:env(safe-area-inset-bottom)!important}
 }
+
+/* 2026-09-24 plain flow close */
+#jpFlowClose{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;padding:0!important;justify-self:end!important;font-size:22px!important;line-height:1!important}
+#jpFlowClose:hover{opacity:.62}
+#jpFlowClose:focus-visible{outline:2px solid #08b966!important;outline-offset:2px!important}
