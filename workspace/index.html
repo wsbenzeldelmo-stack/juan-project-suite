@@ -1075,8 +1075,7 @@
 /* On narrow screens keep tables static and wrap content instead of creating an inner scrollbar. */
 @media(max-width:760px){.table-responsive{overflow:visible!important}.unified-table{min-width:0!important;table-layout:fixed!important}.unified-table th,.unified-table td{padding-left:8px!important;padding-right:8px!important;font-size:11px}.portal-payment-review-table{display:table!important}.portal-payment-review-table thead{display:table-header-group!important}.portal-payment-review-table tbody{display:table-row-group!important}.portal-payment-review-table tr{display:table-row!important;padding:0!important}.portal-payment-review-table th,.portal-payment-review-table td{display:table-cell!important;width:auto;white-space:normal!important}.portal-payment-review-table td:before{display:none!important}.portal-payment-review-table td.table-row-actions{display:table-cell!important;padding:8px!important}.portal-payment-review-table th:nth-child(1),.portal-payment-review-table td:nth-child(1){width:16%!important}.portal-payment-review-table th:nth-child(2),.portal-payment-review-table td:nth-child(2){width:30%!important}.portal-payment-review-table th:nth-child(3),.portal-payment-review-table td:nth-child(3){width:18%!important}.portal-payment-review-table th:nth-child(4),.portal-payment-review-table td:nth-child(4){width:12%!important}.portal-payment-review-table th:nth-child(5),.portal-payment-review-table td:nth-child(5){width:11%!important}.portal-payment-review-table th:nth-child(6),.portal-payment-review-table td:nth-child(6){width:13%!important}.portal-payment-review-table th:nth-child(7),.portal-payment-review-table td:nth-child(7){width:42px!important;min-width:42px!important;max-width:42px!important}}
 
-<style id="jp-maintenance-shop-hotfix">
-/* Shop table repair: keep every catalog cell in the table formatting context.
+/* jp-maintenance-shop-hotfix — Shop table repair: keep every catalog cell in the table formatting context.
    A legacy -webkit-box rule on DESCRIPTION was collapsing the table grid and
    creating the large white band between Description and Price. */
 #catalogServicesCard .table-responsive{width:100%!important;overflow:visible!important}
@@ -1089,7 +1088,6 @@
 #catalogServicesCard .catalog-services-table th:nth-child(6),#catalogServicesCard .catalog-services-table td:nth-child(6){width:7%!important;text-align:center!important;white-space:nowrap!important}
 #catalogServicesCard .catalog-services-table td.catalog-desc-cell{display:table-cell!important;-webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;overflow:visible!important;white-space:normal!important;overflow-wrap:break-word!important;word-break:normal!important;line-height:1.35!important}
 #catalogServicesCard .catalog-services-table th,#catalogServicesCard .catalog-services-table td{box-sizing:border-box!important;min-width:0!important;max-width:none!important}
-</style>
 </style>
 <style id="jp-stability-ui-patch">
 .table-action-cell{width:84px;min-width:84px;text-align:right;overflow:visible!important}
@@ -1589,8 +1587,8 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
   <link rel="stylesheet" href="/css/general-update.css?v=20260923-ui2">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
-  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-settings-top-1">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-settings-top-1">
+  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-workspace-stability-2">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-workspace-stability-2">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
   <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
@@ -1598,10 +1596,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <div id="workspaceBootSplash" class="workspace-boot-splash" aria-live="polite" aria-busy="true" aria-label="Opening JUAN PROJECT Workspace">
     <div class="workspace-boot-card">
       <img class="workspace-boot-logo" src="/assets/brand/juan-project-workspace-master.png" alt="JUAN PROJECT Workspace">
-      <div class="workspace-boot-copy">
-        <strong>JUAN PROJECT Workspace</strong>
-        <span>Preparing your workspace…</span>
-      </div>
+      <div class="workspace-boot-copy"><span>Preparing…</span></div>
       <div class="workspace-boot-progress" aria-hidden="true"><span></span></div>
     </div>
   </div>
@@ -4385,13 +4380,20 @@ table.jp-packages-table col:nth-child(6){width:7%}
         }catch(e){console.warn('Workspace profile fallback load unavailable:',e?.message||e);}
       }
 
+      const WORKSPACE_BOOT_SESSION_KEY='JUAN_WORKSPACE_BOOT_SHOWN_V1';
       let workspaceBootStartedAt=performance.now();
-      const workspaceBootFailsafe=setTimeout(()=>finishWorkspaceBoot(),8000);
+      let workspaceBootFinished=false;
+      const workspaceBootSplash=document.getElementById('workspaceBootSplash');
+      const workspaceBootAlreadyShown=sessionStorage.getItem(WORKSPACE_BOOT_SESSION_KEY)==='1';
+      if(workspaceBootAlreadyShown&&workspaceBootSplash)workspaceBootSplash.remove();
+      const workspaceBootFailsafe=workspaceBootAlreadyShown?null:setTimeout(()=>finishWorkspaceBoot(),5000);
       function finishWorkspaceBoot(){
+        if(workspaceBootFinished)return;workspaceBootFinished=true;
         const splash=document.getElementById('workspaceBootSplash');if(!splash)return;
-        clearTimeout(workspaceBootFailsafe);
-        const elapsed=performance.now()-workspaceBootStartedAt,wait=Math.max(0,700-elapsed);
-        setTimeout(()=>{splash.classList.add('is-hidden');splash.setAttribute('aria-busy','false');setTimeout(()=>splash.remove(),220);},wait);
+        if(workspaceBootFailsafe)clearTimeout(workspaceBootFailsafe);
+        sessionStorage.setItem(WORKSPACE_BOOT_SESSION_KEY,'1');
+        const elapsed=performance.now()-workspaceBootStartedAt,wait=Math.max(0,420-elapsed);
+        setTimeout(()=>{splash.classList.add('is-hidden');splash.setAttribute('aria-busy','false');setTimeout(()=>splash.remove(),180);},wait);
       }
 
       function setWorkspaceLoading(loading) {
@@ -10405,7 +10407,7 @@ ${description}`))actionCallback();return;}
 <script type="module" src="/js/general-update.js?v=20260923-ui2"></script>
 <script type="module" src="/js/keyboard-shortcuts.js?v=20260923-0105"></script>
 <script src="/js/workspace-icon-system-2026-09-22.js?v=20260923-0225"></script>
-  <script src="/js/consistency-pass.js?v=20260923-0225"></script>
+  <script src="/js/consistency-pass.js?v=20260924-workspace-stability-2"></script>
   <script src="/js/workspace-unification-2026-09-22.js?v=20260923-1208"></script>
 </body>
 </html>
