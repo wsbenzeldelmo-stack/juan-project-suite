@@ -89,8 +89,32 @@ body{overflow-x:hidden!important}
   z-index:30!important;font-size:22px!important;line-height:1!important;color:var(--text-primary,#151a17)!important;padding:0!important;
 }
 .jp-suite-head .jp-suite-close,.suite-head [data-close]{margin:0!important}
-.modal-close:hover,.jp-suite-close:hover,.close-modal:hover,[aria-label="Close"]:hover{opacity:.62!important;background:transparent!important}
+.modal-close:hover,.jp-suite-close:hover,.close-modal:hover,[aria-label="Close"]:hover{opacity:.72!important;background:transparent!important}
 .modal-close:focus-visible,.jp-suite-close:focus-visible,.close-modal:focus-visible,[aria-label="Close"]:focus-visible{outline:2px solid var(--primary-mint)!important;outline-offset:2px!important}
+
+/* Modal close glyphs must always remain visible on light modal surfaces. */
+.modal-close,.jp-suite-close,.close-modal,[aria-label="Close"]{
+  color:#111!important;
+  opacity:1!important;
+  visibility:visible!important;
+  -webkit-text-fill-color:#111!important;
+  text-shadow:none!important;
+  mix-blend-mode:normal!important;
+}
+.modal-close svg,.modal-close .icon-svg,
+.jp-suite-close svg,.close-modal svg,
+[aria-label="Close"] svg{
+  color:#111!important;
+  stroke:#111!important;
+  fill:none!important;
+  opacity:1!important;
+}
+#overviewListModal .modal-close{
+  color:#111!important;
+  opacity:1!important;
+  font-size:24px!important;
+  font-weight:400!important;
+}
 
 /* Settings stays segmented and viewport-conscious */
 #view-settings.active{height:100%!important;min-height:0!important;overflow:hidden!important}
