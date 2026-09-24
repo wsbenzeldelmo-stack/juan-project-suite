@@ -2,7 +2,7 @@
 :root{--jp2-green:#08b966;--jp2-green-dark:#078c53;--jp2-mint:#eaf9f2;--jp2-line:#e3e9e6;--jp2-text:#111820;--jp2-muted:#7f8984}
 .jp-v2-overlay{position:fixed;inset:0;z-index:250000;display:grid;place-items:center;padding:24px;background:rgba(18,32,25,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .jp-v2-modal{position:relative;width:min(92vw,460px);max-height:min(82dvh,760px);overflow:auto;box-sizing:border-box;padding:24px;border:1px solid var(--jp2-line);border-radius:24px;background:#fff;box-shadow:0 24px 70px rgba(20,32,26,.18)}
-.jp-v2-x,.sheet-x,#jpFlowClose{position:absolute!important;top:-42px!important;right:0!important;width:44px!important;height:44px!important;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:#18211d!important;font-size:30px!important;line-height:1!important;display:grid!important;place-items:center!important;z-index:20!important;padding:0!important}
+.jp-v2-x,.sheet-x,#jpFlowClose{position:absolute!important;top:16px!important;right:16px!important;left:auto!important;width:44px!important;height:44px!important;border:0!important;background:transparent!important;box-shadow:none!important;border-radius:0!important;color:#111!important;font-size:28px!important;line-height:1!important;display:grid!important;place-items:center!important;z-index:60!important;padding:0!important}
 .overlay .sheet{overflow:visible!important}.jp-flow-phone{overflow:visible!important}.jp-flow-main{overflow:auto!important}
 .jp-v2-kicker{font-size:10px;font-weight:700;letter-spacing:.13em;color:#7b8580}.jp-v2-modal h2{margin:4px 0 6px;font-size:27px;letter-spacing:-.04em}.jp-v2-modal p{margin:0;color:var(--jp2-muted);font-size:12px;line-height:1.5}
 
@@ -58,11 +58,11 @@
   .app.client-mode.route-home #jpAdBannerAnchor{margin-top:8px!important}
   .jp-v2-overlay{padding:58px 16px calc(24px + env(safe-area-inset-bottom))}
   .jp-v2-modal{width:100%;max-height:78dvh;padding:20px;border-radius:22px}
-  .jp-v2-x{top:-44px!important;right:2px!important;color:#111!important}
+  .jp-v2-x{top:16px!important;right:16px!important;color:#111!important}
   .jp-flow-phone{position:relative!important}
-  #jpFlowClose{top:8px!important;right:10px!important}
-  .jp-flow-receipt #jpFlowClose{top:8px!important}
-  .sheet-x{top:-44px!important;right:2px!important}
+  #jpFlowClose{top:7px!important;right:12px!important}
+  .jp-flow-receipt #jpFlowClose{top:7px!important}
+  .sheet-x{top:16px!important;right:16px!important}
   .jp-guest-home-centered{height:100%!important;display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;align-items:center!important}
   .jp-guest-home-centered #jpAdBannerAnchor{align-self:end!important;margin-top:18px!important}
 }
@@ -162,7 +162,7 @@
     border-radius:22px!important;
     overflow-y:auto!important;
   }
-  .shop-detail-sheet .sheet-x{top:-38px!important;right:0!important}
+  .shop-detail-sheet .sheet-x{top:16px!important;right:16px!important}
   .shop-detail-sheet .shop-kind{font-size:8px!important;margin-bottom:5px!important}
   .shop-detail-sheet .sheet-title{font-size:20px!important;line-height:1.1!important;margin:0 0 8px!important}
   .shop-detail-sheet .detail-copy{display:none!important}
@@ -452,14 +452,14 @@
 #shopOverlay .sheet-x,
 .jp-v2-modal>.jp-v2-x{
   position:absolute!important;
-  top:-14px!important;
-  left:-14px!important;
-  right:auto!important;
+  top:16px!important;
+  right:16px!important;
+  left:auto!important;
   width:44px!important;
   height:44px!important;
   min-width:44px!important;
   min-height:44px!important;
-  border:1px solid #dfe6e2!important;
+  border:0!important;
   border-radius:999px!important;
   background:rgba(255,255,255,.96)!important;
   color:#17201c!important;
@@ -689,15 +689,15 @@
   border-radius:24px!important;
 }
 .jp-qr-overlay .jp-v2-x{
-  top:-14px!important;
-  left:-14px!important;
-  right:auto!important;
+  top:16px!important;
+  right:16px!important;
+  left:auto!important;
   width:44px!important;
   height:44px!important;
-  border-radius:999px!important;
-  border:1px solid #dfe6e2!important;
-  background:rgba(255,255,255,.96)!important;
-  box-shadow:0 7px 20px rgba(18,32,25,.12)!important;
+  border-radius:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
   font-size:26px!important;
 }
 .jp-qr-modal{
