@@ -1588,7 +1588,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <link rel="stylesheet" href="/css/general-update.css?v=20260923-ui2">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
   <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-workspace-stability-2">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-workspace-stability-2">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-view-scroll-fix-1">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
   <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
@@ -4398,8 +4398,11 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
       function setWorkspaceLoading(loading) {
         const shell=document.getElementById('workspaceLoadingSkeleton');
-        if(shell)shell.classList.toggle('hidden',!loading);
-        // Keep the current view visible. Loading is a small non-blocking status tab only.
+        const startupSplash=document.getElementById('workspaceBootSplash');
+        const startupOwnsLoading=Boolean(startupSplash)&&!workspaceBootFinished;
+        const showInlineLoading=Boolean(loading)&&!startupOwnsLoading;
+        if(shell)shell.classList.toggle('hidden',!showInlineLoading);
+        // First opening uses only the branded splash; later refreshes may use this compact status tab.
         document.querySelectorAll('.main-content > .view').forEach(v=>v.classList.remove('workspace-loading-hidden'));
       }
 
