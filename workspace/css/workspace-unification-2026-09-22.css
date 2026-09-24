@@ -89,6 +89,8 @@ body{overflow-x:hidden!important}
   z-index:30!important;font-size:22px!important;line-height:1!important;color:var(--text-primary,#151a17)!important;padding:0!important;
 }
 .jp-suite-head .jp-suite-close,.suite-head [data-close]{margin:0!important}
+.modal-close:hover,.jp-suite-close:hover,.close-modal:hover,[aria-label="Close"]:hover{opacity:.62!important;background:transparent!important}
+.modal-close:focus-visible,.jp-suite-close:focus-visible,.close-modal:focus-visible,[aria-label="Close"]:focus-visible{outline:2px solid var(--primary-mint)!important;outline-offset:2px!important}
 
 /* Settings stays segmented and viewport-conscious */
 #view-settings.active{height:100%!important;min-height:0!important;overflow:hidden!important}
@@ -357,7 +359,7 @@ body{overflow-x:hidden!important}
   padding-bottom:88px!important;
 }
 
-/* Modal close remains outside top-right and never clips */
+/* Modal close stays inside the top-right content area; plain X, no floating circle. */
 .modal-card,.jp-suite-modal,.suite-panel,.jp-settings-modal{
   overflow:visible!important;
 }
