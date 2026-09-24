@@ -157,6 +157,7 @@ function welcomeScreen(){
   document.getElementById('welcomeShop').onclick=()=>{state.route='shop';render();};
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
   document.getElementById('welcomeTrack').onclick=()=>window.JPMobileCommerce?.openTrack?.();
+  requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
 }
 
 function enterGuest(){state.route='home';state.gateOpen=false;render()}
@@ -196,14 +197,16 @@ async function renderPortalLoadError(error){
   document.getElementById('portalRetry').onclick=()=>loadPortal();
   document.getElementById('portalGuest').onclick=()=>{state.portal=null;state.route='home';render()};
   document.getElementById('portalLogout').onclick=async()=>{stopPortalRealtimeSync();try{await signOut()}catch(_){}localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;state.route='home';render()};
+  requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
 }
 
 async function loadPortal(){
   try{
     state.portal=await getPortal();
-    if(!state.portal.passwordSet){stopPortalRealtimeSync();return renderSetPassword();}
+    if(!state.portal.passwordSet){stopPortalRealtimeSync();renderSetPassword();requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());return;}
     state.clientMessage=null;state.pendingClientMessage=pickClientMessage();
     state.route='home';render();scheduleClientMessageAfterAds();
+    requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
     await startPortalRealtimeSync();
   }catch(e){stopPortalRealtimeSync();state.portal=null;renderPortalLoadError(e)}
 }
@@ -672,7 +675,7 @@ function bind(){
 
   if(remembered){
     try{await getSupabase();const s=await session();if(s)await loadPortal();else{localStorage.removeItem(REMEMBERED_CLIENT_KEY);state.portal=null;welcomeScreen()}}
-    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);state.portal=null;renderPortalLoadError(e)}
+    catch(e){console.warn('Saved client session could not be restored:',e?.message||e);state.portal=null;renderPortalLoadError(e);requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.())}
   }
 })();
 
