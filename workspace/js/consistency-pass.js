@@ -503,11 +503,11 @@
   }
 
   function install(){
-    cleanRootText();applyInterfacePrefs();buildSettings();bindProjectDrafts();fixClientProfileGuard();portalPolish();removeProjectSaveButtons();overviewPolish();installBrowserNotifications();
+    cleanRootText();applyInterfacePrefs();buildSettings();if(!$("#view-settings .jp-settings-layout")){settingsBuilt=false;buildSettings();}bindProjectDrafts();fixClientProfileGuard();portalPolish();removeProjectSaveButtons();overviewPolish();installBrowserNotifications();
     const originalNav=window.app.navigateTo.bind(window.app);
     window.app.navigateTo=function(view){
       const r=originalNav(view);
-      requestAnimationFrame(()=>{cleanRootText();if(view==="settings"){if(!settingsBuilt)buildSettings();}if(view==="client-profile")fixClientProfileGuard();if(view==="online-portal")portalPolish();if(view==="project-details")removeProjectSaveButtons();if(view==="my-works")overviewPolish();restoreActiveDrafts();});
+      requestAnimationFrame(()=>{cleanRootText();if(view==="settings"){if(!settingsBuilt||!$("#view-settings .jp-settings-layout"))buildSettings();const main=$(".main-content"),content=$("#view-settings .jp-settings-content"),scroll=$("#view-settings .jp-settings-scroll");if(main)main.scrollTop=0;if(content)content.scrollTop=0;if(scroll)scroll.scrollTop=0;}if(view==="client-profile")fixClientProfileGuard();if(view==="online-portal")portalPolish();if(view==="project-details")removeProjectSaveButtons();if(view==="my-works")overviewPolish();restoreActiveDrafts();});
       return r;
     };
     document.addEventListener("keydown",e=>{
