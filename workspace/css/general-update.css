@@ -91,11 +91,15 @@ body.jp-general-modal-open{overflow:hidden}
 .workspace-institution-empty{padding:16px;text-align:center;font-size:10px;color:var(--text-tertiary)}
 .workspace-institution-logo{width:40px;height:40px;border:1px solid var(--border-subtle);border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;padding:4px;box-sizing:border-box;flex:0 0 auto}
 .workspace-institution-logo.compact{width:28px;height:28px;border-radius:8px;padding:3px}
-.workspace-institution-logo img{display:block;width:100%;height:100%;object-fit:contain}
-.workspace-institution-preview{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-subtle)}
-.workspace-institution-preview>div{display:grid;gap:2px}
-.workspace-institution-preview strong{font-size:11px}
-.workspace-institution-preview span{font-size:9px;color:var(--text-tertiary)}
+.workspace-institution-logo img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+.workspace-institution-logo.institution-maya,.workspace-institution-logo.institution-gotyme{padding:0;background:transparent}
+.workspace-institution-logo.institution-maya img,.workspace-institution-logo.institution-gotyme img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.workspace-institution-logo.institution-others{background:var(--mint-light-bg);border-color:var(--mint-subtle-border)}
+.workspace-institution-logo.institution-others img{width:72%;height:72%;object-fit:contain}
+.workspace-institution-trigger #paymentInstitutionButtonContent{display:flex;align-items:center;gap:8px;min-width:0}
+.workspace-institution-trigger #paymentInstitutionButtonContent>span:last-child{display:grid;gap:2px;min-width:0}
+.workspace-institution-trigger #paymentInstitutionButtonContent strong{font-size:11px;line-height:1.15}
+.workspace-institution-trigger #paymentInstitutionButtonContent small{font-size:9px;color:var(--text-tertiary);line-height:1.15}
 .workspace-receipt-upload{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px;border:1px dashed var(--border-medium);border-radius:12px;background:var(--bg-subtle)}
 .workspace-receipt-meta{display:grid;gap:2px;min-width:0}
 .workspace-receipt-meta strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
