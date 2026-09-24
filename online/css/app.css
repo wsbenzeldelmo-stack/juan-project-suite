@@ -59,7 +59,7 @@ button,.btn,.icon-button,.nav button,.shop-row,.project-button,.settings-row{tou
 @media(max-width:430px){.btn{min-height:48px}.icon-button{min-width:46px;min-height:46px}.nav{padding-bottom:max(5px,env(safe-area-inset-bottom))}.nav button{min-height:60px}.sheet{padding-bottom:max(20px,env(safe-area-inset-bottom))}.visual-onboard-image{max-width:100%;object-fit:contain}.institution-logo-tile{width:42px;height:42px}.institution-option{grid-template-columns:42px minmax(0,1fr)}}
 
 /* V1.3.3.2 — instant first paint, onboarding → guest → client access */
-.jp-boot-shell img{width:min(220px,58vw);height:auto}.jp-boot-line{width:96px;height:4px;border-radius:999px;background:#edf1ef;overflow:hidden;position:relative}.jp-boot-line:after{content:"";position:absolute;inset:0;width:42%;border-radius:inherit;background:#1fbf82;animation:jpboot 1s ease-in-out infinite alternate}@keyframes jpboot{from{transform:translateX(-75%)}to{transform:translateX(190%)}}.portal-load-error .info-box{text-align:left}.guest-home:before{content:"GUEST MODE";display:inline-flex;margin-bottom:14px;padding:5px 8px;border-radius:999px;background:#f2f5f4;color:#68706c;font-size:8px;font-weight:700;letter-spacing:.08em}
+.portal-load-error .info-box{text-align:left}.guest-home:before{content:"GUEST MODE";display:inline-flex;margin-bottom:14px;padding:5px 8px;border-radius:999px;background:#f2f5f4;color:#68706c;font-size:8px;font-weight:700;letter-spacing:.08em}
 
 /* V1.3.3.2 invoice brand clipping fix */
 .invoice-brand-logo{width:190px!important;max-width:64%!important;overflow:visible!important}.invoice-brand-logo img{width:100%!important;max-width:none!important;object-fit:contain!important;object-position:left center!important;overflow:visible!important}
@@ -164,3 +164,16 @@ html,body,#root,button,input,select,textarea{
 .brand,.dashboard-head h1,.screen-title,.screen-head h1,.shop-hero h2,.shop-title,.project-name,.payment-reminder-amount,.detail-price,.jp-shop-price b{font-weight:800!important}
 .section-head h2,.btn,.nav button,.membership-card h2,.settings-row b,.activity-row b{font-weight:700!important}
 body,.helper,.form-message,.settings-row small,.activity-row small,.meta{font-weight:400}
+
+/* 2026-09-24 plain inside modal close controls */
+.sheet,.payment-reminder-modal{position:relative!important}
+.sheet-x,.payment-reminder-close{
+  position:absolute!important;top:16px!important;right:16px!important;left:auto!important;
+  width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;
+  border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+  color:var(--ink,#111419)!important;padding:0!important;display:grid!important;place-items:center!important;
+  font-size:22px!important;line-height:1!important;z-index:8!important;
+}
+.sheet-x:hover,.payment-reminder-close:hover{opacity:.62!important}
+.sheet-x:focus-visible,.payment-reminder-close:focus-visible{outline:2px solid var(--green-strong)!important;outline-offset:2px!important}
+.sheet-header-left,.receipt-preview-head{padding-right:40px!important}
