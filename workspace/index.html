@@ -2586,19 +2586,29 @@ table.jp-packages-table col:nth-child(6){width:7%}
   </div>
 
 
-  <!-- PASSWORD-PROTECTED SENSITIVE ACTIONS -->
+  <!-- PIN-PROTECTED SENSITIVE ACTIONS -->
   <div class="modal-backdrop" id="destructivePinModal">
     <div class="modal-card compact-validation-modal reset-pin-modal">
       <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('destructivePinModal')">×</button>
       <div class="validation-graphic reset-lock-graphic"><svg class="icon-svg lg" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg></div>
-      <div class="validation-copy"><h3 class="modal-title" id="destructivePinTitle">Confirm sensitive action</h3><p id="destructivePinDescription">Enter your Workspace password to continue.</p></div>
+      <div class="validation-copy"><h3 class="modal-title" id="destructivePinTitle">Confirm sensitive action</h3><p id="destructivePinDescription">Enter your PIN to continue.</p></div>
       <div class="form-group reset-pin-field">
-        <label class="form-label" for="destructivePinInput">Workspace Password</label>
-        <input class="form-control" type="password" id="destructivePinInput" autocomplete="current-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter'){event.preventDefault();app.confirmDestructivePin();}">
-        <span class="inline-error hidden" id="destructivePinError">Password could not be verified.</span>
-        <small class="text-muted">After verification, sensitive actions stay unlocked for 5 minutes on this tab.</small>
+        <label class="form-label" for="destructivePinInput">PIN</label>
+        <div class="secure-pin-grid" id="destructivePinDigits" aria-label="6-digit secure PIN">
+          <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 1">
+          <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 2">
+          <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 3">
+          <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 4">
+          <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 5">
+          <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 6">
+        </div>
+        <input type="hidden" id="destructivePinInput">
+        <span class="inline-error hidden" id="destructivePinError">Incorrect PIN. Try again.</span>
       </div>
-      <div class="modal-footer validation-actions"><button class="btn btn-secondary" onclick="app.closeModal('destructivePinModal')">Cancel</button><button class="btn btn-danger" id="destructivePinContinue" onclick="app.confirmDestructivePin()">Continue</button></div>
+      <div class="modal-footer validation-actions">
+        <button class="btn btn-secondary" onclick="app.closeModal('destructivePinModal')">Cancel</button>
+        <button class="btn btn-danger" id="destructivePinContinue" onclick="app.confirmDestructivePin()">Continue</button>
+      </div>
     </div>
   </div>
 
@@ -4918,60 +4928,69 @@ ${description}`))actionCallback();return;}
       }
 
 
-      const WORKSPACE_SENSITIVE_AUTH_KEY = "JUAN_WORKSPACE_SENSITIVE_AUTH_V1";
-      const WORKSPACE_SENSITIVE_AUTH_WINDOW_MS = 5 * 60 * 1000;
+      const WORKSPACE_PIN_SHA256="6e728170f84461519554d7250fb3295c2b249e2dc4a3fae207970f66ab26726c";
+      function sensitiveAuthFresh(){return false;}
+      function clearSensitiveAuth(){}
 
-      function sensitiveAuthFresh(){
-        try{
-          const saved=JSON.parse(sessionStorage.getItem(WORKSPACE_SENSITIVE_AUTH_KEY)||"null");
-          const fresh=!!saved&&saved.userId&&Number(saved.verifiedAt)>0&&(Date.now()-Number(saved.verifiedAt)<WORKSPACE_SENSITIVE_AUTH_WINDOW_MS);if(!fresh)sessionStorage.removeItem(WORKSPACE_SENSITIVE_AUTH_KEY);return fresh;
-        }catch(_){return false;}
+      function setupSecurePinBoxes(groupId,hiddenId,submitFn){
+        const group=document.getElementById(groupId),hidden=document.getElementById(hiddenId);if(!group||!hidden)return;
+        const boxes=[...group.querySelectorAll('.secure-pin-digit')];
+        const sync=()=>{hidden.value=boxes.map(b=>String(b.value||'').replace(/\D/g,'').slice(0,1)).join('');};
+        boxes.forEach((box,index)=>{
+          box.value='';box.classList.remove('is-invalid');
+          box.oninput=e=>{
+            e.target.value=String(e.target.value||'').replace(/\D/g,'').slice(-1);sync();
+            if(e.target.value&&index<boxes.length-1)boxes[index+1].focus();
+          };
+          box.onkeydown=e=>{
+            if(e.key==='Backspace'&&!box.value&&index>0){boxes[index-1].value='';boxes[index-1].focus();sync();}
+            if(e.key==='ArrowLeft'&&index>0)boxes[index-1].focus();
+            if(e.key==='ArrowRight'&&index<boxes.length-1)boxes[index+1].focus();
+            if(e.key==='Enter'){e.preventDefault();submitFn();}
+          };
+          box.onpaste=e=>{
+            const digits=(e.clipboardData?.getData('text')||'').replace(/\D/g,'').slice(0,6);if(!digits)return;
+            e.preventDefault();boxes.forEach(b=>b.value='');digits.split('').forEach((d,i)=>{if(boxes[i])boxes[i].value=d;});
+            sync();boxes[Math.min(digits.length,boxes.length)-1]?.focus();
+          };
+        });
+        hidden.value='';setTimeout(()=>boxes[0]?.focus(),70);
       }
-      async function markSensitiveAuthFresh(){
-        const session=(await supabaseClient?.auth?.getSession())?.data?.session;
-        if(!session?.user?.id)return false;
-        sessionStorage.setItem(WORKSPACE_SENSITIVE_AUTH_KEY,JSON.stringify({userId:session.user.id,verifiedAt:Date.now()}));
-        return true;
+      function markSecurePinInvalid(groupId,invalid=true){
+        document.querySelectorAll(`#${groupId} .secure-pin-digit`).forEach(x=>x.classList.toggle('is-invalid',invalid));
       }
-      function clearSensitiveAuth(){sessionStorage.removeItem(WORKSPACE_SENSITIVE_AUTH_KEY);}
-
+      async function hashWorkspacePin(value){
+        const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(value||'')));
+        return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+      }
       function requestDestructivePin(title,description,callback){
         state.pendingDestructiveAction=typeof callback==='function'?callback:null;
-        if(sensitiveAuthFresh()){
-          const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;
-          if(action)Promise.resolve().then(action);
-          return;
-        }
-        const titleEl=document.getElementById('destructivePinTitle'),desc=document.getElementById('destructivePinDescription'),error=document.getElementById('destructivePinError'),input=document.getElementById('destructivePinInput');
+        const titleEl=document.getElementById('destructivePinTitle'),desc=document.getElementById('destructivePinDescription'),error=document.getElementById('destructivePinError');
         if(titleEl)titleEl.textContent=title||'Confirm sensitive action';
-        if(desc)desc.textContent=(description||'This action changes or removes saved data.')+' Enter your Workspace password to continue.';
-        if(error){error.classList.add('hidden');error.textContent='Password could not be verified.';}
-        if(input){input.value='';input.classList.remove('is-invalid');}
-        openModal('destructivePinModal');setTimeout(()=>input?.focus(),70);
+        if(desc)desc.textContent=(description||'This action changes saved data.')+' Enter your PIN to continue.';
+        if(error){error.classList.add('hidden');error.textContent='Incorrect PIN. Try again.';}
+        markSecurePinInvalid('destructivePinDigits',false);
+        openModal('destructivePinModal');
+        setupSecurePinBoxes('destructivePinDigits','destructivePinInput',confirmDestructivePin);
       }
-
       async function confirmDestructivePin(){
-        const input=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError'),btn=document.getElementById('destructivePinContinue');
-        const password=String(input?.value||'');
-        if(!password){if(error){error.textContent='Enter your Workspace password.';error.classList.remove('hidden');}input?.classList.add('is-invalid');input?.focus();return;}
+        const hidden=document.getElementById('destructivePinInput'),error=document.getElementById('destructivePinError'),btn=document.getElementById('destructivePinContinue');
+        const pin=String(hidden?.value||'').replace(/\D/g,'').slice(0,6);
+        if(pin.length!==6){
+          markSecurePinInvalid('destructivePinDigits',true);
+          if(error){error.textContent='Enter your 6-digit PIN.';error.classList.remove('hidden');}
+          document.querySelector('#destructivePinDigits .secure-pin-digit')?.focus();return;
+        }
         try{
-          if(btn){btn.disabled=true;btn.textContent='Verifying…';}
-          const session=(await supabaseClient?.auth?.getSession())?.data?.session;
-          const email=String(session?.user?.email||'').trim().toLowerCase();
-          if(!email)throw new Error('Your Workspace session is unavailable. Sign in again.');
-          const loginRes=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
-          const loginJson=await loginRes.json().catch(()=>({}));
-          if(!loginRes.ok)throw new Error(loginJson.error||'Password is incorrect.');
-          const setRes=await supabaseClient.auth.setSession({access_token:loginJson.access_token,refresh_token:loginJson.refresh_token});
-          if(setRes.error)throw setRes.error;
-          if(!(await verifyWorkspaceAdmin()))throw new Error('This account is not authorized for JUAN PROJECT Workspace.');
-          await markSensitiveAuthFresh();
-          if(error)error.classList.add('hidden');input?.classList.remove('is-invalid');
+          if(btn){btn.disabled=true;btn.textContent='Checking…';}
+          if((await hashWorkspacePin(pin))!==WORKSPACE_PIN_SHA256)throw new Error('Incorrect PIN. Try again.');
+          markSecurePinInvalid('destructivePinDigits',false);if(error)error.classList.add('hidden');
           const action=state.pendingDestructiveAction;state.pendingDestructiveAction=null;closeModal('destructivePinModal');
           if(action)await action();
         }catch(e){
-          if(error){error.textContent=e?.message||'Password could not be verified.';error.classList.remove('hidden');}
-          input?.classList.add('is-invalid');input?.select();
+          markSecurePinInvalid('destructivePinDigits',true);
+          if(error){error.textContent=e?.message||'Incorrect PIN. Try again.';error.classList.remove('hidden');}
+          setupSecurePinBoxes('destructivePinDigits','destructivePinInput',confirmDestructivePin);
         }finally{if(btn){btn.disabled=false;btn.textContent='Continue';}}
       }
 
@@ -7966,7 +7985,7 @@ ${description}`))actionCallback();return;}
       }
       async function saveProjectData(options={}){
         const silent=options?.silent===true,proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj||projectDataAutosaveBusy)return;
-        if(options?.authorized!==true&&!sensitiveAuthFresh()){requestDestructivePin('Confirm Project Changes','Save changes to this project information?',()=>saveProjectData({...options,authorized:true}));return;}
+        if(options?.authorized!==true){requestDestructivePin('Confirm Project Changes','Save changes to this project information?',()=>saveProjectData({...options,authorized:true}));return;}
         const name=document.getElementById('projectDataProjectName')?.value.trim()||'',email=document.getElementById('projectDataClientEmail')?.value.trim()||'';
         if(!name){setProjectDataAutosaveStatus('Project name is required.','error');return}
         if(!validProjectClientEmail(email)){setProjectDataAutosaveStatus('Enter a valid email address.','error');return}
