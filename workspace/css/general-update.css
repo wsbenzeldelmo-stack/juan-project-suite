@@ -70,3 +70,48 @@ body.jp-general-modal-open{overflow:hidden}
 .deliverable-select{display:grid;place-items:center;width:22px;height:22px;cursor:pointer}.deliverable-select input{position:absolute;opacity:0;pointer-events:none}.deliverable-select span{width:16px;height:16px;border:1.5px solid var(--border-medium);border-radius:5px;background:var(--bg-card);display:block;position:relative}.deliverable-select input:checked+span{background:var(--primary-mint-dark);border-color:var(--primary-mint-dark)}.deliverable-select input:checked+span:after{content:"";position:absolute;left:4px;top:1px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 #destructivePinModal .reset-pin-field{margin-top:16px!important}#destructivePinModal #destructivePinInput{width:100%}#destructivePinModal .modal-card{position:relative;padding-top:54px}
 @media(max-width:760px){.deliverable-batch-toolbar{align-items:flex-start;flex-direction:column}.deliverable-batch-actions{width:100%;justify-content:flex-start}.deliverable-checklist-row{grid-template-columns:22px 34px minmax(0,1fr) 38px!important}.deliverable-item-progress{grid-column:3/5;width:100%}.deliverable-child-row{padding-left:24px!important}}
+
+
+/* workspace-payment-refresh-20260924 */
+.workspace-institution-picker{position:relative}
+.workspace-institution-trigger{display:flex!important;align-items:center!important;justify-content:space-between!important;text-align:left!important;cursor:pointer!important;padding:8px 12px!important}
+#paymentInstitutionButtonContent{display:flex;align-items:center;gap:8px;min-width:0}
+#paymentInstitutionButtonContent>span:last-child{display:grid;min-width:0}
+#paymentInstitutionButtonContent strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#paymentInstitutionButtonContent small{font-size:9px;color:var(--text-tertiary)}
+.workspace-institution-chevron{font-size:16px;color:var(--text-tertiary)}
+.workspace-institution-menu{position:absolute;z-index:250;left:0;right:0;top:calc(100% + 8px);padding:8px;border:1px solid var(--border-subtle);border-radius:14px;background:var(--bg-card);box-shadow:0 18px 48px rgba(15,23,42,.14)}
+.workspace-institution-menu>.form-control{height:40px!important;margin-bottom:8px}
+.workspace-institution-options{display:grid;gap:4px;max-height:280px;overflow:auto}
+.workspace-institution-option{width:100%;display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;align-items:center;padding:8px;border:0;border-radius:10px;background:transparent;text-align:left;color:var(--text-primary);cursor:pointer}
+.workspace-institution-option:hover{background:var(--bg-subtle)}
+.workspace-institution-option>span:last-child{display:grid;gap:2px}
+.workspace-institution-option strong{font-size:11px}
+.workspace-institution-option small{font-size:9px;color:var(--text-tertiary)}
+.workspace-institution-empty{padding:16px;text-align:center;font-size:10px;color:var(--text-tertiary)}
+.workspace-institution-logo{width:40px;height:40px;border:1px solid var(--border-subtle);border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;padding:4px;box-sizing:border-box;flex:0 0 auto}
+.workspace-institution-logo.compact{width:28px;height:28px;border-radius:8px;padding:3px}
+.workspace-institution-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.workspace-institution-preview{display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--bg-subtle)}
+.workspace-institution-preview>div{display:grid;gap:2px}
+.workspace-institution-preview strong{font-size:11px}
+.workspace-institution-preview span{font-size:9px;color:var(--text-tertiary)}
+.workspace-receipt-upload{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px;border:1px dashed var(--border-medium);border-radius:12px;background:var(--bg-subtle)}
+.workspace-receipt-meta{display:grid;gap:2px;min-width:0}
+.workspace-receipt-meta strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workspace-receipt-meta span{font-size:9px;color:var(--text-tertiary)}
+.workspace-receipt-actions{display:flex;gap:4px;align-items:center}
+.workspace-receipt-actions .btn{min-height:32px!important;padding:0 8px!important}
+.workspace-receipt-preview-modal{max-width:760px!important}
+.workspace-receipt-frame{display:block;width:100%;height:min(68vh,700px);border:0;border-radius:12px;background:#f3f5f4}
+.workspace-receipt-image{display:block;max-width:100%;max-height:68vh;margin:auto;border-radius:12px}
+.payment-method-cell{display:flex;align-items:center;gap:8px;min-width:0}
+.payment-method-cell>div{display:grid;gap:2px;min-width:0}
+.payment-method-cell strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.payment-method-cell small{font-size:9px;color:var(--text-tertiary)}
+.invoice-primary-value{font-weight:800!important}
+@media(max-width:640px){
+  .workspace-receipt-upload{grid-template-columns:1fr}
+  .workspace-receipt-actions{justify-content:flex-start}
+  .workspace-institution-menu{position:fixed;left:16px;right:16px;top:18%;max-height:64vh}
+}
