@@ -91,7 +91,7 @@ body{overflow-x:hidden!important}
 .jp-suite-head .jp-suite-close,.suite-head [data-close]{margin:0!important}
 
 /* Settings stays segmented and viewport-conscious */
-#view-settings.active{height:calc(100dvh - 48px)!important;overflow:hidden!important}
+#view-settings.active{height:100%!important;min-height:0!important;overflow:hidden!important}
 #view-settings .jp-settings-shell{height:100%!important;min-height:0!important}
 #view-settings .jp-settings-content{min-height:0!important;overflow:auto!important;padding-right:8px!important}
 #view-settings .jp-settings-segment{padding-bottom:32px!important}
@@ -344,7 +344,7 @@ body{overflow-x:hidden!important}
 /* Settings: maintain one-segment-at-a-time desktop layout */
 #view-settings .jp-settings-layout{
   min-height:0!important;
-  height:calc(100dvh - 124px)!important;
+  height:100%!important;
 }
 #view-settings .jp-settings-navigation{
   align-self:stretch!important;
@@ -599,4 +599,43 @@ body{overflow-x:hidden!important}
 @media(max-width:700px){
   .main-content{padding:16px 16px 80px!important}
   .deliverable-child-row{margin-left:16px!important;padding-left:8px!important}
+}
+
+/* 2026-09-24 Workspace stability: one Settings height model */
+body:has(#view-settings.active) .main-content{
+  overflow:hidden!important;
+}
+#view-settings.active{
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-rows:auto minmax(0,1fr)!important;
+  overflow:hidden!important;
+}
+#view-settings .jp-settings-header{
+  margin-top:0!important;
+  padding-top:0!important;
+}
+#view-settings .jp-settings-layout{
+  min-height:0!important;
+  height:100%!important;
+  overflow:hidden!important;
+}
+#view-settings .jp-settings-navigation{
+  min-height:0!important;
+  overflow:auto!important;
+}
+#view-settings .jp-settings-content{
+  min-height:0!important;
+  height:100%!important;
+  overflow:hidden!important;
+}
+#view-settings .jp-settings-scroll{
+  min-height:0!important;
+  overflow:auto!important;
+}
+@media(max-width:900px){
+  body:has(#view-settings.active) .main-content{overflow:auto!important}
+  #view-settings.active{height:auto!important;display:block!important;overflow:visible!important}
+  #view-settings .jp-settings-layout{height:auto!important;overflow:visible!important}
 }
