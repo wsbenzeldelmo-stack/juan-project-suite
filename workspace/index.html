@@ -1794,7 +1794,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
                   </div>
                   <div class="form-group">
                     <label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label>
-                    <input type="text" class="form-control" id="newClientPhone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" onblur="app.formatPhoneField(this)">
+                    <input type="text" class="form-control" id="newClientPhone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" oninput="app.maskPhoneField(this)" onblur="app.formatPhoneField(this)">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Location <span class="text-muted">(Optional)</span></label>
@@ -1983,7 +1983,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
               <div class="project-data-form-grid">
                 <div class="form-group"><label class="form-label">Full Name</label><input class="form-control" id="projectDataClientName"></div>
                 <div class="form-group"><label class="form-label">Email Address</label><input type="email" class="form-control" id="projectDataClientEmail" list="juanEmailDomainSuggestions"></div>
-                <div class="form-group"><label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientPhone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" onblur="app.formatPhoneField(this)"></div>
+                <div class="form-group"><label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientPhone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" oninput="app.maskPhoneField(this)" onblur="app.formatPhoneField(this)"></div>
                 <div class="form-group"><label class="form-label">Location <span class="text-muted">(Optional)</span></label><input class="form-control" id="projectDataClientAddress"></div>
               </div>
             </div>
@@ -2219,7 +2219,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label">Phone Number</label>
-                <input type="text" class="form-control" id="ownerPhoneInput" value="Your Phone Number" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" onblur="app.updateOwnerPhone(this.value)">
+                <input type="text" class="form-control" id="ownerPhoneInput" value="Your Phone Number" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" oninput="app.maskPhoneField(this)" onblur="app.updateOwnerPhone(this.value)">
               </div>
               <div class="form-group">
                 <label class="form-label">Email (Gmail)</label>
@@ -2401,7 +2401,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
         </div>
         <div class="form-group">
           <label class="form-label">Phone Number <span class="text-muted">(Optional)</span></label>
-          <input type="text" class="form-control" id="editClientPhone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" onblur="app.formatPhoneField(this)">
+          <input type="text" class="form-control" id="editClientPhone" inputmode="tel" autocomplete="tel" placeholder="09XX XXX XXXX" oninput="app.maskPhoneField(this)" onblur="app.formatPhoneField(this)">
           <span id="editClientPhoneError" class="inline-error"></span>
         </div>
         <div class="form-group">
@@ -4921,10 +4921,19 @@ table.jp-packages-table col:nth-child(6){width:7%}
         if(/^09\d{9}$/.test(digits))return `${digits.slice(0,4)} ${digits.slice(4,7)} ${digits.slice(7)}`;
         return String(value||'').trim();
       }
+      function maskPhoneField(input){
+        if(!input)return;
+        let digits=String(input.value||'').replace(/\D/g,'');
+        if(digits.startsWith('63'))digits='0'+digits.slice(2);
+        digits=digits.slice(0,11);
+        if(digits.length<=4)input.value=digits;
+        else if(digits.length<=7)input.value=`${digits.slice(0,4)} ${digits.slice(4)}`;
+        else input.value=`${digits.slice(0,4)} ${digits.slice(4,7)} ${digits.slice(7)}`;
+      }
       function formatPhoneField(input){
         if(!input)return;const raw=String(input.value||'').trim();if(!raw)return;
         const normalized=normalizePhilippinePhone(raw);
-        if(!/^09\d{9}$/.test(normalized)){showToast('Enter a valid Philippine mobile number, e.g. 09637050477.');return;}
+        if(!/^09\d{9}$/.test(normalized)){showToast('Enter a valid Philippine mobile number.');return;}
         input.value=formatPhilippinePhone(normalized);
       }
 
@@ -9565,6 +9574,7 @@ ${description}`))actionCallback();return;}
         bindEmailDomainSuggestions,
         copyPortalLoginEmail,
         formatPhoneField,
+        maskPhoneField,
         initWorkspace,
         navigateTo,
         setThemeMode,
