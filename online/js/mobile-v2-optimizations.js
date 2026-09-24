@@ -95,23 +95,6 @@
     quick?.remove();
     quickHead?.remove();
 
-    const balanceHead=document.createElement("div");
-    balanceHead.className="section-head jp-home-balance-head";
-    balanceHead.innerHTML="<h2>Balance</h2>";
-    const wallet=document.createElement("section");
-    wallet.className="jp-home-wallet";
-    const dm=dueMeta(firstDue);
-    const dueRow=dm?'<div class="jp-home-due-row"><span>Due '+esc(dm.date.toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"}))+'</span><b class="jp-due-tag '+dm.cls+'">'+esc(dm.label)+'</b></div>':"";
-    wallet.innerHTML='<div class="jp-home-wallet-copy"><strong>'+peso(due)+'</strong><small>Across active projects</small>'+dueRow+'</div><button id="jpHomePayNow" '+(due<=0?"disabled":"")+'>Pay Now</button>';
-
-    if(head){
-      if(activeHead&&activeCard){
-        head.after(activeHead,activeCard,balanceHead,wallet);
-      }else{
-        head.after(balanceHead,wallet);
-      }
-    }
-    $("#jpHomePayNow",wallet)?.addEventListener("click",()=>{if(firstDue)state().paymentProjectId=firstDue.id;$('.nav [data-r="payment"]')?.click()});
 
     const recent=$$(".section-head",page).find(h=>$("h2",h)?.textContent.trim()==="Recent Activity");
     recent?.classList.add("jp-home-recent-head");
@@ -147,42 +130,11 @@
   }
 
   function enhanceAccount(){
-    const page=$(".app.client-mode.route-account .page"); if(!page||page.dataset.jpV2==="1")return;page.dataset.jpV2="1";
-    const card=$(".membership-card",page),p=state().portal?.profile||{},m=membership(),code=referralCode();
-    if(card){
-      card.classList.add("jp-static-member-card");
-      card.removeAttribute("role");card.removeAttribute("tabindex");
-      const avatar=p.profile_photo_url?'<img src="'+esc(p.profile_photo_url)+'" alt="">':'<span>'+esc((p.name||p.email||"J").slice(0,1).toUpperCase())+'</span>';
-      const displayName=p.name||p.email||"Client";
-      card.innerHTML='<div class="jp-static-member-main jp-static-member-simple"><div class="jp-member-top"><b>JUAN PROJECT</b><span>'+m.name+' MEMBER</span></div><div class="jp-member-id"><div class="jp-fixed-avatar">'+avatar+'</div><div class="jp-member-identity"><h2>'+esc(displayName)+'</h2><small>'+esc(p.client_code||"")+'</small></div></div><button type="button" id="jpViewQr" class="jp-view-qr">View QR</button></div>';
-      $("#jpViewQr",card)?.addEventListener("click",openQr);
-    }
-
-    $(".account-status-card",page)?.remove();
-    $$(".settings-group",page).forEach(g=>{if($(".settings-label",g)?.textContent.trim()==="MEMBER BENEFITS")g.remove();});
-
-    const accountGroup=$$(".settings-group",page).find(g=>$(".settings-label",g)?.textContent.trim()==="ACCOUNT");
-    const notify=$("#enableBrowserNotifications",page);
-    if(accountGroup&&notify){
-      const notifyGroup=document.createElement("div");
-      notifyGroup.className="settings-group jp-notification-settings";
-      notifyGroup.innerHTML='<div class="settings-label">NOTIFICATIONS</div><div class="card settings-list"></div>';
-      $(".settings-list",notifyGroup).append(notify);
-      accountGroup.after(notifyGroup);
-    }
-
-    let about=$$(".settings-group",page).find(g=>["ABOUT","ABOUT & LEGAL"].includes($(".settings-label",g)?.textContent.trim()));
-    if(about){
-      $(".settings-label",about).textContent="ABOUT & LEGAL";
-      const list=$(".settings-list",about);
-      if(list){
-        list.innerHTML='<div class="jp-about-legal-copy"><b>JUAN PROJECT Online</b><span>Developed by BENZEL DELMO</span><span>JUAN PROJECT System 2026</span></div>';
-        if(code){const row=document.createElement("button");row.id="jpAccountReferral";row.className="settings-row settings-row-button";row.innerHTML='<div><b>Share Referral Code</b><small>'+esc(code)+'</small></div><span>›</span>';row.onclick=shareReferral;list.append(row);}
-      }
-    }else{
-      about=document.createElement("div");about.className="settings-group jp-about-legal";about.innerHTML='<div class="settings-label">ABOUT & LEGAL</div><div class="card settings-list"><div class="jp-about-legal-copy"><b>JUAN PROJECT Online</b><span>Developed by BENZEL DELMO</span><span>JUAN PROJECT System 2026</span></div></div>';page.append(about);
-    }
+    const page=$(".app.client-mode.route-account .page");if(!page)return;
+    page.dataset.jpV2="1";
   }
+
+  window.JPOnlineAccountActions={openQr,openRewards,shareReferral};
 
   function tvCategoryIds(){
     return (state().catalog?.categories||[]).filter(c=>/tv|broadcast/i.test(String(c.name||""))).map(c=>String(c.id));
