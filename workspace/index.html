@@ -1565,10 +1565,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
-  <link rel="stylesheet" href="/css/general-update.css?v=20260924-modal-deliverable-ui-2">
+  <link rel="stylesheet" href="/css/general-update.css?v=20260925-deliverable-payment-rush-1">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
-  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-modal-deliverable-ui-2">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-modal-deliverable-ui-2">
+  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260925-deliverable-payment-rush-1">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260925-deliverable-payment-rush-1">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
   <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
@@ -2453,11 +2453,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
               <div id="paymentInstitutionOptions" class="workspace-institution-options" role="listbox"></div>
             </div>
           </div>
-          <div id="paymentInstitutionPreview" class="workspace-institution-preview hidden"></div>
         </div>
         <div class="form-group hidden" id="paymentOtherInstitutionField">
           <label class="form-label">Bank / E-Wallet Name</label>
-          <input type="text" class="form-control" id="paymentOtherInstitutionInput" placeholder="Enter institution name">
+          <input type="text" class="form-control" id="paymentOtherInstitutionInput" placeholder="Enter institution name" oninput="app.updateOtherPaymentInstitutionName(this.value)">
         </div>
         <div class="form-group">
           <label class="form-label">Reference Number</label>
@@ -2941,7 +2940,6 @@ table.jp-packages-table col:nth-child(6){width:7%}
         onlinePortalAccountFilter: "active",
         onlinePortalData: null,
         onlinePortalLoading: false,
-        projectDeliverableSelection: {}
       };
 
       // Historical identity baseline from corrected JUAN_PROJECT_PAYMENT_TRACKER_UPDATED(3).csv.
@@ -6409,7 +6407,7 @@ ${description}`))actionCallback();return;}
         state.cart.rushFee=Math.max(0,Number(order.rush_fee||0));
         state.cart.rushDaysEarly=0;
         state.cart.startDate=today;
-        state.cart.deadlineDate=order.deadline||addDaysToDateString(today,items.some(i=>i.type==='PACKAGE')?14:10);
+        state.cart.deadlineDate=order.deadline||addDaysToDateString(today,14);
         state.cart.deadlineManuallySet=Boolean(order.deadline);
         state.cart.sourceOrderId=order.id;
         state.cart.sourceOrderCode=order.code||'';
@@ -6605,7 +6603,7 @@ ${description}`))actionCallback();return;}
       function rootPricingItems(items=[]){return (items||[]).filter(item=>{const type=String(item?.item_type||item?.type||'').trim().toUpperCase();return !item?.parent_item_id&&!item?.parent_id&&!item?.parent_key&&type!=='PACKAGE_COMPONENT'&&type!=='COMPONENT';});}
       function countDeliverablesFromItems(items=[]){return rootPricingItems(items).reduce((total,item)=>{const qty=Math.max(1,Math.round(Number(item?.qty??item?.quantity??1))),isPackage=String(item?.type||item?.item_type||'').toUpperCase()==='PACKAGE'||String(item?.product_code||'').toUpperCase().startsWith('PKG-');if(!isPackage)return total+qty;const pkg=(state.packagesList||[]).find(p=>String(p.product_code||'')===String(item.product_code||'')||String(p.name||'').trim().toLowerCase()===String(item.name||'').trim().toLowerCase());const inclusions=pkg?.includedServiceNames||item?.includedItems||item?.included_items||[];const count=Math.max(1,Array.isArray(inclusions)?inclusions.length:0);return total+(count*qty);},0);}
       function pricingStandardDays(items=[],projectNo=null){return 14;}
-      function pricingRushRate(items=[],projectNo=null){if(Number(projectNo)<51)return 500;const count=countDeliverablesFromItems(items);return count<=3?500:count<=7?800:count<=11?1000:1200;}
+      function pricingRushRate(){return 500;}
       function calculateRushForProject(projectOrItems,startValue,deadlineValue,projectNo=null){const items=Array.isArray(projectOrItems)?projectOrItems:(projectOrItems?.project_items||[]),no=projectNo??(Array.isArray(projectOrItems)?null:projectNumber(projectOrItems));const start=parseDateSafe(startValue),due=parseDateSafe(deadlineValue);const standard=pricingStandardDays(items,no);if(!start||!due)return {duration:null,daysEarly:0,fee:0,standard,deliverableCount:countDeliverablesFromItems(items),rate:pricingRushRate(items,no)};const duration=Math.max(0,Math.round((due-start)/86400000)),daysEarly=Math.max(0,standard-duration),rate=pricingRushRate(items,no),fee=daysEarly>0?Math.ceil(daysEarly/4)*rate:0;return {duration,daysEarly,fee,standard,deliverableCount:countDeliverablesFromItems(items),rate};}
       function nextProjectNumber(){const used=state.projects.filter(p=>!p.deleted).map(projectNumber).filter(Number.isFinite);return used.length?Math.max(...used)+1:1;}
       function automaticMaintenanceFee(items=[],projectNo=null,explicitSubtotal=null){
@@ -6696,7 +6694,7 @@ ${description}`))actionCallback();return;}
       }
 
 
-      function standardProductionDaysForItems(items=[]){return projectHasPackageItems(items)?14:10;}
+      function standardProductionDaysForItems(){return 14;}
       function standardProductionDaysForCart(){return standardProductionDaysForItems(state.cart?.items||[]);}
       function refreshAutomaticOrderDeadline(){if(state.cart.deadlineManuallySet)return;const start=state.cart.startDate||getLocalDateString(new Date());state.cart.deadlineDate=addDaysToDateString(start,standardProductionDaysForCart());const el=document.getElementById('orderDeadlineDate');if(el)el.value=state.cart.deadlineDate;updateRushCalculations();persistCartState();}
 
@@ -6723,8 +6721,7 @@ ${description}`))actionCallback();return;}
         const start=new Date(`${startVal}T00:00:00`),dead=new Date(`${deadVal}T00:00:00`),diffDays=Math.round((dead-start)/86400000),durationDays=Math.max(0,diffDays),STANDARD_DAYS=standardProductionDaysForCart(),RUSH_BLOCK_DAYS=4,RUSH_BLOCK_FEE=500,daysEarly=Math.max(0,STANDARD_DAYS-durationDays),rushFee=daysEarly>0?Math.ceil(daysEarly/RUSH_BLOCK_DAYS)*RUSH_BLOCK_FEE:0;
         state.cart.rushDaysEarly=daysEarly;state.cart.rushFee=rushFee;
         if(durationEl)durationEl.innerText=`${durationDays} day${durationDays===1?'':'s'}`;
-        const rushLevel=daysEarly<=0?0:Math.min(4,Math.ceil(daysEarly/RUSH_BLOCK_DAYS));const levelNames=['Standard','Slight Rush','Rush','Express Rush','Custom Rush'];
-        if(badgeEl){badgeEl.className='rush-duration-meta';badgeEl.innerText=daysEarly>0?`${levelNames[rushLevel]} • ${daysEarly} day${daysEarly===1?'':'s'} faster`:`Standard`;}
+        if(badgeEl){badgeEl.className='rush-duration-meta';badgeEl.innerText=daysEarly>0?'RUSH':'STANDARD';}
         if(rushTextEl)rushTextEl.innerText=formatCurrency(rushFee);if(rushDisplay)rushDisplay.style.display=diffDays>=0?'grid':'none';
         const rushSummary=document.getElementById('summaryRushFee'),rushRow=document.getElementById('summaryRushRow');if(rushSummary)rushSummary.innerText=`+ ${formatCurrency(rushFee)}`;if(rushRow)rushRow.style.display=rushFee>0?'flex':'none';
         const deadlineErr=document.getElementById('orderDeadlineError');if(deadlineErr)deadlineErr.innerText=diffDays<0?'Deadline date cannot be earlier than start date.':'';updateCartCalculations();
@@ -6896,8 +6893,10 @@ ${description}`))actionCallback();return;}
           const discount = state.cart.discountType === "percent"
             ? subtotal * (discountRaw / 100)
             : discountRaw;
+          const discountAmount=Math.min(subtotal,Math.max(0,discount));
           const rushFee = Number(state.cart.rushFee || 0);
-          const total = Math.max(0, subtotal - Math.min(subtotal, Math.max(0, discount)) + rushFee);
+          const maintenanceFee=automaticMaintenanceFee(state.cart.items,nextProjectNumber(),subtotal);
+          const total = Math.max(0, subtotal - discountAmount + rushFee + maintenanceFee);
 
           const body = document.getElementById("orderSummaryModalBody");
           if (!body) throw new Error("Order summary modal body is missing.");
@@ -6916,7 +6915,9 @@ ${description}`))actionCallback();return;}
               </div>
             `).join("")}
             <div class="divider"></div>
-            <div class="summary-row"><span>Rush Fee</span><span>${formatCurrency(rushFee)}</span></div>
+            <div class="summary-row"><span>Discount</span><span>− ${formatCurrency(discountAmount)}</span></div>
+            <div class="summary-row"><span>Rush Fee</span><span>+ ${formatCurrency(rushFee)}</span></div>
+            <div class="summary-row"><span>System Maintenance</span><span>+ ${formatCurrency(maintenanceFee)}</span></div>
             <div class="summary-row summary-total"><span>Total Amount</span><span>${formatCurrency(total)}</span></div>
           `;
 
@@ -7318,13 +7319,14 @@ ${description}`))actionCallback();return;}
           );
 
           const rushFee = Number(state.cart.rushFee || 0);
-          const totalAmount = Math.max(0, subtotal - discountAmount + rushFee);
+          const maintenanceFee=automaticMaintenanceFee(state.cart.items,nextProjectNumber(),subtotal);
+          const totalAmount = Math.max(0, subtotal - discountAmount + rushFee + maintenanceFee);
 
           const isPackage = state.cart.items.some(item =>
             String(item.type || "").toUpperCase() === "PACKAGE"
           );
 
-          const standardDays = isPackage ? 14 : 10;
+          const standardDays = 14;
           const start = parseDateSafe(state.cart.startDate);
           const due = parseDateSafe(state.cart.deadlineDate);
           const durationDays = start && due
@@ -7345,6 +7347,7 @@ ${description}`))actionCallback();return;}
             rush_fee: rushFee,
             rush_days_early: Math.max(0, standardDays - durationDays),
             subtotal_amount: subtotal,
+            system_maintenance_fee: maintenanceFee,
             total_amount: totalAmount,
             notes: ""
           };
@@ -7586,7 +7589,7 @@ ${description}`))actionCallback();return;}
           state.cart.sourceOrderId = null;
           state.cart.sourceOrderCode = "";
           state.cart.startDate = today;
-          state.cart.deadlineDate = addDaysToDateString(today, 10);
+          state.cart.deadlineDate = addDaysToDateString(today, 14);
 
           const projectNameInput = document.getElementById("orderProjectName");
           if (projectNameInput) projectNameInput.value = "";
@@ -8084,35 +8087,24 @@ ${description}`))actionCallback();return;}
       function renderProjectDeliverablesList(proj) {
         const container=document.getElementById('projectDeliverablesList');if(!container)return;
         closeFloatingActionMenus();
-        const ds=normalizeProjectDeliverableHierarchy(proj),selection=state.projectDeliverableSelection||{};
-        Object.keys(selection).forEach(id=>{if(!ds.some(d=>String(d.id)===String(id)))delete selection[id];});state.projectDeliverableSelection=selection;
+        const ds=normalizeProjectDeliverableHierarchy(proj);
         const countable=ds.filter(d=>!d.is_group),completed=countable.filter(d=>d.completed).length,percent=countable.length?Math.round(completed/countable.length*100):0;
         const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v};setText('projDetailProgressCount',`${completed} / ${countable.length} completed`);setText('projDetailProgressPercent',`${percent}%`);
         const bar=document.getElementById('projDetailProgressBar');if(bar)bar.style.width=`${percent}%`;const overallBar=document.getElementById('projectOverallProgressBar'),overallPct=document.getElementById('projectOverallProgressPercent'),overallCount=document.getElementById('projectOverallProgressCount');if(overallBar)overallBar.style.width=`${percent}%`;if(overallPct)overallPct.textContent=`${percent}%`;if(overallCount)overallCount.textContent=`${completed} / ${countable.length}`;
         if(!ds.length){container.innerHTML=`<div class="empty-compact-state"><strong>No deliverables yet</strong><span>Add order items in Project Data. They will appear here automatically.</span></div>`;renderProjectFilesAccess(proj);return;}
-        const roots=ds.filter(d=>!d.parent_id),selectedIds=Object.keys(selection).filter(id=>selection[id]),selectedCount=selectedIds.length;
+        const roots=ds.filter(d=>!d.parent_id);
         const row=(d,child=false)=>{
-          const menuId=`deliverableMenu_${String(d.id).replace(/[^a-zA-Z0-9_-]/g,'')}`,progress=d.is_group?Number(d.progress||0):(d.completed?100:Number(d.progress||0)),checked=!!selection[String(d.id)],children=d.is_group?ds.filter(c=>String(c.parent_id||'')===String(d.id)):[];
+          const menuId=`deliverableMenu_${String(d.id).replace(/[^a-zA-Z0-9_-]/g,'')}`,progress=d.is_group?Number(d.progress||0):(d.completed?100:Number(d.progress||0)),children=d.is_group?ds.filter(c=>String(c.parent_id||'')===String(d.id)):[];
           return `<div class="deliverable-checklist-row ${child?'deliverable-child-row':''} ${d.is_group?'deliverable-package-row':''} ${d.completed?'is-complete':''}">
-            <label class="deliverable-select" title="Select for deletion"><input type="checkbox" ${checked?'checked':''} onchange="app.toggleProjectDeliverableSelection('${String(d.id).replace(/'/g,"\'")}',this.checked)"><span></span></label>
-            <button type="button" class="deliverable-check ${d.completed?'checked':''}" aria-pressed="${d.completed?'true':'false'}" onclick="app.toggleDeliverable('${proj.id}','${String(d.id).replace(/'/g,"\'")}')"><svg class="icon-svg sm" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
+            <button type="button" class="deliverable-check ${d.completed?'checked':''}" aria-pressed="${d.completed?'true':'false'}" aria-label="${d.completed?'Mark incomplete':'Mark complete'}" onclick="app.toggleDeliverable('${proj.id}','${String(d.id).replace(/'/g,"\\'")}')"><svg class="icon-svg sm" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
             <div class="deliverable-checklist-copy"><strong>${escapeHtml(d.item_name)}</strong>${d.is_group?`<span>${children.filter(c=>c.completed).length}/${children.length} included items · Package</span>`:child?`<span>${escapeHtml(d.package_name||'Package inclusion')}</span>`:''}</div>
             <div class="deliverable-item-progress"><div class="progress-bar-track"><div class="progress-bar-fill" style="width:${progress}%"></div></div><span>${Math.round(progress)}%</span></div>
-            <div class="popover-wrap" id="${menuId}"><button class="icon-more-button" onclick="event.stopPropagation();app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action text-danger" onclick="event.stopPropagation();app.deleteProjectDeliverable('${String(d.id).replace(/'/g,"\'")}')">Remove Deliverable</button></div></div>
+            <div class="popover-wrap" id="${menuId}"><button class="icon-more-button" onclick="event.stopPropagation();app.togglePopover('${menuId}',event)">⋮</button><div class="popover-panel client-row-menu"><button class="popover-action text-danger" onclick="event.stopPropagation();app.deleteProjectDeliverable('${String(d.id).replace(/'/g,"\\'")}')">Remove Deliverable</button></div></div>
           </div>`;
         };
-        const toolbar=`<div class="deliverable-batch-toolbar ${selectedCount?'active':''}"><div><strong>${selectedCount?selectedCount+' selected':'Select deliverables'}</strong><span>${selectedCount?'Choose an action for the selected deliverables.':'Select one or more deliverables to manage them.'}</span></div><div class="deliverable-batch-actions"><button class="btn btn-secondary btn-sm" onclick="app.selectAllProjectDeliverables()">Select All</button><button class="btn btn-secondary btn-sm" ${selectedCount?'':'disabled'} onclick="app.clearProjectDeliverableSelection()">Clear</button><button class="btn btn-danger btn-sm" ${selectedCount?'':'disabled'} onclick="app.deleteSelectedProjectDeliverables()">Delete Selected</button></div></div>`;
-        container.innerHTML=toolbar+`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block ${root.is_group?'package-group':''}">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).sort((a,b)=>Number(a.child_index??999)-Number(b.child_index??999)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;
+        container.innerHTML=`<div class="deliverable-checklist">${roots.map(root=>`<div class="deliverable-group-block ${root.is_group?'package-group':''}">${row(root,false)}${ds.filter(c=>String(c.parent_id||'')===String(root.id)).sort((a,b)=>Number(a.child_index??999)-Number(b.child_index??999)).map(c=>row(c,true)).join('')}</div>`).join('')}</div>`;
         renderProjectFilesAccess(proj);
       }
-      function toggleProjectDeliverableSelection(delId,checked){
-        const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;
-        const ds=normalizeProjectDeliverableHierarchy(proj),selected=state.projectDeliverableSelection||(state.projectDeliverableSelection={}),row=ds.find(d=>String(d.id)===String(delId));if(!row)return;
-        const ids=[String(row.id),...(row.is_group?ds.filter(c=>String(c.parent_id||'')===String(row.id)).map(c=>String(c.id)):[])];ids.forEach(id=>{if(checked)selected[id]=true;else delete selected[id];});renderProjectDeliverablesList(proj);
-      }
-      function clearProjectDeliverableSelection(){state.projectDeliverableSelection={};const proj=state.projects.find(p=>p.id===state.activeProjectId);if(proj)renderProjectDeliverablesList(proj);}
-      function selectAllProjectDeliverables(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;state.projectDeliverableSelection={};normalizeProjectDeliverableHierarchy(proj).forEach(d=>state.projectDeliverableSelection[String(d.id)]=true);renderProjectDeliverablesList(proj);}
-      function deleteSelectedProjectDeliverables(){const proj=state.projects.find(p=>p.id===state.activeProjectId);if(!proj)return;const selectedIds=Object.keys(state.projectDeliverableSelection||{}).filter(id=>state.projectDeliverableSelection[id]);if(!selectedIds.length)return;requestDestructivePin('Delete Selected Deliverables',`Delete ${selectedIds.length} selected deliverable${selectedIds.length===1?'':'s'}? Linked order items are removed when their parent deliverable is selected.`,()=>removeProjectDeliverablesByIds(proj,selectedIds));}
       function toLocalDateTimeInput(value){if(!value)return'';const d=new Date(value);if(Number.isNaN(d.getTime()))return'';const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);}
       function projectFilesState(proj){const now=Date.now(),unlock=proj.drive_unlock_at?new Date(proj.drive_unlock_at).getTime():null,expires=proj.drive_expires_at?new Date(proj.drive_expires_at).getTime():null;if(expires&&now>expires)return['Expired','expired'];if(!proj.drive_url||(unlock&&now<unlock))return['Locked','locked'];return['Available','available'];}
       function renderProjectFilesAccess(proj){const card=document.getElementById('projectFilesAccessCard');if(!card||!proj)return;const url=document.getElementById('projectFilesDriveUrl'),unlock=document.getElementById('projectFilesUnlockAt'),expires=document.getElementById('projectFilesExpiresAt'),badge=document.getElementById('projectFilesAccessState'),open=document.getElementById('projectFilesOpenDrive');if(document.activeElement!==url)url.value=proj.drive_url||'';if(document.activeElement!==unlock)unlock.value=toLocalDateTimeInput(proj.drive_unlock_at);if(document.activeElement!==expires)expires.value=toLocalDateTimeInput(proj.drive_expires_at);const [label,cls]=projectFilesState(proj);badge.textContent=label;badge.className='portal-drive-state '+cls;if(proj.drive_url){open.href=proj.drive_url;open.classList.remove('hidden')}else open.classList.add('hidden');}
@@ -8314,7 +8306,7 @@ ${description}`))actionCallback();return;}
         ds.forEach(d=>{if(!selected.has(String(d.id)))return;if(!d.parent_id&&d.order_item_id)orderIds.add(String(d.order_item_id));if(d.is_group)ds.filter(c=>String(c.parent_id||'')===String(d.id)).forEach(c=>selected.add(String(c.id)));});
         if(orderIds.size&&Array.isArray(proj.project_items)){proj.project_items=proj.project_items.filter(i=>!orderIds.has(String(i.id)));recalculateProjectFromOrderItems(proj);}
         proj.deliverables=ds.filter(d=>!selected.has(String(d.id))&&!orderIds.has(String(d.order_item_id||'')));
-        proj.updated_at=new Date().toISOString();state.projectDeliverableSelection={};persistProjectsState();
+        proj.updated_at=new Date().toISOString();persistProjectsState();
         scheduleProjectStructureSync(proj,50,{allowEmptyStructure:(proj.project_items||[]).length===0&&(proj.deliverables||[]).filter(d=>!d.is_group).length===0});
         renderProjectOrderItems(proj);renderProjectDeliverablesList(proj);renderPaymentTracker(proj);renderInvoicePaper(proj);renderOverviewDashboard();showToast(`${selected.size} deliverable${selected.size===1?'':'s'} removed.`);
       }
@@ -8393,7 +8385,7 @@ ${description}`))actionCallback();return;}
         const host=document.getElementById('paymentInstitutionOptions');if(!host)return;
         const q=String(query||'').trim().toLowerCase();
         const rows=WORKSPACE_PAYMENT_INSTITUTIONS.filter(x=>!q||x.name.toLowerCase().includes(q)||x.type.toLowerCase().includes(q));
-        host.innerHTML=rows.map(x=>`<button type="button" class="workspace-institution-option" role="option" onclick="app.selectWorkspacePaymentInstitution('${x.code}')"><span class="workspace-institution-logo"><img src="${x.logo}" alt=""></span><span><strong>${escapeHtml(x.name)}</strong><small>${escapeHtml(x.type)}</small></span></button>`).join('')||'<div class="workspace-institution-empty">No matching bank or e-wallet.</div>';
+        host.innerHTML=rows.map(x=>`<button type="button" class="workspace-institution-option" role="option" onclick="app.selectWorkspacePaymentInstitution('${x.code}')"><span class="workspace-institution-logo institution-${x.code}"><img src="${x.logo}" alt=""></span><span><strong>${escapeHtml(x.name)}</strong><small>${escapeHtml(x.type)}</small></span></button>`).join('')||'<div class="workspace-institution-empty">No matching bank or e-wallet.</div>';
       }
       function toggleWorkspacePaymentInstitutionPicker(force){
         const menu=document.getElementById('paymentInstitutionMenu'),btn=document.getElementById('paymentInstitutionButton');if(!menu)return;
@@ -8413,15 +8405,23 @@ ${description}`))actionCallback();return;}
         };
         if(guide)guide.textContent='Use the reference shown on the receipt.';
       }
+      function renderWorkspacePaymentInstitutionSelection(inst,otherName=''){
+        const content=document.getElementById('paymentInstitutionButtonContent');if(!content||!inst)return;
+        const label=inst.code==='others'&&String(otherName||'').trim()?String(otherName).trim():inst.name;
+        content.innerHTML=`<span class="workspace-institution-logo compact institution-${inst.code}"><img src="${inst.logo}" alt=""></span><span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(inst.type)}</small></span>`;
+      }
       function selectWorkspacePaymentInstitution(code,otherName=''){
         const inst=workspacePaymentInstitution(code)||WORKSPACE_PAYMENT_INSTITUTIONS[0];
-        const hidden=document.getElementById('paymentMethodInput'),content=document.getElementById('paymentInstitutionButtonContent'),preview=document.getElementById('paymentInstitutionPreview'),other=document.getElementById('paymentOtherInstitutionField'),otherInput=document.getElementById('paymentOtherInstitutionInput');
+        const hidden=document.getElementById('paymentMethodInput'),other=document.getElementById('paymentOtherInstitutionField'),otherInput=document.getElementById('paymentOtherInstitutionInput');
         if(hidden)hidden.value=inst.code;
-        if(content)content.innerHTML=`<span class="workspace-institution-logo compact"><img src="${inst.logo}" alt=""></span><span><strong>${escapeHtml(inst.name)}</strong><small>${escapeHtml(inst.type)}</small></span>`;
-        if(preview){preview.classList.remove('hidden');preview.innerHTML=`<span class="workspace-institution-logo"><img src="${inst.logo}" alt=""></span><div><strong>${escapeHtml(inst.name)}</strong><span>${escapeHtml(inst.type)}</span></div>`;}
         other?.classList.toggle('hidden',inst.code!=='others');
         if(otherInput){otherInput.classList.remove('is-invalid');if(otherName)otherInput.value=otherName;}
+        renderWorkspacePaymentInstitutionSelection(inst,otherName||otherInput?.value||'');
         applyWorkspaceReferenceGuide(inst);toggleWorkspacePaymentInstitutionPicker(false);
+      }
+      function updateOtherPaymentInstitutionName(value){
+        const inst=workspacePaymentInstitution(document.getElementById('paymentMethodInput')?.value);
+        if(inst?.code==='others')renderWorkspacePaymentInstitutionSelection(inst,value);
       }
       function validateWorkspacePaymentReference(code,value){
         const clean=String(value||'').replace(/\s+/g,'').trim();if(!clean)return {ok:true,clean};
@@ -9607,6 +9607,7 @@ ${description}`))actionCallback();return;}
         toggleWorkspacePaymentInstitutionPicker,
         filterWorkspacePaymentInstitutions,
         selectWorkspacePaymentInstitution,
+        updateOtherPaymentInstitutionName,
         handleWorkspacePaymentReceipt,
         previewWorkspacePaymentReceipt,
         removeWorkspacePaymentReceipt,
@@ -9732,10 +9733,6 @@ ${description}`))actionCallback();return;}
         selectProjectDeliverableSuggestion,
         saveProjectDeliverable,
         deleteProjectDeliverable,
-        toggleProjectDeliverableSelection,
-        clearProjectDeliverableSelection,
-        selectAllProjectDeliverables,
-        deleteSelectedProjectDeliverables,
         toggleAssistant,
         assistantQuick,
         sendAssistantMessage,
@@ -10602,7 +10599,7 @@ ${description}`))actionCallback();return;}
 <script type="module" src="/js/general-update.js?v=20260923-ui2"></script>
 <script type="module" src="/js/keyboard-shortcuts.js?v=20260923-0105"></script>
 <script src="/js/workspace-icon-system-2026-09-22.js?v=20260923-0225"></script>
-  <script src="/js/consistency-pass.js?v=20260924-modal-deliverable-ui-2"></script>
+  <script src="/js/consistency-pass.js?v=20260925-deliverable-payment-rush-1"></script>
   <script src="/js/workspace-unification-2026-09-22.js?v=20260923-1208"></script>
 </body>
 </html>
