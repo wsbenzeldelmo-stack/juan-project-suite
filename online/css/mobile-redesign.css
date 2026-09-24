@@ -3,13 +3,13 @@
 .app{background:var(--jpo-bg)}.page{padding:18px 18px calc(92px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto}.nav{max-width:520px;left:50%!important;transform:translateX(-50%);right:auto!important;width:100%;box-sizing:border-box}.guest-nav{grid-template-columns:repeat(4,1fr)!important}.guest-nav button{min-width:0}
 .jp-guest-home-v2{padding-top:5px}.jp-guest-hero{padding:28px 0 18px}.jp-guest-hero h1{font-size:34px;line-height:.96;letter-spacing:-.055em;margin:8px 0 15px}.jp-guest-hero h1 strong{color:var(--jpo-green)}.jp-guest-hero p{font-size:14px;line-height:1.55;color:#68736d;max-width:360px}.jp-guest-home-v2 .guest-actions{display:grid;gap:9px;margin-top:24px}.jp-trust-list{display:grid;gap:10px;margin-top:22px;padding:16px;border:1px solid var(--jpo-border);border-radius:17px;background:#fff}.jp-trust-list>div{display:flex;align-items:center;gap:10px;font-size:12px;color:#65716a}.jp-trust-list .ui-icon{color:var(--jpo-green)}
 .dashboard-head>div:first-child p{margin:4px 0 0;color:#87918c;font-size:11px}.jp-quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px}.jp-quick-actions button{min-height:116px;border:1px solid var(--jpo-border);border-radius:17px;background:#fff;padding:13px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#17211c}.jp-quick-actions .ui-icon{width:35px;height:35px;padding:8px;border-radius:50%;background:#e8fbf1;color:var(--jpo-green)}.jp-quick-actions b{font-size:11px;line-height:1.15}.jp-quick-actions small{font-size:9px;color:#8b958f}.active-project{border-radius:18px!important}.activity-card{border-radius:18px!important}
-.jp-shop-head{display:grid;grid-template-columns:1fr 45px;gap:9px;align-items:center}.jp-cart-icon{height:45px;border:1px solid var(--jpo-border);border-radius:13px;background:#fff;position:relative}.jp-cart-icon span{position:absolute;right:-5px;top:-6px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--jpo-green);color:#fff;font-size:9px;font-weight:850}.jp-category-chips{display:flex;gap:7px;overflow:auto;padding:12px 0 14px;scrollbar-width:none}.jp-category-chips::-webkit-scrollbar{display:none}.jp-category-chips button{border:0;border-radius:999px;background:#eef2f0;color:#6a756f;padding:7px 11px;font:650 10px inherit;white-space:nowrap}.jp-category-chips button.active{background:var(--jpo-green);color:#fff}.jp-shop-grid{display:grid;gap:10px}.jp-shop-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px;border:1px solid var(--jpo-border);border-radius:17px;background:#fff}.jp-shop-main{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center;border:0;background:transparent;text-align:left;padding:0;min-width:0}.jp-shop-thumb{width:76px;height:72px;border-radius:12px;background:linear-gradient(145deg,#e8f8f0,#eef1f0);display:grid;place-items:center;color:#087c4a;font-size:10px;font-weight:850}.jp-shop-copy{min-width:0}.jp-shop-copy>span{font-size:8px;letter-spacing:.05em;color:#8b958f;font-weight:750}.jp-shop-copy h3{font-size:12px;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jp-shop-copy p{font-size:9px;line-height:1.35;color:#7f8a84;margin:0 0 5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.jp-shop-price{display:flex;gap:6px;align-items:center;font-size:10px}.jp-shop-price s{color:#a0a8a4}.jp-shop-price b{font-size:11px}.jp-add-cart{min-height:36px!important;padding:7px 10px!important;font-size:10px!important;white-space:nowrap}.jp-mini-cart{position:sticky;bottom:72px;z-index:12;width:100%;margin-top:12px;min-height:58px;border:0;border-radius:16px;background:#14261e;color:#fff;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 12px 34px rgba(13,29,21,.22)}.jp-mini-cart span{display:grid;text-align:left}.jp-mini-cart b{font-size:11px}.jp-mini-cart small{font-size:12px}.jp-mini-cart strong{padding:10px 12px;border-radius:10px;background:var(--jpo-green);font-size:10px}
+.jp-shop-head{display:grid;grid-template-columns:1fr 45px;gap:9px;align-items:center}.jp-cart-icon{height:45px;border:1px solid var(--jpo-border);border-radius:13px;background:#fff;position:relative}.jp-cart-icon span{position:absolute;right:-5px;top:-6px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;background:var(--jpo-green);color:#fff;font-size:9px;font-weight:700}.jp-category-chips{display:flex;gap:7px;overflow:auto;padding:12px 0 14px;scrollbar-width:none}.jp-category-chips::-webkit-scrollbar{display:none}.jp-category-chips button{border:0;border-radius:999px;background:#eef2f0;color:#6a756f;padding:7px 11px;font:600 10px inherit;white-space:nowrap}.jp-category-chips button.active{background:var(--jpo-green);color:#fff}.jp-shop-grid{display:grid;gap:10px}.jp-shop-card{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px;border:1px solid var(--jpo-border);border-radius:17px;background:#fff}.jp-shop-main{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center;border:0;background:transparent;text-align:left;padding:0;min-width:0}.jp-shop-thumb{width:76px;height:72px;border-radius:12px;background:linear-gradient(145deg,#e8f8f0,#eef1f0);display:grid;place-items:center;color:#087c4a;font-size:10px;font-weight:700}.jp-shop-copy{min-width:0}.jp-shop-copy>span{font-size:8px;letter-spacing:.05em;color:#8b958f;font-weight:700}.jp-shop-copy h3{font-size:12px;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jp-shop-copy p{font-size:9px;line-height:1.35;color:#7f8a84;margin:0 0 5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.jp-shop-price{display:flex;gap:6px;align-items:center;font-size:10px}.jp-shop-price s{color:#a0a8a4}.jp-shop-price b{font-size:11px}.jp-add-cart{min-height:36px!important;padding:7px 10px!important;font-size:10px!important;white-space:nowrap}.jp-mini-cart{position:sticky;bottom:72px;z-index:12;width:100%;margin-top:12px;min-height:58px;border:0;border-radius:16px;background:#14261e;color:#fff;padding:10px 13px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 12px 34px rgba(13,29,21,.22)}.jp-mini-cart span{display:grid;text-align:left}.jp-mini-cart b{font-size:11px}.jp-mini-cart small{font-size:12px}.jp-mini-cart strong{padding:10px 12px;border-radius:10px;background:var(--jpo-green);font-size:10px}
 .order-tabs{display:grid!important;grid-template-columns:repeat(3,1fr)!important}.project-list-card{border-radius:17px!important}.project-list-card .badge{white-space:nowrap}
 .membership-card{aspect-ratio:1.59/1!important;min-height:0!important;height:auto!important;padding:17px!important;display:grid!important;grid-template-rows:auto 1fr auto auto;overflow:hidden}.membership-profile{margin:9px 0!important}.membership-profile .avatar.large{width:48px!important;height:48px!important;min-width:48px!important}.membership-profile h2{font-size:15px!important}.membership-profile p,.membership-profile small{font-size:9px!important}.membership-details{padding-top:8px!important}.membership-details span,.membership-progress span,.membership-progress small{font-size:8px!important}.membership-details b,.membership-progress b{font-size:9px!important}.membership-progress{margin-top:7px!important}.membership-actions{display:none!important}
 .jp-account-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.jp-account-card-actions button,.jp-account-card-actions label{min-height:42px;border:1px solid var(--jpo-border);border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font:700 10px inherit;color:#233028}
-.jp-client-card-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:#eef2f0;margin-bottom:13px}.jp-client-card-tabs button{min-height:36px;border:0;border-radius:9px;background:transparent;font:700 11px inherit;color:#7d8882}.jp-client-card-tabs button.active{background:var(--jpo-green);color:#fff}.jp-client-membership-card{aspect-ratio:1.59/1;width:100%;box-sizing:border-box;border-radius:18px;padding:18px;background:linear-gradient(135deg,#0b1611,#25342d);color:#fff;display:grid;grid-template-rows:auto 1fr auto}.jp-client-card-top{display:flex;justify-content:space-between;align-items:flex-start}.jp-client-card-top>div{display:grid}.jp-client-card-top>div b{font-size:13px}.jp-client-card-top>div small{font-size:8px;color:#44df96;font-weight:800}.jp-client-card-top>span{padding:5px 7px;border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:7px}.jp-client-card-person{display:flex;gap:11px;align-items:center}.jp-client-card-avatar{width:46px;height:46px;border-radius:50%;background:#fff;color:#14241c;display:grid;place-items:center;font-weight:850;font-size:13px}.jp-client-card-person h3{margin:0;font-size:15px}.jp-client-card-person b{display:block;font-size:9px}.jp-client-card-person small{font-size:8px;color:#c3cec8}.jp-client-card-meta{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.16);padding-top:8px}.jp-client-card-meta div:last-child{text-align:right}.jp-client-card-meta span{display:block;font-size:7px;color:#9eaca5}.jp-client-card-meta b{font-size:9px}.jp-client-qr-panel{text-align:center;padding:14px;border:1px solid var(--jpo-border);border-radius:16px;background:#fff}.jp-client-qr-panel .suite-qr{width:min(240px,70vw);height:auto}.jp-client-qr-panel h3{font-size:14px;margin:4px}.jp-client-qr-panel p{font-size:10px;color:#7b8680;max-width:270px;margin:7px auto}.jp-client-card-actions{display:grid!important;grid-template-columns:1fr 1fr!important}.jp-client-card-actions button{width:100%}
+.jp-client-card-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:#eef2f0;margin-bottom:13px}.jp-client-card-tabs button{min-height:36px;border:0;border-radius:9px;background:transparent;font:700 11px inherit;color:#7d8882}.jp-client-card-tabs button.active{background:var(--jpo-green);color:#fff}.jp-client-membership-card{aspect-ratio:1.59/1;width:100%;box-sizing:border-box;border-radius:18px;padding:18px;background:linear-gradient(135deg,#0b1611,#25342d);color:#fff;display:grid;grid-template-rows:auto 1fr auto}.jp-client-card-top{display:flex;justify-content:space-between;align-items:flex-start}.jp-client-card-top>div{display:grid}.jp-client-card-top>div b{font-size:13px}.jp-client-card-top>div small{font-size:8px;color:#44df96;font-weight:800}.jp-client-card-top>span{padding:5px 7px;border:1px solid rgba(255,255,255,.18);border-radius:999px;font-size:7px}.jp-client-card-person{display:flex;gap:11px;align-items:center}.jp-client-card-avatar{width:46px;height:46px;border-radius:50%;background:#fff;color:#14241c;display:grid;place-items:center;font-weight:700;font-size:13px}.jp-client-card-person h3{margin:0;font-size:15px}.jp-client-card-person b{display:block;font-size:9px}.jp-client-card-person small{font-size:8px;color:#c3cec8}.jp-client-card-meta{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.16);padding-top:8px}.jp-client-card-meta div:last-child{text-align:right}.jp-client-card-meta span{display:block;font-size:7px;color:#9eaca5}.jp-client-card-meta b{font-size:9px}.jp-client-qr-panel{text-align:center;padding:14px;border:1px solid var(--jpo-border);border-radius:16px;background:#fff}.jp-client-qr-panel .suite-qr{width:min(240px,70vw);height:auto}.jp-client-qr-panel h3{font-size:14px;margin:4px}.jp-client-qr-panel p{font-size:10px;color:#7b8680;max-width:270px;margin:7px auto}.jp-client-card-actions{display:grid!important;grid-template-columns:1fr 1fr!important}.jp-client-card-actions button{width:100%}
 .settings-row{min-height:58px}.account-status-card{border-radius:17px!important}
-.jp-site-footer{padding:18px 18px 105px;text-align:center;color:#8b948f;font-size:10px}.jp-site-footer nav{display:flex;justify-content:center;gap:14px;margin-bottom:7px}.jp-site-footer a{color:#66736c;text-decoration:none;font-weight:650}
+.jp-site-footer{padding:18px 18px 105px;text-align:center;color:#8b948f;font-size:10px}.jp-site-footer nav{display:flex;justify-content:center;gap:14px;margin-bottom:7px}.jp-site-footer a{color:#66736c;text-decoration:none;font-weight:600}
 .jp-cookie-banner{position:fixed;z-index:170000;left:50%;bottom:85px;transform:translateX(-50%);width:min(430px,calc(100vw - 28px));box-sizing:border-box;padding:14px;border:1px solid #dfe6e2;border-radius:16px;background:#fff;box-shadow:0 16px 50px rgba(18,30,24,.18);display:grid;gap:10px}.jp-cookie-banner strong{font-size:12px}.jp-cookie-banner p{font-size:10px;line-height:1.45;color:#6f7a74;margin:0}.jp-cookie-banner div{display:flex;gap:7px;justify-content:flex-end}.jp-cookie-banner button{min-height:36px;border-radius:10px;padding:7px 11px;font:700 10px inherit}.jp-cookie-secondary{border:1px solid #dfe5e2;background:#fff}.jp-cookie-primary{border:0;background:var(--jpo-green);color:#fff}
 @media(max-width:390px){.jp-shop-card{grid-template-columns:1fr}.jp-add-cart{width:100%}.jp-shop-main{grid-template-columns:68px 1fr}.jp-shop-thumb{width:68px;height:65px}.membership-card{padding:13px!important}.jp-quick-actions button{min-height:104px}}
 
@@ -18,7 +18,7 @@
 .jp-welcome-simplified .welcome-copy{margin:0 auto 26px;max-width:330px}
 .jp-welcome-simplified .welcome-actions{width:min(330px,100%);margin:0 auto}
 .jp-client-login-question{margin:12px 0 0;text-align:center;color:var(--muted,#7b8580);font-size:12px}
-.jp-client-login-question .text-button{display:inline;width:auto;padding:4px 6px;font-weight:750}
+.jp-client-login-question .text-button{display:inline;width:auto;padding:4px 6px;font-weight:700}
 .jp-guest-home-centered{min-height:calc(100dvh - 110px);display:grid;align-content:center;gap:18px;max-width:520px;margin:0 auto;text-align:center}
 .jp-guest-home-centered .jp-guest-hero{margin:0 auto;width:min(390px,100%)}
 .jp-shop-sticky{position:sticky;top:0;z-index:20;background:var(--page-bg,#f7faf8);padding-top:2px}
@@ -44,7 +44,7 @@
 .jp-home-bottom-dock #jpAdBannerAnchor{width:100%;margin:0}
 .jp-home-footer{display:grid;gap:6px;padding:8px 4px 0;text-align:center}
 .jp-home-footer>div{display:flex;align-items:center;justify-content:center;gap:20px}
-.jp-home-footer a{font-size:10px;font-weight:750;color:#68736d;text-decoration:none}
+.jp-home-footer a{font-size:10px;font-weight:700;color:#68736d;text-decoration:none}
 .jp-home-footer small{font-size:8.5px;line-height:1.35;color:#8a948f}
 .app.route-home .nav{z-index:40}
 @media(max-width:480px){.page.route-home{padding-left:16px!important;padding-right:16px!important;padding-bottom:calc(188px + env(safe-area-inset-bottom))!important}.jp-home-bottom-dock{padding-left:16px;padding-right:16px}}
@@ -95,7 +95,7 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
 .app.guest-mode.route-home .jp-guest-about{margin:0!important;padding:7px 4px!important;display:flex!important;justify-content:center!important;gap:4px!important;flex-wrap:wrap!important;font-size:10px!important}
 .app.guest-mode.route-home .jp-guest-about b{font-size:11px!important}.app.guest-mode.route-home .jp-guest-about span{font-size:10px!important}
 .jp-home-only-footer{flex:0 0 auto!important;margin:4px 0 0!important;padding:6px 0 2px!important;text-align:center!important}
-.jp-home-only-footer nav{display:flex!important;justify-content:center!important;gap:18px!important}.jp-home-only-footer a{font-size:9px!important;font-weight:750!important;color:#68736d!important;text-decoration:none!important}.jp-home-only-footer>div{font-size:8px!important;color:#8a948f!important;margin-top:4px!important}
+.jp-home-only-footer nav{display:flex!important;justify-content:center!important;gap:18px!important}.jp-home-only-footer a{font-size:9px!important;font-weight:700!important;color:#68736d!important;text-decoration:none!important}.jp-home-only-footer>div{font-size:8px!important;color:#8a948f!important;margin-top:4px!important}
 .app.client-mode.route-home .page.route-home{overflow:hidden!important;padding-bottom:8px!important}
 .app.client-mode.route-home .dashboard-head{flex:0 0 auto}.app.client-mode.route-home .jp-quick-actions{flex:0 0 auto;margin-bottom:9px!important}.app.client-mode.route-home .section-head{margin:9px 0 6px!important}.app.client-mode.route-home .active-project{padding:12px!important}.app.client-mode.route-home .activity-card{max-height:150px!important;overflow:hidden!important}.app.client-mode.route-home .jp-home-ad-inline{margin-top:8px!important;flex:0 0 auto}
 .client-message-overlay{position:fixed!important;inset:0!important;display:grid!important;place-items:center!important;align-items:center!important;justify-items:center!important;padding:18px!important;overflow:hidden!important}
@@ -171,7 +171,7 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
     border-bottom:1px solid var(--jpo-border)!important;
   }
   .jp-desktop-nav-brand b{font-size:14px!important;line-height:1.05!important;letter-spacing:-.02em!important;color:#121916!important}
-  .jp-desktop-nav-brand span{font-size:12px!important;font-weight:850!important;color:var(--jpo-green)!important}
+  .jp-desktop-nav-brand span{font-size:12px!important;font-weight:700!important;color:var(--jpo-green)!important}
   .jp-desktop-nav-brand small{margin-top:8px!important;font-size:8px!important;font-weight:800!important;letter-spacing:.11em!important;text-transform:uppercase!important;color:#8b958f!important}
 
   .app>.nav .jp-nav-links{
@@ -193,7 +193,7 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
     color:#68736d!important;
     text-align:left!important;
     font-size:11px!important;
-    font-weight:750!important;
+    font-weight:700!important;
   }
   .app>.nav button svg{width:19px!important;height:19px!important}
   .app>.nav button span{display:block!important}
@@ -592,7 +592,7 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
     padding:2px 2px 6px!important;
     text-align:left!important;
   }
-  .jp-guest-desktop-head>span{font-size:9px;font-weight:850;letter-spacing:.12em;color:#7c8882}
+  .jp-guest-desktop-head>span{font-size:9px;font-weight:700;letter-spacing:.12em;color:#7c8882}
   .jp-guest-desktop-head h1{margin:4px 0 2px!important;font-size:25px!important;letter-spacing:-.035em!important;color:#131a17}
   .jp-guest-desktop-head p{margin:0!important;font-size:11px!important;color:#7a8580}
   .app.guest-mode.route-home .jp-guest-hero{
@@ -888,7 +888,7 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
   }
   .app.guest-mode.route-home .jp-guest-desktop-head>span{
     font-size:9px!important;
-    font-weight:850!important;
+    font-weight:700!important;
     letter-spacing:.12em!important;
     color:#7b8781!important;
   }
@@ -1566,7 +1566,7 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
     --jp-web-gap:16px;
     --jp-web-radius:24px;
     --jp-web-edge-x:clamp(40px,5vw,76px);
-    --jp-web-edge-y:clamp(30px,5vh,54px);
+    --jp-web-edge-y:clamp(40px,6vh,64px);
     --jp-web-line:#dfe6e2;
     --jp-web-bg:#edf4f1;
     --jp-web-shadow:0 18px 48px rgba(24,44,34,.075);
@@ -1743,11 +1743,11 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
 /* Preserve margins on shorter desktop windows instead of snapping edge-to-edge. */
 @media(min-width:900px) and (max-height:720px){
   :root{
-    --jp-web-edge-y:22px;
+    --jp-web-edge-y:28px;
     --jp-web-edge-x:36px;
   }
   .app{
-    height:calc(100dvh - 44px)!important;
+    height:calc(100dvh - 56px)!important;
     width:min(var(--jp-web-max),calc(100vw - 72px))!important;
   }
   .app>.page{padding:20px 22px!important}
@@ -1755,19 +1755,3 @@ body:has(.app.route-home),#root:has(.app.route-home){height:100%;min-height:0;ov
 }
 
 
-/* 2026-09-22 DESKTOP: hide in-house ads */
-@media(min-width:900px){
-  #jpAdBannerAnchor,
-  .jp-home-ad-inline,
-  .jp-home-bottom-ad,
-  .jp-flow-bottom-ad,
-  .jp-auth-bottom-ad,
-  .jp-house-banner,
-  .jp-popup-ad,
-  .jp-popup-ad-overlay,
-  [data-jp-ad],
-  [class*="in-house-ad"],
-  [class*="inhouse-ad"]{
-    display:none!important;
-  }
-}
