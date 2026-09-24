@@ -1565,10 +1565,10 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
-  <link rel="stylesheet" href="/css/general-update.css?v=20260924-payment-pin-ui-2">
+  <link rel="stylesheet" href="/css/general-update.css?v=20260924-modal-deliverable-ui-1">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
-  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-payment-pin-ui-2">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-payment-pin-ui-2">
+  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-modal-deliverable-ui-1">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-modal-deliverable-ui-1">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
   <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
@@ -2320,7 +2320,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
   <div class="modal-backdrop" id="paymentRejectQuickModal">
     <div class="modal-card payment-reject-quick-card">
-      <div class="modal-header"><div><h3 class="modal-title">Reject Payment Request</h3><div class="text-sm text-muted">Select a clear reason the client can understand.</div></div><button class="modal-close" onclick="app.closeModal('paymentRejectQuickModal')">×</button></div>
+      <div class="modal-header"><div><h3 class="modal-title">Reject Payment Request</h3><div class="text-sm text-muted">Select a clear reason the client can understand.</div></div><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('paymentRejectQuickModal')">×</button></div>
       <div class="modal-body"><div class="form-group"><label class="form-label">Reason *</label><input id="quickRejectReason" class="form-control" list="quickRejectReasonOptions" placeholder="Search or select a reason…" autocomplete="off"><datalist id="quickRejectReasonOptions"></datalist><div id="quickRejectValidation" class="form-error hidden">Select a rejection reason.</div></div><div class="form-group"><label class="form-label">Optional note</label><textarea id="quickRejectNote" class="form-control" rows="3" maxlength="500" placeholder="Add a short note for the client…"></textarea></div></div>
       <div class="modal-footer"><button class="btn btn-secondary" onclick="app.closeModal('paymentRejectQuickModal')">Cancel</button><button id="quickRejectConfirm" class="btn payment-reject-btn">Reject Request</button></div>
     </div>
@@ -2330,7 +2330,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card modal-wide">
       <div class="modal-header">
         <div><h3 class="modal-title">Edit Project Record</h3><div class="text-sm text-muted">Update project, client, financial, and completion details.</div></div>
-        <button class="modal-close" onclick="app.closeModal('editProjectModal')">×</button>
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('editProjectModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="modal-section-title">Record & project</div>
@@ -2378,7 +2378,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Edit Client Details</h3>
-        <button class="modal-close" onclick="app.closeModal('editClientModal')">
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('editClientModal')">
           <svg class="icon-svg sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2425,7 +2425,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title" id="recordPaymentModalTitle">Record Payment</h3>
-        <button class="modal-close" onclick="app.closeModal('recordPaymentModal')">
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('recordPaymentModal')">
           <svg class="icon-svg sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2512,7 +2512,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Order Summary</h3>
-        <button class="modal-close" onclick="app.closeModal('orderSummaryModal')">
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('orderSummaryModal')">
           <svg class="icon-svg sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2529,7 +2529,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Add Custom Service</h3>
-        <button class="modal-close" onclick="app.closeModal('customProductModal')">
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('customProductModal')">
           <svg class="icon-svg sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -2567,7 +2567,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
     <div class="modal-card modal-wide project-batch-modal">
       <div class="modal-header">
         <div><div class="section-kicker">ORDER ITEMS</div><h3 class="modal-title">Add Items</h3><div class="text-sm text-muted">Select one or multiple catalog items. No extra confirmation is required.</div></div>
-        <button class="modal-close" onclick="app.closeModal('projectOrderBatchModal')">×</button>
+        <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('projectOrderBatchModal')">×</button>
       </div>
       <div class="modal-body">
         <div class="form-group"><label class="form-label">Find Services or Packages</label><input class="form-control" id="projectOrderBatchSearch" placeholder="Type to search available items..." autocomplete="off" oninput="app.renderProjectOrderBatchChoices(this.value)"></div>
@@ -2586,7 +2586,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <!-- MODAL: EDIT PROJECT ORDER ITEM -->
   <div class="modal-backdrop" id="projectOrderItemModal">
     <div class="modal-card">
-      <div class="modal-header"><h3 class="modal-title" id="projectOrderItemModalTitle">Edit Order Item</h3><button class="modal-close" onclick="app.closeModal('projectOrderItemModal')">×</button></div>
+      <div class="modal-header"><h3 class="modal-title" id="projectOrderItemModalTitle">Edit Order Item</h3><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('projectOrderItemModal')">×</button></div>
       <div class="modal-body">
         <input type="hidden" id="projectOrderItemIndex">
         <div class="form-group typeahead-wrap"><label class="form-label">Item / Service Name</label><input class="form-control" id="projectOrderItemName" type="text" placeholder="Type to search catalog or enter a custom item" autocomplete="off" onfocus="app.renderProjectOrderItemSuggestions(this.value)" oninput="app.renderProjectOrderItemSuggestions(this.value)"><div class="typeahead-menu project-item-suggestions" id="projectOrderItemSuggestions"></div></div>
@@ -2603,7 +2603,7 @@ table.jp-packages-table col:nth-child(6){width:7%}
 
   <div class="modal-backdrop" id="projectDeliverableModal">
     <div class="modal-card">
-      <div class="modal-header"><div><div class="section-kicker">PROJECT</div><h3 class="modal-title">Add Deliverable</h3></div><button class="modal-close" onclick="app.closeModal('projectDeliverableModal')">×</button></div>
+      <div class="modal-header"><div><div class="section-kicker">PROJECT</div><h3 class="modal-title">Add Deliverable</h3></div><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('projectDeliverableModal')">×</button></div>
       <div class="modal-body">
         <div class="form-group typeahead-wrap"><label class="form-label">Deliverable</label><input class="form-control" id="projectDeliverableName" placeholder="Type to search catalog or enter manually" autocomplete="off" onfocus="app.renderProjectDeliverableSuggestions(this.value)" oninput="app.renderProjectDeliverableSuggestions(this.value)"><div class="typeahead-menu" id="projectDeliverableSuggestions"></div></div>
       </div>
@@ -2657,15 +2657,16 @@ table.jp-packages-table col:nth-child(6){width:7%}
   <!-- PIN-PROTECTED RESET DATA -->
   <div class="modal-backdrop" id="resetDataPinModal">
     <div class="modal-card compact-validation-modal reset-pin-modal">
+      <button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('resetDataPinModal')">×</button>
       <div class="validation-graphic reset-lock-graphic">
         <svg class="icon-svg lg" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14v2"/></svg>
       </div>
       <div class="validation-copy">
         <h3 class="modal-title">Reset Workspace Data</h3>
-        <p>Enter your 6-digit PIN to continue.</p>
+        <p>Enter your PIN to continue.</p>
       </div>
       <div class="form-group reset-pin-field">
-        <label class="form-label" for="resetDataPinInput">PIN Code</label>
+        <label class="form-label" for="resetDataPinInput">PIN</label>
         <div class="secure-pin-grid" id="resetDataPinDigits" aria-label="6-digit secure PIN">
 <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 1">
 <input type="password" inputmode="numeric" maxlength="1" autocomplete="off" class="secure-pin-digit" aria-label="PIN digit 2">
@@ -2684,9 +2685,9 @@ table.jp-packages-table col:nth-child(6){width:7%}
   </div>
 
   <!-- CATALOG MANAGER MODALS -->
-  <div class="modal-backdrop" id="catalogCategoryModal"><div class="modal-card"><div class="modal-header"><div><div class="section-kicker">CATALOG</div><h3 class="modal-title" id="catalogCategoryModalTitle">Add Category</h3></div><button class="modal-close" onclick="app.closeModal('catalogCategoryModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogCategoryOldName"><div class="form-group"><label class="form-label">Category Name</label><input class="form-control" id="catalogCategoryName" placeholder="Category name"></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogCategoryDeleteBtn" onclick="app.deleteCatalogCategory()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogCategoryModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogCategory()">Save Category</button></div></div></div>
-  <div class="modal-backdrop" id="catalogServiceModal"><div class="modal-card"><div class="modal-header"><div><div class="section-kicker">CATALOG</div><h3 class="modal-title" id="catalogServiceModalTitle">Add Service</h3></div><button class="modal-close" onclick="app.closeModal('catalogServiceModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogServiceCode"><div class="form-group"><label class="form-label">Service Name</label><input class="form-control" id="catalogServiceName" placeholder="Service name"></div><div class="form-group"><label class="form-label">Category</label><select class="form-control" id="catalogServiceCategory"></select></div><div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="catalogServiceDescription" rows="3" placeholder="What is included or produced"></textarea></div><div class="form-grid"><div class="form-group"><label class="form-label">Price (₱)</label><input class="form-control" id="catalogServicePrice" type="number" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Status</label><select class="form-control" id="catalogServiceActive"><option value="true">Active</option><option value="false">Inactive</option></select></div></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogServiceDeleteBtn" onclick="app.deleteCatalogService()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogServiceModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogService()">Save Service</button></div></div></div>
-  <div class="modal-backdrop" id="catalogPackageModal"><div class="modal-card modal-wide"><div class="modal-header"><div><div class="section-kicker">PACKAGE BUILDER</div><h3 class="modal-title" id="catalogPackageModalTitle">Create Package</h3></div><button class="modal-close" onclick="app.closeModal('catalogPackageModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogPackageCode"><div class="form-grid"><div class="form-group"><label class="form-label">Package Name</label><input class="form-control" id="catalogPackageName" placeholder="Package name"></div><div class="form-group"><label class="form-label">Category</label><select class="form-control" id="catalogPackageCategory" onchange="app.renderPackageServiceChoices(document.getElementById('catalogPackageServiceSearch').value)"></select></div></div><div class="form-group"><label class="form-label">Find Services</label><input class="form-control" id="catalogPackageServiceSearch" placeholder="Type to search available services..." oninput="app.renderPackageServiceChoices(this.value)"></div><div class="package-service-picker" id="catalogPackageServiceChoices"></div><div class="package-builder-summary"><div><span>Original service total</span><strong id="catalogPackageOriginalTotal">₱0.00</strong></div><div class="form-group" style="margin:0"><label class="form-label">Offer / Discounted Price (₱)</label><input class="form-control" id="catalogPackageSellingPrice" type="number" min="0" step="0.01"></div></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogPackageDeleteBtn" onclick="app.deleteCatalogPackage()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogPackageModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogPackage()">Save Package</button></div></div></div>
+  <div class="modal-backdrop" id="catalogCategoryModal"><div class="modal-card"><div class="modal-header"><div><div class="section-kicker">CATALOG</div><h3 class="modal-title" id="catalogCategoryModalTitle">Add Category</h3></div><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('catalogCategoryModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogCategoryOldName"><div class="form-group"><label class="form-label">Category Name</label><input class="form-control" id="catalogCategoryName" placeholder="Category name"></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogCategoryDeleteBtn" onclick="app.deleteCatalogCategory()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogCategoryModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogCategory()">Save Category</button></div></div></div>
+  <div class="modal-backdrop" id="catalogServiceModal"><div class="modal-card"><div class="modal-header"><div><div class="section-kicker">CATALOG</div><h3 class="modal-title" id="catalogServiceModalTitle">Add Service</h3></div><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('catalogServiceModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogServiceCode"><div class="form-group"><label class="form-label">Service Name</label><input class="form-control" id="catalogServiceName" placeholder="Service name"></div><div class="form-group"><label class="form-label">Category</label><select class="form-control" id="catalogServiceCategory"></select></div><div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="catalogServiceDescription" rows="3" placeholder="What is included or produced"></textarea></div><div class="form-grid"><div class="form-group"><label class="form-label">Price (₱)</label><input class="form-control" id="catalogServicePrice" type="number" min="0" step="0.01"></div><div class="form-group"><label class="form-label">Status</label><select class="form-control" id="catalogServiceActive"><option value="true">Active</option><option value="false">Inactive</option></select></div></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogServiceDeleteBtn" onclick="app.deleteCatalogService()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogServiceModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogService()">Save Service</button></div></div></div>
+  <div class="modal-backdrop" id="catalogPackageModal"><div class="modal-card modal-wide"><div class="modal-header"><div><div class="section-kicker">PACKAGE BUILDER</div><h3 class="modal-title" id="catalogPackageModalTitle">Create Package</h3></div><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('catalogPackageModal')">×</button></div><div class="modal-body"><input type="hidden" id="catalogPackageCode"><div class="form-grid"><div class="form-group"><label class="form-label">Package Name</label><input class="form-control" id="catalogPackageName" placeholder="Package name"></div><div class="form-group"><label class="form-label">Category</label><select class="form-control" id="catalogPackageCategory" onchange="app.renderPackageServiceChoices(document.getElementById('catalogPackageServiceSearch').value)"></select></div></div><div class="form-group"><label class="form-label">Find Services</label><input class="form-control" id="catalogPackageServiceSearch" placeholder="Type to search available services..." oninput="app.renderPackageServiceChoices(this.value)"></div><div class="package-service-picker" id="catalogPackageServiceChoices"></div><div class="package-builder-summary"><div><span>Original service total</span><strong id="catalogPackageOriginalTotal">₱0.00</strong></div><div class="form-group" style="margin:0"><label class="form-label">Offer / Discounted Price (₱)</label><input class="form-control" id="catalogPackageSellingPrice" type="number" min="0" step="0.01"></div></div></div><div class="modal-footer catalog-modal-footer"><button class="btn btn-text text-danger hidden" id="catalogPackageDeleteBtn" onclick="app.deleteCatalogPackage()">Delete</button><span class="modal-footer-spacer"></span><button class="btn btn-secondary" onclick="app.closeModal('catalogPackageModal')">Cancel</button><button class="btn btn-primary" onclick="app.saveCatalogPackage()">Save Package</button></div></div></div>
 
   <!-- QUICK ACTIONS: global Workspace action launcher -->
   <button class="quick-actions-fab" id="quickActionsFab" onclick="window.jpToggleQuickActions?.()" aria-label="Open Quick Actions" aria-expanded="false">
@@ -9882,7 +9883,7 @@ ${description}`))actionCallback();return;}
 
   <div class="modal-backdrop" id="overviewListModal">
     <div class="modal-card modal-wide overview-list-modal-card">
-      <div class="modal-header"><div><div class="section-kicker">OVERVIEW</div><h3 class="modal-title" id="overviewListModalTitle">Projects</h3></div><button class="modal-close" onclick="app.closeModal('overviewListModal')">×</button></div>
+      <div class="modal-header"><div><div class="section-kicker">OVERVIEW</div><h3 class="modal-title" id="overviewListModalTitle">Projects</h3></div><button class="modal-close" type="button" aria-label="Close" onclick="app.closeModal('overviewListModal')">×</button></div>
       <div id="overviewListModalBody" class="overview-modal-list"></div>
     </div>
   </div>
@@ -9949,7 +9950,7 @@ ${description}`))actionCallback();return;}
 .table-actions-col,.table-row-actions{width:46px;min-width:46px;text-align:right!important}.project-row-menu{min-width:170px}
 .project-data-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-bottom:16px}.project-data-card{box-shadow:none}.project-data-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.project-priority-toggle-row{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border-subtle)}.project-items-receipt-card{margin-bottom:16px}.project-data-save-row{display:flex;justify-content:flex-end;margin-bottom:24px}
 .order-item-row{border-radius:12px}.deliverables-main-card{overflow:hidden}.deliverables-header-row{margin-bottom:12px}.deliverables-overall-copy{display:flex;align-items:center;gap:12px;margin-top:6px;font-size:12px;color:var(--text-tertiary)}.deliverables-overall-progress{margin-bottom:14px}
-.deliverable-checklist{display:flex;flex-direction:column}.deliverable-group-block{border-top:1px solid var(--border-subtle)}.deliverable-group-block:first-child{border-top:0}.deliverable-checklist-row{display:grid;grid-template-columns:32px 32px minmax(0,1fr) minmax(120px,210px) 34px;align-items:center;gap:8px;min-height:64px;padding:12px 16px;box-sizing:border-box}.deliverable-select{position:relative;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}.deliverable-select input{position:absolute;opacity:0;pointer-events:none}.deliverable-select span{width:16px;height:16px;box-sizing:border-box;border:1px solid var(--border-medium);border-radius:5px;background:var(--bg-card);display:grid;place-items:center;transition:.12s ease}.deliverable-select input:focus-visible+span{outline:2px solid var(--primary-mint);outline-offset:2px}.deliverable-select input:checked+span{background:var(--primary-mint-dark);border-color:var(--primary-mint-dark)}.deliverable-select input:checked+span:after{content:"";width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}.deliverable-check{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;border-radius:8px!important}.deliverable-child-row{position:relative;margin-left:24px;padding-left:24px!important;background:transparent!important;border-left:1px solid var(--border-subtle)}.deliverable-child-row:before{content:"";position:absolute;left:0;top:50%;width:8px;border-top:1px solid var(--border-subtle)}.deliverable-checklist-copy{min-width:0;display:flex;flex-direction:column;gap:4px}.deliverable-checklist-copy strong{font-size:14px}.deliverable-checklist-copy span{font-size:11px;color:var(--text-tertiary);margin-top:0}.deliverable-item-progress{display:grid;grid-template-columns:1fr 38px;gap:8px;align-items:center}.deliverable-item-progress span{font-size:11px;color:var(--text-tertiary);text-align:right}.deliverable-checklist-row.is-complete .deliverable-checklist-copy strong{color:var(--text-tertiary);text-decoration:line-through;text-decoration-thickness:1px}
+.deliverable-checklist{display:flex;flex-direction:column}.deliverable-group-block{border-top:1px solid var(--border-subtle)}.deliverable-group-block:first-child{border-top:0}.deliverable-checklist-row{display:grid;grid-template-columns:32px 32px minmax(0,1fr) minmax(120px,210px) 34px;align-items:center;column-gap:8px;row-gap:8px;min-height:56px;padding:8px 16px;box-sizing:border-box}.deliverable-select{position:relative;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}.deliverable-select input{position:absolute;opacity:0;pointer-events:none}.deliverable-select span{width:16px;height:16px;box-sizing:border-box;border:1px solid var(--border-medium);border-radius:4px;background:var(--bg-card);display:grid;place-items:center;transition:border-color .12s ease,background-color .12s ease}.deliverable-select:hover span{border-color:var(--text-tertiary)}.deliverable-select input:focus-visible+span{outline:2px solid var(--primary-mint);outline-offset:2px}.deliverable-select input:checked+span{background:var(--primary-mint-dark);border-color:var(--primary-mint-dark)}.deliverable-select input:checked+span:after{content:"";width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}.deliverable-check{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;border-radius:8px!important}.deliverable-child-row{position:relative;margin-left:24px;padding-left:24px!important;background:transparent!important;border-left:1px solid var(--border-subtle)}.deliverable-child-row:before{content:"";position:absolute;left:0;top:50%;width:8px;border-top:1px solid var(--border-subtle)}.deliverable-child-row>.deliverable-select{margin-left:8px}.deliverable-checklist-copy{min-width:0;display:flex;flex-direction:column;gap:4px;margin-left:4px}.deliverable-checklist-copy strong{font-size:14px}.deliverable-checklist-copy span{font-size:11px;color:var(--text-tertiary);margin-top:0}.deliverable-item-progress{display:grid;grid-template-columns:1fr 38px;gap:8px;align-items:center}.deliverable-item-progress span{font-size:11px;color:var(--text-tertiary);text-align:right}.deliverable-checklist-row.is-complete .deliverable-checklist-copy strong{color:var(--text-tertiary);text-decoration:line-through;text-decoration-thickness:1px}
 .typeahead-menu.project-item-suggestions,.project-item-suggestions,.generic-search-select-menu{max-height:280px;overflow:auto}.typeahead-option{cursor:pointer}
 .compact-validation-modal{max-width:420px;text-align:center;padding:30px}.validation-graphic,.action-status-graphic{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--mint-light-bg);color:var(--primary-mint-dark)}.validation-copy p{color:var(--text-secondary);font-size:14px;line-height:1.5;margin-top:7px}.validation-actions{justify-content:center;margin-top:24px}.action-spinner{width:28px;height:28px;border-radius:50%;border:3px solid var(--mint-subtle-border);border-top-color:var(--primary-mint-dark);animation:actionSpin .7s linear infinite}.action-check{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary-mint-dark);color:#fff;animation:checkPop .26s ease-out}@keyframes actionSpin{to{transform:rotate(360deg)}}@keyframes checkPop{from{transform:scale(.7);opacity:.2}to{transform:scale(1);opacity:1}}
 .generic-search-select{position:relative}.native-search-select{display:none!important}.generic-search-select-menu{left:0;right:0;top:calc(100% + 6px)}
@@ -10601,7 +10602,7 @@ ${description}`))actionCallback();return;}
 <script type="module" src="/js/general-update.js?v=20260923-ui2"></script>
 <script type="module" src="/js/keyboard-shortcuts.js?v=20260923-0105"></script>
 <script src="/js/workspace-icon-system-2026-09-22.js?v=20260923-0225"></script>
-  <script src="/js/consistency-pass.js?v=20260924-payment-pin-ui-2"></script>
+  <script src="/js/consistency-pass.js?v=20260924-modal-deliverable-ui-1"></script>
   <script src="/js/workspace-unification-2026-09-22.js?v=20260923-1208"></script>
 </body>
 </html>
