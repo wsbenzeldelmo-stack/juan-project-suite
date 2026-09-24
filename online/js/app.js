@@ -153,10 +153,21 @@ const nav=()=>isLoggedIn()?'<nav class="nav" aria-label="Primary navigation"><di
   '<button data-guest-action="login">'+icon('account')+'<span>Login</span></button></div></nav>';
 
 function welcomeScreen(){
-  root.innerHTML=`<div class="welcome-shell"><div class="phone-page welcome-card storefront-welcome jp-welcome-simplified"><div class="welcome-copy"><span class="eyebrow">WELCOME</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Choose what you want to do today.</p></div><div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="welcomeLogIn" class="text-button">Log In</button></p></div><div class="version">JUAN PROJECT Online · Order Request Update</div></div></div>`;
+  root.innerHTML=`<div class="welcome-shell jp-guest-access-shell"><div class="jp-guest-access-grid">
+    <section class="jp-guest-feature-panel jp-welcome-feature" aria-label="JUAN PROJECT Online featured content">
+      <div class="jp-guest-feature-brand"><span>JUAN PROJECT</span><strong>Creative services,<br>made simple.</strong><p>Browse services, submit an Order Request, and manage your project in one place.</p></div>
+      <div id="jpAdBannerAnchor" class="jp-guest-feature-ad"></div>
+    </section>
+    <div class="phone-page welcome-card storefront-welcome jp-welcome-simplified jp-guest-phone-panel">
+      <div class="welcome-copy"><span class="eyebrow">WELCOME</span><h1>Welcome to<br><strong>JUAN PROJECT Online.</strong></h1><p>Choose what you want to do today.</p></div>
+      <div class="welcome-actions"><button id="welcomeShop" class="btn primary full">Shop Now</button><button id="welcomeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="welcomeLogIn" class="text-button">Log In</button></p></div>
+      <div class="version">JUAN PROJECT Online · Order Request Update</div>
+    </div>
+  </div></div>`;
   document.getElementById('welcomeShop').onclick=()=>{state.route='shop';render();};
   document.getElementById('welcomeLogIn').onclick=()=>authScreen();
   document.getElementById('welcomeTrack').onclick=()=>window.JPMobileCommerce?.openTrack?.();
+  window.dispatchEvent(new Event('juan-online-render'));
   requestAnimationFrame(()=>window.JuanOnlineBoot?.finish?.());
 }
 
@@ -171,7 +182,7 @@ function setFieldError(id,message=''){
 function validEmail(v){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v||'').trim())}
 
 function authScreen(message=''){
-  root.innerHTML=`<div class="auth-shell"><div class="phone-page auth-card"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options persistent-login-note"><span>Your login stays saved on this device.</span><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Use the client login details provided by JUAN PROJECT. You can update your password securely after signing in.</span></div><div id="jpAdBannerAnchor" class="jp-auth-bottom-ad"></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div>`;
+  root.innerHTML=`<div class="auth-shell jp-guest-access-shell"><div class="jp-guest-access-grid"><section class="jp-guest-feature-panel jp-auth-feature" aria-label="JUAN PROJECT Online featured content"><div class="jp-guest-feature-brand"><span>JUAN PROJECT</span><strong>Your projects,<br>in one place.</strong><p>View orders, payments, invoices, progress, and project files after signing in.</p></div><div id="jpAdBannerAnchor" class="jp-guest-feature-ad"></div></section><div class="phone-page auth-card jp-guest-phone-panel"><button id="authBack" class="icon-button auth-back" aria-label="Back">${icon('back')}</button><div class="auth-copy auth-copy-top"><span class="eyebrow">CLIENT ACCESS</span><h1>Welcome back</h1><p>Log in to view your projects, payments, invoices, and project files.</p></div><div class="field"><label for="ae">Email Address</label><input id="ae" class="input" type="email" autocomplete="username" placeholder="you@example.com"><div id="emailValidation" class="field-error"></div></div><div class="field password-field"><label for="ap">Password</label><div class="password-input-wrap"><input id="ap" class="input" type="password" autocomplete="current-password" placeholder="Enter your password"><button id="toggleLoginPass" type="button" class="password-eye" aria-label="Show password">${icon('eye',18)}</button></div><div id="loginValidation" class="field-error"></div></div><div class="auth-options persistent-login-note"><span>Your login stays saved on this device.</span><button id="forgotPassword" class="text-button">Forgot password?</button></div><button id="ab" class="btn primary full">Log In</button><div class="info-box">${icon('lock',18)}<span>Use the client login details provided by JUAN PROJECT. You can update your password securely after signing in.</span></div>${message?`<p class="form-message error-message">${esc(message)}</p>`:''}</div></div></div>`;
   const email=document.getElementById('ae'),pass=document.getElementById('ap'),btn=document.getElementById('ab');
   document.getElementById('authBack').onclick=()=>{state.route='home';state.portal=null;render()};
   email.addEventListener('blur',()=>setFieldError('emailValidation',email.value.trim()&&!validEmail(email.value)?'Enter a valid email address.':''));
@@ -368,9 +379,10 @@ function activityFeed(){
 
 function home(){
   if(!isLoggedIn()){
-    return '<div class="guest-home jp-guest-home-v2 jp-guest-home-centered">'+
-      '<div class="jp-guest-hero"><span class="eyebrow">WELCOME</span><h1>JUAN PROJECT<br><strong>made simple.</strong></h1><p>Shop creative services or track an existing Order Request.</p><div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="homeLogIn" class="text-button">Log In</button></p></div></div>'+
-      '<div id="jpAdBannerAnchor"></div><div class="jp-guest-about"><b>About JUAN PROJECT</b><span>Creative services and project management developed by BENZEL DELMO.</span></div></div>';
+    return '<div class="guest-home jp-guest-home-v2 jp-guest-home-centered"><div class="jp-guest-home-split">'+
+      '<section class="jp-guest-phone-panel"><div class="jp-guest-hero"><span class="eyebrow">WELCOME</span><h1>JUAN PROJECT<br><strong>made simple.</strong></h1><p>Shop creative services or track an existing Order Request.</p><div class="guest-actions"><button id="homeShop" class="btn primary full">Shop Now</button><button id="homeTrack" class="btn full">Track an Order</button><p class="jp-client-login-question">Already a client? <button id="homeLogIn" class="text-button">Log In</button></p></div></div><div class="jp-guest-about"><b>About JUAN PROJECT</b><span>Creative services and project management developed by BENZEL DELMO.</span></div></section>'+
+      '<section class="jp-guest-feature-panel"><div class="jp-guest-feature-brand"><span>FEATURED</span><strong>Discover what JUAN PROJECT can do.</strong><p>Promotions and featured services appear here.</p></div><div id="jpAdBannerAnchor" class="jp-guest-feature-ad"></div></section>'+
+      '</div></div>';
   }
   const p=activeProject(),financial=p||latestProject(),feed=activityFeed(),profile=state.portal?.profile||{};
   const avatar=profile.profile_photo_url?'<img src="'+esc(profile.profile_photo_url)+'" alt="Profile photo">':initials();
@@ -496,24 +508,34 @@ function membershipProgress(){
 function account(){
   if(!isLoggedIn())return `${pageHead('Help & About',{back:false,more:false})}<div class="guest-help-hero"><h2>Browse freely. Log in when you need your project.</h2><p>Shop and support stay available without an account.</p></div><div class="settings-group"><div class="settings-label">HELP</div><div class="card settings-list"><a class="settings-row settings-link" href="/terms.html"><div><b>Terms &amp; Conditions</b><small>Payments, timelines, revisions, and delivery</small></div>${icon('chevron',17)}</a><a class="settings-row settings-link" href="/privacy.html"><div><b>Privacy Policy</b><small>Privacy and device-storage information</small></div>${icon('chevron',17)}</a><a class="settings-row settings-link" href="mailto:ws.benzeldelmo@gmail.com?subject=JUAN%20PROJECT%20Online%20Support"><div><b>Contact JUAN PROJECT</b><small>Get help before or during your project</small></div>${icon('chevron',17)}</a></div></div><div class="card guest-login-card"><div class="sheet-icon">${icon('lock',22)}</div><div><b>Unlock your client portal</b><small>Orders, payments, invoices, and files are available after Log In.</small></div><button id="guestAccountLogin" class="btn primary full">Log In</button></div><div class="jp-online-version">JUAN PROJECT Online · Order Request Update<br><span>Developed by BENZEL DELMO · JUAN PROJECT Management System</span></div>`;
   const p=state.portal.profile,member=membershipProgress();
-  const avatar=p.profile_photo_url?`<img src="${esc(p.profile_photo_url)}" alt="Profile photo">`:initials();
   const joined=p.created_at?fmtDate(p.created_at):'—';
   const nextTier=member.tier==='BRONZE'?'Silver':member.tier==='SILVER'?'Gold':'Platinum';
   const tierMessage=member.next===null?'Highest membership tier reached':`${member.remaining} more completed project${member.remaining===1?'':'s'} to ${nextTier}`;
   const notificationPermission=browserNotificationPermission();
   const notificationLabel=notificationPermission==='granted'?'Allowed':notificationPermission==='denied'?'Blocked':notificationPermission==='unsupported'?'Unavailable':'Enable';
+  const referralCode=p.client_code?'JUAN-'+String(p.client_code).toUpperCase():'—';
+  const points=Math.max(0,Number(p.loyalty_points??p.points??0));
   return `${pageHead('Account',{back:false,more:false})}
-    <div class="membership-card membership-${member.tier.toLowerCase()}">
-      <div class="membership-card-top"><div class="membership-brand">JUAN PROJECT</div><span>${member.tier} MEMBER</span></div>
-      <div class="membership-profile"><div class="avatar large profile-avatar">${avatar}</div><div><h2>${esc(p.name||'Client')}</h2><p>${esc(p.client_code||'Client')}</p><small>${esc(p.email||'')}</small></div></div>
-      <div class="membership-details"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Membership</span><b>${esc(member.tier)}</b></div></div>
-      <div class="membership-progress"><div><span>Membership Progress</span><b>${esc(member.tier)}</b></div><div class="membership-track"><i style="width:${member.progress}%"></i></div><small>${esc(tierMessage)}</small></div>
-    </div>
-    <div class="card account-status-card"><div><b>Account Status</b><small>Connected to JUAN PROJECT · ${esc(p.client_code||'Client')}</small></div><span class="account-status-pill">Synced</span></div>
-    <div class="settings-group"><div class="settings-label">MEMBER BENEFITS</div><div class="card settings-list"><div class="settings-row"><div><b>Tier Benefits & Promos</b><small>Available JUAN PROJECT promotions can be offered based on your membership tier.</small></div>${icon('spark',17)}</div><div class="settings-row"><div><b>Loyalty Rule</b><small>Only completed and fully settled projects count toward membership progress.</small></div>${icon('check',17)}</div></div></div>
-    <div class="settings-group"><div class="settings-label">ACCOUNT</div><div class="card settings-list"><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><div class="password-input-wrap"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="newPass">${icon('eye',18)}</button></div><div class="password-input-wrap"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button type="button" class="password-eye" data-toggle-pass="newPass2">${icon('eye',18)}</button></div><button id="changePass" class="btn full">Update Password</button></div></div><button type="button" id="enableBrowserNotifications" class="settings-row settings-row-button"><div><b>Browser Notifications</b><small>Project, payment, invoice, and file updates · ${esc(notificationLabel)}</small></div>${icon('chevron',17)}</button></div></div>
-    <div class="settings-group"><div class="settings-label">SUPPORT</div><div class="card settings-list"><a class="settings-row settings-link" href="mailto:ws.benzeldelmo@gmail.com?subject=JUAN%20PROJECT%20Online%20Support"><div><b>Help &amp; Support</b><small>Contact JUAN PROJECT</small></div>${icon('chevron',17)}</a><a class="settings-row settings-link" href="/terms.html"><div><b>Terms &amp; Conditions</b><small>Read the JUAN PROJECT Online service terms</small></div>${icon('chevron',17)}</a><a class="settings-row settings-link" href="/privacy.html"><div><b>Privacy Policy</b><small>Review privacy and device-storage information</small></div>${icon('chevron',17)}</a><div class="settings-row danger" id="logout"><b>Log Out</b>${icon('chevron',17)}</div></div></div>
-    <div class="settings-group"><div class="settings-label">ABOUT</div><div class="card settings-list"><div class="settings-row jp-about-row"><div><b>JUAN PROJECT Online</b><small>Order Request Update</small><small>Developed by BENZEL DELMO</small><small>JUAN PROJECT Management System</small></div></div></div></div>`;
+    <div class="jp-account-bento">
+      <section class="membership-card membership-${member.tier.toLowerCase()} jp-account-client-card">
+        <div class="membership-card-top"><div class="membership-brand">JUAN PROJECT</div><span>${member.tier} MEMBER</span></div>
+        <div class="jp-account-card-identity"><div><h2>${esc(p.name||'Client')}</h2><p>${esc(p.client_code||'Client')}</p><small>${esc(p.email||'')}</small></div><button type="button" id="jpViewQr" class="jp-view-qr">View QR</button></div>
+        <div class="jp-account-card-meta"><div><span>Member Since</span><b>${esc(joined)}</b></div><div><span>Completed Projects</span><b>${member.completed}</b></div><div><span>Client ID</span><b>${esc(p.client_code||'—')}</b></div></div>
+        <div class="membership-progress"><div><span>Membership Progress</span><b>${member.progress}%</b></div><div class="membership-track"><i style="width:${member.progress}%"></i></div><small>${esc(tierMessage)}</small></div>
+      </section>
+
+      <section class="card jp-account-tile jp-account-rewards"><span class="jp-account-tile-kicker">MEMBERSHIP</span><div class="jp-account-tile-head"><div><h3>${esc(member.tier)}</h3><p>${points} loyalty point${points===1?'':'s'}</p></div><b>${member.progress}%</b></div><div class="membership-track light"><i style="width:${member.progress}%"></i></div><small>${esc(tierMessage)}</small><button type="button" id="jpOpenRewards" class="text-button">My Client Rewards →</button></section>
+
+      <section class="card account-status-card jp-account-tile"><div><span class="jp-account-tile-kicker">ACCOUNT STATUS</span><h3>Active</h3><p>${esc(p.client_code||'Client')} · Member since ${esc(joined)}</p></div><span class="account-status-pill">Synced</span></section>
+
+      <section class="card jp-account-tile jp-account-referral"><span class="jp-account-tile-kicker">REFERRAL</span><h3>${esc(referralCode)}</h3><p>Share your referral code with a friend.</p><button type="button" id="jpAccountReferralDesktop" class="btn small">Share Code</button></section>
+
+      <section class="settings-group jp-account-password-tile"><div class="settings-label">SECURITY</div><div class="card settings-list"><div class="settings-row password-settings"><div class="settings-password-copy"><b>Change Password</b><small>Update your current portal password.</small></div><div class="settings-password-form"><div class="password-input-wrap"><input id="newPass" class="input" type="password" minlength="8" placeholder="New password"><button type="button" class="password-eye" data-toggle-pass="newPass">${icon('eye',18)}</button></div><div class="password-input-wrap"><input id="newPass2" class="input" type="password" minlength="8" placeholder="Confirm password"><button type="button" class="password-eye" data-toggle-pass="newPass2">${icon('eye',18)}</button></div><button id="changePass" class="btn full">Update Password</button></div></div></div></section>
+
+      <section class="settings-group jp-account-notification-tile"><div class="settings-label">NOTIFICATIONS</div><div class="card settings-list"><button type="button" id="enableBrowserNotifications" class="settings-row settings-row-button"><div><b>Browser Notifications</b><small>Project, payment, invoice, and file updates · ${esc(notificationLabel)}</small></div>${icon('chevron',17)}</button></div></section>
+
+      <section class="settings-group jp-account-legal-tile"><div class="settings-label">ACCOUNT & LEGAL</div><div class="card settings-list"><a class="settings-row settings-link" href="mailto:ws.benzeldelmo@gmail.com?subject=JUAN%20PROJECT%20Online%20Support"><div><b>Help & Support</b><small>Contact JUAN PROJECT</small></div>${icon('chevron',17)}</a><a class="settings-row settings-link" href="/terms.html"><div><b>Terms & Conditions</b><small>Service terms</small></div>${icon('chevron',17)}</a><a class="settings-row settings-link" href="/privacy.html"><div><b>Privacy Policy</b><small>Privacy and device storage</small></div>${icon('chevron',17)}</a><div class="settings-row danger" id="logout"><b>Log Out</b>${icon('chevron',17)}</div></div></section>
+    </div>`;
 }
 
 function categoryName(id){return state.catalog.categories.find(c=>c.id===id)?.name||'Service'}
@@ -559,6 +581,9 @@ function bind(){
   const homeLogIn=document.getElementById('homeLogIn');if(homeLogIn)homeLogIn.onclick=()=>authScreen();
   const guestAccountLogin=document.getElementById('guestAccountLogin');if(guestAccountLogin)guestAccountLogin.onclick=()=>authScreen();
   const membershipQr=document.getElementById('membershipQr');if(membershipQr)membershipQr.onclick=()=>window.JuanSuite?.card?.();
+  const jpViewQr=document.getElementById('jpViewQr');if(jpViewQr)jpViewQr.onclick=()=>window.JPOnlineAccountActions?.openQr?.();
+  const jpOpenRewards=document.getElementById('jpOpenRewards');if(jpOpenRewards)jpOpenRewards.onclick=()=>window.JPOnlineAccountActions?.openRewards?.();
+  const jpAccountReferralDesktop=document.getElementById('jpAccountReferralDesktop');if(jpAccountReferralDesktop)jpAccountReferralDesktop.onclick=()=>window.JPOnlineAccountActions?.shareReferral?.();
   const notificationBtn=document.getElementById('notificationBtn');if(notificationBtn)notificationBtn.onclick=()=>{state.notificationOpen=true;render()};
   const allowBrowserNotifications=document.getElementById('allowBrowserNotifications');if(allowBrowserNotifications)allowBrowserNotifications.onclick=enableBrowserNotifications;
   const enableBrowserNotificationsBtn=document.getElementById('enableBrowserNotifications');if(enableBrowserNotificationsBtn)enableBrowserNotificationsBtn.onclick=enableBrowserNotifications;
