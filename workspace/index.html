@@ -1563,44 +1563,16 @@ table.jp-packages-table col:nth-child(6){width:7%}
 }
 #destructivePinModal .validation-actions{justify-content:center!important;gap:10px!important}
 
-/* First-open Workspace splash */
-.workspace-boot-splash{
-  position:fixed;inset:0;z-index:500000;display:grid;place-items:center;
-  padding:24px;background:#f5f8f6;opacity:1;visibility:visible;
-  transition:opacity .18s ease,visibility .18s ease;
-}
-.workspace-boot-splash.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
-.workspace-boot-card{
-  width:min(420px,calc(100vw - 40px));display:grid;justify-items:center;text-align:center;gap:14px;
-  padding:30px 30px 26px;border:1px solid rgba(17,24,39,.07);border-radius:24px;background:#fff;
-  box-shadow:0 24px 70px rgba(20,43,34,.10)
-}
-.workspace-boot-logo{display:block;width:min(250px,72%);height:auto;object-fit:contain}
-.workspace-boot-copy{display:grid;gap:4px}
-.workspace-boot-copy strong{font-family:"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif;font-size:18px;font-weight:700;letter-spacing:-.02em;color:#111820}
-.workspace-boot-copy span{font-family:"SF Pro Text",-apple-system,BlinkMacSystemFont,sans-serif;font-size:11px;font-weight:400;color:#7a8580}
-.workspace-boot-progress{width:148px;height:4px;border-radius:999px;background:#edf2ef;overflow:hidden}
-.workspace-boot-progress span{display:block;width:42%;height:100%;border-radius:inherit;background:#19ba75;animation:workspaceBootTrack 1.05s ease-in-out infinite}
-@keyframes workspaceBootTrack{0%{transform:translateX(-110%)}100%{transform:translateX(240%)}}
-@media(prefers-reduced-motion:reduce){.workspace-boot-progress span{animation:none;width:100%}.workspace-boot-splash{transition:none}}
 </style>
   <link rel="stylesheet" href="/css/redesign-2026-09-20.css">
   <link rel="stylesheet" href="/css/general-update.css?v=20260924-route-layout-fix-1">
   <link rel="stylesheet" href="/css/keyboard-shortcuts.css?v=20260920-1805">
-  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-workspace-stability-2">
-  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-route-layout-fix-1">
+  <link rel="stylesheet" href="/css/consistency-pass.css?v=20260924-modal-close-nosplash-1">
+  <link rel="stylesheet" href="/css/workspace-unification-2026-09-22.css?v=20260924-modal-close-nosplash-1">
   <link rel="stylesheet" href="/css/workspace-icon-system-2026-09-22.css?v=20260923-0105">
   <link rel="stylesheet" href="/css/typography-sf-pro.css?v=20260923-1">
 </head>
 <body>
-  <div id="workspaceBootSplash" class="workspace-boot-splash" aria-live="polite" aria-busy="true" aria-label="Opening JUAN PROJECT Workspace">
-    <div class="workspace-boot-card">
-      <img class="workspace-boot-logo" src="/assets/brand/juan-project-workspace-master.png" alt="JUAN PROJECT Workspace">
-      <div class="workspace-boot-copy"><span>Preparing…</span></div>
-      <div class="workspace-boot-progress" aria-hidden="true"><span></span></div>
-    </div>
-  </div>
-
   <div class="app-container">
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
@@ -4382,29 +4354,13 @@ table.jp-packages-table col:nth-child(6){width:7%}
         }catch(e){console.warn('Workspace profile fallback load unavailable:',e?.message||e);}
       }
 
-      const WORKSPACE_BOOT_SESSION_KEY='JUAN_WORKSPACE_BOOT_SHOWN_V1';
-      let workspaceBootStartedAt=performance.now();
-      let workspaceBootFinished=false;
-      const workspaceBootSplash=document.getElementById('workspaceBootSplash');
-      const workspaceBootAlreadyShown=sessionStorage.getItem(WORKSPACE_BOOT_SESSION_KEY)==='1';
-      if(workspaceBootAlreadyShown&&workspaceBootSplash)workspaceBootSplash.remove();
-      const workspaceBootFailsafe=workspaceBootAlreadyShown?null:setTimeout(()=>finishWorkspaceBoot(),5000);
-      function finishWorkspaceBoot(){
-        if(workspaceBootFinished)return;workspaceBootFinished=true;
-        const splash=document.getElementById('workspaceBootSplash');if(!splash)return;
-        if(workspaceBootFailsafe)clearTimeout(workspaceBootFailsafe);
-        sessionStorage.setItem(WORKSPACE_BOOT_SESSION_KEY,'1');
-        const elapsed=performance.now()-workspaceBootStartedAt,wait=Math.max(0,420-elapsed);
-        setTimeout(()=>{splash.classList.add('is-hidden');splash.setAttribute('aria-busy','false');setTimeout(()=>splash.remove(),180);},wait);
-      }
+      let workspaceInitialRenderComplete=false;
+      function finishWorkspaceBoot(){workspaceInitialRenderComplete=true;}
 
       function setWorkspaceLoading(loading) {
         const shell=document.getElementById('workspaceLoadingSkeleton');
-        const startupSplash=document.getElementById('workspaceBootSplash');
-        const startupOwnsLoading=Boolean(startupSplash)&&!workspaceBootFinished;
-        const showInlineLoading=Boolean(loading)&&!startupOwnsLoading;
+        const showInlineLoading=Boolean(loading)&&workspaceInitialRenderComplete;
         if(shell)shell.classList.toggle('hidden',!showInlineLoading);
-        // First opening uses only the branded splash; later refreshes may use this compact status tab.
         document.querySelectorAll('.main-content > .view').forEach(v=>v.classList.remove('workspace-loading-hidden'));
       }
 
